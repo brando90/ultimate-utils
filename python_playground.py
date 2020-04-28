@@ -368,6 +368,22 @@ def import_utils_test():
 
     print()
 
+def sys_path():
+    """
+
+    python -c "import sys; print(sys.path)”
+
+    python -c "import sys; [print(p) for p in sys.path]"
+    """
+    import sys
+
+    def path():
+        import sys
+        [print(p) for p in sys.path]
+
+    for path in sys.path:
+        print(path)
+
 if __name__ == '__main__':
     print()
     #union_dicts()

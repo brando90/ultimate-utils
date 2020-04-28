@@ -1,16 +1,18 @@
-# utils
-Brando's utils
+# Ultimate-utils
+
+Hi. 
+I am a collection of useful code that Brando has collected through the years that has been useful accross his projects.
 
 To use me in development mode do (google it if you don't know what it is):
 
 ```
-conda develop <PATH TO SETUP.py>
+conda develop <PATH TO uutils/SETUP.py>
 ```
 
 or 
 
 ```
-pip install -e <PATH TO SETUP.py>
+pip install -e <PATH TO uutils/SETUP.py>
 ```
 
 depending which package manager your using.
@@ -22,7 +24,7 @@ First, what is the difference between package and project? I am not sure if ther
 - project: the folder where `setup.py` is the the rest of the packages & modules are.
 - module: the namespace with collection of values (e.g. functions, constants, classes, etc). Usually a single file `module.py` or a folder with a `__init__.py` (usually called a package & it can have other modules in it).
 - package: a module (single namespace) with other modules & usually other packages.
-- python file vs module: TODO
+- python file vs module: no difference but TODO in more detail.
 
 Say we have the following project we want to package:
 

@@ -9,7 +9,7 @@ setup(
     author='Brando Miranda',
     author_email='miranda9@illinois.edu',
     license='MIT',
-    packages=find_packages(),
+    packages=find_packages(), # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
     install_requires=['torch','numpy','scikit-learn','scipy','matplotlib','pyyml','torchviz','tensorboard',
     'graphviz','torchvision','matplotlib']
 )
