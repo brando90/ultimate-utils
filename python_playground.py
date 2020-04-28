@@ -358,10 +358,13 @@ def subplot():
     fig2.savefig('fig2.png')
 
 def import_utils_test():
-    import utils
-    from utils.utils import logger
+    import uutils
+    import uutils.utils as utils
+    from uutils.utils import logger
 
+    print(uutils)
     print(utils)
+    print(logger)
 
     print()
 
