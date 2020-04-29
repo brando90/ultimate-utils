@@ -1,6 +1,10 @@
 '''
 Torch Based Utils/universal methods
 
+Utils class with useful helper functions
+
+utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
+
 '''
 import torch
 import torch.nn as nn
@@ -9,7 +13,11 @@ import numpy as np
 
 from collections import OrderedDict
 
+import os
+
 import copy
+
+from pdb import set_trace as st
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -201,45 +209,6 @@ def calc_error(mdl,X,Y):
     train_err = 1.0 - train_acc
     return train_err
 
-def preprocess_grad_loss(x, p=10, eps=1e-8):
-    """ Preprocessing (vectorized) implementation from the paper:
-
-    if |x| >= e^-p (not too small)
-        coord1, coord2 = (log(|x| + eps)/p, sign(x))
-    else: (too small
-        coord1, coord2 = (-1, (e^p)*x)
-    return stack(coord1,coord2)
-    
-    usually applied to loss and grads.
-
-    Arguments:
-        x {[torch.Tensor]} -- input to preprocess
-    
-    Keyword Arguments:
-        p {int} -- number that indicates the scaling (default: {10})
-        eps {float} - numerical stability param (default: {1e-8})
-    
-    Returns:
-        [torch.Tensor] -- preprocessed numbers
-    """
-    if len(x.size()) == 0:
-        x = x.unsqueeze(0)
-    # implements vectorized if statement
-    indicator = (x.abs() >= np.exp(-p)).to(torch.float32)
-
-    # preproc1 - magnitude path (coord 1) log(|x|)/(p+eps) or -1
-    # if not too small use the exponent of the magnitude/p
-    # if too small use a -1 to indicate too small to the neural net
-    x_proc1 = indicator * torch.log(x.abs() + eps) / p + (1 - indicator) * -1
-    # preproc2 - sign path (coord 2) sign(x) or (e^p)*x
-    # if not too small log(|x|)/p
-    # if too small (e^p)*x
-    x_proc2 = indicator * torch.sign(x) + (1 - indicator) * np.exp(p) * x
-    # stack
-    # usually in meta-lstm x is n_learner_params so this forms a tensor of size [n_learnaer_params, 2]
-    x_proc = torch.stack([x_proc1, x_proc2], 1)
-    return x_proc
-
 def get_stats(flatten_tensor):
     """Get some stats from tensor.
     
@@ -291,6 +260,50 @@ def resume_ckpt(metalearner, optim, resume, device):
     optim.load_state_dict(ckpt['optim'])
     return last_episode, metalearner, optim
 
+####
+
+def save_pytorch_mdl(path_to_save,net):
+    ##http://pytorch.org/docs/master/notes/serialization.html
+    ##The first (recommended) saves and loads only the model parameters:
+    torch.save(net.state_dict(), path_to_save)
+
+def restore_mdl(path_to_save,mdl_class):
+    # TODO
+    # the_model = TheModelClass(*args, **kwargs)
+    # the_model.load_state_dict(torch.load(PATH))
+    [ass]
+
+def save_entire_mdl(path_to_save,the_model):
+    #torch.save(the_model, path_to_save)
+    pass
+
+def restore_entire_mdl(path_to_restore):
+    '''
+    NOTE: However in this case, the serialized data is bound to the specific
+    classes and the exact directory structure used,
+    so it can break in various ways when used in other projects, or after some serious refactors.
+    '''
+    the_model = torch.load(path_to_restore)
+    return the_model
+
+def get_hostname_mit():
+    from socket import gethostname
+    hostname = gethostname()
+    if 'polestar-old' in hostname or hostname=='gpu-16' or hostname=='gpu-17':
+        return 'polestar-old'
+    elif 'openmind' in hostname:
+        return 'OM'
+    else:
+        return hostname
+
+def count_nb_params(net):
+    count = 0
+    for p in net.parameters():
+        count += p.data.nelement()
+    return count
+
+##
+
 def gradient_clip(args, meta_opt):
     """Do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
 
@@ -317,3 +330,42 @@ def gradient_clip(args, meta_opt):
             pass
         else:
             raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
+
+def preprocess_grad_loss(x, p=10, eps=1e-8):
+    """ Preprocessing (vectorized) implementation from the paper:
+
+    if |x| >= e^-p (not too small)
+        coord1, coord2 = (log(|x| + eps)/p, sign(x))
+    else: (too small
+        coord1, coord2 = (-1, (e^p)*x)
+    return stack(coord1,coord2)
+    
+    usually applied to loss and grads.
+
+    Arguments:
+        x {[torch.Tensor]} -- input to preprocess
+    
+    Keyword Arguments:
+        p {int} -- number that indicates the scaling (default: {10})
+        eps {float} - numerical stability param (default: {1e-8})
+    
+    Returns:
+        [torch.Tensor] -- preprocessed numbers
+    """
+    if len(x.size()) == 0:
+        x = x.unsqueeze(0)
+    # implements vectorized if statement
+    indicator = (x.abs() >= np.exp(-p)).to(torch.float32)
+
+    # preproc1 - magnitude path (coord 1) log(|x|)/(p+eps) or -1
+    # if not too small use the exponent of the magnitude/p
+    # if too small use a -1 to indicate too small to the neural net
+    x_proc1 = indicator * torch.log(x.abs() + eps) / p + (1 - indicator) * -1
+    # preproc2 - sign path (coord 2) sign(x) or (e^p)*x
+    # if not too small log(|x|)/p
+    # if too small (e^p)*x
+    x_proc2 = indicator * torch.sign(x) + (1 - indicator) * np.exp(p) * x
+    # stack
+    # usually in meta-lstm x is n_learner_params so this forms a tensor of size [n_learnaer_params, 2]
+    x_proc = torch.stack([x_proc1, x_proc2], 1)
+    return x_proc

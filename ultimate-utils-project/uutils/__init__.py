@@ -1,27 +1,31 @@
-
 '''
 Utils class with useful helper functions
 
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 '''
 
+import numpy
+import math
+import random
+
 import time
 import logging
 import argparse
+
 import os
-import math
+import shutil
 import sys
+
 import time
+
 import smtplib
 from socket import gethostname
 from email.message import EmailMessage
-from pdb import set_trace as st
+
 import pathlib
 from pathlib import Path
 
-import numpy as np
-import torch
-
+from pdb import set_trace as st
 
 def parse_args():
     """
@@ -41,7 +45,7 @@ def parse_args():
 
 def get_logger(log_path, log_filename):
     """
-        Initializes and returns a logger
+        Initializes and returns a standard logger
     """
     logger = logging.getLogger(log_filename)
     file_handler = logging.FileHandler(log_filename + ".log")
@@ -140,45 +144,6 @@ def make_and_check_dir2(path):
 
 ####
 
-def save_pytorch_mdl(path_to_save,net):
-    ##http://pytorch.org/docs/master/notes/serialization.html
-    ##The first (recommended) saves and loads only the model parameters:
-    torch.save(net.state_dict(), path_to_save)
-
-def restore_mdl(path_to_save,mdl_class):
-    # TODO
-    the_model = TheModelClass(*args, **kwargs)
-    the_model.load_state_dict(torch.load(PATH))
-
-def save_entire_mdl(path_to_save,the_model):
-    torch.save(the_model, path_to_save)
-
-def restore_entire_mdl(path_to_restore):
-    '''
-    NOTE: However in this case, the serialized data is bound to the specific
-    classes and the exact directory structure used,
-    so it can break in various ways when used in other projects, or after some serious refactors.
-    '''
-    the_model = torch.load(path_to_restore)
-    return the_model
-
-def get_hostname_mit():
-    hostname = gethostname()
-    if 'polestar-old' in hostname or hostname=='gpu-16' or hostname=='gpu-17':
-        return 'polestar-old'
-    elif 'openmind' in hostname:
-        return 'OM'
-    else:
-        return hostname
-
-def count_nb_params(net):
-    count = 0
-    for p in net.parameters():
-        count += p.data.nelement()
-    return count
-
-####
-
 '''
 Greater than 4 I get this error:
 
@@ -200,6 +165,8 @@ def seed_everything(seed=42):
     '''
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     '''
+    import torch
+    import random
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
