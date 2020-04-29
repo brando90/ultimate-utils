@@ -17,7 +17,7 @@ pip install -e <PATH TO uutils/SETUP.py>
 
 depending which package manager your using.
 
-## How modules are imported in a python project (not package, project)
+### How modules are imported in a python project (not package/modules but projects)
 
 First, what is the difference between package and project? I am not sure if there is a rigurous formal definition but from reading tutorials:
 

@@ -4,8 +4,10 @@ Utils class with useful helper functions
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 '''
 
-import numpy
+import time
+
 import math
+import numpy as np
 import random
 
 import time
@@ -15,8 +17,6 @@ import argparse
 import os
 import shutil
 import sys
-
-import time
 
 import pathlib
 from pathlib import Path
@@ -64,23 +64,14 @@ def remove_folders_recursively(path):
 def oslist_for_path(path):
     return [f for f in path.iterdir() if f.is_dir()]
 
-def make_and_check_dir(path):
+def _make_and_check_dir(path):
     '''
-    tries to make dir/file, if it exists already does nothing else creates it.
+    NOT NEEDED use:
 
-    https://docs.python.org/3/library/pathlib.html
-
-    :param path object path: path where the data will be saved
+    mkdir(parents=True, exist_ok=True) see: https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
     '''
     path = os.path.expanduser(path)
-    print(path)
-    st()
-    try:
-        os.makedirs(path)
-    except OSError:
-        print(OSError)
-        return OSError
-        pass
+    path.makdir(parents=True, exit_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
 
 def timeSince(start):
     '''
@@ -170,6 +161,17 @@ def seed_everything(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
+def get_hostname_mit():
+    from socket import gethostname
+    hostname = gethostname()
+    if 'polestar-old' in hostname or hostname=='gpu-16' or hostname=='gpu-17':
+        return 'polestar-old'
+    elif 'openmind' in hostname:
+        return 'OM'
+    else:
+        return hostname
+
 def make_dirpath_current_datetime_hostname(path=None, comment=''):
     """Creates directory name for tensorboard experiments.
 
@@ -206,6 +208,8 @@ def host_local_machine(local_hosts=None):
     Returns:
         [bool] -- True if its a recognized local host False otherwise.
     """
+    from socket import gethostname
+    
     if local_hosts is None:
         local_hosts = ['Sarahs-iMac.local','Brandos-MacBook-Pro.local']
     hostname = gethostname()

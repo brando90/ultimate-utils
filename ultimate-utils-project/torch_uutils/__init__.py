@@ -13,7 +13,11 @@ import numpy as np
 
 from collections import OrderedDict
 
+import dill as pickle
+
 import os
+
+from pathlib import Path
 
 import copy
 
@@ -242,7 +246,84 @@ def add_inner_train_stats(diffopt, *args, **kwargs):
     diffopt.param_groups[0]['kwargs']['prev_trainable_opt_state']['train_loss'] = inner_loss
     diffopt.param_groups[0]['kwargs']['prev_trainable_opt_state']['inner_train_err'] = inner_train_err
 
-def save_ckpt(episode, metalearner, optim, save):
+####
+
+def save_ckpt_meta_learning(args, meta_learner):
+    ## https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
+    ## make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
+    path_to_ckpt = args.logger.current_logs_path
+    path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    ckpt_path_plus_path = path_to_ckpt / Path('db')
+
+    ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
+    db = {} # database dict
+    args.child_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
+    db['args'] = args # note this obj has the last episode/outer_i we ran
+    args.child_model = meta_learner.child_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
+    db['meta_learner'] = meta_learner
+    with open(ckpt_path_plus_path , 'wb+') as db_file:
+        pickle.dump(db, db_file)
+    ## Save meta-learner & child-model
+    # torch.save({
+    #     'episode': args.outer_i,
+    #     'metalearner': metalearner.state_dict(),
+    #     'optim': optim.state_dict()
+    # }, os.path.join(save, 'ckpts', 'meta-learner-{}.pth.tar'.format(episode)))
+    return
+
+def resume_ckpt_meta_learning(args):
+    path_to_ckpt = args.resume_ckpt_path / Path('db')
+    with open(path_to_ckpt, 'rb') as db_file: 
+        db = pickle.load(db_file)
+        args_recovered = db['args']
+        meta_learner = db['meta_learner']
+        args_recovered.child_model = meta_learner.child_model
+        ## combine new args with old args
+        args = args_recovered
+        return args, meta_learner
+
+def test_ckpt_meta_learning(args, verbose=False):
+    path_to_ckpt = args.logger.current_logs_path
+    path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    ckpt_path_plus_path = path_to_ckpt / Path('db')
+
+    ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
+    db = {} # database dict
+    args.child_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
+    db['args'] = args # note this obj has the last episode/outer_i we ran
+    with open(ckpt_path_plus_path , 'wb+') as db_file:
+        dumped_outer_i = args.outer_i
+        pickle.dump(db, db_file)
+    with open(ckpt_path_plus_path , 'rb') as db_file:
+        args = get_args_debug(path=path_to_ckpt)
+        loaded_outer_i = args.outer_i
+    if verbose:
+        print(f'==> dumped_outer_i = {dumped_outer_i}')
+        print(f'==> loaded_outer_i = {loaded_outer_i}')
+    ## Assertion Tests
+    assert(dumped_outer_i == loaded_outer_i)
+    return
+
+def get_args_debug(args=None, path=''):
+    if args is not None:
+        path_to_ckpt = args.resume_ckpt_path / Path('db')
+    else:
+        path_to_ckpt = path / Path('db')
+    ## open db file
+    db_file = open(path_to_ckpt, 'rb')
+    db = pickle.load(db_file)
+    args = db['args']
+    db_file.close()
+    return args
+
+def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
+    ckpt = torch.load(resume, map_location=device)
+    last_episode = ckpt['episode']
+    metalearner.load_state_dict(ckpt['metalearner'])
+    optim.load_state_dict(ckpt['optim'])
+    return last_episode, metalearner, optim
+
+def save_ckpt_meta_lstm(episode, metalearner, optim, save):
     if not os.path.exists(os.path.join(save, 'ckpts')):
         os.mkdir(os.path.join(save, 'ckpts'))
 
@@ -253,48 +334,14 @@ def save_ckpt(episode, metalearner, optim, save):
     }, os.path.join(save, 'ckpts', 'meta-learner-{}.pth.tar'.format(episode)))
 
 
-def resume_ckpt(metalearner, optim, resume, device):
+def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
     ckpt = torch.load(resume, map_location=device)
     last_episode = ckpt['episode']
     metalearner.load_state_dict(ckpt['metalearner'])
     optim.load_state_dict(ckpt['optim'])
     return last_episode, metalearner, optim
 
-####
-
-def save_pytorch_mdl(path_to_save,net):
-    ##http://pytorch.org/docs/master/notes/serialization.html
-    ##The first (recommended) saves and loads only the model parameters:
-    torch.save(net.state_dict(), path_to_save)
-
-def restore_mdl(path_to_save,mdl_class):
-    # TODO
-    # the_model = TheModelClass(*args, **kwargs)
-    # the_model.load_state_dict(torch.load(PATH))
-    [ass]
-
-def save_entire_mdl(path_to_save,the_model):
-    #torch.save(the_model, path_to_save)
-    pass
-
-def restore_entire_mdl(path_to_restore):
-    '''
-    NOTE: However in this case, the serialized data is bound to the specific
-    classes and the exact directory structure used,
-    so it can break in various ways when used in other projects, or after some serious refactors.
-    '''
-    the_model = torch.load(path_to_restore)
-    return the_model
-
-def get_hostname_mit():
-    from socket import gethostname
-    hostname = gethostname()
-    if 'polestar-old' in hostname or hostname=='gpu-16' or hostname=='gpu-17':
-        return 'polestar-old'
-    elif 'openmind' in hostname:
-        return 'OM'
-    else:
-        return hostname
+##
 
 def count_nb_params(net):
     count = 0
@@ -369,3 +416,6 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     # usually in meta-lstm x is n_learner_params so this forms a tensor of size [n_learnaer_params, 2]
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
+
+if __name__ == '__main__':
+    pass
