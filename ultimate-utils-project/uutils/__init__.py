@@ -137,13 +137,14 @@ Greater than 4 I get this error:
 ValueError: Seed must be between 0 and 2**32 - 1
 '''
 
-RAND_SIZE = 4
-
-def get_random_seed():
+def get_truly_random_seed_through_os():
     '''
+    Usually the best random sample you could get in any programming language is generated through the operating system. 
+    In Python, you can use the os module.
 
     source: https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch/57416967#57416967
     '''
+    RAND_SIZE = 4
     random_data = os.urandom(RAND_SIZE) # Return a string of size random bytes suitable for cryptographic use.
     random_seed = int.from_bytes(random_data, byteorder="big")
     return random_seed

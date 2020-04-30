@@ -138,20 +138,12 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     hidden = (h_n, c_n)
     return hidden
 
-def lp_norms(mdl, p):
+def lp_norm(mdl, p=2):
     lp_norms = [w.norm(p) for name, w in mdl.named_parameters()]
-    return lp_norms
+    return sum(lp_norms)
 
-def lp_norm(mdl, p, grads=False):
-    lp_norms = []
-    for (name, w) in mdl.named_parameters():
-        #print(f'name: {name}')
-        #print(f'w.norm({p}): {w.norm(p)}')
-        if grads:
-            norm_val = w.grad.norm(p)
-        else:
-            norm_val = w.norm(p)
-        lp_norms.append(norm_val)
+def lp_norm_grads(mdl, p=2, grads=False):
+    lp_norms = [w.grad.norm(p) for name, w in mdl.named_parameters()]
     return sum(lp_norms)
 
 def check_two_models_equal(model1, model2):
