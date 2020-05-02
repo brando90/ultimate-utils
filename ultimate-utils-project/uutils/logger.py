@@ -94,6 +94,9 @@ class Logger:
     def loginfo(self, msg, *args, **kwargs):
         self.logger.info(msg)
 
+    def logerror(self, msg, *args, **kwargs):
+        self.logger.error(msg)
+
     def log(self, level, msg, *args, **kwargs):
         self.logger.log(level, msg, *args, **kwargs)
 
