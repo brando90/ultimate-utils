@@ -129,7 +129,8 @@ class Logger:
         train_acc_y = self.stats['train']['acc']
         assert(len(train_acc_y) == len(train_loss_y))
         # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_train_x = np.arange( start=0, stop=len(train_loss_y), step=self.args.log_train_freq) + 1
+        episodes_train_x = np.array([ self.args.log_train_freq*(i+1)for i in range(len(train_loss_y))] )
+        assert(len(episodes_train_x) == len(train_loss_y))
 
         eval_loss_y = self.stats['eval_stats']['mean']['loss']
         eval_acc_y = self.stats['eval_stats']['mean']['acc']
@@ -138,7 +139,8 @@ class Logger:
         eval_acc_std = self.stats['eval_stats']['std']['acc'] 
         assert(len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
         # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_eval_x = np.arange( start=0, stop=len(eval_loss_y), step=self.args.val_freq) + 1 
+        episodes_eval_x = np.array([ self.args.log_val_freq*(i+1)for i in range(len(eval_loss_y))] )
+        assert(len(episodes_eval_x) == len(eval_acc_y))
 
         if nb_plots == 1:
             fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
