@@ -109,7 +109,20 @@ class Logger:
     def pickle_stuff(self):
         raise('Not implemented')
 
-    def save_final_plots(self, nb_plots=1, mode=None, current_logs_path=None, xkcd=False, grid=True, show=False):
+    def save_final_plots(
+        self, 
+        title,
+        x_axis,
+        y_axis_loss,
+        y_axis_acc,
+
+        nb_plots=1, 
+        mode=None, 
+        current_logs_path=None, 
+        xkcd=False, 
+        grid=True, 
+        show=False
+        ):
         plt.xkcd() if xkcd else None
         ## Initialize where to save and what the mode of the experiment is
         mode = self.mode if mode is None else mode
@@ -129,7 +142,7 @@ class Logger:
         train_acc_y = self.stats['train']['acc']
         assert(len(train_acc_y) == len(train_loss_y))
         # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_train_x = np.array([ self.args.log_train_freq*(i+1)for i in range(len(train_loss_y))] )
+        episodes_train_x = np.array([ self.args.log_train_freq*(i+1) for i in range(len(train_loss_y))] )
         assert(len(episodes_train_x) == len(train_loss_y))
 
         eval_loss_y = self.stats['eval_stats']['mean']['loss']
@@ -139,7 +152,7 @@ class Logger:
         eval_acc_std = self.stats['eval_stats']['std']['acc'] 
         assert(len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
         # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_eval_x = np.array([ self.args.log_val_freq*(i+1)for i in range(len(eval_loss_y))] )
+        episodes_eval_x = np.array([ self.args.log_val_freq*(i+1) for i in range(len(eval_loss_y))] )
         assert(len(episodes_eval_x) == len(eval_acc_y))
 
         if nb_plots == 1:
@@ -148,20 +161,20 @@ class Logger:
             loss_ax1.plot(episodes_train_x, train_loss_y, label='Train Loss', linestyle='-', marker='o', color='r', linewidth=1)
             loss_ax1.errorbar(episodes_eval_x, eval_loss_y, yerr=eval_loss_std, label=f'{eval_label} Loss', linestyle='-', marker='o', color='m', linewidth=1, capsize=3)
             loss_ax1.legend()
-            loss_ax1.set_title('Meta-Learnig & Evaluation Curves')
-            loss_ax1.set_ylabel('Meta-Loss')
+            loss_ax1.set_title(title)
+            loss_ax1.set_ylabel(y_axis_loss)
             loss_ax1.grid(grid)
 
-            acc_ax2.plot(episodes_train_x, train_acc_y, label='Accuracy', linestyle='-', marker='o', color='b', linewidth=1)
+            acc_ax2.plot(episodes_train_x, train_acc_y, label='Train Accuracy', linestyle='-', marker='o', color='b', linewidth=1)
             acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=f'{eval_label} Accuracy', linestyle='-', marker='o', color='c', linewidth=1, capsize=3)
             acc_ax2.legend()
-            acc_ax2.set_xlabel('Episodes (Outer Epochs)')
-            acc_ax2.set_ylabel('Meta-Accuracy')
+            acc_ax2.set_xlabel(x_axis)
+            acc_ax2.set_ylabel(y_axis_acc)
             acc_ax2.grid(grid)
 
             plt.tight_layout()
 
-            #plt.show() if show else None
+            plt.show() if show else None
 
             fig.savefig(current_logs_path / 'meta_train_eval.svg' )
             fig.savefig(current_logs_path / 'meta_train_eval.pdf' )
