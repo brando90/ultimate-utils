@@ -247,6 +247,23 @@ def collect_content_from_file(filepath):
             contents = contents + line
     return contents
 
+## cluster stuff
+
+def get_cluster_jobids(args):
+    ## Get Get job number of cluster
+    args.jobid = -1
+    args.slurm_jobid, args.slurm_array_task_id = -1, -1
+    if 'SLURM_JOBID' in os.environ:
+        args.slurm_jobid = int(os.environ['SLURM_JOBID'])
+        args.jobid = args.slurm_jobid
+    if 'SLURM_ARRAY_TASK_ID' in os.environ:
+        args.slurm_array_task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    args.condor_jobid = -1
+    if 'MY_CONDOR_JOB_ID' in os.environ:
+        args.condor_jobid = int(os.environ['MY_CONDOR_JOB_ID'])
+        args.jobid = args.condor_jobid
+    return args
+
 if __name__ == '__main__':
     #send_email('msg','miranda9@illinois.edu')
     print('sending email test')
