@@ -29,15 +29,65 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="DiMO")
     parser.add_argument(
-        "--nodes",
-        metavar="B",
+        "data",
+        metavar="DIR",
+        help="path to dataset"
+    )
+    parser.add_argument(
+        "--seed",
+        help="seed for deterministic experimenting",
+        default=61820
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        help="number of epochs",
+        default=100
+    )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        help="learning rate of the child model",
+        dest="lr"
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        help="size of batch for training and validation",
+        default=64
+    )
+    parser.add_argument(
+        "--num-nodes",
         type=int,
         help="number of nodes per cell",
         default=5
     )
+    parser.add_argument(
+        "--num-blocks",
+        type=int,
+        help="number of blocks of convolution/reduction cells",
+        default=3
+    )
+    parser.add_argument(
+        "--num-conv-cells",
+        type=int,
+        help="number of convolution cells per block",
+        default=3
+    )
+    parser.add_argument(
+        "--dropout",
+        type=float,
+        help="dropout probability",
+        default=0.0
+    )
+    parser.add_argument(
+        "--init-channels",
+        type=int,
+        help="initial channel to increase to after first convolution",
+        default=64
+    )
 
     return parser.parse_args()
-
 
 def get_logger(log_path, log_filename):
     """
