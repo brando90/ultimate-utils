@@ -29,29 +29,29 @@ class EpisodeDataset(data.Dataset):
         """
         root = os.path.join(root, phase) # e.g '/Users/brandomiranda/automl-meta-learning/data/miniImagenet/train'
         self.labels = sorted(os.listdir(root))
-        images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
+        
+        ## Get data (images)
+        # images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
+        images = []
+        for label in self.labels:
+            pathname = os.path.join(root, label, '*')
+            list_pathnames = glob.glob( pathname ) # Return a possibly-empty list of path names that match pathname
+            images.append( list_pathnames )
 
-        # self.episode_loader = [data.DataLoader(
-        #     ClassDataset(images=images[idx], label=idx, transform=transform),
-        #     batch_size=n_shot+n_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
-
+        ## self.episode_loader = [data.DataLoader( ClassDataset(images=images[idx], label=idx, transform=transform), batch_size=n_shot+n_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
         self.episode_loader = []
-        # loops through each labels for the meta set split e.g. 64, 16, 20
+        # loops through each labels/tasks for the meta set split e.g. 64, 16, 20
         for idx, _ in enumerate(self.labels):
-            #print(f'idx = {idx}')
-            label = idx
-            imgs = images[idx] # 600 images
-            #print(f'# of images in Class Dataset = {len(imgs)}')
-            classdataset = ClassDataset(images=imgs, label=label, transform=transform) # all 600 images for a specific class=label
-            taskloader = data.DataLoader(classdataset, batch_size=n_shot+n_eval, shuffle=True, num_workers=0) # by sampling from 600 images we sample a data set split for the meta-learner to train
+            label = idx # class/label/task
+            imgs = images[idx] # 600 images, i.e. the sampling from p(x,y|t), this will be split into support & query sets
+            classdataset = ClassDataset(images=imgs, label=label, transform=transform) # all 600 images for a specific class/label/task
+            taskloader = data.DataLoader(classdataset, batch_size=n_shot+n_eval, shuffle=True, num_workers=0) # data loader for the current class/label/task
             self.episode_loader.append(taskloader)
         print(f'len(self.episode_loader) = {len(self.episode_loader)}')
 
     def __getitem__(self, idx):
         '''
         Getiitem for EpisodeDataset
-
-        Episode = term used to describe each data set consisting of training and test set i.e. D = (D^train,D^test)
         '''
         # sample dataloader from task=idx
         taskloader = self.episode_loader[idx] # dataloader class that samples examples form task, mimics x,y ~ P(x,y|task=idx), tasks are modeled by index/label in this problem
