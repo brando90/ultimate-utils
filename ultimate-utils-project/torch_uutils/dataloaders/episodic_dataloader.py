@@ -63,11 +63,12 @@ class EpisodeDataset(data.Dataset):
         
         ## Get data (images)
         # images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
-        images = []
+        images = [] # e.g. holds all the images for 64 tasks/classes of mini-imagenet
         for label in self.labels:
-            pathname = os.path.join(root, label, '*')
-            list_pathnames = glob.glob( pathname ) # Return a possibly-empty list of path names that match pathname
+            pathname = os.path.join(root, label, '*') # e.g. path to 600 images of class label in mini-Imagenet
+            list_pathnames = glob.glob( pathname ) # e.g. 600 iamges, Return a possibly-empty list of path names that match pathname
             images.append( list_pathnames )
+        # len(images) = 64 for meta-train set of mini-imagenet
 
         ## self.episode_loader = [data.DataLoader( ClassDataset(images=images[idx], label=idx, transform=transform), batch_size=n_shot+n_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
         self.episode_loader = []
@@ -78,7 +79,7 @@ class EpisodeDataset(data.Dataset):
             classdataset = ClassDataset(images=imgs, label=label, transform=transform) # all 600 images for a specific class/label/task
             taskloader = data.DataLoader(classdataset, batch_size=n_shot+n_eval, shuffle=True, num_workers=0) # data loader for the current class/label/task
             self.episode_loader.append(taskloader)
-        print(f'len(self.episode_loader) = {len(self.episode_loader)}')
+        print(f'len(self.episode_loader) = {len(self.episode_loader)}') # e.g. 64
 
     def __getitem__(self, idx):
         '''
@@ -122,15 +123,33 @@ class ClassDataset(data.Dataset):
 
 
 class EpisodicSampler(data.Sampler):
+    """
+    Meant to be passed as batch_sampler to data_loader.
+    batch_sampler = A custom Sampler that yields a list of batch indices at a time can be passed as the batch_sampler argument.
+
+
+    """
 
     def __init__(self, total_classes, n_class, n_episode):
-        self.total_classes = total_classes
-        self.n_class = n_class
-        self.n_episode = n_episode
+        self.total_classes = total_classes # total number of tasks e.g. 64, 16, 20 for mini-imagenet
+        self.n_class = n_class # usually this is the number of classes to sampler e.g. 5
+        self.n_episode = n_episode # number of times to sample tasks usually 60K for meta-lstm/MAML 
 
     def __iter__(self):
+        """Returns a batch of indices representing the batch of tasks.
+        If it's the meta-train set with 64 labels and it's and 5-way K-shot learning, it returns a list of length 5
+        with integers ranging in the range 0-63. 
+
+        Returns:
+            [nothing]: [nothing]
+
+        Yields:
+            [list of ints]: returns a list of integers meaning the batch of tasks sampled
+        """
         for i in range(self.n_episode):
-            yield torch.randperm(self.total_classes)[:self.n_class]
+            # Returns a random permutation of integers from 0 to n - 1. e.g. torch.randperm(4) tensor([2, 1, 0, 3])
+            indices_batch_taks = torch.randperm(self.total_classes)[:self.n_class] # produces a list of ints representing the tasks sampled from the meta-set e.g. 5 integers from 64 if using the meta-train set
+            yield indices_batch_taks # stateful return the continues executing the next line from last place it was left off, in this case the main sate being remembered is the # of episodes. So this generator ends once the # of episodes has been reached.
 
     def __len__(self):
         return self.n_episode
@@ -205,28 +224,12 @@ def test_episodic_loader(debug_test=True):
     for outer_i, (episode_x, episode_y) in enumerate(trainset_loader):
         ## Get batch of tasks and the corresponding Support,Query = D^{train},D^{test} data-sets
         inner_inputs, inner_targets, outer_inputs, outer_targets = get_inner_outer_batches(args, episode_x, episode_y)
+        print()
         ## Forward Pass
         for inner_epoch in range(self.args.nb_inner_train_steps):
-                self.args.inner_i = 0
                 for batch_idx in range(0, len(inner_inputs), self.args.batch_size):
-                    fmodel.train()
-                    # get batch for inner training, usually with support/innner set
-                    inner_input = inner_inputs[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
-                    inner_target = inner_targets[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
-                    # base/child model forward pass
-                    logits = fmodel(inner_input)
-                    inner_loss = self.args.criterion(logits, inner_target)
-                    inner_train_err = calc_error(mdl=fmodel, X=outer_inputs, Y=outer_targets)
-                    # inner-opt update
-                    self.add_inner_train_info(diffopt, inner_train_loss=inner_loss, inner_train_err=inner_train_err)
-                    if self.inner_debug:
-                        self.args.logger.loginfo(f'Inner:[inner_i={self.args.inner_i}], inner_loss: {inner_loss}, inner_train_acc: {inner_train_acc}, test loss: {-1}, test acc: {-1}')
-                    self.args.inner_i += 1
-
-        ## Debug statement
-        if debug_test:
-            print(f"===-->>> outer_debug: phase: EVAL: meta_loss: {meta_loss} outer_train_acc {outer_train_acc}")
+                    print()
  
 
 if __name__ == "__main__":
-    test_episodic_loader
+    test_episodic_loader()
