@@ -15,6 +15,33 @@ import numpy as np
 
 from tqdm import tqdm
 
+def get_support_query_batches(args, episode_x, episode_y):
+    return get_inner_outer_batches(args, episode_x, episode_y)
+
+def get_inner_outer_batches(args, episode_x, episode_y):
+    """Get the data sets for training the meta learner. Recall that for the Meta-Train-Set we get the
+    train data and test data for the current task and use both to train the meta-learner.
+    Thus this function samples a task and gets the pair of train & test sets used to train meta-learner.
+    
+    Arguments:
+        args {Namespace} -- arguments for experiment
+        episode_x {TODO} -- Contains the test & train datasets used for meta-trainining.
+        episode_y {[type]} -- TODO not used. What is this? Check pytorch code for meta-lstm paper
+    
+    Returns:
+        inner_inputs {TODO} - Train X data-set & bach for inner training.
+        inner_targets {TODO} - Train Y data-set & bach for inner training.
+        outer_inputs {TODO} -  Test data-set & bach for outer training (or evaluation).
+        outer_targets {TODO} - Test data-set & bach for outer training (or evaluation)..
+    """
+    ## D^{train} from current task
+    inner_inputs = episode_x[:, :args.n_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_shot, :]
+    inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_shot)).to(args.device) # [n_class * n_shot]
+    ## D^{test} from current task
+    outer_inputs = episode_x[:, args.n_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_eval, :]
+    outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_eval)).to(args.device) # [n_class * n_eval]
+    return inner_inputs, inner_targets, outer_inputs, outer_targets
+
 
 class EpisodeDataset(data.Dataset):
 
@@ -134,9 +161,9 @@ def prepare_data_for_few_shot_learning(args):
             normalize]))
     # get the loaders for the meta-sets
     trainset_loader = data.DataLoader(train_set, num_workers=args.n_workers, pin_memory=args.pin_mem,
-        batch_sampler=EpisodicSampler(len(train_set), args.n_class, args.episode))
+        batch_sampler=EpisodicSampler(len(train_set), args.n_class, args.episodes))
     valset_loader = data.DataLoader(val_set, num_workers=2, pin_memory=False,
-        batch_sampler=EpisodicSampler(len(val_set), args.n_class, args.episode_val))
+        batch_sampler=EpisodicSampler(len(val_set), args.n_class, args.episodes_val))
     testset_loader = data.DataLoader(test_set, num_workers=2, pin_memory=False,
-        batch_sampler=EpisodicSampler(len(test_set), args.n_class, args.episode_test))
+        batch_sampler=EpisodicSampler(len(test_set), args.n_class, args.episodes_test))
     return trainset_loader, valset_loader, testset_loader

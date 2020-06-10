@@ -395,7 +395,7 @@ def gradient_clip(args, meta_opt):
             # [y for x in list_of_lists for y in x] 
             all_params = [ p for group in meta_opt.param_groups for p in group['params'] ]
             nn.utils.clip_grad_norm_(all_params, args.grad_clip)
-        elif args.grad_clip_mode == 'no_grad_clip': # i.e. do not clip if grad_clip is None
+        elif args.grad_clip_mode == 'no_grad_clip' or args.grad_clip_mode is None: # i.e. do not clip if grad_clip is None
             pass
         else:
             raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
