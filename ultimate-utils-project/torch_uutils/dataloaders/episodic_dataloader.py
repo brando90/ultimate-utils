@@ -13,10 +13,14 @@ import torchvision.transforms as transforms
 import PIL.Image as PILI
 import numpy as np
 
+from pathlib import Path
+
+from types import SimpleNamespace
+
 from tqdm import tqdm
 
 def get_support_query_batches(args, episode_x, episode_y):
-    return get_inner_outer_batches(args, episode_x, episode_y)
+    return get_inner_outer_batches(args, episode_x, episode_y) 
 
 def get_inner_outer_batches(args, episode_x, episode_y):
     """Get the data sets for training the meta learner. Recall that for the Meta-Train-Set we get the
@@ -34,10 +38,10 @@ def get_inner_outer_batches(args, episode_x, episode_y):
         outer_inputs {TODO} -  Test data-set & bach for outer training (or evaluation).
         outer_targets {TODO} - Test data-set & bach for outer training (or evaluation)..
     """
-    ## D^{train} from current task
+    ## Support data sets, D^{train} from current batch of task/classes
     inner_inputs = episode_x[:, :args.n_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_shot, :]
     inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_shot)).to(args.device) # [n_class * n_shot]
-    ## D^{test} from current task
+    ## Query data sets, D^{test} from current task/classes
     outer_inputs = episode_x[:, args.n_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_eval, :]
     outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_eval)).to(args.device) # [n_class * n_eval]
     return inner_inputs, inner_targets, outer_inputs, outer_targets
@@ -167,3 +171,62 @@ def prepare_data_for_few_shot_learning(args):
     testset_loader = data.DataLoader(test_set, num_workers=2, pin_memory=False,
         batch_sampler=EpisodicSampler(len(test_set), args.n_class, args.episodes_test))
     return trainset_loader, valset_loader, testset_loader
+
+def get_args_for_mini_imagenet():
+    from automl.child_models.learner_from_opt_as_few_shot_paper import Learner
+
+    args = SimpleNamespace()
+    #
+    args.n_workers = 4
+    args.pin_mem = True
+    #
+    args.n_shot = 5
+    args.n_eval = 15
+    args.n_class = 5
+    args.episodes = 5
+    args.episodes_val = 4
+    args.episodes_test = 3
+    args.image_size = 84
+    args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
+    args.batch_size = 25
+    #
+    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args.nb_inner_train_steps = 2
+    #
+    args.bn_momentum = 0.95
+    args.bn_eps = 1e-3
+    args.base_model = Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_class)
+    return args
+
+def test_episodic_loader(debug_test=True):
+    args = get_args_for_mini_imagenet()
+    trainset_loader, valset_loader, testset_loader = prepare_data_for_few_shot_learning(args)
+    ##
+    for outer_i, (episode_x, episode_y) in enumerate(trainset_loader):
+        ## Get batch of tasks and the corresponding Support,Query = D^{train},D^{test} data-sets
+        inner_inputs, inner_targets, outer_inputs, outer_targets = get_inner_outer_batches(args, episode_x, episode_y)
+        ## Forward Pass
+        for inner_epoch in range(self.args.nb_inner_train_steps):
+                self.args.inner_i = 0
+                for batch_idx in range(0, len(inner_inputs), self.args.batch_size):
+                    fmodel.train()
+                    # get batch for inner training, usually with support/innner set
+                    inner_input = inner_inputs[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
+                    inner_target = inner_targets[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
+                    # base/child model forward pass
+                    logits = fmodel(inner_input)
+                    inner_loss = self.args.criterion(logits, inner_target)
+                    inner_train_err = calc_error(mdl=fmodel, X=outer_inputs, Y=outer_targets)
+                    # inner-opt update
+                    self.add_inner_train_info(diffopt, inner_train_loss=inner_loss, inner_train_err=inner_train_err)
+                    if self.inner_debug:
+                        self.args.logger.loginfo(f'Inner:[inner_i={self.args.inner_i}], inner_loss: {inner_loss}, inner_train_acc: {inner_train_acc}, test loss: {-1}, test acc: {-1}')
+                    self.args.inner_i += 1
+
+        ## Debug statement
+        if debug_test:
+            print(f"===-->>> outer_debug: phase: EVAL: meta_loss: {meta_loss} outer_train_acc {outer_train_acc}")
+ 
+
+if __name__ == "__main__":
+    test_episodic_loader
