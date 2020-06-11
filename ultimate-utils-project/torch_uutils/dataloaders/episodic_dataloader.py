@@ -47,9 +47,9 @@ def get_inner_outer_batches(args, episode_x, episode_y):
     return inner_inputs, inner_targets, outer_inputs, outer_targets
 
 class EpisodeDataset(data.Dataset):
-    """ Class that models a meta-set {D_t}_t.
-    Recall that D_t ~ p(x,y|t) so when sampling from this class it will give you a set number of examples from (n_shot+n_eval)
-    that task distribution to be split into the support set S and query set Q. 
+    """ Class that models a meta-set {D_t}_t ~~ {p(x,y|t)}_t. e.g. {D_t}_t s.t. t \in {1,...64} for mini-Imagenet's meta-train-set
+    Recall that approx. D_t ~~ p(x,y|t) so when sampling from this class t it will give you a set number of examples (k_shot+k_eval)
+    that will be used to form the support set S_t and query set Q_t. Note |S_t| = k_shot, |Q_t| = k_eval
 
     Args:
         data ([type]): [description]
@@ -89,21 +89,20 @@ class EpisodeDataset(data.Dataset):
             # wrap each task D_t ~ p(x,y|t) in a ClassDataset
             label = idx # get class/label for current task e.g. out of 64 tasks idx \in [0,...,63]
             path_to_task_imgs = images[idx] # list for 600 images for the current task
-            classdataset = ClassDataset(images=path_to_task_imgs, label=label, transform=transform) # task D_t
+            Dt_classdataset = ClassDataset(images=path_to_task_imgs, label=label, transform=transform) # task D_t
             # wrap dataset so we can sample k_shot, k_eval examples to form the Support and Query set. Note: |S_t| = k_shot, |Q_t| = k_eval
             nb_examples_for_S_Q = n_shot+n_eval
-            taskloader = data.DataLoader(classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
-            self.episode_loader.append(taskloader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
+            Dt_taskloader = data.DataLoader(Dt_classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
+            self.episode_loader.append(Dt_taskloader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
         ## at the end of this loop episode_loader has a list of dataloader's for each task
         ## e.g. approximately episode_loader = {D_t}^64_t=1 and we can sample S_t,Q_t ~ D_t just like we'd do S_t,Q_t ~ p(x,y|t)
         print(f'len(self.episode_loader) = {len(self.episode_loader)}') # e.g. this list is of size 64 for meta-train-set (or 16, 20 meta-val, meta-test)
 
     def __getitem__(self, idx):
-        """Get a batch of examples n_shot+n_eval from a task D_t ~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
-        TODO: Important: it does not return y.
+        """Get a batch of examples n_shot+n_eval from a task D_t ~~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
 
         Args:
-            idx ([int]): index for the task (class label)
+            idx ([int]): index for the task (class label) e.g. idx in range [1 to 64]
 
         Returns:
             [TODO]: returns the tensor of all examples n_shot+n_eval to be split into S_t and Q_t.
@@ -115,7 +114,7 @@ class EpisodeDataset(data.Dataset):
         # get current data set D = (D^{train},D^{test}) as a [n_shot, c, h, w] tensor
         ## Sample k_eval examples to form the query and support set e.g. sample batch of size 20 images from 600 available in the current task to later form S_t,Q_t
         SQ_x,S_y = next(Dt_task_dataloader) # e.g. 20=k_shot+k_eval images and intergers representing the label e.g. (tensor([[[[-0.0801, ....2641]]]]), tensor([22, 22, 22, ...  22, 22]))
-        return [SQ_x,S_y]
+        return [SQ_x,S_y] # e.g. tuples of 20 x's and y's for task t/label. All y=t. e.g. (tensor([[[[-0.0801, ....2641]]]]), tensor([22, 22, 22, ...  22, 22]))
 
     def __len__(self):
         """ Returns the number of tasks D_t.
@@ -123,12 +122,15 @@ class EpisodeDataset(data.Dataset):
         Returns:
             [int]: number of tasks e.g. 64 for mini-Imagenet's meta-train-set
         """
-        return len(self.labels)
+        return len(self.labels) # e.g. 64 for mini-Imagenet's meta-train-set 
 
 
 class ClassDataset(data.Dataset):
     '''
-    Class that holds all the images for a specific class. So it has the 600 images from class=label.
+    Class that holds D_t i.e. approximation to the task distribution p(x,y|t) using the 600 examples.
+    Class that holds all the images for a specific class/task. So it has the 600 (paths) to the images for each task/class/label.
+    It remembers the index for the current task in the label field.
+    It remembers the list to all the paths of the 600 images.
     '''
 
     def __init__(self, images, label, transform=None):
@@ -136,19 +138,35 @@ class ClassDataset(data.Dataset):
             images (list of str): each item is a path to an image of the same label
             label (int): the label of all the images
         """
-        self.images = images
-        self.label = label
+        self.images = images # e.g. ['/Users/brandomirand...00106.jpg', '/Users/brandomirand...01218.jpg', '/Users/brandomirand...00660.jpg', '/Users/brandomirand...00674.jpg', '/Users/brandomirand...00884.jpg', '/Users/brandomirand...00890.jpg', '/Users/brandomirand...00648.jpg', '/Users/brandomirand...01230.jpg', '/Users/brandomirand...00338.jpg', '/Users/brandomirand...00489.jpg', '/Users/brandomirand...00270.jpg', '/Users/brandomirand...00264.jpg', '/Users/brandomirand...01152.jpg', '/Users/brandomirand...00258.jpg', ...]
+        self.label = label # e.g. 37
         self.transform = transform
 
     def __getitem__(self, idx):
+        """Returns a single example from an approximation to the task distribution p(x,y|t).
+        Precisely, it returns (x,y)~D_t where D_t can is of size 600 for mini-imagenet
+
+        Args:
+            idx ([int]): an index from D_t (approximating sampling from p(x,y|t) ) e.g. 261
+
+        Returns:
+            [tensor, int]: single example (x,y) where y is an int.
+        """
+        ## get a single image (and transform it if necessary)
         image = PILI.open(self.images[idx]).convert('RGB')
         if self.transform is not None:
             image = self.transform(image)
-
-        return image, self.label
+        # return 1 data sample x, y ~ D_t (approximating x,y ~ p(x,y|t) since D_t is of e.g. size 600)
+        return image, self.label # real image and it's int label e.g. [3, 84, 84] and int e.g. 37
 
     def __len__(self):
-        return len(self.images)
+        """Length of D_t, the data-set approximating the (current) task distribution p(x,y|t).
+        Note: D_t ~~ p(x,y|t) approximately
+
+        Returns:
+            [int]: number of images x in D_t
+        """
+        return len(self.images) # e.g. 600
 
 
 class EpisodicSampler(data.Sampler):
@@ -160,28 +178,39 @@ class EpisodicSampler(data.Sampler):
     """
 
     def __init__(self, total_classes, n_class, n_episode):
-        self.total_classes = total_classes # total number of tasks e.g. 64, 16, 20 for mini-imagenet
-        self.n_class = n_class # usually this is the number of classes to sampler e.g. 5
-        self.n_episode = n_episode # number of times to sample tasks usually 60K for meta-lstm/MAML 
+        """[summary]
+
+        Args:
+            total_classes ([int]): total number of tasks for a meta-set e.g. 64, 16, 20 for mini-imagenet
+            n_class ([int]): the number of classes to sample e.g. 5
+            n_episode ([int]): [description]
+        """
+        self.total_classes = total_classes # e.g. 64, 16, 20 for mini-imagenet (total number of tasks for a meta-set)
+        self.n_class = n_class # the number of classes to sample e.g. 5
+        self.n_episode = n_episode # number of times to samples from a task D_t e,g, 60K for MAML/meta-lstm.
 
     def __iter__(self):
-        """Returns a batch of indices representing the batch of tasks.
-        If it's the meta-train set with 64 labels and it's and 5-way K-shot learning, it returns a list of length 5
-        with integers ranging in the range 0-63. 
-
-        Returns:
-            [nothing]: [nothing]
+        """Returns/yields a batch of indices representing the batch of tasks.
+        If it's the meta-train set with 64 labels and it's and N-way K-shot learning, it returns a list of length N (e.g. 5) with integers ranging in the range 0-63.
+        Note, that for more general, this could sample M # of tasks if that's how it's set up for each episode (and have a different number of classes) i.e. N != M in general.
 
         Yields:
-            [list of ints]: returns a list of integers meaning the batch of tasks sampled
+            [list of ints]: yields a batch of tasks (indicies) represented as a list of integers in the range(0,N_meta-set).
         """
         for i in range(self.n_episode):
-            # Returns a random permutation of integers e.g. torch.randperm(4) tensor([2, 1, 0, 3])
-            indices_batch_taks = torch.randperm(self.total_classes) # random permutation of indices for all tasks/classes e.g. random permutation of nat's from 0 to 63
-            indices_batch_taks = torch.randperm(self.total_classes)[:self.n_class] # produces a list of ints representing the tasks sampled from the meta-set e.g. 5 integers from 64 if using the meta-train set
-            yield indices_batch_taks # stateful return the continues executing the next line from last place it was left off, in this case the main sate being remembered is the # of episodes. So this generator ends once the # of episodes has been reached.
+            # Sample a random permutation of indices for all tasks/classes e.g. random permutation of nat's from 0 to 63
+            random_for_indices_all_tasks = torch.randperm(self.total_classes) # Return a random permutation of integers in a range e.g. tensor([28, 36, 53, 6, 2, 38, 9, 42, 46, 58, 44, 25, 41, 20, 26, 62, 57, 63, 16, 27, 32, 61, 29, 21, 45, 48, 60, 7, 56, 0, 47, 4, 50, 39, 49, 35, 43, 15, 33, 17, 13, 24, 59, 14, 22, 37, 34, 1, 8, 11, 10, 54, 3, 51, 19, 52, 12, 5, 31, 23, 55, 18, 30, 40])
+            # Sample a batch of tasks. i.e. select self.n_class (e.g. 5) task indices.
+            indices_batch_tasks = random_for_indices_all_tasks[:self.n_class] # e.g. tensor([28, 45, 31, 29,  7])
+            # stateful return, when iterator is called it continues executing the next line using the state from the last place it was left off, in this case the main state being remembered is the # of episodes. So this generator ends once the # of episodes has been reached.
+            yield indices_batch_tasks
 
     def __len__(self):
+        """Returns the number of episodes.
+
+        Returns:
+            [int]: returns the number of times we will sample episodes
+        """
         return self.n_episode
 
 def prepare_data_for_few_shot_learning(args):
