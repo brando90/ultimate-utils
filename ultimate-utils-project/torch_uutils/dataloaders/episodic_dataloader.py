@@ -1,3 +1,12 @@
+"""
+
+Notation/terminology:
+meta-set = {D_t}_t set of data-set approximating the task distribution. i.e. D_t ~~ p(x,y|t) e.g. |D_t| = 600
+D_t = a data-set for a task t. We sample images from there to make the support & query set of size k_shot, k_eval. 
+    sampling from D_t is an approximation to sampling from p(x,y|t)
+
+"""
+
 from __future__ import division, print_function, absolute_import
 
 import os
@@ -39,14 +48,14 @@ def get_inner_outer_batches(args, episode_x, episode_y):
         outer_targets {TODO} - Test data-set & bach for outer training (or evaluation)..
     """
     ## Support data sets, D^{train} from current batch of task/classes
-    inner_inputs = episode_x[:, :args.n_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_shot, :]
-    inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_shot)).to(args.device) # [n_class * n_shot]
+    inner_inputs = episode_x[:, :args.k_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_shot, :]
+    inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_shot)).to(args.device) # [n_class * k_shot]
     ## Query data sets, D^{test} from current task/classes
-    outer_inputs = episode_x[:, args.n_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * n_eval, :]
-    outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.n_eval)).to(args.device) # [n_class * n_eval]
+    outer_inputs = episode_x[:, args.k_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_eval, :]
+    outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_eval)).to(args.device) # [n_class * k_eval]
     return inner_inputs, inner_targets, outer_inputs, outer_targets
 
-class EpisodeDataset(data.Dataset):
+class MetaSet_Dataset(data.Dataset):
     """ Class that models a meta-set {D_t}_t ~~ {p(x,y|t)}_t. e.g. {D_t}_t s.t. t \in {1,...64} for mini-Imagenet's meta-train-set
     Recall that approx. D_t ~~ p(x,y|t) so when sampling from this class t it will give you a set number of examples (k_shot+k_eval)
     that will be used to form the support set S_t and query set Q_t. Note |S_t| = k_shot, |Q_t| = k_eval
@@ -55,13 +64,13 @@ class EpisodeDataset(data.Dataset):
         data ([type]): [description]
     """
 
-    def __init__(self, root, phase='train', n_shot=5, n_eval=15, transform=None):
+    def __init__(self, root, phase='train', k_shot=5, k_eval=15, transform=None):
         """Args:
             root (str): path to data
             phase (str): train, val or test
-            n_shot (int): how many examples per class for training (k/n_support)
-            n_eval (int): how many examples per class for evaluation
-                - n_shot + n_eval = batch_size for data.DataLoader of ClassDataset
+            k_shot (int): how many examples per class for training (k/n_support)
+            k_eval (int): how many examples per class for evaluation
+                - k_shot + k_eval = batch_size for data.DataLoader of ClassDataset
             transform (torchvision.transforms): data augmentation
         """
         ## Locate meta-set & tasl labels/idx i.e. get root to data-sets D_t for each task (where D_t ~ p(x,y|t) through 600 examples)
@@ -82,7 +91,7 @@ class EpisodeDataset(data.Dataset):
         # e.g. images = [D_t]^64_t=1 where |D_t| = 600
 
         ## Generate list of dataloaders for each task so we can sample k_shot, k_eval examples for that specific task (so this lo)
-        # self.episode_loader = [data.DataLoader( ClassDataset(images=images[idx], label=idx, transform=transform), batch_size=n_shot+n_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
+        # self.episode_loader = [data.DataLoader( ClassDataset(images=images[idx], label=idx, transform=transform), batch_size=k_shot+k_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
         self.episode_loader = []
         for idx, _ in enumerate(self.labels):
             ##
@@ -91,7 +100,7 @@ class EpisodeDataset(data.Dataset):
             path_to_task_imgs = images[idx] # list for 600 images for the current task
             Dt_classdataset = ClassDataset(images=path_to_task_imgs, label=label, transform=transform) # task D_t
             # wrap dataset so we can sample k_shot, k_eval examples to form the Support and Query set. Note: |S_t| = k_shot, |Q_t| = k_eval
-            nb_examples_for_S_Q = n_shot+n_eval
+            nb_examples_for_S_Q = k_shot+k_eval
             Dt_taskloader = data.DataLoader(Dt_classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
             self.episode_loader.append(Dt_taskloader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
         ## at the end of this loop episode_loader has a list of dataloader's for each task
@@ -99,19 +108,19 @@ class EpisodeDataset(data.Dataset):
         print(f'len(self.episode_loader) = {len(self.episode_loader)}') # e.g. this list is of size 64 for meta-train-set (or 16, 20 meta-val, meta-test)
 
     def __getitem__(self, idx):
-        """Get a batch of examples n_shot+n_eval from a task D_t ~~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
+        """Get a batch of examples k_shot+k_eval from a task D_t ~~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
 
         Args:
             idx ([int]): index for the task (class label) e.g. idx in range [1 to 64]
 
         Returns:
-            [TODO]: returns the tensor of all examples n_shot+n_eval to be split into S_t and Q_t.
+            [TODO]: returns the tensor of all examples k_shot+k_eval to be split into S_t and Q_t.
         """
         # return next(iter(self.episode_loader[idx]))
         ## sample dataloader for task D_t
         label = idx # task label e.g. single tensor(22)
         Dt_task_dataloader = iter(self.episode_loader[label]) # dataloader class that samples examples form task, mimics x,y ~ P(x,y|task=idx), tasks are modeled by index/label in this problem
-        # get current data set D = (D^{train},D^{test}) as a [n_shot, c, h, w] tensor
+        # get current data set D = (D^{train},D^{test}) as a [k_shot, c, h, w] tensor
         ## Sample k_eval examples to form the query and support set e.g. sample batch of size 20 images from 600 available in the current task to later form S_t,Q_t
         SQ_x,S_y = next(Dt_task_dataloader) # e.g. 20=k_shot+k_eval images and intergers representing the label e.g. (tensor([[[[-0.0801, ....2641]]]]), tensor([22, 22, 22, ...  22, 22]))
         return [SQ_x,S_y] # e.g. tuples of 20 x's and y's for task t/label. All y=t. e.g. (tensor([[[[-0.0801, ....2641]]]]), tensor([22, 22, 22, ...  22, 22]))
@@ -170,7 +179,7 @@ class ClassDataset(data.Dataset):
 
 
 class EpisodicSampler(data.Sampler):
-    """
+    """ For each episode, sampler a batch of tasks. {t_i}^M_m where t_i is an idx for the task sampled.
 
     Comments:
         Meant to be passed to batch_sampler when creating a data_loader.
@@ -197,7 +206,7 @@ class EpisodicSampler(data.Sampler):
         Yields:
             [list of ints]: yields a batch of tasks (indicies) represented as a list of integers in the range(0,N_meta-set).
         """
-        for i in range(self.n_episode):
+        for episode in range(self.n_episode):
             # Sample a random permutation of indices for all tasks/classes e.g. random permutation of nat's from 0 to 63
             random_for_indices_all_tasks = torch.randperm(self.total_classes) # Return a random permutation of integers in a range e.g. tensor([28, 36, 53, 6, 2, 38, 9, 42, 46, 58, 44, 25, 41, 20, 26, 62, 57, 63, 16, 27, 32, 61, 29, 21, 45, 48, 60, 7, 56, 0, 47, 4, 50, 39, 49, 35, 43, 15, 33, 17, 13, 24, 59, 14, 22, 37, 34, 1, 8, 11, 10, 54, 3, 51, 19, 52, 12, 5, 31, 23, 55, 18, 30, 40])
             # Sample a batch of tasks. i.e. select self.n_class (e.g. 5) task indices.
@@ -214,11 +223,9 @@ class EpisodicSampler(data.Sampler):
         return self.n_episode
 
 def prepare_data_for_few_shot_learning(args):
-    '''
-    '''
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # get the meta-sets
-    train_set = EpisodeDataset(args.data_root, 'train', args.n_shot, args.n_eval,
+    ## Get the meta-sets as dataset classes.
+    metatrainset = MetaSet_Dataset(args.data_root, 'train', args.k_shot, args.k_eval,
         transform=transforms.Compose([
             transforms.RandomResizedCrop(args.image_size),
             transforms.RandomHorizontalFlip(),
@@ -229,26 +236,27 @@ def prepare_data_for_few_shot_learning(args):
                 hue=0.2),
             transforms.ToTensor(),
             normalize]))
-    val_set = EpisodeDataset(args.data_root, 'val', args.n_shot, args.n_eval,
+    metavalset = MetaSet_Dataset(args.data_root, 'val', args.k_shot, args.k_eval,
         transform=transforms.Compose([
             transforms.Resize(args.image_size * 8 // 7),
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
             normalize]))
-    test_set = EpisodeDataset(args.data_root, 'test', args.n_shot, args.n_eval,
+    metatestset = MetaSet_Dataset(args.data_root, 'test', args.k_shot, args.k_eval,
         transform=transforms.Compose([
             transforms.Resize(args.image_size * 8 // 7),
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
             normalize]))
-    # get the loaders for the meta-sets
-    trainset_loader = data.DataLoader(train_set, num_workers=args.n_workers, pin_memory=args.pin_mem,
-        batch_sampler=EpisodicSampler(len(train_set), args.n_class, args.episodes))
-    valset_loader = data.DataLoader(val_set, num_workers=2, pin_memory=False,
-        batch_sampler=EpisodicSampler(len(val_set), args.n_class, args.episodes_val))
-    testset_loader = data.DataLoader(test_set, num_workers=2, pin_memory=False,
-        batch_sampler=EpisodicSampler(len(test_set), args.n_class, args.episodes_test))
-    return trainset_loader, valset_loader, testset_loader
+    ## Get episodic samplers. They sampler task (indices) according to args.n_class for args.episodes episodes. e.g. samples 5 tasks (idx) for 60K episodes.
+    episode_sampler_metatrainset = EpisodicSampler(len(metatrainset), args.n_class, args.episodes)
+    episode_sampler_metavalset = EpisodicSampler(len(metavalset), args.n_class, args.episodes_val)
+    episode_sampler_metatestset = EpisodicSampler(len(metatestset), args.n_class, args.episodes_test)
+    ## Get the loaders for the meta-sets. These return the sample of tasks used for meta-training.
+    metatrainset_loader = data.DataLoader(metatrainset, num_workers=args.n_workers, pin_memory=args.pin_mem, batch_sampler=episode_sampler_metatrainset)
+    metavalset_loader = data.DataLoader(metavalset, num_workers=4, pin_memory=False, batch_sampler=episode_sampler_metavalset)
+    metatestset_loader = data.DataLoader(metatestset, num_workers=4, pin_memory=False, batch_sampler=episode_sampler_metatestset)
+    return metatrainset_loader, metavalset_loader, metatestset_loader
 
 def get_args_for_mini_imagenet():
     from automl.child_models.learner_from_opt_as_few_shot_paper import Learner
@@ -258,8 +266,8 @@ def get_args_for_mini_imagenet():
     args.n_workers = 4
     args.pin_mem = True
     #
-    args.n_shot = 5
-    args.n_eval = 15
+    args.k_shot = 5
+    args.k_eval = 15
     args.n_class = 5
     args.episodes = 5
     args.episodes_val = 4
@@ -278,9 +286,9 @@ def get_args_for_mini_imagenet():
 
 def test_episodic_loader(debug_test=True):
     args = get_args_for_mini_imagenet()
-    trainset_loader, valset_loader, testset_loader = prepare_data_for_few_shot_learning(args)
+    metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
     ##
-    for outer_i, (episode_x, episode_y) in enumerate(trainset_loader):
+    for outer_i, (episode_x, episode_y) in enumerate(metatrainset_loader):
         ## Get batch of tasks and the corresponding Support,Query = D^{train},D^{test} data-sets
         inner_inputs, inner_targets, outer_inputs, outer_targets = get_inner_outer_batches(args, episode_x, episode_y)
         print()
