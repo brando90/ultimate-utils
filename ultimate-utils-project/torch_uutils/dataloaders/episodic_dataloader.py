@@ -32,6 +32,7 @@ import pickle
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torch.utils.data as data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -44,7 +45,7 @@ from types import SimpleNamespace
 
 from tqdm import tqdm
 
-def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y):
+def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y, union_flatten_tasks=False):
     """Get the Support & Query sets for a batch of tasks.
     Split the data set of example {SQ_t}^M from the M tasks into it's Support set S and Query set Q.
     i.e. get S = {S_t}^M_t, Q = {Q_t}^M_t
@@ -63,6 +64,7 @@ def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y):
         args ([namespace]): experiment arguments.
         SQ_x ([torch([5, 20, 3, 84, 84])]): data examples from batch of task (k_shot+k_eval for each of the M tasks) e.g. torch.Size([5, 20, 3, 84, 84])
         SQ_y ([torch.Size([5, 20])]): [description]
+        union_flatten_tasks ([boolean]): if true then it takes the union/flatten all tasks examples e.g. \/^M_{t} Sx_t = Union(Sx_t for all tasks) etc. so returns torch.Size([k_shot*M, 3, 84, 84])
 
     Returns:
         S_x {tensor([k_shot*N,C,H,W])} - Support set with k_shot image examples for each of the N classes. |S_x| = k_shot*N e.g. torch.Size([25, 3, 84, 84])
@@ -76,26 +78,31 @@ def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y):
     # inner_inputs = SQ_x[:, :args.k_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_shot, :]
     # inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_shot)).to(args.device) # [n_class * k_shot]
     S_x = SQ_x[:, :args.k_shot] # split to get the first 5 k_shot examples from each of the N labeled classes. e.g. torch.Size([5, 5, 3, 84, 84])
-    # take union of x img examples
-    S_x = S_x.reshape(-1, *CHW) # [n_class * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
     # get labels for each of the k_shot examples for the N-way classes
-    S_y = np.repeat(list_classes, args.k_shot) # e.g. array([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4])
+    S_y = torch.LongTensor( np.repeat(list_classes, args.k_shot) ) # e.g. tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4])
     S_y = torch.LongTensor( S_y ).to(args.device) # [n_class * k_shot] e.g. torch.Size([25])
     # to cuda
-    S_x = S_x.to(args.device) # torch.Size([25, 3, 84, 84])
+    S_x = S_x.to(args.device) # torch.Size([5, 5, 3, 84, 84])
     S_y = torch.LongTensor( S_y ).to(args.device) # tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4])
     ## Form Query data set Q i.e. Qx = {Qx_t}^M_t & Qy = {Qy_t}^M_t as a union (i.e. flatten tensor in the examples and classes dimension)
     # outer_inputs = episode_x[:, args.k_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_eval, :]
     # outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_eval)).to(args.device) # [n_class * k_eval]
-    Q_x = SQ_x[:, args.k_shot:] # split to get the last 75 k_eval examples from each of the N labeled classes. e.g. torch.Size([5, 75, 3, 84, 84])
-    # take union of x img examples
-    Q_x = Q_x.reshape(-1, *CHW) # [n_class * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
+    Q_x = SQ_x[:, args.k_shot:] # split to get the last 75 k_eval examples from each of the N labeled classes. e.g. torch.Size([5, 5*15, 3, 84, 84])
     # get labels for each of the k_eval examples for the N-way classes
     Q_y = np.repeat(list_classes, args.k_eval) # e.g. array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     Q_y = torch.LongTensor( Q_y ).to(args.device) # [n_class * k_eval] e.g. torch.Size([75])
     # to cuda
     Q_x = Q_x.to(args.device) # torch.Size([75, 3, 84, 84])
     Q_y = torch.LongTensor( Q_y ).to(args.device) # tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+    #
+    if union_flatten_tasks:
+        S_x = S_x.reshape(-1, *CHW) # [n_class * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
+        Q_x = Q_x.reshape(-1, *CHW) # [n_class * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
+    else:
+        S_y = S_y.view(args.n_class, args.k_shot)
+        Q_y = Q_y.view(args.n_class, args.k_eval)
+    # to cuda
+    S_x, S_y, Q_x, Q_y = S_x.to(args.device), S_y.to(args.device), Q_x.to(args.device), Q_y.to(args.device)
     return S_x, S_y, Q_x, Q_y
 
 class MetaSet_Dataset(data.Dataset):
@@ -351,13 +358,13 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
     ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
     ## start episodic training
-    outer_opt = optim.Adam(meta_learner.parameters(), lr=1e-3)
+    meta_params = base_model.parameters()
+    outer_opt = optim.Adam(meta_params, lr=1e-3)
     base_model.train()
     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader): # samples episode data {SQ}^M_t from batch of tasks D_t/p(x,y|t) e.g. SQ_x.size() = torch.Size([5, 20, 3, 84, 84]) SQ_y.size() = torch.Size([5, 20])
         print(f'episode/outer_i = {episode}')
         ## Sample support S & query Q data. i.e. Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
-        S_x, S_y, = SQ_x[:,:args.k_shot,:,:,:], SQ_y[:,:args.k_shot]
-        Q_x, Q_y, = SQ_x[:,args.k_shot:,:,:,:], SQ_y[:,args.k_shot:]
+        S_x, S_y, Q_x, Q_y = get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y, union_flatten_tasks=False) # e.g. S_x.size() = torch.Size([5, 5, 3, 84, 84]), S_y.size() = torch.Size([5,5]), Q_x.size() = torch.Size([5, 15, 84, 84]), Q_y.size() = torch.Size([5, 15])
         ## Get Get Inner Optimizer (for maml)
         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
         nb_tasks = S_x.size(0) # extract M=N from torch.Size([N, k_shot+k_eval, C, H, W]) note: N=args.n_classes
@@ -365,16 +372,20 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
             meta_loss = 0 # computes 1/M \sum^M_t L(A(\theta,S_t), Q_t)
             for t in range(nb_tasks):
                 ## Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
+                # sample current task s.t. support data is aligned with corresponding query data
+                Sx_t, Sy_t = S_x[t,:,:,:], S_y[t,:]
+                Qx_t, Qy_t = Q_x[t,:,:,:], Q_y[t,:]
+                # Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t) 
                 for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small 5)
                     fmodel.train()
                     # base/child model forward pass
-                    spt_logits_t = fmodel(S_x[t,:,:,:]) 
-                    inner_loss = args.criterion(spt_logits_t, S_y[t,:])
+                    S_logits_t = fmodel(Sx_t) 
+                    inner_loss = args.criterion(S_logits_t, Sy_t)
                     # inner-opt update
                     diffopt.step(inner_loss)
                 ## Evaluate on query set for current task
-                qrt_logits_t = fmodel(Q_x[t,:,:,:])
-                meta_loss += args.criterion(qrt_logits_t, Q_y[t,:])
+                qrt_logits_t = fmodel(Qx_t)
+                meta_loss += args.criterion(qrt_logits_t, Qy_t)
             meta_loss = meta_loss / nb_tasks
         meta_loss.backward()
         outer_opt.step()
