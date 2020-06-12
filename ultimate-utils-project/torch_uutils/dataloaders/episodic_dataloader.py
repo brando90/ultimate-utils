@@ -31,6 +31,7 @@ import glob
 import pickle
 
 import torch
+import torch.nn as nn
 import torch.utils.data as data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -327,7 +328,7 @@ def get_args_for_mini_imagenet():
     args.episodes_test = 3
     args.image_size = 84
     args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
-    args.batch_size = 25
+    args.S_batch_size = 25 # batch size for the union of tasks in the support set. Must be <= k_shot*M or <= k_shot*N
     #
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.nb_inner_train_steps = 2
@@ -335,22 +336,90 @@ def get_args_for_mini_imagenet():
     args.bn_momentum = 0.95
     args.bn_eps = 1e-3
     args.base_model = Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_class)
+    #
+    args.criterion = nn.CrossEntropyLoss()
     return args
 
-def test_episodic_loader(debug_test=True):
+def test_episodic_loader_inner_loop_per_task(debug_test=True):
+    import automl.child_models.learner_from_opt_as_few_shot_paper as learner_from_opt_as_few_shot_paper
+    import higher
+    
+    ## get args for test
     args = get_args_for_mini_imagenet()
+    ## get base model that meta-lstm/maml ised
+    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
+    ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
-    ##
+    ## start episodic training
+    outer_opt = optim.Adam(meta_learner.parameters(), lr=1e-3)
+    base_model.train()
     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader): # samples episode data {SQ}^M_t from batch of tasks D_t/p(x,y|t) e.g. SQ_x.size() = torch.Size([5, 20, 3, 84, 84]) SQ_y.size() = torch.Size([5, 20])
         print(f'episode/outer_i = {episode}')
-        ## Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
-        S_x, S_y, Q_x, Q_x = get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y)
-        print()
-        ## Forward Pass
-        for inner_epoch in range(self.args.nb_inner_train_steps):
-                for batch_idx in range(0, len(inner_inputs), self.args.batch_size):
-                    print()
+        ## Sample support S & query Q data. i.e. Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
+        S_x, S_y, = SQ_x[:,:args.k_shot,:,:,:], SQ_y[:,:args.k_shot]
+        Q_x, Q_y, = SQ_x[:,args.k_shot:,:,:,:], SQ_y[:,args.k_shot:]
+        ## Get Get Inner Optimizer (for maml)
+        inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
+        nb_tasks = S_x.size(0) # extract M=N from torch.Size([N, k_shot+k_eval, C, H, W]) note: N=args.n_classes
+        with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
+            meta_loss = 0 # computes 1/M \sum^M_t L(A(\theta,S_t), Q_t)
+            for t in range(nb_tasks):
+                ## Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
+                for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small 5)
+                    fmodel.train()
+                    # base/child model forward pass
+                    spt_logits_t = fmodel(S_x[t,:,:,:]) 
+                    inner_loss = args.criterion(spt_logits_t, S_y[t,:])
+                    # inner-opt update
+                    diffopt.step(inner_loss)
+                ## Evaluate on query set for current task
+                qrt_logits_t = fmodel(Q_x[t,:,:,:])
+                meta_loss += args.criterion(qrt_logits_t, Q_y[t,:])
+            meta_loss = meta_loss / nb_tasks
+        meta_loss.backward()
+        outer_opt.step()
+        outer_opt.zero_grad()
+    print(f'meta_loss = {meta_loss}')
  
+#  def test_episodic_loader(debug_test=True):
+#     import automl.child_models.learner_from_opt_as_few_shot_paper as learner_from_opt_as_few_shot_paper
+#     import higher
+    
+#     ## get args for test
+#     args = get_args_for_mini_imagenet()
+#     ## get base model that meta-lstm/maml ised
+#     base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
+#     ## get meta-sets
+#     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
+#     ## start episodic training
+#     base_model.train()
+#     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader): # samples episode data {SQ}^M_t from batch of tasks D_t/p(x,y|t) e.g. SQ_x.size() = torch.Size([5, 20, 3, 84, 84]) SQ_y.size() = torch.Size([5, 20])
+#         print(f'episode/outer_i = {episode}')
+#         ## Sample support S & query Q data. i.e. Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
+#         S_x, S_y, Q_x, Q_y = get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y) # e.g. S_x.size() = torch.Size([25, 3, 84, 84]), S_y.size() = torch.Size([25]), Q_x.size() = torch.Size([75, 3, 84, 84]), Q_y.size() = torch.Size([75])
+#         ## Get Get Inner Optimizer (for maml)
+#         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
+#         ## Inner-Adaptation Loop
+#         task_num = SQ_x.size(0) # extract M=N from torch.Size([N, k_shot+k_eval, C, H, W]) note: N=args.n_classes
+#         with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
+#             for t in range(task_num):
+#                 for i_inner in range(args.nb_inner_train_steps):
+#                     for batch_idx in range(*{'start':0,'stop':S_x.size(0),'step':self.args.batch_size}.values()):
+#                         fmodel.train()
+#                         # get batch for inner training, usually with support/innner set
+#                         inner_input = S_x[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
+#                         inner_target = S_y[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
+#                         # base/child model forward pass
+#                         logits = fmodel(inner_input)
+#                         inner_loss = self.args.criterion(logits, inner_target)
+#                         # inner-opt update
+#                         diffopt.step(inner_loss)
+#                         self.args.inner_i += 1
+#                 ## Evaluate on test dataset/performance predictor
+#                 outputs = fmodel(Q_x)
+#                 meta_loss = self.performance_predictor(outputs, Q_y)
+#         outer_opt.zero_grad()
+#         return self.base_model, meta_loss, outer_train_acc
 
 if __name__ == "__main__":
-    test_episodic_loader()
+    test_episodic_loader_inner_loop_per_task()
