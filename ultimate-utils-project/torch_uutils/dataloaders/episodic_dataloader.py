@@ -1,6 +1,15 @@
 """
+Notation/terminology using the original MAML formulation (and not meta-lstm formulation):
+MAML formulates tasks as T_{t} = {L_t_,q_t} in Supervised Learning. Thus, if we make the set of images large enough D_t ~~ p_t where p_t = p(x,y|t).
+MAML usually formualtes a task as a class, but it's not necessary.
+meta-lstm fprmulat formulates tasks as "data-sets". If we are doing N-way, K-shot then one data set for a task t D_t = {D^tr_t,D^test_t} where
+D^tr_t has N classes with K examples (and D^test_t has N classes with k_eval examples). In this framework there isn't a clear definition of support set and query set.
+Note: both p_t can be used to express both (although they are not equivalent when using their training algorithms since meta-lstm trains many classes at once in the inner
+and outer loop).
 
-Notation/terminology:
+I will try to clarify when we are using which but I will use the p_t notation and assume that a class is a task as in the original MAML paper hints on section 3.1
+
+Thus, the following notaiton is my most common one:
 meta-set = {D_t}_t set of data-set approximating the task distribution. i.e. D_t ~~ p(x,y|t) e.g. |D_t| = 600
 D_t = a data-set for a task t. We sample images from there to make the support & query set of size k_shot, k_eval. 
     sampling from D_t is an approximation to sampling from p(x,y|t)
@@ -45,26 +54,44 @@ from types import SimpleNamespace
 
 from tqdm import tqdm
 
-def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y, union_flatten_tasks=False):
-    """Get the Support & Query sets for a batch of tasks.
-    Split the data set of example {SQ_t}^M from the M tasks into it's Support set S and Query set Q.
-    i.e. get S = {S_t}^M_t, Q = {Q_t}^M_t
+def get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y):
+    """Get the Support & Query sets for a batch of tasks when tasks=classes and thus M=N.
+    Split the data set of example {SQ_t}^N from the N tasks into it's Support set S and Query set Q.
+    i.e. get S = {S_t}^N_t, Q = {Q_t}^N_t
 
-    Note: 
-        M is can be N, N=M for N-way learning e.g. 5-way
-        S = {S_t}^M_t i.e. all the examples and labels for the batch of tasks in the support sets
-        Q = {Q_t}^M_t i.e. all the examples and labels for the batch of tasks in the query sets
-        - inner training is the same as inner adaptation. We use the support set (i.e. inner data x,y) to do inner adaptation.
-        - outer training is the same as updating the meta-parameters of the meta-learner. This is done with the outer
-        optimizer like Adam. The outer step is not (usually) differentiable. This is where the actual updates happen.
-        - {SQ_t}^M_t, e.g. |SQ_t| = k_eval+k_shot = e.g. 20
-        - |{SQ_t}^M_t| = M in traditional N-way, M=N e.g. = 5.
-        - in old code: inner_inputs = S_x, inner_outputs = S_y, outer_inputs = Q_x, outer_outputs = Q_y
+    Args:
+        args ([namespace]): experiment arguments.
+        SQ_x ([torch([5, 20, 3, 84, 84])]): data examples from a batch of N task e.g. torch.Size([5, 20, 3, 84, 84])
+        SQ_y ([torch.Size([5, 20])]): labels (task) for  a batch of N tasks e.g. torch.Size([5, 20])
+
+    Returns:
+        S_x {tensor([N,k_shot,C,H,W])} - Support set with k_shot image examples for each of the N classes. |S_x| = k_shot*N e.g. torch.Size([5,5, 3, 84, 84])
+        S_y {tensor([N,k_shot])} - Support set with k_shot target examples for each of the N classes. |S_y| = k_shot*N e.g. torch.Size([5, 5])
+        Q_x {tensor([N,k_eval,C,H,W])} - Query set with k_eval image examples for each of the N classes. |Q_x| = k_eval*N torch.Size([5, 15, 3, 84, 84])
+        Q_y {tensor([N,k_eval])} - Query set with k_eval target examples for each of the N classes. |Q_x| = k_eval*N e.g. torch.Size([5, 15])
+    """
+    CHW = SQ_x.shape[-3:] # e.g. torch.Size([3, 84, 84])
+    list_classes = range(args.n_class) # classes=tasks here e.g. range(0, 5)
+    ## Form Support data set S i.e. Sx = {Sx_t}^N_t & Sy = {Sy_t}^N_t, |Sx_t| = k_shot
+    S_x = SQ_x[:, :args.k_shot, :, :, :].to(args.device) # e.g. torch.Size([5, 5, 3, 84, 84])
+    # get labels for each of the k_shot examples for the N-way classes
+    S_y = torch.stack([ torch.tensor([i]).repeat(args.k_shot) for i in list_classes ]) # e.g. torch.Size([5, 5])
+    ## Form Query data set Q i.e. Qx = {Qx_t}^N_t & Qy = {Qy_t}^N_t, |Qx_t| = k_eval
+    Q_x = SQ_x[:, args.k_shot:].to(args.device) # e.g. torch.Size([5, 15, 3, 84, 84])
+    # get labels for each of the k_eval examples for the N-way classes
+    Q_y = torch.stack([ torch.tensor([i]).repeat(args.k_eval) for i in list_classes ]) # e.g. torch.Size([5, 15])
+    return S_x, S_y, Q_x, Q_y
+
+def get_support_query_set_for_data_set_is_task(args, SQ_x, SQ_y):
+    """In the meta-lstm paper they define task as a dataset. Thus, they sample a set of examples
+    (k_eval+k_shot)*N and split those into a D^tr, D^test. 
+    Note in this paper it's a subtle difference but a task is NOT a class. A task is a dataset.
+    So the inner optimizer uses the whole D^tr when doing an adaptation rather than each class seperately.
+
     Args:
         args ([namespace]): experiment arguments.
         SQ_x ([torch([5, 20, 3, 84, 84])]): data examples from batch of task (k_shot+k_eval for each of the M tasks) e.g. torch.Size([5, 20, 3, 84, 84])
-        SQ_y ([torch.Size([5, 20])]): [description]
-        union_flatten_tasks ([boolean]): if true then it takes the union/flatten all tasks examples e.g. \/^M_{t} Sx_t = Union(Sx_t for all tasks) etc. so returns torch.Size([k_shot*M, 3, 84, 84])
+        SQ_y ([torch.Size([5, 20])]): labels (task) for  a batch of N tasks e.g. torch.Size([5, 20])
 
     Returns:
         S_x {tensor([k_shot*N,C,H,W])} - Support set with k_shot image examples for each of the N classes. |S_x| = k_shot*N e.g. torch.Size([25, 3, 84, 84])
@@ -95,12 +122,8 @@ def get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y, union_flatten_tasks=F
     Q_x = Q_x.to(args.device) # torch.Size([75, 3, 84, 84])
     Q_y = torch.LongTensor( Q_y ).to(args.device) # tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     #
-    if union_flatten_tasks:
-        S_x = S_x.reshape(-1, *CHW) # [n_class * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
-        Q_x = Q_x.reshape(-1, *CHW) # [n_class * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
-    else:
-        S_y = S_y.view(args.n_class, args.k_shot)
-        Q_y = Q_y.view(args.n_class, args.k_eval)
+    S_x = S_x.reshape(-1, *CHW) # [n_class * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
+    Q_x = Q_x.reshape(-1, *CHW) # [n_class * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
     # to cuda
     S_x, S_y, Q_x, Q_y = S_x.to(args.device), S_y.to(args.device), Q_x.to(args.device), Q_y.to(args.device)
     return S_x, S_y, Q_x, Q_y
@@ -338,7 +361,7 @@ def get_args_for_mini_imagenet():
     args.S_batch_size = 25 # batch size for the union of tasks in the support set. Must be <= k_shot*M or <= k_shot*N
     #
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    args.nb_inner_train_steps = 2
+    args.nb_inner_train_steps = 3
     #
     args.bn_momentum = 0.95
     args.bn_eps = 1e-3
@@ -353,7 +376,7 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
     
     ## get args for test
     args = get_args_for_mini_imagenet()
-    ## get base model that meta-lstm/maml ised
+    ## get base model that meta-lstm/maml
     base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
     ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
@@ -361,13 +384,14 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
     meta_params = base_model.parameters()
     outer_opt = optim.Adam(meta_params, lr=1e-3)
     base_model.train()
-    for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader): # samples episode data {SQ}^M_t from batch of tasks D_t/p(x,y|t) e.g. SQ_x.size() = torch.Size([5, 20, 3, 84, 84]) SQ_y.size() = torch.Size([5, 20])
-        print(f'episode/outer_i = {episode}')
-        ## Sample support S & query Q data. i.e. Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
-        S_x, S_y, Q_x, Q_y = get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y, union_flatten_tasks=False) # e.g. S_x.size() = torch.Size([5, 5, 3, 84, 84]), S_y.size() = torch.Size([5,5]), Q_x.size() = torch.Size([5, 15, 84, 84]), Q_y.size() = torch.Size([5, 15])
-        ## Get Get Inner Optimizer (for maml)
+    # sample a joint set SQ of k_shot+k_eval examples
+    for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader):
+        #print(f'episode/outer_i = {episode}')
+        ## Sample the support S & query Q data e.g. S = {S_t}^N_t, Q = {Q_t}^N_t
+        S_x, S_y, Q_x, Q_y = get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y)
+        ## Get Inner Optimizer (for maml)
         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
-        nb_tasks = S_x.size(0) # extract M=N from torch.Size([N, k_shot+k_eval, C, H, W]) note: N=args.n_classes
+        nb_tasks = S_x.size(0) # extract N (=M) tasks note: torch.Size([N, k_shot+k_eval, C, H, W])
         with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
             meta_loss = 0 # computes 1/M \sum^M_t L(A(\theta,S_t), Q_t)
             for t in range(nb_tasks):
@@ -375,8 +399,9 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
                 # sample current task s.t. support data is aligned with corresponding query data
                 Sx_t, Sy_t = S_x[t,:,:,:], S_y[t,:]
                 Qx_t, Qy_t = Q_x[t,:,:,:], Q_y[t,:]
-                # Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t) 
-                for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small 5)
+                # Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
+                # note that we could train here in batches from S_t but since S_t is so small k_shot (1 or 5) for each class/task t \in [N], we use the whole thing
+                for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small  5)
                     fmodel.train()
                     # base/child model forward pass
                     S_logits_t = fmodel(Sx_t) 
@@ -390,47 +415,7 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
         meta_loss.backward()
         outer_opt.step()
         outer_opt.zero_grad()
-    print(f'meta_loss = {meta_loss}')
- 
-#  def test_episodic_loader(debug_test=True):
-#     import automl.child_models.learner_from_opt_as_few_shot_paper as learner_from_opt_as_few_shot_paper
-#     import higher
-    
-#     ## get args for test
-#     args = get_args_for_mini_imagenet()
-#     ## get base model that meta-lstm/maml ised
-#     base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
-#     ## get meta-sets
-#     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
-#     ## start episodic training
-#     base_model.train()
-#     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader): # samples episode data {SQ}^M_t from batch of tasks D_t/p(x,y|t) e.g. SQ_x.size() = torch.Size([5, 20, 3, 84, 84]) SQ_y.size() = torch.Size([5, 20])
-#         print(f'episode/outer_i = {episode}')
-#         ## Sample support S & query Q data. i.e. Split the features and target labels into the support S and query Q sets for the batch of M tasks e.g. S = {S_t}^M_t, Q = {Q_t}^M_t
-#         S_x, S_y, Q_x, Q_y = get_support_query_for_batch_of_tasks(args, SQ_x, SQ_y) # e.g. S_x.size() = torch.Size([25, 3, 84, 84]), S_y.size() = torch.Size([25]), Q_x.size() = torch.Size([75, 3, 84, 84]), Q_y.size() = torch.Size([75])
-#         ## Get Get Inner Optimizer (for maml)
-#         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
-#         ## Inner-Adaptation Loop
-#         task_num = SQ_x.size(0) # extract M=N from torch.Size([N, k_shot+k_eval, C, H, W]) note: N=args.n_classes
-#         with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
-#             for t in range(task_num):
-#                 for i_inner in range(args.nb_inner_train_steps):
-#                     for batch_idx in range(*{'start':0,'stop':S_x.size(0),'step':self.args.batch_size}.values()):
-#                         fmodel.train()
-#                         # get batch for inner training, usually with support/innner set
-#                         inner_input = S_x[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
-#                         inner_target = S_y[batch_idx:batch_idx+self.args.batch_size].to(self.args.device)
-#                         # base/child model forward pass
-#                         logits = fmodel(inner_input)
-#                         inner_loss = self.args.criterion(logits, inner_target)
-#                         # inner-opt update
-#                         diffopt.step(inner_loss)
-#                         self.args.inner_i += 1
-#                 ## Evaluate on test dataset/performance predictor
-#                 outputs = fmodel(Q_x)
-#                 meta_loss = self.performance_predictor(outputs, Q_y)
-#         outer_opt.zero_grad()
-#         return self.base_model, meta_loss, outer_train_acc
+        print(f'[episode={episode}] meta_loss = {meta_loss}')
 
 if __name__ == "__main__":
     test_episodic_loader_inner_loop_per_task()
