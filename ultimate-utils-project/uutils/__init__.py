@@ -262,7 +262,7 @@ def host_local_machine(local_hosts=None):
     from socket import gethostname
     
     if local_hosts is None:
-        local_hosts = ['Sarahs-iMac.local','Brandos-MacBook-Pro.local']
+        local_hosts = ['Sarahs-iMac.local','Brandos-MacBook-Pro.local','Beatrizs-iMac.local']
     hostname = gethostname()
     if hostname in local_hosts:
         return True

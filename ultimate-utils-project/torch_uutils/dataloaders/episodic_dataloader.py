@@ -71,7 +71,7 @@ def get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y):
         Q_y {tensor([N,k_eval])} - Query set with k_eval target examples for each of the N classes. |Q_x| = k_eval*N e.g. torch.Size([5, 15])
     """
     CHW = SQ_x.shape[-3:] # e.g. torch.Size([3, 84, 84])
-    list_classes = range(args.n_class) # classes=tasks here e.g. range(0, 5)
+    list_classes = range(args.n_classes) # classes=tasks here e.g. range(0, 5)
     ## Form Support data set S i.e. Sx = {Sx_t}^N_t & Sy = {Sy_t}^N_t, |Sx_t| = k_shot
     S_x = SQ_x[:, :args.k_shot, :, :, :].to(args.device) # e.g. torch.Size([5, 5, 3, 84, 84])
     # get labels for each of the k_shot examples for the N-way classes
@@ -100,30 +100,30 @@ def get_support_query_set_for_data_set_is_task(args, SQ_x, SQ_y):
         Q_y {tensor([k_eval*N])} - Query set with k_eval target examples for each of the N classes. |Q_x| = k_eval*N e.g. torch.Size([75])
     """
     CHW = SQ_x.shape[-3:] # e.g. torch.Size([3, 84, 84])
-    list_classes = range(args.n_class) # e.g. range(0, 5)
+    list_classes = range(args.n_classes) # e.g. range(0, 5)
     ## Form Support data set S i.e. Sx = {Sx_t}^M_t & Sy = {Sy_t}^M_t as a union (i.e. flatten tensor in the examples and classes dimension)
-    # inner_inputs = SQ_x[:, :args.k_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_shot, :]
-    # inner_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_shot)).to(args.device) # [n_class * k_shot]
+    # inner_inputs = SQ_x[:, :args.k_shot].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_classes * k_shot, :]
+    # inner_targets = torch.LongTensor(np.repeat(range(args.n_classes), args.k_shot)).to(args.device) # [n_classes * k_shot]
     S_x = SQ_x[:, :args.k_shot] # split to get the first 5 k_shot examples from each of the N labeled classes. e.g. torch.Size([5, 5, 3, 84, 84])
     # get labels for each of the k_shot examples for the N-way classes
     S_y = torch.LongTensor( np.repeat(list_classes, args.k_shot) ) # e.g. tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4])
-    S_y = torch.LongTensor( S_y ).to(args.device) # [n_class * k_shot] e.g. torch.Size([25])
+    S_y = torch.LongTensor( S_y ).to(args.device) # [n_classes * k_shot] e.g. torch.Size([25])
     # to cuda
     S_x = S_x.to(args.device) # torch.Size([5, 5, 3, 84, 84])
     S_y = torch.LongTensor( S_y ).to(args.device) # tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4])
     ## Form Query data set Q i.e. Qx = {Qx_t}^M_t & Qy = {Qy_t}^M_t as a union (i.e. flatten tensor in the examples and classes dimension)
-    # outer_inputs = episode_x[:, args.k_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_class * k_eval, :]
-    # outer_targets = torch.LongTensor(np.repeat(range(args.n_class), args.k_eval)).to(args.device) # [n_class * k_eval]
+    # outer_inputs = episode_x[:, args.k_shot:].reshape(-1, *episode_x.shape[-3:]).to(args.device) # [n_classes * k_eval, :]
+    # outer_targets = torch.LongTensor(np.repeat(range(args.n_classes), args.k_eval)).to(args.device) # [n_classes * k_eval]
     Q_x = SQ_x[:, args.k_shot:] # split to get the last 75 k_eval examples from each of the N labeled classes. e.g. torch.Size([5, 5*15, 3, 84, 84])
     # get labels for each of the k_eval examples for the N-way classes
     Q_y = np.repeat(list_classes, args.k_eval) # e.g. array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
-    Q_y = torch.LongTensor( Q_y ).to(args.device) # [n_class * k_eval] e.g. torch.Size([75])
+    Q_y = torch.LongTensor( Q_y ).to(args.device) # [n_classes * k_eval] e.g. torch.Size([75])
     # to cuda
     Q_x = Q_x.to(args.device) # torch.Size([75, 3, 84, 84])
     Q_y = torch.LongTensor( Q_y ).to(args.device) # tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     #
-    S_x = S_x.reshape(-1, *CHW) # [n_class * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
-    Q_x = Q_x.reshape(-1, *CHW) # [n_class * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
+    S_x = S_x.reshape(-1, *CHW) # [n_classes * k_shot, C, H, W] e.g. torch.Size([25, 3, 84, 84])
+    Q_x = Q_x.reshape(-1, *CHW) # [n_classes * k_eval, C, H, W] e.g. torch.Size([75, 3, 84, 84])
     # to cuda
     S_x, S_y, Q_x, Q_y = S_x.to(args.device), S_y.to(args.device), Q_x.to(args.device), Q_y.to(args.device)
     return S_x, S_y, Q_x, Q_y
@@ -181,16 +181,16 @@ class MetaSet_Dataset(data.Dataset):
         print(f'len(self.episode_loader) = {len(self.episode_loader)}') # e.g. this list is of size 64 for meta-train-set (or 16, 20 meta-val, meta-test)
 
     def __getitem__(self, idx):
-        """Get a batch of examples k_shot+k_eval from a task D_t ~~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
+        """Get a batch of examples k_shot+k_eval from a single task D_t ~~ p(x,y|t) to be split into the suppport and query set S_t, Q_t.
 
         Args:
             idx ([int]): index for the task (class label) e.g. idx in range [1 to 64]
 
         Returns:
-            [TODO]: returns the tensor of all examples k_shot+k_eval to be split into S_t and Q_t.
+            [TODO]: returns the tensor of all examples k_shot+k_eval to be split into S_t and Q_t fur current task=idx e.g. size [20, C,H,W] if k_shot+k_eval=20
         """
         # return next(iter(self.episode_loader[idx]))
-        ## sample dataloader for task D_t
+        ## get dataloader for task D_t
         label = idx # task label e.g. single tensor(22)
         Dt_task_dataloader = iter(self.episode_loader[label]) # dataloader class that samples examples form task, mimics x,y ~ P(x,y|task=idx), tasks are modeled by index/label in this problem
         # get current data set D = (D^{train},D^{test}) as a [k_shot, c, h, w] tensor
@@ -205,7 +205,6 @@ class MetaSet_Dataset(data.Dataset):
             [int]: number of tasks e.g. 64 for mini-Imagenet's meta-train-set
         """
         return len(self.labels) # e.g. 64 for mini-Imagenet's meta-train-set 
-
 
 class ClassDataset(data.Dataset):
     '''
@@ -250,7 +249,6 @@ class ClassDataset(data.Dataset):
         """
         return len(self.images) # e.g. 600
 
-
 class EpisodicSampler(data.Sampler):
     """ For each episode, sampler a batch of tasks. {t_i}^M_m where t_i is an idx for the task sampled.
 
@@ -259,16 +257,16 @@ class EpisodicSampler(data.Sampler):
         batch_sampler = A custom Sampler that yields a list of batch indices at a time can be passed as the batch_sampler argument.
     """
 
-    def __init__(self, total_classes, n_class, n_episode):
+    def __init__(self, total_classes, n_classes, n_episode):
         """[summary]
 
         Args:
             total_classes ([int]): total number of tasks for a meta-set e.g. 64, 16, 20 for mini-imagenet
-            n_class ([int]): the number of classes to sample e.g. 5
+            n_classes ([int]): the number of classes to sample e.g. 5
             n_episode ([int]): [description]
         """
         self.total_classes = total_classes # e.g. 64, 16, 20 for mini-imagenet (total number of tasks for a meta-set)
-        self.n_class = n_class # the number of classes to sample e.g. 5
+        self.n_classes = n_classes # the number of classes to sample e.g. 5
         self.n_episode = n_episode # number of times to samples from a task D_t e,g, 60K for MAML/meta-lstm.
 
     def __iter__(self):
@@ -277,13 +275,13 @@ class EpisodicSampler(data.Sampler):
         Note, that for more general, this could sample M # of tasks if that's how it's set up for each episode (and have a different number of classes) i.e. N != M in general.
 
         Yields:
-            [list of ints]: yields a batch of tasks (indicies) represented as a list of integers in the range(0,N_meta-set).
+            [list of ints]: yields a batch of tasks (class indicies) represented as a list of integers in the range(0,N_meta-set). Usually of size N e.g. 5 for 5-way.
         """
         for episode in range(self.n_episode):
             # Sample a random permutation of indices for all tasks/classes e.g. random permutation of nat's from 0 to 63
             random_for_indices_all_tasks = torch.randperm(self.total_classes) # Return a random permutation of integers in a range e.g. tensor([28, 36, 53, 6, 2, 38, 9, 42, 46, 58, 44, 25, 41, 20, 26, 62, 57, 63, 16, 27, 32, 61, 29, 21, 45, 48, 60, 7, 56, 0, 47, 4, 50, 39, 49, 35, 43, 15, 33, 17, 13, 24, 59, 14, 22, 37, 34, 1, 8, 11, 10, 54, 3, 51, 19, 52, 12, 5, 31, 23, 55, 18, 30, 40])
-            # Sample a batch of tasks. i.e. select self.n_class (e.g. 5) task indices.
-            indices_batch_tasks = random_for_indices_all_tasks[:self.n_class] # e.g. tensor([28, 45, 31, 29,  7])
+            # Sample a batch of tasks. i.e. select self.n_classes (e.g. 5) task indices.
+            indices_batch_tasks = random_for_indices_all_tasks[:self.n_classes] # e.g. tensor([28, 45, 31, 29,  7])
             # stateful return, when iterator is called it continues executing the next line using the state from the last place it was left off, in this case the main state being remembered is the # of episodes. So this generator ends once the # of episodes has been reached.
             yield indices_batch_tasks
 
@@ -332,10 +330,10 @@ def prepare_data_for_few_shot_learning(args):
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
             normalize]))
-    ## Get episodic samplers. They sampler task (indices) according to args.n_class for args.episodes episodes. e.g. samples 5 tasks (idx) for 60K episodes.
-    episode_sampler_metatrainset = EpisodicSampler(len(metatrainset), args.n_class, args.episodes)
-    episode_sampler_metavalset = EpisodicSampler(len(metavalset), args.n_class, args.episodes_val)
-    episode_sampler_metatestset = EpisodicSampler(len(metatestset), args.n_class, args.episodes_test)
+    ## Get episodic samplers. They sampler task (indices) according to args.n_classes for args.episodes episodes. e.g. samples 5 tasks (idx) for 60K episodes.
+    episode_sampler_metatrainset = EpisodicSampler(len(metatrainset), args.n_classes, args.episodes)
+    episode_sampler_metavalset = EpisodicSampler(len(metavalset), args.n_classes, args.episodes_val)
+    episode_sampler_metatestset = EpisodicSampler(len(metatestset), args.n_classes, args.episodes_test)
     ## Get the loaders for the meta-sets. These return the sample of tasks used for meta-training.
     metatrainset_loader = data.DataLoader(metatrainset, num_workers=args.n_workers, pin_memory=args.pin_mem, batch_sampler=episode_sampler_metatrainset)
     metavalset_loader = data.DataLoader(metavalset, num_workers=4, pin_memory=False, batch_sampler=episode_sampler_metavalset)
@@ -348,11 +346,11 @@ def get_args_for_mini_imagenet():
     args = SimpleNamespace()
     #
     args.n_workers = 4
-    args.pin_mem = True
+    args.pin_mem = True #TODO what is this?
     #
     args.k_shot = 5
     args.k_eval = 15
-    args.n_class = 5 # M, # of tasks to sample. Note N=M, N from N way
+    args.n_classes = 5 # M, # of tasks to sample. Note N=M, N from N way
     args.episodes = 5
     args.episodes_val = 4
     args.episodes_test = 3
@@ -365,7 +363,7 @@ def get_args_for_mini_imagenet():
     #
     args.bn_momentum = 0.95
     args.bn_eps = 1e-3
-    args.base_model = Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_class)
+    args.base_model = Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_classes)
     #
     args.criterion = nn.CrossEntropyLoss()
     return args
@@ -377,7 +375,7 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
     ## get args for test
     args = get_args_for_mini_imagenet()
     ## get base model that meta-lstm/maml
-    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
+    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_classes=args.n_classes).to(args.device)
     ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
     ## start episodic training
@@ -410,6 +408,7 @@ def test_episodic_loader_inner_loop_per_task(debug_test=True):
                 qrt_logits_t = fmodel(Qx_t)
                 meta_loss += args.criterion(qrt_logits_t, Qy_t)
             meta_loss = meta_loss / nb_tasks
+        print(f'[episode={episode}] base_model.model.features.conv1.weight.grad = {base_model.model.features.conv1.weight.grad}')
         meta_loss.backward()
         outer_opt.step()
         outer_opt.zero_grad()
@@ -421,13 +420,13 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
     
     ## get args for test
     args = get_args_for_mini_imagenet()
-    ## get base model that meta-lstm/maml
-    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_class=args.n_class).to(args.device)
+    ## get base model that meta-lstm/maml    
+    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_classes=args.n_classes).to(args.device)
     ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
     ## start episodic training
     meta_params = base_model.parameters()
-    outer_opt = optim.Adam(meta_params, lr=1e-3)
+    outer_opt = optim.Adam(meta_params, lr=1e-2)
     base_model.train()
     # sample a joint set SQ of k_shot+k_eval examples
     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader):
@@ -457,6 +456,7 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
                 meta_losses.append(qrt_loss_t.detach()) # remove history so it be memory efficient and able to print stats
                 ## Update the model's meta-parameters to optimize the query losses across all of the tasks sampled in this batch. This unrolls through the gradient steps.
                 qrt_loss_t.backward() # this also accumualtes the gradients wrt to query loss more memory efficiently as it removes history that is not needed anymore
+        print(f'[episode={episode}] base_model.model.features.conv1.weight.grad = {base_model.model.features.conv1.weight.grad}')
         outer_opt.step()
         outer_opt.zero_grad()
         print(f'[episode={episode}] meta_loss = {sum(meta_losses)}')
