@@ -23,6 +23,15 @@ from pathlib import Path
 
 from pdb import set_trace as st
 
+def helloworld(arg1='arg1', arg2='arg2'):
+    print('helloworld from uutils __init__.py')
+
+def helloworld2(name='Brando', msg='try to see the params of this function!'):
+    print(f'helloworld2: your name is <{name}> and your message <{msg}>')
+
+def HelloWorld():
+    return 'HelloWorld in Utils!'
+
 def parse_args():
     """
         Parses command line arguments
@@ -98,9 +107,6 @@ def get_logger(log_path, log_filename):
     logger.addHandler(file_handler)
 
     return logger
-
-def HelloWorld():
-    return 'HelloWorld in Utils!'
 
 def remove_folders_recursively(path):
     print('WARNING: HAS NOT BEEN TESTED')

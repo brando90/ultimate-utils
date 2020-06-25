@@ -1,34 +1,4 @@
 """
-Notation/terminology using the original MAML formulation (and not meta-lstm formulation):
-MAML formulates tasks as T_{t} = {L_t_,q_t} in Supervised Learning. Thus, if we make the set of images large enough D_t ~~ p_t where p_t = p(x,y|t).
-MAML usually formualtes a task as a class, but it's not necessary.
-meta-lstm fprmulat formulates tasks as "data-sets". If we are doing N-way, K-shot then one data set for a task t D_t = {D^tr_t,D^test_t} where
-D^tr_t has N classes with K examples (and D^test_t has N classes with k_eval examples). In this framework there isn't a clear definition of support set and query set.
-Note: both p_t can be used to express both (although they are not equivalent when using their training algorithms since meta-lstm trains many classes at once in the inner
-and outer loop).
-
-I will try to clarify when we are using which but I will use the p_t notation and assume that a class is a task as in the original MAML paper hints on section 3.1
-
-Thus, the following notaiton is my most common one:
-meta-set = {D_t}_t set of data-set approximating the task distribution. i.e. D_t ~~ p(x,y|t) e.g. |D_t| = 600
-D_t = a data-set for a task t. We sample images from there to make the support & query set of size k_shot, k_eval. 
-    sampling from D_t is an approximation to sampling from p(x,y|t)
-
-S_t = support set for task t (other notation D^tr_t)
-Q_t = query set for task t (other notation D^ts_t))
-S_t ~ p^k_shot(x,y|t)
-Q_t ~ p^k_eval(x,y|t)
-D^{tr}_t = S_t
-D^{ts}_t = Q_t
-
-N =  # of classes in N-way
-k_shot = # size of support set. |S_t| = k_shot
-k_eval = # of query set. |Q_t| = k_eval
-M = batch of tasks (sometimes M=N)
-
-B_tasks = indicies of batch of tasks {t_m}^M_m or {D_t}^M_m or {p(x,y|t)}^M_t
-S = {S_t}^M_m the split from the sampled data. |S| = sum k_shot_c = K*M when M=N -> |S| = N*k_shot
-Q = {Q_t}^M_m the split from the sampled data. usually |Q| = k_eval*M when M=N -> |Q| = N*k_eval
 """
 
 from __future__ import division, print_function, absolute_import
@@ -75,11 +45,11 @@ def get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y):
     ## Form Support data set S i.e. Sx = {Sx_t}^N_t & Sy = {Sy_t}^N_t, |Sx_t| = k_shot
     S_x = SQ_x[:, :args.k_shot, :, :, :].to(args.device) # e.g. torch.Size([5, 5, 3, 84, 84])
     # get labels for each of the k_shot examples for the N-way classes
-    S_y = torch.stack([ torch.tensor([i]).repeat(args.k_shot) for i in list_classes ]) # e.g. torch.Size([5, 5])
+    S_y = torch.stack([ torch.tensor([i]).repeat(args.k_shot) for i in list_classes ]).to(args.device) # e.g. torch.Size([5, 5])
     ## Form Query data set Q i.e. Qx = {Qx_t}^N_t & Qy = {Qy_t}^N_t, |Qx_t| = k_eval
     Q_x = SQ_x[:, args.k_shot:].to(args.device) # e.g. torch.Size([5, 15, 3, 84, 84])
     # get labels for each of the k_eval examples for the N-way classes
-    Q_y = torch.stack([ torch.tensor([i]).repeat(args.k_eval) for i in list_classes ]) # e.g. torch.Size([5, 15])
+    Q_y = torch.stack([ torch.tensor([i]).repeat(args.k_eval) for i in list_classes ]).to(args.device) # e.g. torch.Size([5, 15])
     return S_x, S_y, Q_x, Q_y
 
 def get_support_query_set_for_data_set_is_task(args, SQ_x, SQ_y):
@@ -129,12 +99,8 @@ def get_support_query_set_for_data_set_is_task(args, SQ_x, SQ_y):
     return S_x, S_y, Q_x, Q_y
 
 class MetaSet_Dataset(data.Dataset):
-    """ Class that models a meta-set {D_t}_t ~~ {p(x,y|t)}_t. e.g. {D_t}_t s.t. t \in {1,...64} for mini-Imagenet's meta-train-set
-    Recall that approx. D_t ~~ p(x,y|t) so when sampling from this class t it will give you a set number of examples (k_shot+k_eval)
-    that will be used to form the support set S_t and query set Q_t. Note |S_t| = k_shot, |Q_t| = k_eval
-
-    Args:
-        data ([type]): [description]
+    """ A data set of data sets.
+    Basically a list of "real" data sets e.g. { D_t }^64_t
     """
 
     def __init__(self, root, phase='train', k_shot=5, k_eval=15, transform=None):
@@ -146,35 +112,33 @@ class MetaSet_Dataset(data.Dataset):
                 - k_shot + k_eval = batch_size for data.DataLoader of ClassDataset
             transform (torchvision.transforms): data augmentation
         """
-        ## Locate meta-set & tasl labels/idx i.e. get root to data-sets D_t for each task (where D_t ~ p(x,y|t) through 600 examples)
+        ## Locate meta-set & tasl labels/idx i.e. get root to data-sets D_t for each task
         root = os.path.join(root, phase) # e.g '/Users/brandomiranda/automl-meta-learning/data/miniImagenet/train'
-        # count the number of tasks to create a label for each one
+        # count the number of classes
         self.labels = sorted(os.listdir(root)) # e.g. 64 for meta-train, 16 for meta-val, 20 for meta-test
         
-        ## Get meta-set {p(x,y|t)}_t ~ {D_t}_t for all tasks e.g. images = list of 64 classes with 600 images.
-        # images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
-        images = [] # e.g. holds all the paths to the images e.g. 64 tasks/classes of mini-imagenet
+        ## Get meta-set
+        meta_set_as_paths = [] # e.g. holds all the paths to the images e.g. 64 tasks/classes of mini-imagenet
         for label in self.labels: # for each label get the 600 paths to the images
-            ## for each task/label get path to it's approximation to it's distribution p(x,y|t) ~ D_t of 600 images
-            # path to D_t approximating p(x,y|t) where 600 images lie. e.g. '/Users/brandomiranda/automl-meta-learning/data/miniImagenet/train/n13133613/*' note * is to match all names of images
-            pathname_to_task = os.path.join(root, label, '*') # e.g. path to D_t approximating p(x,y|t) e.g. 600 images for current label/task
-            # list of paths to all the 600 jpg images for the current task D_t
-            list_pathnames_of_images = glob.glob( pathname_to_task ) # glog.glob = Return a possibly-empty list of path names that match pathname, since at the end we have * we match all images.
-            images.append( list_pathnames_of_images ) # append list of pathname to the iamges. e.g. ['/Users/brandomirand...00181.jpg', '/Users/brandomirand...00618.jpg', '/Users/brandomirand...00624.jpg', '/Users/brandomirand...00630.jpg', '/Users/brandomirand...00397.jpg', '/Users/brandomirand...01089.jpg', '/Users/brandomirand...00368.jpg', '/Users/brandomirand...00340.jpg', '/Users/brandomirand...00432.jpg', '/Users/brandomirand...00591.jpg', '/Users/brandomirand...01102.jpg', '/Users/brandomirand...00234.jpg', '/Users/brandomirand...00220.jpg', '/Users/brandomirand...00546.jpg', ...]
-        # e.g. images = [D_t]^64_t=1 where |D_t| = 600
+            ## Append path to Dt to meta_set
+            # get e. path to D_t with 600
+            path_to_Dt = os.path.join(root, label, '*') # e.g. '/Users/brandomiranda/automl-meta-learning/data/miniImagenet/train/n13133613/*' note * is to match all names of images
+            # get path to all (600) images to current images of D_t. Note: glog.glob = Return a possibly-empty list of path names that match pathname, since at the end we have * we match all images.
+            list_pathnames_of_images = glob.glob( path_to_Dt ) # e.g. ['/Users/brandomirand...00181.jpg', '/Users/brandomirand...00618.jpg', '/Users/brandomirand...00624.jpg', '/Users/brandomirand...00630.jpg', '/Users/brandomirand...00397.jpg', '/Users/brandomirand...01089.jpg', '/Users/brandomirand...00368.jpg', '/Users/brandomirand...00340.jpg', '/Users/brandomirand...00432.jpg', '/Users/brandomirand...00591.jpg', '/Users/brandomirand...01102.jpg', '/Users/brandomirand...00234.jpg', '/Users/brandomirand...00220.jpg', '/Users/brandomirand...00546.jpg', ...]
+            meta_set_as_paths.append( path_to_Dt ) # append list of 600 paths to images for Dt
+        # returns meta_set_as_paths = [Path_Dt]^64_t=1 where |D_t| = 600
 
-        ## Generate list of dataloaders for each task so we can sample k_shot, k_eval examples for that specific task (so this lo)
-        # self.episode_loader = [data.DataLoader( ClassDataset(images=images[idx], label=idx, transform=transform), batch_size=k_shot+k_eval, shuffle=True, num_workers=0) for idx, _ in enumerate(self.labels)]
+        ## Generate list of dataloaders for each Class-data set of size 600. With the dataloader for each class Dataset we can sample a N-way K-shot task of size N*K
         self.episode_loader = []
         for idx, _ in enumerate(self.labels):
             ##
-            # wrap each task D_t ~ p(x,y|t) in a ClassDataset
+            # wrap each task D_t in a class Dataset
             label = idx # get class/label for current task e.g. out of 64 tasks idx \in [0,...,63]
-            path_to_task_imgs = images[idx] # list for 600 images for the current task
+            path_to_task_imgs = meta_set_as_paths[idx] # list for 600 images for the current task
             Dt_classdataset = ClassDataset(images=path_to_task_imgs, label=label, transform=transform) # task D_t
-            # wrap dataset so we can sample k_shot, k_eval examples to form the Support and Query set. Note: |S_t| = k_shot, |Q_t| = k_eval
+            # 
             nb_examples_for_S_Q = k_shot+k_eval
-            Dt_taskloader = data.DataLoader(Dt_classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
+            Dt_class_loader = data.DataLoader(Dt_classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
             self.episode_loader.append(Dt_taskloader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
         ## at the end of this loop episode_loader has a list of dataloader's for each task
         ## e.g. approximately episode_loader = {D_t}^64_t=1 and we can sample S_t,Q_t ~ D_t just like we'd do S_t,Q_t ~ p(x,y|t)
@@ -207,12 +171,6 @@ class MetaSet_Dataset(data.Dataset):
         return len(self.labels) # e.g. 64 for mini-Imagenet's meta-train-set 
 
 class ClassDataset(data.Dataset):
-    '''
-    Class that holds D_t i.e. approximation to the task distribution p(x,y|t) using the 600 examples.
-    Class that holds all the images for a specific class/task. So it has the 600 (paths) to the images for each task/class/label.
-    It remembers the index for the current task in the label field.
-    It remembers the list to all the paths of the 600 images.
-    '''
 
     def __init__(self, images, label, transform=None):
         """Args:
@@ -224,11 +182,9 @@ class ClassDataset(data.Dataset):
         self.transform = transform
 
     def __getitem__(self, idx):
-        """Returns a single example from an approximation to the task distribution p(x,y|t).
-        Precisely, it returns (x,y)~D_t where D_t can is of size 600 for mini-imagenet
-
+        """
         Args:
-            idx ([int]): an index from D_t (approximating sampling from p(x,y|t) ) e.g. 261
+            idx ([int]): an index from D_t e.g. 261
 
         Returns:
             [tensor, int]: single example (x,y) where y is an int.
@@ -237,20 +193,17 @@ class ClassDataset(data.Dataset):
         image = PILI.open(self.images[idx]).convert('RGB')
         if self.transform is not None:
             image = self.transform(image)
-        # return 1 data sample x, y ~ D_t (approximating x,y ~ p(x,y|t) since D_t is of e.g. size 600)
-        return image, self.label # real image and it's int label e.g. [3, 84, 84] and int e.g. 37
+        return image, self.label 
 
     def __len__(self):
-        """Length of D_t, the data-set approximating the (current) task distribution p(x,y|t).
-        Note: D_t ~~ p(x,y|t) approximately
-
+        """ 
         Returns:
             [int]: number of images x in D_t
         """
         return len(self.images) # e.g. 600
 
 class EpisodicSampler(data.Sampler):
-    """ For each episode, sampler a batch of tasks. {t_i}^M_m where t_i is an idx for the task sampled.
+    """
 
     Comments:
         Meant to be passed to batch_sampler when creating a data_loader.
@@ -271,8 +224,6 @@ class EpisodicSampler(data.Sampler):
 
     def __iter__(self):
         """Returns/yields a batch of indices representing the batch of tasks.
-        If it's the meta-train set with 64 labels and it's and N-way K-shot learning, it returns a list of length N (e.g. 5) with integers ranging in the range 0-63.
-        Note, that for more general, this could sample M # of tasks if that's how it's set up for each episode (and have a different number of classes) i.e. N != M in general.
 
         Yields:
             [list of ints]: yields a batch of tasks (class indicies) represented as a list of integers in the range(0,N_meta-set). Usually of size N e.g. 5 for 5-way.
@@ -368,59 +319,13 @@ def get_args_for_mini_imagenet():
     args.criterion = nn.CrossEntropyLoss()
     return args
 
-def test_episodic_loader_inner_loop_per_task(debug_test=True):
-    import automl.child_models.learner_from_opt_as_few_shot_paper as learner_from_opt_as_few_shot_paper
-    import higher
-    
-    ## get args for test
-    args = get_args_for_mini_imagenet()
-    ## get base model that meta-lstm/maml
-    base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_classes=args.n_classes).to(args.device)
-    ## get meta-sets
-    metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
-    ## start episodic training
-    meta_params = base_model.parameters()
-    outer_opt = optim.Adam(meta_params, lr=1e-3)
-    base_model.train()
-    # sample a joint set SQ of k_shot+k_eval examples
-    for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader):
-        ## Sample the support S & query Q data e.g. S = {S_t}^N_t, Q = {Q_t}^N_t
-        S_x, S_y, Q_x, Q_y = get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y)
-        ## Get Inner Optimizer (for maml)
-        inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
-        nb_tasks = S_x.size(0) # extract N (=M) tasks note: torch.Size([N, k_shot+k_eval, C, H, W])
-        with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
-            meta_loss = 0 # computes 1/M \sum^M_t L(A(\theta,S_t), Q_t)
-            for t in range(nb_tasks):
-                ## Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
-                # sample current task s.t. support data is aligned with corresponding query data
-                Sx_t, Sy_t, Qx_t, Qy_t = S_x[t,:,:,:], S_y[t,:], Q_x[t,:,:,:], Q_y[t,:]
-                # Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
-                # note that we could train here in batches from S_t but since S_t is so small k_shot (1 or 5) for each class/task t \in [N], we use the whole thing
-                for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small  5)
-                    fmodel.train()
-                    # base/child model forward pass
-                    S_logits_t = fmodel(Sx_t) 
-                    inner_loss = args.criterion(S_logits_t, Sy_t)
-                    # inner-opt update
-                    diffopt.step(inner_loss)
-                ## Evaluate on query set for current task
-                qrt_logits_t = fmodel(Qx_t)
-                meta_loss += args.criterion(qrt_logits_t, Qy_t)
-            meta_loss = meta_loss / nb_tasks
-        print(f'[episode={episode}] base_model.model.features.conv1.weight.grad = {base_model.model.features.conv1.weight.grad}')
-        meta_loss.backward()
-        outer_opt.step()
-        outer_opt.zero_grad()
-        print(f'[episode={episode}] meta_loss = {meta_loss}')
-
 def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
     import automl.child_models.learner_from_opt_as_few_shot_paper as learner_from_opt_as_few_shot_paper
     import higher
     
     ## get args for test
     args = get_args_for_mini_imagenet()
-    ## get base model that meta-lstm/maml    
+    ## get base model that meta-lstm/maml use
     base_model = learner_from_opt_as_few_shot_paper.Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_classes=args.n_classes).to(args.device)
     ## get meta-sets
     metatrainset_loader, metavalset_loader, metatestset_loader = prepare_data_for_few_shot_learning(args)
@@ -428,21 +333,15 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
     meta_params = base_model.parameters()
     outer_opt = optim.Adam(meta_params, lr=1e-2)
     base_model.train()
-    # sample a joint set SQ of k_shot+k_eval examples
     for episode, (SQ_x, SQ_y) in enumerate(metatrainset_loader):
-        ## Sample the support S & query Q data e.g. S = {S_t}^N_t, Q = {Q_t}^N_t
         S_x, S_y, Q_x, Q_y = get_support_query_batch_of_tasks_class_is_task_M_eq_N(args, SQ_x, SQ_y)
         ## Get Inner Optimizer (for maml)
         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
-        nb_tasks = S_x.size(0) # extract N (=M) tasks note: torch.Size([N, k_shot+k_eval, C, H, W])
+        nb_tasks = S_x.size(0) 
         with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=False, track_higher_grads=False) as (fmodel, diffopt):
-            meta_losses = [] # computes 1/M \sum^M_t L(A(\theta,S_t), Q_t)
+            meta_losses = [] 
             for t in range(nb_tasks):
-                ## Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
-                # sample current task s.t. support data is aligned with corresponding query data
                 Sx_t, Sy_t, Qx_t, Qy_t = S_x[t,:,:,:], S_y[t,:], Q_x[t,:,:,:], Q_y[t,:]
-                # Inner-Adaptation Loop for the current task i.e. \theta^<i_inner+1> := \theta^<t_Outer,T> - eta_inner * \grad _{\theta} L(\theta^{<t_Outer,t_inner>},S_t)
-                # note that we could train here in batches from S_t but since S_t is so small k_shot (1 or 5) for each class/task t \in [N], we use the whole thing
                 for i_inner in range(args.nb_inner_train_steps): # this current version implements full gradient descent on k_shot examples (which is usually small  5)
                     fmodel.train()
                     # base/child model forward pass
@@ -462,5 +361,4 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
         print(f'[episode={episode}] meta_loss = {sum(meta_losses)}')
 
 if __name__ == "__main__":
-    #test_episodic_loader_inner_loop_per_task()
     test_episodic_loader_inner_loop_per_task_good_accumulator()
