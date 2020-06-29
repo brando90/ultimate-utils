@@ -139,9 +139,7 @@ class MetaSet_Dataset(data.Dataset):
             # 
             nb_examples_for_S_Q = k_shot+k_eval
             Dt_class_loader = data.DataLoader(Dt_classdataset, batch_size=nb_examples_for_S_Q, shuffle=True, num_workers=0) # data loader for the current task D_t for class/label t
-            self.episode_loader.append(Dt_taskloader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
-        ## at the end of this loop episode_loader has a list of dataloader's for each task
-        ## e.g. approximately episode_loader = {D_t}^64_t=1 and we can sample S_t,Q_t ~ D_t just like we'd do S_t,Q_t ~ p(x,y|t)
+            self.episode_loader.append(Dt_class_loader) # collect all tasks so this is size e.g. 64 or 16 or 20 for each meta-set
         print(f'len(self.episode_loader) = {len(self.episode_loader)}') # e.g. this list is of size 64 for meta-train-set (or 16, 20 meta-val, meta-test)
 
     def __getitem__(self, idx):
@@ -268,19 +266,22 @@ def prepare_data_for_few_shot_learning(args):
                 saturation=0.4,
                 hue=0.2),
             transforms.ToTensor(),
-            normalize]))
+            normalize])
+            )
     metavalset = MetaSet_Dataset(args.data_root, 'val', args.k_shot, args.k_eval,
         transform=transforms.Compose([
             transforms.Resize(args.image_size * 8 // 7),
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
-            normalize]))
+            normalize])
+            )
     metatestset = MetaSet_Dataset(args.data_root, 'test', args.k_shot, args.k_eval,
         transform=transforms.Compose([
             transforms.Resize(args.image_size * 8 // 7),
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
-            normalize]))
+            normalize])
+            )
     ## Get episodic samplers. They sampler task (indices) according to args.n_classes for args.episodes episodes. e.g. samples 5 tasks (idx) for 60K episodes.
     episode_sampler_metatrainset = EpisodicSampler(len(metatrainset), args.n_classes, args.episodes)
     episode_sampler_metavalset = EpisodicSampler(len(metavalset), args.n_classes, args.episodes_val)
