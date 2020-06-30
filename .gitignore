@@ -4,7 +4,6 @@
 omniglot_resized
 data/
 .data/
-miniImagenet*
 
 #condor
 *.stderr
