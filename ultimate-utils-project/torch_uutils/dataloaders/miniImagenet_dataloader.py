@@ -243,9 +243,9 @@ def get_meta_set_loaders_miniImagenet(args):
     meta_test_set = MetaSet(args.data_root, 'test', args.k_shot, args.k_eval, transform_test_images)
 
     ## get loaders for the meta-sets
-    meta_train_loader = get_meta_set_loader(meta_train_set, args.episodes, args.meta_batch_size_train, args.n_classes, args.k_shot, args.k_eval)
-    meta_val_loader = get_meta_set_loader(meta_val_set, args.episodes_val, args.meta_batch_size_eval, args.n_classes, args.k_shot, args.k_eval)
-    meta_test_loader = get_meta_set_loader(meta_test_set, args.episodes_test, args.meta_batch_size_eval, args.n_classes, args.k_shot, args.k_eval)
+    meta_train_loader = get_meta_set_loader(meta_train_set, args.meta_batch_size_train, args.episodes, args.n_classes, args.k_shot, args.k_eval)
+    meta_val_loader = get_meta_set_loader(meta_val_set, args.meta_batch_size_eval, args.episodes_val, args.n_classes, args.k_shot, args.k_eval)
+    meta_test_loader = get_meta_set_loader(meta_test_set, args.meta_batch_size_eval, args.episodes_test, args.n_classes, args.k_shot, args.k_eval)
     
     return meta_train_loader, meta_val_loader, meta_test_loader
 
@@ -305,11 +305,14 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
     outer_opt = optim.Adam(meta_params, lr=1e-2)
     base_model.train()
     for episode, (spt_x, spt_y, qry_x, qry_y) in enumerate(meta_train_loader):
+        assert(spt_x.size(1) == args.k_shot*args.n_classes)
+        assert(qry_x.size(1) == args.k_eval*args.n_classes)
         ## Get Inner Optimizer (for maml)
         inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
         ## Accumulate gradient of meta-loss wrt fmodel.param(t=0)
-        nb_tasks = spt_x.size(0) # extract N tasks. Note M=N
+        nb_tasks = spt_x.size(0)
         meta_losses, meta_accs = [], []
+        assert(nb_tasks == args.meta_batch_size_train)
         for t in range(nb_tasks):
             ## Get supprt & query set for the current task
             spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
@@ -330,11 +333,10 @@ def test_episodic_loader_inner_loop_per_task_good_accumulator(debug_test=True):
             qry_loss_t.backward() # note this is memory efficient
             ## collect losses & accs for logging/debugging
             meta_losses.append(qry_loss_t.detach()) # remove history so it be memory efficient and able to print stats
-            #print(f'qry_loss_t = {qry_loss_t}')
         ## do outer step
         outer_opt.step()
         outer_opt.zero_grad()
-        print(f'[episode={episode}] meta_loss = {sum(meta_losses)}')
+        print(f'[episode={episode}] meta_loss = {sum(meta_losses)/len(meta_losses)}')
 
 if __name__ == "__main__": 
     import time
