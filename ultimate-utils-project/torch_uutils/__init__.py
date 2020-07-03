@@ -251,14 +251,14 @@ def save_ckpt_meta_learning(args, meta_learner, debug=False):
     db = {} # database dict
     tb = args.tb
     args.tb = None
-    args.child_model = "no child mdl in args see meta_learner" # so that we don't save the child model so many times since it's part of the meta-learner
+    args.base_model = "no child mdl in args see meta_learner" # so that we don't save the child model so many times since it's part of the meta-learner
     db['args'] = args # note this obj has the last episode/outer_i we ran
     db['meta_learner'] = meta_learner
     with open(ckpt_path_plus_path , 'wb+') as db_file:
         pickle.dump(db, db_file)
     if debug:
         test_ckpt_meta_learning(args, meta_learner, debug)
-    args.child_model = meta_learner.child_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
+    args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
     args.tb = tb
     ## Save meta-learner & child-model
     # torch.save({
@@ -274,9 +274,9 @@ def resume_ckpt_meta_learning(args):
         db = pickle.load(db_file)
         args_recovered = db['args']
         meta_learner = db['meta_learner']
-        args_recovered.child_model = meta_learner.child_model
+        args_recovered.base_model = meta_learner.base_model
         ## combine new args with old args
-        args.child_model = "no child mdl in args see meta_learner"
+        args.base_model = "no child mdl in args see meta_learner"
         args = args_recovered
         return args, meta_learner
 
@@ -287,9 +287,9 @@ def test_ckpt_meta_learning(args, meta_learner, verbose=False):
 
     ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
     db = {} # database dict
-    args.child_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
+    args.base_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
     db['args'] = args # note this obj has the last episode/outer_i we ran
-    args.child_model = meta_learner.child_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
+    args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
     db['meta_learner'] = meta_learner
     with open(ckpt_path_plus_path , 'wb+') as db_file:
         dumped_outer_i = args.outer_i

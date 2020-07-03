@@ -11,7 +11,7 @@ setup(
     license='MIT',
     packages=find_packages(), # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
     install_requires=['torch','numpy','scikit-learn','scipy','matplotlib','pyyml','torchviz','tensorboard',
-    'graphviz','torchvision','matplotlib','dill','requests']
+    'graphviz','torchvision','matplotlib','dill','requests','jupyter','torchmeta']
 )
 
 #install_requires=['numpy>=1.11.0']

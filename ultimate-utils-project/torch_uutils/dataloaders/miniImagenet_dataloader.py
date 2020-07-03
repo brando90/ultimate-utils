@@ -1,8 +1,3 @@
-"""
-
-
-"""
-
 from __future__ import division, print_function, absolute_import
 
 import os
@@ -28,7 +23,7 @@ from types import SimpleNamespace
 
 from tqdm import tqdm
 
-class MetaSet(data.Dataset):
+class MiniImagenet(data.Dataset):
 
     def __init__(self, root, phase='train', k_shot=5, k_eval=15, transform=None):
         ## Locate meta-set & tasl labels/idx i.e. get root to data-sets D_t for each task
@@ -65,7 +60,7 @@ class MetaSet(data.Dataset):
         return Dt
 
     def __len__(self):
-        """ Returns the number of data set in D_t.
+        """ Returns the number of classes.
 
         Returns:
             [int]: number of tasks e.g. 64 for mini-Imagenet's meta-train-set
@@ -120,7 +115,7 @@ class EpisodicSampler(data.Sampler):
         for episode in range(self.n_episodes):
             # return all classes so we can create M batches of N-way,K-shot tasks in the collate function
             # the yield acts like a state machine keeping track of which episode we are on
-            yield range(self.n_episodes)
+            yield range(self.total_classes)
 
     def __len__(self):
         """Returns the number of episodes.
@@ -132,7 +127,7 @@ class EpisodicSampler(data.Sampler):
 
 class GetMetaBatch_NK_WayClassTask:
 
-    def __init__(self, meta_batch_size, n_classes, k_shot, k_eval, shuffle=True, pin_memory=True, original=False, flatten=True):
+    def __init__(self, meta_batch_size, n_classes, k_shot, k_eval, shuffle=True, pin_memory=False, original=False, flatten=True):
         self.meta_batch_size = meta_batch_size
         self.n_classes = n_classes
         self.k_shot = k_shot
@@ -187,14 +182,14 @@ class GetMetaBatch_NK_WayClassTask:
         batch_spt_x, batch_spt_y, batch_qry_x, batch_qry_y = torch.stack(batch_spt_x), torch.stack(batch_spt_y), torch.stack(batch_qry_x), torch.stack(batch_qry_y)
         return batch_spt_x, batch_spt_y, batch_qry_x, batch_qry_y
 
-def get_meta_set_loader(meta_set, meta_batch_size, n_episodes, n_classes, k_shot, k_eval, pin_mem=True, n_workers=4):
+def get_meta_set_loader(meta_set, meta_batch_size, n_episodes, n_classes, k_shot, k_eval, pin_memory=False, n_workers=4):
     """[summary]
 
     Args:
         meta_set ([type]): the meta-set
         meta_batch_size ([type]): [description]
         n_classes ([type]): [description]
-        pin_mem (bool, optional): [Since returning cuda tensors in dataloaders is not recommended due to cuda subties with multithreading, instead set pin=True for fast transfering of the data to cuda]. Defaults to True.
+        pin_memory (bool, optional): [Since returning cuda tensors in dataloaders is not recommended due to cuda subties with multithreading, instead set pin=True for fast transfering of the data to cuda]. Defaults to True.
         n_workers (int, optional): [description]. Defaults to 4.
 
     Returns:
@@ -207,7 +202,7 @@ def get_meta_set_loader(meta_set, meta_batch_size, n_episodes, n_classes, k_shot
     episodic_metaloader = data.DataLoader(
         meta_set, 
         num_workers=n_workers, 
-        pin_memory=pin_mem, # to make moving to cuda more efficient
+        pin_memory=pin_memory, # to make moving to cuda more efficient
         collate_fn=collator_nk_way, # does the collecting to return M N,K-shot task
         batch_sampler=episodic_sampler # for keeping track of the episode
         )
@@ -238,14 +233,14 @@ def get_meta_set_loaders_miniImagenet(args):
             normalize])
 
     ## get meta-loaders
-    meta_train_set = MetaSet(args.data_root, 'train', args.k_shot, args.k_eval, transform_train_images)
-    meta_val_set = MetaSet(args.data_root, 'val', args.k_shot, args.k_eval, transform_val_images)
-    meta_test_set = MetaSet(args.data_root, 'test', args.k_shot, args.k_eval, transform_test_images)
+    meta_train_set = MiniImagenet(args.data_root, 'train', args.k_shot, args.k_eval, transform_train_images)
+    meta_val_set = MiniImagenet(args.data_root, 'val', args.k_shot, args.k_eval, transform_val_images)
+    meta_test_set = MiniImagenet(args.data_root, 'test', args.k_shot, args.k_eval, transform_test_images)
 
     ## get loaders for the meta-sets
-    meta_train_loader = get_meta_set_loader(meta_train_set, args.meta_batch_size_train, args.episodes, args.n_classes, args.k_shot, args.k_eval)
-    meta_val_loader = get_meta_set_loader(meta_val_set, args.meta_batch_size_eval, args.episodes_val, args.n_classes, args.k_shot, args.k_eval)
-    meta_test_loader = get_meta_set_loader(meta_test_set, args.meta_batch_size_eval, args.episodes_test, args.n_classes, args.k_shot, args.k_eval)
+    meta_train_loader = get_meta_set_loader(meta_train_set, args.meta_batch_size_train, args.episodes, args.n_classes, args.k_shot, args.k_eval, pin_memory=args.pin_memory)
+    meta_val_loader = get_meta_set_loader(meta_val_set, args.meta_batch_size_eval, args.episodes_val, args.n_classes, args.k_shot, args.k_eval, pin_memory=args.pin_memory)
+    meta_test_loader = get_meta_set_loader(meta_test_set, args.meta_batch_size_eval, args.episodes_test, args.n_classes, args.k_shot, args.k_eval, pin_memory=args.pin_memory)
     
     return meta_train_loader, meta_val_loader, meta_test_loader
 
@@ -260,7 +255,7 @@ def get_args_for_mini_imagenet():
     args.n_workers = 4
     # If True, the data loader will copy Tensors into CUDA pinned memory before returning them. 
     # If your data elements are a custom type, or your collate_fn returns a batch that is a custom type, see the example below.
-    args.pin_mem = True # it is generally not recommended to return CUDA tensors in multi-process loading because of many subtleties in using CUDA and sharing CUDA tensors in multiprocessing (see CUDA in multiprocessing). Instead, we recommend using automatic memory pinning (i.e., setting pin_memory=True), which enables fast data transfer to CUDA-enabled GPUs. https://pytorch.org/docs/stable/data.html
+    args.pin_memory = False # it is generally not recommended to return CUDA tensors in multi-process loading because of many subtleties in using CUDA and sharing CUDA tensors in multiprocessing (see CUDA in multiprocessing). Instead, we recommend using automatic memory pinning (i.e., setting pin_memory=True), which enables fast data transfer to CUDA-enabled GPUs. https://pytorch.org/docs/stable/data.html
     ##
     args.k_shot = 5
     args.k_eval = 15
@@ -279,7 +274,6 @@ def get_args_for_mini_imagenet():
     ##
     args.bn_momentum = 0.95
     args.bn_eps = 1e-3
-    args.base_model = Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_classes)
     ##
     args.criterion = nn.CrossEntropyLoss()
     return args
