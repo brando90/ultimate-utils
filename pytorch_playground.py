@@ -466,6 +466,45 @@ def copy_initial_weights_playground():
     print()
     print('Side-by-side meta_loss_gradient_approximation and gradient computed by `higher` lib: {0:.4} VS {1:.4}'.format(meta_loss_gradient_approximation, final_meta_gradient))
 
+def tqdm_torchmeta():
+    from torchvision.transforms import Compose, Resize, ToTensor
+
+    import torchmeta
+    from torchmeta.datasets.helpers import miniimagenet
+
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from tqdm import tqdm
+
+    ## get args
+    args = SimpleNamespace(episodes=5,n_classes=5,k_shot=5,k_eval=15,meta_batch_size=1,n_workers=4)
+    args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
+
+    ## get meta-batch loader
+    train_transform = Compose([Resize(84), ToTensor()])
+    dataset = miniimagenet( 
+        args.data_root, 
+        ways=args.n_classes, 
+        shots=args.k_shot, 
+        test_shots=args.k_eval,
+        meta_split='train',
+        download=False)
+    dataloader = torchmeta.utils.data.BatchMetaDataLoader(
+        dataset, 
+        batch_size=args.meta_batch_size,
+        num_workers=args.n_workers)
+
+    with tqdm(dataset):
+        print(f'len(dataloader)= {len(dataloader)}')
+        for episode, batch in enumerate(dataloader):
+            print(f'episode = {episode}') 
+            train_inputs, train_labels = batch["train"]
+            print(f'train_labels[0] = {train_labels[0]}')
+            print(f'train_inputs.size() = {train_inputs.size()}')
+            pass
+            if episode >= args.episodes:
+                break
 
 if __name__ == "__main__":
     start = time.time()
@@ -483,7 +522,8 @@ if __name__ == "__main__":
     #clone_playground()
     #inplace_playground()
     #clone_vs_deepcopy()
-    copy_initial_weights_playground()
+    #copy_initial_weights_playground()
+    tqdm_torchmeta()
     print('--> DONE')
     time_passed_msg, _, _, _ = report_times(start)
     print(f'--> {time_passed_msg}')
