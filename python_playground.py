@@ -6,7 +6,7 @@
 
 import sys
 
-print(sys.version)
+print(sys.version) ##
 print(sys.path)
 
 def helloworld():
@@ -384,16 +384,29 @@ def sys_path():
     for path in sys.path:
         print(path)
 
+def pycharm_playground():
+    import tqdm
+
+    print('running pycharm playground...')
+
+    b = 0
+    print(b)
+    print('Intermediate print line')
+    print(b)
+    print(b)
+    print('Done!')
+
 if __name__ == '__main__':
-    print()
     #union_dicts()
     #get_stdout()
     #logger()
     #logger_SO_print_and_write_to_my_stdout()
     #logging_basic()
     #logging_to_file()
+    #logging_to_file()
     #logging_to_file_INFO_LEVEL()
     #logging_example_from_youtube()
     #logging_unset_level()
-    import_utils_test()
-    print('\n---> DONE\a\n\n')
+    #import_utils_test()
+    pycharm_playground()
+    print('\n---> DONE\a\n\n') ## HIii
