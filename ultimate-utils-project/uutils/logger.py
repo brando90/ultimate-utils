@@ -27,7 +27,7 @@ class Logger:
         """
         #super()
         self.args = args
-        self.mode = args.mode
+        self.split = args.split
         self.current_logs_path = args.current_logs_path
         
         # logger = logging.getLogger(__name__) # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
@@ -110,22 +110,21 @@ class Logger:
         raise('Not implemented')
 
     def save_final_plots(
-        self, 
-        title,
-        x_axis,
-        y_axis_loss,
-        y_axis_acc,
+            self,
+            title,
+            x_axis,
+            y_axis_loss,
+            y_axis_acc,
 
-        nb_plots=1, 
-        mode=None, 
-        current_logs_path=None, 
-        xkcd=False, 
-        grid=True, 
-        show=False
-        ):
+            nb_plots=1,
+            split=None,
+            current_logs_path=None,
+            xkcd=False,
+            grid=True,
+            show=False):
         plt.xkcd() if xkcd else None
-        ## Initialize where to save and what the mode of the experiment is
-        mode = self.mode if mode is None else mode
+        ## Initialize where to save and what the split of the experiment is
+        split = self.split if split is None else split
         current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
 
         ## https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
@@ -133,8 +132,8 @@ class Logger:
 
         plt.style.use('default')
 
-        if mode == 'meta-train':
-            eval_label = 'Val' # in train mode the evaluation of the model should  meta-val set
+        if split == 'meta-train':
+            eval_label = 'Val' # in train split the evaluation of the model should  meta-val set
         else:
             eval_label = 'Test'
         
