@@ -104,12 +104,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_logger(log_path, log_filename):
+def get_logger(name, log_path, log_filename, rank=0):
     """
         Initializes and returns a standard logger
     """
-    logger = logging.getLogger()
+    logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
+    if rank != 0:
+        return logger
     # Setup file & console handler
     file_handler = logging.FileHandler(os.path.join(log_path, log_filename + ".log"))
     file_handler.setLevel(logging.DEBUG)
