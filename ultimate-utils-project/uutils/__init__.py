@@ -48,10 +48,10 @@ def parse_args():
         "--exp-dir", type=str, help="directory for the experiment results"
     )
     parser.add_argument(
-        "--num-classes", help="number of classes in dataset", metavar="N"
+        "--num-classes", type=int, help="number of classes in dataset", metavar="N"
     )
     parser.add_argument(
-        "--seed", help="seed for deterministic experimenting", default=61820
+        "--seed", type=int, help="seed for deterministic experimenting", default=61820
     )
     parser.add_argument(
         "--epochs", type=int, help="number of epochs of training", metavar="E"
@@ -104,12 +104,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_logger(log_path, log_filename):
+def get_logger(name, log_path, log_filename, rank=0):
     """
         Initializes and returns a standard logger
     """
-    logger = logging.getLogger()
+    logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
+    if rank != 0:
+        return logger
     # Setup file & console handler
     file_handler = logging.FileHandler(os.path.join(log_path, log_filename + ".log"))
     file_handler.setLevel(logging.DEBUG)
@@ -117,7 +119,7 @@ def get_logger(log_path, log_filename):
     console_handler.setLevel(logging.DEBUG)
     # Create formatter
     formatter = logging.Formatter(
-        "%(asctime)s - %(level)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
