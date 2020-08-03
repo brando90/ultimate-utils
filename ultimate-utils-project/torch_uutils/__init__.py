@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 import numpy as np
+import scipy.integrate as integrate
 
 from collections import OrderedDict
 
@@ -21,7 +22,6 @@ from pathlib import Path
 
 import copy
 
-from pdb import set_trace as st
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -153,7 +153,7 @@ def check_two_models_equal(model1, model2):
     https://discuss.pytorch.org/t/check-if-models-have-same-weights/4351
     '''
     for p1, p2 in zip(model1.parameters(), model2.parameters()):
-        #if p1.data.ne(p2.data).sum() > 0:
+        # if p1.data.ne(p2.data).sum() > 0:
         if (p1 != p2).any():
             return False
     return True
@@ -164,9 +164,6 @@ def are_all_params_leafs(mdl):
         all_leafs = all_leafs and w.is_leaf
     return all_leafs
 
-def change_params_leaf_flag_to(bool):
-    for (name, w) in mdl.named_parameters():
-        w.is_leaf = False
 
 def accuracy(output, target, topk=(1,)):
     # TODO: compare to my acc function, which one to use
@@ -433,6 +430,22 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     # usually in meta-lstm x is n_learner_params so this forms a tensor of size [n_learnaer_params, 2]
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
+
+def functional_diff_norm(f1, f2, lb, ub, p=2):
+    """
+    Computes norm:
+
+    ||f||_p = (int_S |f|^p dmu)^1/p
+
+    https://en.wikipedia.org/wiki/Lp_space
+
+    https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
+    """
+    norm = integrate.quad(lambda x: (f1(x) - f2(x))**p, lb, ub)
+    return norm
+
+def test():
+    print()
 
 if __name__ == '__main__':
     pass
