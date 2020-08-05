@@ -164,43 +164,26 @@ def are_all_params_leafs(mdl):
         all_leafs = all_leafs and w.is_leaf
     return all_leafs
 
+def calc_error(mdl, X, Y):
+    train_acc = calc_accuracy(mdl, X, Y)
+    train_err = 1.0 - train_acc
+    return train_err
 
-def accuracy(output, target, topk=(1,)):
-    # TODO: compare to my acc function, which one to use
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res[0].item() if len(res) == 1 else [r.item() for r in res]
-
-def calc_accuracy(mdl,X,Y):
+def calc_accuracy(mdl, X, Y):
     """Calculates model accuracy
-    
+
     Arguments:
         mdl {nn.model} -- nn model
         X {torch.Tensor} -- input data
         Y {torch.Tensor} -- labels/target values
-    
+
     Returns:
         [torch.Tensor] -- accuracy
     """
-    max_vals, max_indices = torch.max(mdl(X),1)
-    n = max_indices.size(0) #index 0 for extracting the # of elements
-    train_acc = (max_indices == Y).sum(dtype=torch.float32)/n
-    return train_acc.to(device)
-
-def calc_error(mdl,X,Y):
-    train_acc = calc_accuracy(mdl,X,Y)
-    train_err = 1.0 - train_acc
-    return train_err
+    max_vals, max_indices = torch.max(mdl(X), 1)
+    n = max_indices.size(0)  # index 0 for extracting the # of elements
+    train_acc = (max_indices == Y).sum().item() / n
+    return train_acc
 
 def get_stats(flatten_tensor):
     """Get some stats from tensor.
@@ -441,7 +424,8 @@ def functional_diff_norm(f1, f2, lb, ub, p=2):
 
     https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
     """
-    norm = integrate.quad(lambda x: (f1(x) - f2(x))**p, lb, ub)
+    # index is there since it also returns acc/err
+    norm = integrate.quad(lambda x: abs(f1(x) - f2(x))**p, lb, ub)[0]**(1/p)
     return norm
 
 def test():
