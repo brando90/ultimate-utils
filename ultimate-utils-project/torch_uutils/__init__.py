@@ -165,25 +165,20 @@ def are_all_params_leafs(mdl):
     return all_leafs
 
 def calc_error(mdl, X, Y):
+    # acc == (true != mdl(x).max(1).item() / true.size(0)
     train_acc = calc_accuracy(mdl, X, Y)
     train_err = 1.0 - train_acc
     return train_err
 
 def calc_accuracy(mdl, X, Y):
-    """Calculates model accuracy
-
-    Arguments:
-        mdl {nn.model} -- nn model
-        X {torch.Tensor} -- input data
-        Y {torch.Tensor} -- labels/target values
-
-    Returns:
-        [torch.Tensor] -- accuracy
-    """
-    max_vals, max_indices = torch.max(mdl(X), 1)
-    n = max_indices.size(0)  # index 0 for extracting the # of elements
-    train_acc = (max_indices == Y).sum().item() / n
-    return train_acc
+    # reduce/collapse the classification dimension according to max op (most likely label according to model)
+    # resulting in most likely label
+    max_vals, max_indices = mdl(X).max(1)
+    # assumes the 0th dimension is batch size
+    n = max_indices.size(0)
+    # calulate acc (note .item() to do float division)
+    acc = (max_indices == Y).sum().item() / n
+    return acc
 
 def get_stats(flatten_tensor):
     """Get some stats from tensor.
