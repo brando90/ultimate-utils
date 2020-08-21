@@ -133,7 +133,7 @@ class Logger:
         plt.style.use('default')
 
         if split == 'meta-train':
-            eval_label = 'Val' # in train split the evaluation of the model should  meta-val set
+            eval_label = 'Val'  # in train split the evaluation of the model should  meta-val set
         else:
             eval_label = 'Test'
         
