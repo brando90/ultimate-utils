@@ -1640,44 +1640,44 @@ print(x)
 
 #%%
 
-    from torchvision.transforms import Compose, Resize, ToTensor
+from torchvision.transforms import Compose, Resize, ToTensor
 
-    import torchmeta
-    from torchmeta.datasets.helpers import miniimagenet
+import torchmeta
+from torchmeta.datasets.helpers import miniimagenet
 
-    from pathlib import Path
-    from types import SimpleNamespace
+from pathlib import Path
+from types import SimpleNamespace
 
-    from tqdm import tqdm
+from tqdm import tqdm
 
-    ## get args
-    args = SimpleNamespace(episodes=5,n_classes=5,k_shot=5,k_eval=15,meta_batch_size=1,n_workers=4)
-    args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
+## get args
+args = SimpleNamespace(episodes=5,n_classes=5,k_shot=5,k_eval=15,meta_batch_size=1,n_workers=4)
+args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
 
-    ## get meta-batch loader
-    train_transform = Compose([Resize(84), ToTensor()])
-    dataset = miniimagenet(
-        args.data_root,
-        ways=args.n_classes,
-        shots=args.k_shot,
-        test_shots=args.k_eval,
-        meta_split='train',
-        download=False)
-    dataloader = torchmeta.utils.data.BatchMetaDataLoader(
-        dataset,
-        batch_size=args.meta_batch_size,
-        num_workers=args.n_workers)
+## get meta-batch loader
+train_transform = Compose([Resize(84), ToTensor()])
+dataset = miniimagenet(
+    args.data_root,
+    ways=args.n_classes,
+    shots=args.k_shot,
+    test_shots=args.k_eval,
+    meta_split='train',
+    download=False)
+dataloader = torchmeta.utils.data.BatchMetaDataLoader(
+    dataset,
+    batch_size=args.meta_batch_size,
+    num_workers=args.n_workers)
 
-    with tqdm(dataset):
-        print(f'len(dataloader)= {len(dataloader)}')
-        for episode, batch in enumerate(dataloader):
-            print(f'episode = {episode}')
-            train_inputs, train_labels = batch["train"]
-            print(f'train_labels[0] = {train_labels[0]}')
-            print(f'train_inputs.size() = {train_inputs.size()}')
-            pass
-            if episode >= args.episodes:
-                break
+with tqdm(dataset):
+    print(f'len(dataloader)= {len(dataloader)}')
+    for episode, batch in enumerate(dataloader):
+        print(f'episode = {episode}')
+        train_inputs, train_labels = batch["train"]
+        print(f'train_labels[0] = {train_labels[0]}')
+        print(f'train_inputs.size() = {train_inputs.size()}')
+        pass
+        if episode >= args.episodes:
+            break
 
 #%%
 
@@ -2565,7 +2565,7 @@ maml_stds = [4.039131189060566e-08,
              9.789292209743077e-08]
 
 
-#fig = plt.figure()
+# fig = plt.figure()
 fig, ax = plt.subplots(nrows=1, ncols=1)
 
 ax.set_title('MAML vs Pre-Trained embedding with Linear Regression')
@@ -2588,3 +2588,43 @@ plt.show()
 print('done \a')
 #%%
 
+# Torch-meta miniImagenet
+# loop through meta-batches of this data set, print the size, make sure it's the size you exepct
+from torchmeta.utils.data import BatchMetaDataLoader
+from torchmeta.transforms import ClassSplitter
+# from torchmeta.toy import Sinusoid
+
+from tqdm import tqdm
+
+# dataset = Sinusoid(num_samples_per_task=100, num_tasks=20)
+dataset = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_train=True, download=True)
+print(f'type(metaset_miniimagenet) = {type(dataset)}')
+print(f'len(metaset_miniimagenet) = {len(dataset)}')
+shots, test_shots = 5, 15
+# get metaset
+metaset = ClassSplitter(
+    dataset,
+    num_train_per_class=shots,
+    num_test_per_class=test_shots,
+    shuffle=True)
+# get meta-dataloader
+batch_size = 16
+num_workers = 0
+meta_dataloader = BatchMetaDataLoader(metaset, batch_size=batch_size, num_workers=num_workers)
+epochs = 2
+
+print(f'batch_size = {batch_size}')
+print(f'len(metaset) = {len(metaset)}')
+print(f'len(meta_dataloader) = {len(meta_dataloader)}\n')
+with tqdm(range(epochs)) as tepochs:
+    for epoch in tepochs:
+        print(f'\n[epoch={epoch}]')
+        for batch_idx, batch in enumerate(meta_dataloader):
+            print(f'batch_idx = {batch_idx}')
+            train_inputs, train_targets = batch['train']
+            test_inputs, test_targets = batch['test']
+            print(f'train_inputs.shape = {train_inputs.shape}')
+            print(f'train_targets.shape = {train_targets.shape}')
+            print(f'test_inputs.shape = {test_inputs.shape}')
+            print(f'test_targets.shape = {test_targets.shape}')
+            print()
