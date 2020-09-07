@@ -1,11 +1,11 @@
-#%%
+# %%
 
 # to test impots
 import sys
 
 for path in sys.path:
     print(path)
-#%%
+# %%
 
 import time
 
@@ -20,6 +20,7 @@ file_handler = logging.FileHandler('employee.log')
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
+
 
 class Employee:
     """A sample Employee class"""
@@ -38,9 +39,11 @@ class Employee:
     def fullname(self):
         return '{} {}'.format(self.first, self.last)
 
+
 emp_1 = Employee('John', 'Smith')
 emp_2 = Employee('Corey', 'Schafer')
 emp_3 = Employee('Jane', 'Doe')
+
 
 ######## END OF EMPLOYEE LOGGING EXAMPLE
 
@@ -50,39 +53,41 @@ def report_times(start, verbose=False):
 
     :param float start: the number representing start (usually time.time())
     '''
-    meta_str=''
+    meta_str = ''
     ## REPORT TIMES
     start_time = start
     seconds = (time.time() - start_time)
-    minutes = seconds/ 60
-    hours = minutes/ 60
+    minutes = seconds / 60
+    hours = minutes / 60
     if verbose:
-        print(f"--- {seconds} {'seconds '+meta_str} ---")
-        print(f"--- {minutes} {'minutes '+meta_str} ---")
-        print(f"--- {hours} {'hours '+meta_str} ---")
+        print(f"--- {seconds} {'seconds ' + meta_str} ---")
+        print(f"--- {minutes} {'minutes ' + meta_str} ---")
+        print(f"--- {hours} {'hours ' + meta_str} ---")
         print('\a')
     ##
     msg = f'time passed: hours:{hours}, minutes={minutes}, seconds={seconds}'
     return msg, seconds, minutes, hours
 
+
 def params_in_comp_graph():
     import torch
     import torch.nn as nn
     from torchviz import make_dot
-    fc0 = nn.Linear(in_features=3,out_features=1)
+    fc0 = nn.Linear(in_features=3, out_features=1)
     params = [('fc0', fc0)]
     mdl = nn.Sequential(OrderedDict(params))
 
-    x = torch.randn(1,3)
-    #x.requires_grad = True  # uncomment to put in computation graph
+    x = torch.randn(1, 3)
+    # x.requires_grad = True  # uncomment to put in computation graph
     y = torch.randn(1)
 
-    l = ( mdl(x) - y )**2
+    l = (mdl(x) - y) ** 2
 
-    #make_dot(l, params=dict(mdl.named_parameters()))
+    # make_dot(l, params=dict(mdl.named_parameters()))
     params = dict(mdl.named_parameters())
-    #params = {**params, 'x':x}
-    make_dot(l,params=params).render('data/debug/test_img_l',format='png')
+    # params = {**params, 'x':x}
+    make_dot(l, params=params).render('data/debug/test_img_l', format='png')
+
 
 def check_if_tensor_is_detached():
     a = torch.tensor([2.0], requires_grad=True)
@@ -93,16 +98,17 @@ def check_if_tensor_is_detached():
     print(a)
     print(b)
 
-    la = (5.0 - a)**2
+    la = (5.0 - a) ** 2
     la.backward()
     print(f'a.grad = {a.grad}')
 
-    lb = (6.0 - b)**2
+    lb = (6.0 - b) ** 2
     lb.backward()
     print(f'b.grad = {b.grad}')
 
+
 def deep_copy_issue():
-    params = OrderedDict( [('fc1',nn.Linear(in_features=3,out_features=1))] )
+    params = OrderedDict([('fc1', nn.Linear(in_features=3, out_features=1))])
     mdl0 = nn.Sequential(params)
     mdl1 = copy.deepcopy(mdl0)
     print(id(mdl0))
@@ -110,10 +116,11 @@ def deep_copy_issue():
     print(id(mdl1))
     print(mdl1)
     # my update
-    mdl1.fc1.weight = nn.Parameter( mdl1.fc1.weight + 1 )
+    mdl1.fc1.weight = nn.Parameter(mdl1.fc1.weight + 1)
     mdl2 = copy.deepcopy(mdl1)
     print(id(mdl2))
     print(mdl2)
+
 
 def download_mini_imagenet():
     # download mini-imagenet automatically
@@ -124,38 +131,42 @@ def download_mini_imagenet():
     from torchvision.datasets.utils import download_file_from_google_drive
 
     ## download mini-imagenet
-    #url = 'https://drive.google.com/file/d/1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
+    # url = 'https://drive.google.com/file/d/1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
     file_id = '1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
     filename = 'miniImagenet.tgz'
-    root = '~/tmp/' # dir to place downloaded file in
+    root = '~/tmp/'  # dir to place downloaded file in
     download_file_from_google_drive(file_id, root, filename)
+
 
 def extract():
     from torchvision.datasets.utils import extract_archive
     from_path = os.path.expanduser('~/Downloads/miniImagenet.tgz')
     extract_archive(from_path)
 
+
 def download_and_extract_miniImagenet(root):
     import os
     from torchvision.datasets.utils import download_file_from_google_drive, extract_archive
 
     ## download miniImagenet
-    #url = 'https://drive.google.com/file/d/1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
+    # url = 'https://drive.google.com/file/d/1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
     file_id = '1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
     filename = 'miniImagenet.tgz'
     download_file_from_google_drive(file_id, root, filename)
-    fpath = os.path.join(root, filename) # this is what download_file_from_google_drive does
+    fpath = os.path.join(root, filename)  # this is what download_file_from_google_drive does
     ## extract downloaded dataset
     from_path = os.path.expanduser(fpath)
     extract_archive(from_path)
     ## remove the zip file
     os.remove(from_path)
 
+
 def torch_concat():
     import torch
 
-    g1 = torch.randn(3,3)
-    g2 = torch.randn(3,3)
+    g1 = torch.randn(3, 3)
+    g2 = torch.randn(3, 3)
+
 
 def inner_loop1():
     n_inner_iter = 5
@@ -166,7 +177,7 @@ def inner_loop1():
     meta_opt.zero_grad()
     for i in range(task_num):
         with higher.innerloop_ctx(
-            net, inner_opt, copy_initial_weights=False
+                net, inner_opt, copy_initial_weights=False
         ) as (fnet, diffopt):
             # Optimize the likelihood of the support set by taking
             # gradient steps w.r.t. the model's parameters.
@@ -199,6 +210,7 @@ def inner_loop1():
     i = epoch + float(batch_idx) / n_train_iter
     iter_time = time.time() - start_time
 
+
 def inner_loop2():
     n_inner_iter = 5
     inner_opt = torch.optim.SGD(net.parameters(), lr=1e-1)
@@ -209,7 +221,7 @@ def inner_loop2():
     meta_loss = 0
     for i in range(task_num):
         with higher.innerloop_ctx(
-            net, inner_opt, copy_initial_weights=False
+                net, inner_opt, copy_initial_weights=False
         ) as (fnet, diffopt):
             # Optimize the likelihood of the support set by taking
             # gradient steps w.r.t. the model's parameters.
@@ -234,7 +246,7 @@ def inner_loop2():
             # Update the model's meta-parameters to optimize the query
             # losses across all of the tasks sampled in this batch.
             # This unrolls through the gradient steps.
-            #qry_loss.backward()
+            # qry_loss.backward()
             meta_loss += qry_loss
 
     qry_losses = sum(qry_losses) / task_num
@@ -244,23 +256,26 @@ def inner_loop2():
     i = epoch + float(batch_idx) / n_train_iter
     iter_time = time.time() - start_time
 
+
 def error_unexpected_way_to_by_pass_safety():
     # https://stackoverflow.com/questions/62415251/why-am-i-able-to-change-the-value-of-a-tensor-without-the-computation-graph-know
 
     import torch
-    a = torch.tensor([1,2,3.], requires_grad=True)
+    a = torch.tensor([1, 2, 3.], requires_grad=True)
     # are detached tensor's leafs? yes they are
     a_detached = a.detach()
-    #a.fill_(2) # illegal, warns you that a tensor which requires grads is used in an inplace op (so it won't be recorded in computation graph so it wont take the right derivative of the forward path as this op won't be in it)
-    a_detached.fill_(2) # weird that this one is allowed, seems to allow me to bypass the error check from the previous comment...?!
+    # a.fill_(2) # illegal, warns you that a tensor which requires grads is used in an inplace op (so it won't be recorded in computation graph so it wont take the right derivative of the forward path as this op won't be in it)
+    a_detached.fill_(
+        2)  # weird that this one is allowed, seems to allow me to bypass the error check from the previous comment...?!
     print(f'a = {a}')
     print(f'a_detached = {a_detached}')
     a.sum().backward()
 
+
 def detach_playground():
     import torch
 
-    a = torch.tensor([1,2,3.], requires_grad=True)
+    a = torch.tensor([1, 2, 3.], requires_grad=True)
     # are detached tensor's leafs? yes they are
     a_detached = a.detach()
     print(f'a_detached.is_leaf = {a_detached.is_leaf}')
@@ -276,8 +291,9 @@ def detach_playground():
     a_detached.zero_()
     print(f'a = {a}')
     print(f'a_detached = {a_detached}')
-    #a.fill_(2) # illegal, warns you that a tensor which requires grads is used in an inplace op (so it won't be recorded in computation graph so it wont take the right derivative of the forward path as this op won't be in it)
-    a_detached.fill_(2) # weird that this one is allowed, seems to allow me to bypass the error check from the previous comment...?!
+    # a.fill_(2) # illegal, warns you that a tensor which requires grads is used in an inplace op (so it won't be recorded in computation graph so it wont take the right derivative of the forward path as this op won't be in it)
+    a_detached.fill_(
+        2)  # weird that this one is allowed, seems to allow me to bypass the error check from the previous comment...?!
     print(f'a = {a}')
     print(f'a_detached = {a_detached}')
     ## conclusion: detach basically creates a totally new tensor which cuts gradient computations to the original but shares the same memory with original
@@ -286,28 +302,30 @@ def detach_playground():
     out_detached.zero_()
     out.sum().backward()
 
+
 def clone_playground():
     import torch
 
-    a = torch.tensor([1,2,3.], requires_grad=True)
+    a = torch.tensor([1, 2, 3.], requires_grad=True)
     a_clone = a.clone()
     print(f'a_clone.is_leaf = {a_clone.is_leaf}')
     print(f'a is a_clone = {a is a_clone}')
     print(f'a == a_clone = {a == a_clone}')
     print(f'a = {a}')
     print(f'a_clone = {a_clone}')
-    #a_clone.fill_(2)
+    # a_clone.fill_(2)
     a_clone.mul_(2)
     print(f'a = {a}')
     print(f'a_clone = {a_clone}')
     a_clone.sum().backward()
     print(f'a.grad = {a.grad}')
 
+
 def clone_vs_deepcopy():
     import copy
     import torch
 
-    x = torch.tensor([1,2,3.])
+    x = torch.tensor([1, 2, 3.])
     x_clone = x.clone()
     x_deep_copy = copy.deepcopy(x)
     #
@@ -317,15 +335,17 @@ def clone_vs_deepcopy():
     print(f'x_deep_copy = {x_deep_copy}')
     print()
 
+
 def inplace_playground():
     import torch
 
-    x = torch.tensor([1,2,3.], requires_grad=True)
+    x = torch.tensor([1, 2, 3.], requires_grad=True)
     y = x + 1
     print(f'x.is_leaf = {x.is_leaf}')
     print(f'y.is_leaf = {y.is_leaf}')
-    x += 1 # not allowed because x is a leaf, since changing the value of a leaf with an inplace forgets it's value then backward wouldn't work IMO (though its not the official response)
+    x += 1  # not allowed because x is a leaf, since changing the value of a leaf with an inplace forgets it's value then backward wouldn't work IMO (though its not the official response)
     print(f'x.is_leaf = {x.is_leaf}')
+
 
 def copy_initial_weights_playground_original():
     import torch
@@ -339,55 +359,63 @@ def copy_initial_weights_playground_original():
     N = 100
     actual_multiplier = 3.5
     meta_lr = 0.00001
-    loops = 5 # how many iterations in the inner loop we want to do
+    loops = 5  # how many iterations in the inner loop we want to do
 
-    x = torch.tensor(np.random.random((N,1)), dtype=torch.float64) # features for inner training loop
-    y = x * actual_multiplier # target for inner training loop
-    model = nn.Linear(1, 1, bias=False).double() # simplest possible model - multiple input x by weight w without bias
+    x = torch.tensor(np.random.random((N, 1)), dtype=torch.float64)  # features for inner training loop
+    y = x * actual_multiplier  # target for inner training loop
+    model = nn.Linear(1, 1, bias=False).double()  # simplest possible model - multiple input x by weight w without bias
     meta_opt = optim.SGD(model.parameters(), lr=meta_lr, momentum=0.)
-
 
     def run_inner_loop_once(model, verbose, copy_initial_weights):
         lr_tensor = torch.tensor([0.3], requires_grad=True)
         momentum_tensor = torch.tensor([0.5], requires_grad=True)
         opt = optim.SGD(model.parameters(), lr=0.3, momentum=0.5)
-        with higher.innerloop_ctx(model, opt, copy_initial_weights=copy_initial_weights, override={'lr': lr_tensor, 'momentum': momentum_tensor}) as (fmodel, diffopt):
+        with higher.innerloop_ctx(model, opt, copy_initial_weights=copy_initial_weights,
+                                  override={'lr': lr_tensor, 'momentum': momentum_tensor}) as (fmodel, diffopt):
             for j in range(loops):
                 if verbose:
                     print('Starting inner loop step j=={0}'.format(j))
-                    print('    Representation of fmodel.parameters(time={0}): {1}'.format(j, str(list(fmodel.parameters(time=j)))))
-                    print('    Notice that fmodel.parameters() is same as fmodel.parameters(time={0}): {1}'.format(j, (list(fmodel.parameters())[0] is list(fmodel.parameters(time=j))[0])))
+                    print('    Representation of fmodel.parameters(time={0}): {1}'.format(j, str(
+                        list(fmodel.parameters(time=j)))))
+                    print('    Notice that fmodel.parameters() is same as fmodel.parameters(time={0}): {1}'.format(j, (
+                            list(fmodel.parameters())[0] is list(fmodel.parameters(time=j))[0])))
                 out = fmodel(x)
                 if verbose:
-                    print('    Notice how `out` is `x` multiplied by the latest version of weight: {0:.4} * {1:.4} == {2:.4}'.format(x[0,0].item(), list(fmodel.parameters())[0].item(), out[0].item()))
-                loss = ((out - y)**2).mean()
+                    print(
+                        '    Notice how `out` is `x` multiplied by the latest version of weight: {0:.4} * {1:.4} == {2:.4}'.format(
+                            x[0, 0].item(), list(fmodel.parameters())[0].item(), out[0].item()))
+                loss = ((out - y) ** 2).mean()
                 diffopt.step(loss)
 
             if verbose:
                 # after all inner training let's see all steps' parameter tensors
                 print()
                 print("Let's print all intermediate parameters versions after inner loop is done:")
-                for j in range(loops+1):
+                for j in range(loops + 1):
                     print('    For j=={0} parameter is: {1}'.format(j, str(list(fmodel.parameters(time=j)))))
                 print()
 
             # let's imagine now that our meta-learning optimization is trying to check how far we got in the end from the actual_multiplier
             weight_learned_after_full_inner_loop = list(fmodel.parameters())[0]
-            meta_loss = (weight_learned_after_full_inner_loop - actual_multiplier)**2
+            meta_loss = (weight_learned_after_full_inner_loop - actual_multiplier) ** 2
             print('  Final meta-loss: {0}'.format(meta_loss.item()))
-            meta_loss.backward() # will only propagate gradient to original model parameter's `grad` if copy_initial_weight=False
+            meta_loss.backward()  # will only propagate gradient to original model parameter's `grad` if copy_initial_weight=False
             if verbose:
-                print('  Gradient of final loss we got for lr and momentum: {0} and {1}'.format(lr_tensor.grad, momentum_tensor.grad))
-                print('  If you change number of iterations "loops" to much larger number final loss will be stable and the values above will be smaller')
+                print('  Gradient of final loss we got for lr and momentum: {0} and {1}'.format(lr_tensor.grad,
+                                                                                                momentum_tensor.grad))
+                print(
+                    '  If you change number of iterations "loops" to much larger number final loss will be stable and the values above will be smaller')
             return meta_loss.item()
 
     print('=================== Run Inner Loop First Time (copy_initial_weights=True) =================\n')
     meta_loss_val1 = run_inner_loop_once(model, verbose=True, copy_initial_weights=True)
-    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(list(model.parameters())[0].grad))
+    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(
+        list(model.parameters())[0].grad))
 
     print('=================== Run Inner Loop Second Time (copy_initial_weights=False) =================\n')
     meta_loss_val2 = run_inner_loop_once(model, verbose=False, copy_initial_weights=False)
-    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(list(model.parameters())[0].grad))
+    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(
+        list(model.parameters())[0].grad))
 
     print('=================== Run Inner Loop Third Time (copy_initial_weights=False) =================\n')
     final_meta_gradient = list(model.parameters())[0].grad.item()
@@ -396,8 +424,9 @@ def copy_initial_weights_playground_original():
     # We will do a simple SGD step using meta_opt changing initial weight for the training and see how meta loss changed
     meta_opt.step()
     meta_opt.zero_grad()
-    meta_step = - meta_lr * final_meta_gradient # how much meta_opt actually shifted inital weight value
+    meta_step = - meta_lr * final_meta_gradient  # how much meta_opt actually shifted inital weight value
     meta_loss_val3 = run_inner_loop_once(model, verbose=False, copy_initial_weights=False)
+
 
 def copy_initial_weights_playground():
     import torch
@@ -409,56 +438,65 @@ def copy_initial_weights_playground():
     np.random.seed(1)
     torch.manual_seed(3)
     N = 100
-    actual_multiplier = 3.5 # the parameters we want the model to learn
+    actual_multiplier = 3.5  # the parameters we want the model to learn
     meta_lr = 0.00001
-    loops = 5 # how many iterations in the inner loop we want to do
+    loops = 5  # how many iterations in the inner loop we want to do
 
-    x = torch.randn(N,1) # features for inner training loop
-    y = x * actual_multiplier # target for inner training loop
-    model = nn.Linear(1, 1, bias=False)# model(x) = w*x, simplest possible model - multiple input x by weight w without bias. goal is to w~~actualy_multiplier
+    x = torch.randn(N, 1)  # features for inner training loop
+    y = x * actual_multiplier  # target for inner training loop
+    model = nn.Linear(1, 1,
+                      bias=False)  # model(x) = w*x, simplest possible model - multiple input x by weight w without bias. goal is to w~~actualy_multiplier
     outer_opt = optim.SGD(model.parameters(), lr=meta_lr, momentum=0.)
 
     def run_inner_loop_once(model, verbose, copy_initial_weights):
         lr_tensor = torch.tensor([0.3], requires_grad=True)
         momentum_tensor = torch.tensor([0.5], requires_grad=True)
         inner_opt = optim.SGD(model.parameters(), lr=0.3, momentum=0.5)
-        with higher.innerloop_ctx(model, inner_opt, copy_initial_weights=copy_initial_weights, override={'lr': lr_tensor, 'momentum': momentum_tensor}) as (fmodel, diffopt):
+        with higher.innerloop_ctx(model, inner_opt, copy_initial_weights=copy_initial_weights,
+                                  override={'lr': lr_tensor, 'momentum': momentum_tensor}) as (fmodel, diffopt):
             for j in range(loops):
                 if verbose:
                     print('Starting inner loop step j=={0}'.format(j))
-                    print('    Representation of fmodel.parameters(time={0}): {1}'.format(j, str(list(fmodel.parameters(time=j)))))
-                    print('    Notice that fmodel.parameters() is same as fmodel.parameters(time={0}): {1}'.format(j, (list(fmodel.parameters())[0] is list(fmodel.parameters(time=j))[0])))
+                    print('    Representation of fmodel.parameters(time={0}): {1}'.format(j, str(
+                        list(fmodel.parameters(time=j)))))
+                    print('    Notice that fmodel.parameters() is same as fmodel.parameters(time={0}): {1}'.format(j, (
+                            list(fmodel.parameters())[0] is list(fmodel.parameters(time=j))[0])))
                 out = fmodel(x)
                 if verbose:
-                    print(f'    Notice how `out` is `x` multiplied by the latest version of weight: {x[0,0].item()} * {list(fmodel.parameters())[0].item()} == {out[0].item()}')
-                loss = ((out - y)**2).mean()
+                    print(
+                        f'    Notice how `out` is `x` multiplied by the latest version of weight: {x[0, 0].item()} * {list(fmodel.parameters())[0].item()} == {out[0].item()}')
+                loss = ((out - y) ** 2).mean()
                 diffopt.step(loss)
 
             if verbose:
                 # after all inner training let's see all steps' parameter tensors
                 print()
                 print("Let's print all intermediate parameters versions after inner loop is done:")
-                for j in range(loops+1):
+                for j in range(loops + 1):
                     print('    For j=={0} parameter is: {1}'.format(j, str(list(fmodel.parameters(time=j)))))
                 print()
 
             # let's imagine now that our meta-learning optimization is trying to check how far we got in the end from the actual_multiplier
             weight_learned_after_full_inner_loop = list(fmodel.parameters())[0]
-            meta_loss = (weight_learned_after_full_inner_loop - actual_multiplier)**2
+            meta_loss = (weight_learned_after_full_inner_loop - actual_multiplier) ** 2
             print('  Final meta-loss: {0}'.format(meta_loss.item()))
-            meta_loss.backward() # will only propagate gradient to original model parameter's `grad` if copy_initial_weight=False
+            meta_loss.backward()  # will only propagate gradient to original model parameter's `grad` if copy_initial_weight=False
             if verbose:
-                print('  Gradient of final loss we got for lr and momentum: {0} and {1}'.format(lr_tensor.grad, momentum_tensor.grad))
-                print('  If you change number of iterations "loops" to much larger number final loss will be stable and the values above will be smaller')
+                print('  Gradient of final loss we got for lr and momentum: {0} and {1}'.format(lr_tensor.grad,
+                                                                                                momentum_tensor.grad))
+                print(
+                    '  If you change number of iterations "loops" to much larger number final loss will be stable and the values above will be smaller')
             return meta_loss.item()
 
     print('=================== Run Inner Loop First Time (copy_initial_weights=True) =================\n')
     meta_loss_val1 = run_inner_loop_once(model, verbose=True, copy_initial_weights=True)
-    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(list(model.parameters())[0].grad))
+    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(
+        list(model.parameters())[0].grad))
 
     print('=================== Run Inner Loop Second Time (copy_initial_weights=False) =================\n')
     meta_loss_val2 = run_inner_loop_once(model, verbose=False, copy_initial_weights=False)
-    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(list(model.parameters())[0].grad))
+    print("\nLet's see if we got any gradient for initial model parameters: {0}\n".format(
+        list(model.parameters())[0].grad))
 
     print('=================== Run Inner Loop Third Time (copy_initial_weights=False) =================\n')
     final_meta_gradient = list(model.parameters())[0].grad.item()
@@ -467,13 +505,16 @@ def copy_initial_weights_playground():
     # We will do a simple SGD step using meta_opt changing initial weight for the training and see how meta loss changed
     outer_opt.step()
     outer_opt.zero_grad()
-    meta_step = - meta_lr * final_meta_gradient # how much meta_opt actually shifted inital weight value
+    meta_step = - meta_lr * final_meta_gradient  # how much meta_opt actually shifted inital weight value
     meta_loss_val3 = run_inner_loop_once(model, verbose=False, copy_initial_weights=False)
 
     meta_loss_gradient_approximation = (meta_loss_val3 - meta_loss_val2) / meta_step
 
     print()
-    print('Side-by-side meta_loss_gradient_approximation and gradient computed by `higher` lib: {0:.4} VS {1:.4}'.format(meta_loss_gradient_approximation, final_meta_gradient))
+    print(
+        'Side-by-side meta_loss_gradient_approximation and gradient computed by `higher` lib: {0:.4} VS {1:.4}'.format(
+            meta_loss_gradient_approximation, final_meta_gradient))
+
 
 def tqdm_torchmeta():
     from torchvision.transforms import Compose, Resize, ToTensor
@@ -487,7 +528,7 @@ def tqdm_torchmeta():
     from tqdm import tqdm
 
     ## get args
-    args = SimpleNamespace(episodes=5,n_classes=5,k_shot=5,k_eval=15,meta_batch_size=1,n_workers=4)
+    args = SimpleNamespace(episodes=5, n_classes=5, k_shot=5, k_eval=15, meta_batch_size=1, n_workers=4)
     args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
 
     ## get meta-batch loader
@@ -515,44 +556,48 @@ def tqdm_torchmeta():
             if episode >= args.episodes:
                 break
 
-if __name__ == "__main__":
-    start = time.time()
-    print('pytorch playground!')
-    # params_in_comp_graph()
-    #check_if_tensor_is_detached()
-    #deep_copy_issue()
-    #download_mini_imagenet()
-    #extract()
-    #download_and_extract_miniImagenet(root='~/tmp')
-    #download_and_extract_miniImagenet(root='~/automl-meta-learning/data')
-    #torch_concat()
-    #detach_vs_cloe()
-    #error_unexpected_way_to_by_pass_safety()
-    #clone_playground()
-    #inplace_playground()
-    #clone_vs_deepcopy()
-    #copy_initial_weights_playground()
-    tqdm_torchmeta()
-    print('--> DONE')
-    time_passed_msg, _, _, _ = report_times(start)
-    print(f'--> {time_passed_msg}')
 
-#%%
+# if __name__ == "__main__":
+#     start = time.time()
+#     print('pytorch playground!')
+#     # params_in_comp_graph()
+#     # check_if_tensor_is_detached()
+#     # deep_copy_issue()
+#     # download_mini_imagenet()
+#     # extract()
+#     # download_and_extract_miniImagenet(root='~/tmp')
+#     # download_and_extract_miniImagenet(root='~/automl-meta-learning/data')
+#     # torch_concat()
+#     # detach_vs_cloe()
+#     # error_unexpected_way_to_by_pass_safety()
+#     # clone_playground()
+#     # inplace_playground()
+#     # clone_vs_deepcopy()
+#     # copy_initial_weights_playground()
+#     tqdm_torchmeta()
+#     print('--> DONE')
+#     time_passed_msg, _, _, _ = report_times(start)
+#     print(f'--> {time_passed_msg}')
+
+# %%
 
 import sys
 
-print(sys.version) ##
+print(sys.version)  ##
 print(sys.path)
+
 
 def helloworld():
     print('helloworld')
     print('hello12345')
 
+
 def union_dicts():
-    d1 = {'x':1}
-    d2 = {'y':2, 'z':3}
+    d1 = {'x': 1}
+    d2 = {'y': 2, 'z': 3}
     d_union = {**d1, **d2}
     print(d_union)
+
 
 def get_stdout_old():
     import sys
@@ -583,6 +628,7 @@ def get_stdout_old():
 
     import sys
     myfile = "input.txt"
+
     def print(*args):
         __builtins__.print(*args, file=sys.__stdout__)
         with open(myfile, "a+") as f:
@@ -598,39 +644,44 @@ def get_stdout_old():
 def get_stdout():
     import sys
     myfile = "my_stdout.txt"
+
     # redefine print
     def print(*args):
-        __builtins__.print(*args, file=sys.__stdout__)    #prints to terminal
+        __builtins__.print(*args, file=sys.__stdout__)  # prints to terminal
         with open(myfile, "a+") as f:
-            __builtins__.print(*args, file=f)    #saves in a file
+            __builtins__.print(*args, file=f)  # saves in a file
 
     print('a')
     print('b')
     print('c')
+
 
 def logging_basic():
     import logging
     logging.warning('Watch out!')  # will print a message to the console
     logging.info('I told you so')  # will not print anything
 
+
 def logging_to_file():
     import logging
-    logging.basicConfig(filename='example.log',level=logging.DEBUG)
-    #logging.
+    logging.basicConfig(filename='example.log', level=logging.DEBUG)
+    # logging.
     logging.debug('This message should go to the log file')
     logging.info('So should this')
     logging.warning('And this, too')
+
 
 def logging_to_file_INFO_LEVEL():
     import logging
     import sys
     format = '{asctime}:{levelname}:{name}:lineno {lineno}:{message}'
-    logging.basicConfig(filename='example.log',level=logging.INFO,format=format,style='{')
-    #logging.basicConfig(stream=sys.stdout,level=logging.INFO,format=format,style='{')
-    #logging.
+    logging.basicConfig(filename='example.log', level=logging.INFO, format=format, style='{')
+    # logging.basicConfig(stream=sys.stdout,level=logging.INFO,format=format,style='{')
+    # logging.
     logging.debug('This message should NOT go to the log file')
     logging.info('This message should go to log file')
     logging.warning('This, too')
+
 
 def logger_SO_print_and_write_to_my_stdout():
     """My sample logger code to print to screen and write to file (the same thing).
@@ -661,28 +712,31 @@ def logger_SO_print_and_write_to_my_stdout():
     logs_dirpath.mkdir(parents=True, exist_ok=True)
     my_stdout_filename = logs_dirpath / Path('my_stdout.log')
     # remove my_stdout if it exists (note you can also just create a new log dir/file each time or append to the end of the log file your using)
-    #os.remove(my_stdout_filename) if os.path.isfile(my_stdout_filename) else None
+    # os.remove(my_stdout_filename) if os.path.isfile(my_stdout_filename) else None
 
     ## create top logger
-    logger = logging.getLogger(__name__) # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
-    logger.setLevel(logging.DEBUG) # note: use logging.DEBUG, CAREFUL with logging.UNSET: https://stackoverflow.com/questions/21494468/about-notset-in-python-logging/21494716#21494716
+    logger = logging.getLogger(
+        __name__)  # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
+    logger.setLevel(
+        logging.DEBUG)  # note: use logging.DEBUG, CAREFUL with logging.UNSET: https://stackoverflow.com/questions/21494468/about-notset-in-python-logging/21494716#21494716
 
     ## log to my_stdout.log file
     file_handler = logging.FileHandler(filename=my_stdout_filename)
-    #file_handler.setLevel(logging.INFO) # not setting it means it inherits the logger. It will log everything from DEBUG upwards in severity to this handler.
-    log_format = "{asctime}:{levelname}:{lineno}:{name}:{message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
-    formatter = logging.Formatter(fmt=log_format, style='{') # set the logging format at for this handler
+    # file_handler.setLevel(logging.INFO) # not setting it means it inherits the logger. It will log everything from DEBUG upwards in severity to this handler.
+    log_format = "{asctime}:{levelname}:{lineno}:{name}:{message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+    formatter = logging.Formatter(fmt=log_format, style='{')  # set the logging format at for this handler
     file_handler.setFormatter(fmt=formatter)
 
     ## log to stdout/screen
-    stdout_stream_handler = logging.StreamHandler(stream=sys.stdout) # default stderr, though not sure the advatages of logging to one or the other
-    #stdout_stream_handler.setLevel(logging.INFO) # Note: having different set levels means that we can route using a threshold what gets logged to this handler
-    log_format = "{name}:{levelname}:-> {message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
-    formatter = logging.Formatter(fmt=log_format, style='{') # set the logging format at for this handler
+    stdout_stream_handler = logging.StreamHandler(
+        stream=sys.stdout)  # default stderr, though not sure the advatages of logging to one or the other
+    # stdout_stream_handler.setLevel(logging.INFO) # Note: having different set levels means that we can route using a threshold what gets logged to this handler
+    log_format = "{name}:{levelname}:-> {message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+    formatter = logging.Formatter(fmt=log_format, style='{')  # set the logging format at for this handler
     stdout_stream_handler.setFormatter(fmt=formatter)
 
-    logger.addHandler(hdlr=file_handler) # add this file handler to top logger
-    logger.addHandler(hdlr=stdout_stream_handler) # add this file handler to top logger
+    logger.addHandler(hdlr=file_handler)  # add this file handler to top logger
+    logger.addHandler(hdlr=stdout_stream_handler)  # add this file handler to top logger
 
     logger.log(logging.NOTSET, 'notset')
     logger.debug('debug')
@@ -690,6 +744,7 @@ def logger_SO_print_and_write_to_my_stdout():
     logger.warning('warning')
     logger.error('error')
     logger.critical('critical')
+
 
 def logging_unset_level():
     """My sample logger explaining UNSET level
@@ -701,17 +756,18 @@ def logging_unset_level():
     """
     import logging
 
-    logger = logging.getLogger(__name__) # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
+    logger = logging.getLogger(
+        __name__)  # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
     print(f'DEFAULT VALUE: logger.level = {logger.level}')
 
     file_handler = logging.FileHandler(filename='my_log.log')
-    log_format = "{asctime}:{levelname}:{lineno}:{name}:{message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+    log_format = "{asctime}:{levelname}:{lineno}:{name}:{message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
     formatter = logging.Formatter(fmt=log_format, style='{')
     file_handler.setFormatter(fmt=formatter)
 
     stdout_stream_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_stream_handler.setLevel(logging.INFO)
-    log_format = "{name}:{levelname}:-> {message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+    log_format = "{name}:{levelname}:-> {message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
     formatter = logging.Formatter(fmt=log_format, style='{')
     stdout_stream_handler.setFormatter(fmt=formatter)
 
@@ -725,6 +781,7 @@ def logging_unset_level():
     logger.error('error')
     logger.critical('critical')
 
+
 def logger():
     from pathlib import Path
     import logging
@@ -734,9 +791,10 @@ def logger():
     logs_dirpath.mkdir(parents=True, exist_ok=True)
     my_stdout_filename = logs_dirpath / Path('my_stdout.log')
     # remove my_stdout if it exists (used to have this but now I decided to create a new log & file each)
-    #os.remove(my_stdout_filename) if os.path.isfile(my_stdout_filename) else None
+    # os.remove(my_stdout_filename) if os.path.isfile(my_stdout_filename) else None
 
-    logger = logging.getLogger(__name__) # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
+    logger = logging.getLogger(
+        __name__)  # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
     logger.setLevel(logging.INFO)
 
     log_format = "{asctime}:{levelname}:{name}:{message}"
@@ -753,11 +811,12 @@ def logger():
 
     logger.info(f'logger DONE')
 
+
 def logging_example_from_youtube():
     """https://github.com/CoreyMSchafer/code_snippets/blob/master/Logging-Advanced/employee.py
     """
     import logging
-    import pytorch_playground # has employee class & code
+    import pytorch_playground  # has employee class & code
     import sys
 
     logger = logging.getLogger(__name__)
@@ -798,8 +857,8 @@ def logging_example_from_youtube():
         else:
             return result
 
-
-    logger.info('testing if log info is going to print to screen. it should because everything with debug or above is printed since that stream has that level.')
+    logger.info(
+        'testing if log info is going to print to screen. it should because everything with debug or above is printed since that stream has that level.')
 
     num_1 = 10
     num_2 = 0
@@ -816,6 +875,7 @@ def logging_example_from_youtube():
     div_result = divide(num_1, num_2)
     logger.debug('Div: {} / {} = {}'.format(num_1, num_2, div_result))
 
+
 def plot():
     """
     source:
@@ -827,18 +887,24 @@ def plot():
     plt.xkcd()
 
     ages_x = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-            36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
+              36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
 
-    py_dev_y = [20046, 17100, 20000, 24744, 30500, 37732, 41247, 45372, 48876, 53850, 57287, 63016, 65998, 70003, 70000, 71496, 75370, 83640, 84666,
-                84392, 78254, 85000, 87038, 91991, 100000, 94796, 97962, 93302, 99240, 102736, 112285, 100771, 104708, 108423, 101407, 112542, 122870, 120000]
+    py_dev_y = [20046, 17100, 20000, 24744, 30500, 37732, 41247, 45372, 48876, 53850, 57287, 63016, 65998, 70003, 70000,
+                71496, 75370, 83640, 84666,
+                84392, 78254, 85000, 87038, 91991, 100000, 94796, 97962, 93302, 99240, 102736, 112285, 100771, 104708,
+                108423, 101407, 112542, 122870, 120000]
     plt.plot(ages_x, py_dev_y, label='Python')
 
-    js_dev_y = [16446, 16791, 18942, 21780, 25704, 29000, 34372, 37810, 43515, 46823, 49293, 53437, 56373, 62375, 66674, 68745, 68746, 74583, 79000,
-                78508, 79996, 80403, 83820, 88833, 91660, 87892, 96243, 90000, 99313, 91660, 102264, 100000, 100000, 91660, 99240, 108000, 105000, 104000]
+    js_dev_y = [16446, 16791, 18942, 21780, 25704, 29000, 34372, 37810, 43515, 46823, 49293, 53437, 56373, 62375, 66674,
+                68745, 68746, 74583, 79000,
+                78508, 79996, 80403, 83820, 88833, 91660, 87892, 96243, 90000, 99313, 91660, 102264, 100000, 100000,
+                91660, 99240, 108000, 105000, 104000]
     plt.plot(ages_x, js_dev_y, label='JavaScript')
 
-    dev_y = [17784, 16500, 18012, 20628, 25206, 30252, 34368, 38496, 42000, 46752, 49320, 53200, 56000, 62316, 64928, 67317, 68748, 73752, 77232,
-            78000, 78508, 79536, 82488, 88935, 90000, 90056, 95000, 90000, 91633, 91660, 98150, 98964, 100000, 98988, 100000, 108923, 105000, 103117]
+    dev_y = [17784, 16500, 18012, 20628, 25206, 30252, 34368, 38496, 42000, 46752, 49320, 53200, 56000, 62316, 64928,
+             67317, 68748, 73752, 77232,
+             78000, 78508, 79536, 82488, 88935, 90000, 90056, 95000, 90000, 91633, 91660, 98150, 98964, 100000, 98988,
+             100000, 108923, 105000, 103117]
     plt.plot(ages_x, dev_y, color='#444444', linestyle='--', label='All Devs')
 
     plt.xlabel('Ages')
@@ -853,6 +919,7 @@ def plot():
 
     plt.show()
 
+
 def subplot():
     """https://github.com/CoreyMSchafer/code_snippets/blob/master/Python/Matplotlib/10-Subplots/finished_code.py
     """
@@ -862,7 +929,7 @@ def subplot():
 
     plt.style.use('seaborn')
 
-    data = pd.read_csv('data.csv')
+    data = read_csv('data.csv')
     ages = data['Age']
     dev_salaries = data['All_Devs']
     py_salaries = data['Python']
@@ -872,7 +939,7 @@ def subplot():
     fig2, ax2 = plt.subplots()
 
     ax1.plot(ages, dev_salaries, color='#444444',
-            linestyle='--', label='All Devs')
+             linestyle='--', label='All Devs')
 
     ax2.plot(ages, py_salaries, label='Python')
     ax2.plot(ages, js_salaries, label='JavaScript')
@@ -892,6 +959,7 @@ def subplot():
     fig1.savefig('fig1.png')
     fig2.savefig('fig2.png')
 
+
 def import_utils_test():
     import uutils
     import uutils.utils as utils
@@ -902,6 +970,7 @@ def import_utils_test():
     print(logger)
 
     print()
+
 
 def sys_path():
     """
@@ -919,6 +988,7 @@ def sys_path():
     for path in sys.path:
         print(path)
 
+
 def pycharm_playground():
     import tqdm
 
@@ -931,114 +1001,116 @@ def pycharm_playground():
     print(b)
     print('Done!')
 
+
 if __name__ == '__main__':
-    #union_dicts()
-    #get_stdout()
-    #logger()
-    #logger_SO_print_and_write_to_my_stdout()
-    #logging_basic()
-    #logging_to_file()
-    #logging_to_file()
-    #logging_to_file_INFO_LEVEL()
-    #logging_example_from_youtube()
-    #logging_unset_level()
-    #import_utils_test()
+    # union_dicts()
+    # get_stdout()
+    # logger()
+    # logger_SO_print_and_write_to_my_stdout()
+    # logging_basic()
+    # logging_to_file()
+    # logging_to_file()
+    # logging_to_file_INFO_LEVEL()
+    # logging_example_from_youtube()
+    # logging_unset_level()
+    # import_utils_test()
     pycharm_playground()
-    print('\n---> DONE\a\n\n') ## HIii
+    print('\n---> DONE\a\n\n')  ## HIii
 
-
-#%%
+# %%
 
 import sys
+
 print(sys.version)
 
-
-#%%
+# %%
 
 ## dictionary comprehension looping
 
 d = {'a': 0, 'b': 1}
 lst1 = [f'key:{k}' for k in d]
-lst2 = [f'key:{k}, value:{v}' for k,v in d.items()]
+lst2 = [f'key:{k}, value:{v}' for k, v in d.items()]
 
 print(lst1)
 print(lst2)
 
-#%%
+# %%
 
 ## merging two dictionaries
 
-d1 = {'a':0,'b':1}
-d2 = {'c':2,'d':3}
-d3 = {'e':4, 'f':5, 'g':6}
+d1 = {'a': 0, 'b': 1}
+d2 = {'c': 2, 'd': 3}
+d3 = {'e': 4, 'f': 5, 'g': 6}
 d = {**d1, **d2, **d3}
 
 print(d)
 
-#%%
+# %%
 
 
 from collections import OrderedDict
 
 od = OrderedDict([
-    ('first',1)
+    ('first', 1)
 ])
 
 print(od)
 od['first'] = 2
 print(od)
 
-lst = sum( [i for i in range(3)] )
+lst = sum([i for i in range(3)])
 print(lst)
-od3 = OrderedDict( [ (i,i) for i in range(3)] )
+od3 = OrderedDict([(i, i) for i in range(3)])
 print(od3)
-print(3+float('Inf'))
+print(3 + float('Inf'))
 
-#%%
+# %%
 
-import pathlib
-from pathlib import Path
+# import pathlib
+# from pathlib import Path
+#
+#
+# def make_dirpath_current_datetime_hostname(path=None, comment='', replace_dots=True):
+#     '''
+#     make dir string: runs/CURRENT_DATETIME_HOSTNAME
+#     '''
+#     import socket
+#     import os
+#     from datetime import datetime
+#     # check if root is a PosixPath object
+#     if type(path) != pathlib.PosixPath and path is not None:
+#         path = Path(path)
+#     current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+#     log_dir = os.path.join('runs', current_time + '_' + socket.gethostname() + comment)
+#     log_dir = Path(log_dir)
+#     print(log_dir._str)
+#     if replace_dots:
+#         log_dir = Path(log_dir._str.replace('.', '_'))
+#     if path is not None:
+#         log_dir = path / log_dir
+#     return log_dir
+#
+#
+# print(type(Path('~')) == pathlib.PosixPath)
+# print()
+#
+# log_dir = make_dirpath_current_datetime_hostname()
+# print(log_dir)
+# log_dir = make_dirpath_current_datetime_hostname('~')
+# print(log_dir)
+# log_dir = make_dirpath_current_datetime_hostname('~', '_jupyter')
+# print(log_dir)
+# log_dir = make_dirpath_current_datetime_hostname('~').expanduser()
+# print(log_dir)
+#
+# string = "geeks for geeks geeks geeks geeks"
+# # Prints the string by replacing geeks by Geeks
+# print(string.replace("geeks", "Geeks"))
+#
+# log_dir = make_dirpath_current_datetime_hostname('~', '_jupyter', True)
+# print(log_dir)
 
-def make_dirpath_current_datetime_hostname(path=None, comment='', replace_dots=True):
-    '''
-    make dir string: runs/CURRENT_DATETIME_HOSTNAME
-    '''
-    import socket
-    import os
-    from datetime import datetime
-    # check if root is a PosixPath object
-    if type(path) != pathlib.PosixPath and path is not None:
-        path = Path(path)
-    current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    log_dir = os.path.join('runs', current_time + '_' + socket.gethostname() + comment)
-    log_dir = Path(log_dir)
-    print(log_dir._str)
-    if replace_dots:
-        log_dir = Path(log_dir._str.replace('.','_'))
-    if path is not None:
-        log_dir = path / log_dir
-    return log_dir
-
-print(type(Path('~')) == pathlib.PosixPath)
-print()
-
-log_dir = make_dirpath_current_datetime_hostname()
-print(log_dir)
-log_dir = make_dirpath_current_datetime_hostname('~')
-print(log_dir)
-log_dir = make_dirpath_current_datetime_hostname('~','_jupyter')
-print(log_dir)
-log_dir = make_dirpath_current_datetime_hostname('~').expanduser()
-print(log_dir)
-
-string = "geeks for geeks geeks geeks geeks"
-# Prints the string by replacing geeks by Geeks
-print( string.replace("geeks", "Geeks") )
-
-log_dir = make_dirpath_current_datetime_hostname('~','_jupyter',True)
-print(log_dir)
-
-#%%
+# %%
 
 # adding keys to empty dic
 
@@ -1046,14 +1118,15 @@ d = {}
 d['a'] = 3
 print(d)
 
-#%%
+# %%
 
 # unpack list?
 
-(a,b,c) = [1,2,3]
+(a, b, c) = [1, 2, 3]
 print(a)
 
-#%%
+
+# %%
 
 ## kwargs
 
@@ -1061,23 +1134,24 @@ def f(*args, **kwargs):
     print(args)
     print(kwargs)
 
+
 f()
-f(1,2,3,a=1,b=2,c=3)
+f(1, 2, 3, a=1, b=2, c=3)
 
-#%%
+# %%
 
+#
+# import json
+#
+# from pathlib import Path
+#
+# p = Path('~/').expanduser()
+# with open(p) as f:
+#     data = json.load(f)
+#     print(data)
+#     print(data['password'])
 
-import json
-
-from pathlib import Path
-
-p = Path('~/')
-with open(p) as f:
-  data = json.load(f)
-  print(data)
-  print(data['password'])
-
-#%%
+# %%
 
 import subprocess
 
@@ -1088,7 +1162,7 @@ p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=Tru
 output = p.stdout.read()
 print(output)
 
-#%%
+# %%
 
 import sys
 
@@ -1096,52 +1170,54 @@ print('a')
 
 print(sys.stdout)
 
-#%%
+# %%
 
-from pathlib import Path
+# from pathlib import Path
+#
+#
+# def send_email(subject, message, destination, password_path=None):
+#     """ Send an e-mail from with message to destination email.
+#
+#     NOTE: if you get an error with google gmails you might need to do this:
+#     https://stackoverflow.com/questions/16512592/login-credentials-not-working-with-gmail-smtp
+#     To use an app password:
+#     https://stackoverflow.com/questions/60975490/how-does-one-send-an-e-mail-from-python-not-using-gmail
+#
+#     Arguments:
+#         message {str} -- message string to send.
+#         destination {str} -- destination email (as string)
+#     """
+#     from socket import gethostname
+#     from email.message import EmailMessage
+#     import smtplib
+#     import json
+#     import sys
+#
+#     server = smtplib.SMTP('smtp.gmail.com', 587)
+#     smtplib.stdout = sys.stdout
+#     server.starttls()
+#     with open(password_path) as f:
+#         config = json.load(f)
+#         server.login('slurm.miranda@gmail.com', config['password'])
+#
+#         # craft message
+#         msg = EmailMessage()
+#
+#         # message = f'{message}\nSend from Hostname: {gethostname()}'
+#         # msg.set_content(message)
+#         msg['Subject'] = subject
+#         msg['From'] = 'slurm.miranda@gmail.com'
+#         msg['To'] = destination
+#         # send msg
+#         server.send_message(msg)
+#
+#
+# ##
+# print("-------> HELLOWWWWWWWW")
+# p = Path('~/automl-meta-learning/automl/experiments/pw_app.config.json').expanduser()
+# send_email(subject='TEST: send_email2', message='MESSAGE', destination='brando.science@gmail.com', password_path=p)
 
-def send_email(subject, message, destination, password_path=None):
-    """ Send an e-mail from with message to destination email.
-
-    NOTE: if you get an error with google gmails you might need to do this:
-    https://stackoverflow.com/questions/16512592/login-credentials-not-working-with-gmail-smtp
-    To use an app password:
-    https://stackoverflow.com/questions/60975490/how-does-one-send-an-e-mail-from-python-not-using-gmail
-
-    Arguments:
-        message {str} -- message string to send.
-        destination {str} -- destination email (as string)
-    """
-    from socket import gethostname
-    from email.message import EmailMessage
-    import smtplib
-    import json
-    import sys
-
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    smtplib.stdout = sys.stdout
-    server.starttls()
-    with open(password_path) as f:
-        config = json.load(f)
-        server.login('slurm.miranda@gmail.com', config['password'])
-
-        # craft message
-        msg = EmailMessage()
-
-        #message = f'{message}\nSend from Hostname: {gethostname()}'
-        #msg.set_content(message)
-        msg['Subject'] = subject
-        msg['From'] = 'slurm.miranda@gmail.com'
-        msg['To'] = destination
-        # send msg
-        server.send_message(msg)
-
-##
-print("-------> HELLOWWWWWWWW")
-p = Path('~/automl-meta-learning/automl/experiments/pw_app.config.json').expanduser()
-send_email(subject='TEST: send_email2', message='MESSAGE', destination='brando.science@gmail.com', password_path=p)
-
-#%%
+# %%
 
 """
 Demo of the errorbar function, including upper and lower limits
@@ -1150,6 +1226,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import matplotlib as mpl
+
 mpl.rcParams["errorbar.capsize"] = 3
 
 # https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
@@ -1201,7 +1278,7 @@ ax.set_xlim((0, 5.5))
 ax.set_title('Errorbar upper and lower limits')
 plt.show()
 
-#%%
+# %%
 
 from types import SimpleNamespace
 from pathlib import Path
@@ -1214,11 +1291,11 @@ args.data_root = Path(args.data_root).expanduser()
 
 print(args)
 
-#pprint(dir(args.data_root))
+# pprint(dir(args.data_root))
 print(args.data_root.name)
 print('miniImagenet' in args.data_root.name)
 
-#%%
+# %%
 
 ## sampling N classes for len(meta-set)
 # In sampling without replacement, each sample unit of
@@ -1231,19 +1308,20 @@ N = 5
 len_meta_set = 64
 sample = random.sample(range(0, len_meta_set), N)
 
-print( sample )
+print(sample)
 
-for i,n in enumerate(sample):
+for i, n in enumerate(sample):
     print(f'i={i}\nn={n}\n')
 
-#%%
+
+# %%
 
 # iterator https://www.programiz.com/python-programming/iterator
 
 class Counter:
 
     def __init__(self, max=0):
-        self.max = max # returns up to and including that number
+        self.max = max  # returns up to and including that number
 
     def __iter__(self):
         self.n = 0
@@ -1260,13 +1338,14 @@ class Counter:
         else:
             raise StopIteration
 
+
 ## test it
 
 counter = iter(Counter(max=0))
 for count in counter:
     print(f'count = {count}')
 
-#%%
+# %%
 
 from tqdm import tqdm
 
@@ -1280,14 +1359,15 @@ with tqdm(iter(lst), total=5) as tlist:
     for i in tlist:
         print(i)
 
-#%%
+# %%
 
 from tqdm import tqdm
+
 
 class Plus2:
 
     def __init__(self, max=0):
-        self.max = max # returns up to and including that number
+        self.max = max  # returns up to and including that number
 
     def __iter__(self):
         self.it = 0
@@ -1305,6 +1385,7 @@ class Plus2:
     def __len__(self):
         return self.max
 
+
 ##
 counter = iter(Plus2(max=int(100000)))
 with tqdm(counter, total=len(counter)) as tqcounter:
@@ -1314,14 +1395,14 @@ with tqdm(counter, total=len(counter)) as tqcounter:
         print(f'powd2 = {pow2}')
         pass
 
-#%%
+# %%
 
 from tqdm import tqdm
 
 for i in tqdm(range(int(9e6))):
     pass
 
-#%%
+# %%
 
 from tqdm import tqdm
 
@@ -1334,16 +1415,16 @@ with tqdm(range(int(5))) as trange:
         time.sleep(1)
         pass
 
-#%%
+# %%
 
-#zip, it aligns elements in one list to elements in the other
+# zip, it aligns elements in one list to elements in the other
 
-l1 = [0,1,2]
-l2 = ['a','b','c']
+l1 = [0, 1, 2]
+l2 = ['a', 'b', 'c']
 
-print(list(zip(l1,l2)))
+print(list(zip(l1, l2)))
 
-#%%
+# %%
 
 from tqdm import tqdm
 import time
@@ -1362,7 +1443,7 @@ with tqdm(lst, total=total) as tlst:
 
 print('\n--> DONE \a')
 
-#%%
+# %%
 
 from tqdm import tqdm
 import time
@@ -1379,7 +1460,7 @@ with tqdm(lst, total=total) as tlst:
 
 print('\n--> DONE \a')
 
-#%%
+# %%
 
 from tqdm import tqdm
 import time
@@ -1395,7 +1476,7 @@ with tqdm(range(total)) as tcounter:
 
 print('\n--> DONE \a')
 
-#%%
+# %%
 
 # Question: Do detached() tensors track their own gradients seperately?
 # Ans: Yes!
@@ -1407,15 +1488,15 @@ a = torch.tensor([2.0], requires_grad=True)
 b = a.detach()
 b.requires_grad = True
 
-la = (5.0 - a)**2
+la = (5.0 - a) ** 2
 la.backward()
 print(f'a.grad = {a.grad}')
 
-lb = (6.0 - b)**2
+lb = (6.0 - b) ** 2
 lb.backward()
 print(f'b.grad = {b.grad}')
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -1423,9 +1504,9 @@ import torch.nn as nn
 from collections import OrderedDict
 
 params = OrderedDict([
-    ('fc0', nn.Linear(in_features=4,out_features=4)),
+    ('fc0', nn.Linear(in_features=4, out_features=4)),
     ('ReLU0', nn.ReLU()),
-    ('fc1', nn.Linear(in_features=4,out_features=1))
+    ('fc1', nn.Linear(in_features=4, out_features=1))
 ])
 mdl = nn.Sequential(params)
 
@@ -1440,13 +1521,13 @@ for name, w in mdl.named_parameters():
     print(name, w.norm(2))
 
 print()
-#mdl._modules['fc0'] = nn.Linear(10,11)
+# mdl._modules['fc0'] = nn.Linear(10,11)
 mdl._modules[0]
 
 for name, w in mdl.named_parameters():
     print(name, w.norm(2))
 
-#%%
+# %%
 
 ## Q: are parameters are in computation graph?
 import torch
@@ -1455,14 +1536,14 @@ from torchviz import make_dot
 
 from collections import OrderedDict
 
-fc0 = nn.Linear(in_features=3,out_features=1)
+fc0 = nn.Linear(in_features=3, out_features=1)
 params = [('fc0', fc0)]
 mdl = nn.Sequential(OrderedDict(params))
 
-x = torch.randn(1,3)
+x = torch.randn(1, 3)
 y = torch.randn(1)
 
-l = ( mdl(x) - y )**2
+l = (mdl(x) - y) ** 2
 
 # make_dot(l,{x:'x',y:'y','fc0':fc0})
 print(fc0.weight)
@@ -1470,10 +1551,10 @@ print(fc0.bias)
 print(fc0.weight.to_tens)
 print()
 # make_dot(l,{x:'x',y:'y','fc0':fc0})
-make_dot(l,{'x':x,'y':y})
+make_dot(l, {'x': x, 'y': y})
 make_dot(l)
 
-#%%
+# %%
 
 '''
 expand
@@ -1481,10 +1562,10 @@ expand
 
 import torch
 
-x = torch.randn([2,3,4,5])
+x = torch.randn([2, 3, 4, 5])
 
 # h_0 of shape (num_layers * num_directions, batch, hidden_size)
-h = torch.randn([1,4,8])
+h = torch.randn([1, 4, 8])
 
 x_mean = x.mean()
 print(x_mean.size())
@@ -1493,7 +1574,7 @@ x = x_mean.expand_as(h)
 print(x.size())
 print(x)
 
-#%%
+# %%
 
 import torch
 
@@ -1504,7 +1585,7 @@ type(device)
 print(device == 'cpu')
 device.type
 
-#%%
+# %%
 
 # THIS WORKS
 
@@ -1512,14 +1593,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 from pathlib import Path
 
-
-#log_dir (string) – Save directory location.
-#Default is runs/CURRENT_DATETIME_HOSTNAME, which changes after each run.
+# log_dir (string) – Save directory location.
+# Default is runs/CURRENT_DATETIME_HOSTNAME, which changes after each run.
 
 tb = SummaryWriter()
 tb.add_scalar('loss', 111)
 
-#%%
+# %%
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -1527,7 +1607,7 @@ from pathlib import Path
 
 
 def CURRENT_DATETIME_HOSTNAME(comment=''):
-    #if not log_dir:
+    # if not log_dir:
     import socket
     import os
     from datetime import datetime
@@ -1535,42 +1615,43 @@ def CURRENT_DATETIME_HOSTNAME(comment=''):
     log_dir = os.path.join('runs', current_time + '_' + socket.gethostname() + comment)
     return Path(log_dir)
 
-#log_dir (string) – Save directory location.
-#Default is runs/CURRENT_DATETIME_HOSTNAME, which changes after each run.
+
+# log_dir (string) – Save directory location.
+# Default is runs/CURRENT_DATETIME_HOSTNAME, which changes after each run.
 # tensorboard --logdir=runs
 log_dir = (Path('~/automl-meta-learning/') / CURRENT_DATETIME_HOSTNAME()).expanduser()
 print(log_dir)
 tb = SummaryWriter(log_dir=log_dir)
 tb.add_scalar('loss', 15)
 
-#%%
+# %%
 
 # download mini-imagenet automatically
 
-#from torchvision.utils import download_and_extract_archive
+# from torchvision.utils import download_and_extract_archive
 
 import torchvision.utils as utils
 
 print(utils)
-#print(download_and_extract_archive)
+# print(download_and_extract_archive)
 
-#%%
+# %%
 
-#torch concat, https://pytorch.org/docs/stable/torch.html#torch.cat
+# torch concat, https://pytorch.org/docs/stable/torch.html#torch.cat
 # Concatenates the given sequence of seq tensors in the given dimension.
 # All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 import torch
 
-g1 = torch.randn(3,2)
-g2 = torch.randn(4,2)
+g1 = torch.randn(3, 2)
+g2 = torch.randn(4, 2)
 
-g3 = torch.randn(4,2,3)
+g3 = torch.randn(4, 2, 3)
 
 grads = [g1, g2]
 print(g1.view(-1).size())
 print(g2.view(-1).size())
 print(g3.view(-1).size())
-#print(g3.view(-1))
+# print(g3.view(-1))
 
 grads = torch.cat(grads, dim=0)
 print(grads)
@@ -1583,11 +1664,11 @@ print(grads.std())
 # All tensors need to be of the same size.
 # torch.stack([g1,g2], dim=0)
 
-#%%
+# %%
 
 import torch
 
-a = torch.tensor([1,2,3.], requires_grad=True)
+a = torch.tensor([1, 2, 3.], requires_grad=True)
 a_detached = a.detach()
 print(a_detached.is_leaf)
 a_detached_sum = a.sum()
@@ -1595,7 +1676,7 @@ print(c.is_leaf)
 d = c.detach()
 print(d.is_leaf)
 
-#%%
+# %%
 
 import torch
 
@@ -1603,42 +1684,43 @@ from types import SimpleNamespace
 from pathlib import Path
 from pprint import pprint
 
-x = torch.empty([1,2,3])
+x = torch.empty([1, 2, 3])
 print(x.size())
 
 args = SimpleNamespace()
 args.data_root = "~/automl-meta-learning/data/miniImagenet"
 
-#n1313361300001299.jpg
+# n1313361300001299.jpg
 args.data_root = Path(args.data_root).expanduser()
 
-#%%
+# %%
 
 import torch
 
-CHW = 3,12,12
+CHW = 3, 12, 12
 x = torch.randn(CHW)
 y = torch.randn(CHW)
 
-new = [x,y]
+new = [x, y]
 new = torch.stack(new)
 print(x.size())
 print(new.size())
 
-#%%
+# %%
 
-print('a');print('b')
+print('a');
+print('b')
 
-#%%
+# %%
 
 # conver list to tensor
 
 import torch
 
-x = torch.tensor([1,2,3.])
+x = torch.tensor([1, 2, 3.])
 print(x)
 
-#%%
+# %%
 
 from torchvision.transforms import Compose, Resize, ToTensor
 
@@ -1651,7 +1733,7 @@ from types import SimpleNamespace
 from tqdm import tqdm
 
 ## get args
-args = SimpleNamespace(episodes=5,n_classes=5,k_shot=5,k_eval=15,meta_batch_size=1,n_workers=4)
+args = SimpleNamespace(episodes=5, n_classes=5, k_shot=5, k_eval=15, meta_batch_size=1, n_workers=4)
 args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
 
 ## get meta-batch loader
@@ -1679,28 +1761,28 @@ with tqdm(dataset):
         if episode >= args.episodes:
             break
 
-#%%
+# %%
 
 # zip tensors
 
 import torch
 
-x = torch.tensor([1.,2.,3.])
-y = torch.tensor([1,2,3])
+x = torch.tensor([1., 2., 3.])
+y = torch.tensor([1, 2, 3])
 
-print(list(zip(x,y)))
+print(list(zip(x, y)))
 
-xx = torch.randn(2,3,84,84)
-yy = torch.randn(2,3,32,32)
+xx = torch.randn(2, 3, 84, 84)
+yy = torch.randn(2, 3, 32, 32)
 
-print(len(list(zip(xx,yy))))
+print(len(list(zip(xx, yy))))
 
-#%%
+# %%
 
 x = 2
 print(x)
 
-#%%
+# %%
 
 ## sinusioid function
 print('Starting Sinusioid cell')
@@ -1709,18 +1791,18 @@ from torchmeta.toy import Sinusoid
 from torchmeta.utils.data import BatchMetaDataLoader
 from torchmeta.transforms import ClassSplitter
 
-#from tqdm import tqdm
+# from tqdm import tqdm
 
-batch_size=16
+batch_size = 16
 shots = 5
 test_shots = 15
 # dataset = torchmeta.toy.helpers.sinusoid(shots=shots, test_shots=tes_shots)
-metaset_dataset = Sinusoid(num_samples_per_task=shots+test_shots, num_tasks=100, noise_std=None)
+metaset_dataset = Sinusoid(num_samples_per_task=shots + test_shots, num_tasks=100, noise_std=None)
 splitter_metset_dataset = ClassSplitter(
-        metaset_dataset,
-        num_train_per_class=shots,
-        num_test_per_class=test_shots,
-        shuffle=True)
+    metaset_dataset,
+    num_train_per_class=shots,
+    num_test_per_class=test_shots,
+    shuffle=True)
 dataloader = BatchMetaDataLoader(splitter_metset_dataset, batch_size=batch_size, num_workers=4)
 
 print(f'batch_size = {batch_size}')
@@ -1734,12 +1816,12 @@ for batch_idx, batch in enumerate(dataloader):
     print(f'train_targets.shape = {train_targets.shape}')
     print(f'test_inputs.shape = {test_inputs.shape}')
     print(f'test_targets.shape = {test_targets.shape}')
-    if batch_idx >= 1: # halt after 2 iterations
+    if batch_idx >= 1:  # halt after 2 iterations
         break
 
 print('DONE\a')
 
-#%%
+# %%
 
 ## notes of torchmeta
 
@@ -1757,7 +1839,8 @@ print(f'metaset_sinusoid = {metaset_sinusoid}')
 # i.e. the N-way, K-shot tasks/datasets we need.
 print('\n-- MiniImagenet(CombinationMetaDataset)')
 data_path = Path('~/data').expanduser()
-metaset_miniimagenet = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_train=True, download=True)
+metaset_miniimagenet = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_train=True,
+                                                       download=True)
 print(f'type(metaset_miniimagenet) = {type(metaset_miniimagenet)}')
 print(f'len(metaset_miniimagenet) = {len(metaset_miniimagenet)}')
 print(f'metaset_miniimagenet = {metaset_miniimagenet}')
@@ -1767,8 +1850,7 @@ dataset = metaset_miniimagenet
 dataset = torchmeta.transforms.ClassSplitter(dataset, num_train_per_class=1, num_test_per_class=15, shuffle=True)
 print(dataset)
 
-
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -1780,13 +1862,13 @@ x = torch.rand()
 
 print(x)
 
-l = nn.Linear(1,1)
+l = nn.Linear(1, 1)
 
 y = l(x)
 
 print(y)
 
-#%%
+# %%
 
 # saving tensors for my data set
 import torch
@@ -1797,21 +1879,21 @@ from collections import OrderedDict
 from pathlib import Path
 
 # N x's of size D=1 in an interval
-Din,Dout = 3,2
+Din, Dout = 3, 2
 num_samples = 5
-lb,ub = -1,1
-X = (ub - lb) * torch.rand([num_samples,Din]) + lb  # rand gives uniform in [0,1) range
+lb, ub = -1, 1
+X = (ub - lb) * torch.rand([num_samples, Din]) + lb  # rand gives uniform in [0,1) range
 
 # N y's of size D=1 (from output of NN)
 f = nn.Sequential(OrderedDict([
-    ('f1', nn.Linear(Din,Dout)),
+    ('f1', nn.Linear(Din, Dout)),
     ('out', nn.SELU())
 ]))
 
 # fill cnn with Gaussian
-mu1,std1 = 5,7.5
-f.f1.weight.data.normal_(mu1,std1)
-f.f1.bias.data.normal_(mu1,std1)
+mu1, std1 = 5, 7.5
+f.f1.weight.data.normal_(mu1, std1)
+f.f1.bias.data.normal_(mu1, std1)
 
 # get outputs
 Y = f(X)
@@ -1820,15 +1902,15 @@ print(Y)
 # save tensors and cnn
 # https://stackoverflow.com/questions/1466000/difference-between-modes-a-a-w-w-and-r-in-built-in-open-function
 db = {
-    'X':X,
-    'Y':Y
+    'X': X,
+    'Y': Y
 }
 path = Path(f'~/data/tmp/SinData_mu1{mu1}_std1{std1}/').expanduser()
 path.mkdir(parents=True, exist_ok=True)
-with open(path / 'db','w') as file: # create file and truncate to length 0, only writing allowed
+with open(path / 'db', 'w') as file:  # create file and truncate to length 0, only writing allowed
     torch.save(db, file)
 
-#%%
+# %%
 
 # saving data in numpy
 
@@ -1839,23 +1921,23 @@ from pathlib import Path
 path = Path('~/data/tmp/').expanduser()
 path.mkdir(parents=True, exist_ok=True)
 
-lb,ub = -1,1
+lb, ub = -1, 1
 num_samples = 5
-x = np.random.uniform(low=lb,high=ub,size=(1,num_samples))
-y = x**2 + x + 2
+x = np.random.uniform(low=lb, high=ub, size=(1, num_samples))
+y = x ** 2 + x + 2
 
 # using save (to npy), savez (to npz)
-np.save(path/'x', x)
-np.save(path/'y', y)
-np.savez(path/'db', x=x, y=y)
-with open(path/'db.pkl', 'wb') as db_file:
-    pickle.dump(obj={'x':x, 'y':y}, file=db_file)
+np.save(path / 'x', x)
+np.save(path / 'y', y)
+np.savez(path / 'db', x=x, y=y)
+with open(path / 'db.pkl', 'wb') as db_file:
+    pickle.dump(obj={'x': x, 'y': y}, file=db_file)
 
 ## using loading npy, npz files
-x_loaded = np.load(path/'x.npy')
-y_load = np.load(path/'y.npy')
-db = np.load(path/'db.npz')
-with open(path/'db.pkl', 'rb') as db_file:
+x_loaded = np.load(path / 'x.npy')
+y_load = np.load(path / 'y.npy')
+db = np.load(path / 'db.npz')
+with open(path / 'db.pkl', 'rb') as db_file:
     db_pkl = pickle.load(db_file)
 
 print(x is x_loaded)
@@ -1864,7 +1946,7 @@ print(x == db['x'])
 print(x == db_pkl['x'])
 print('done')
 
-#%%
+# %%
 
 import numpy as np
 from pathlib import Path
@@ -1872,21 +1954,21 @@ from pathlib import Path
 path = Path('~/data/tmp/').expanduser()
 path.mkdir(parents=True, exist_ok=True)
 
-lb,ub = -1,1
+lb, ub = -1, 1
 num_samples = 5
-x = np.random.uniform(low=lb,high=ub,size=(1,num_samples))
-y = x**2 + x + 2
+x = np.random.uniform(low=lb, high=ub, size=(1, num_samples))
+y = x ** 2 + x + 2
 
-np.save(path/'x', x)
-np.save(path/'y', y)
+np.save(path / 'x', x)
+np.save(path / 'y', y)
 
-x_loaded = np.load(path/'x.npy')
-y_load = np.load(path/'y.npy')
+x_loaded = np.load(path / 'x.npy')
+y_load = np.load(path / 'y.npy')
 
-print(x is x_loaded) # False
-print(x == x_loaded) # [[ True  True  True  True  True]]
+print(x is x_loaded)  # False
+print(x == x_loaded)  # [[ True  True  True  True  True]]
 
-#%%
+# %%
 
 # saving torch tensors
 
@@ -1900,15 +1982,15 @@ from collections import OrderedDict
 path = Path('~/data/tmp/').expanduser()
 path.mkdir(parents=True, exist_ok=True)
 
-tensor_a = torch.rand(2,3)
-tensor_b = torch.rand(1,3)
+tensor_a = torch.rand(2, 3)
+tensor_b = torch.rand(1, 3)
 
 db = {'a': tensor_a, 'b': tensor_b}
 
-torch.save(db, path/'torch_db')
-loaded = torch.load(path/'torch_db')
-print( loaded['a'] == tensor_a )
-print( loaded['b'] == tensor_b )
+torch.save(db, path / 'torch_db')
+loaded = torch.load(path / 'torch_db')
+print(loaded['a'] == tensor_a)
+print(loaded['b'] == tensor_b)
 
 # testing if ToTensor() screws things up
 lb, ub = -1, 1
@@ -1917,7 +1999,7 @@ x = torch.distributions.Uniform(low=lb, high=ub).sample((N, Din))
 print(x)
 
 f = nn.Sequential(OrderedDict([
-    ('f1', nn.Linear(Din,Dout)),
+    ('f1', nn.Linear(Din, Dout)),
     ('out', nn.SELU())
 ]))
 y = f(x)
@@ -1926,18 +2008,17 @@ transform = torchvision.transforms.transforms.ToTensor()
 y_proc = transform(y)
 print(y_proc)
 
-#%%
+# %%
 
 # union dictionaries, https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression-in-python
 
-d1 = {'a':1, 'b':2.5}
-d2 = {'b':2, 'c':3, 'd':4}
+d1 = {'a': 1, 'b': 2.5}
+d2 = {'b': 2, 'c': 3, 'd': 4}
 d = {**d1, **d2}
 # duplicates resolved in favour of d2
 print(d)
 
-
-#%%
+# %%
 
 # generating uniform variables
 
@@ -1947,29 +2028,29 @@ num_samples = 3
 Din = 1
 lb, ub = -1, 1
 
-xn = np.random.uniform(low=lb, high=ub, size=(num_samples,Din))
+xn = np.random.uniform(low=lb, high=ub, size=(num_samples, Din))
 print(xn)
 
 import torch
 
 sampler = torch.distributions.Uniform(low=lb, high=ub)
-r = sampler.sample((num_samples,Din))
+r = sampler.sample((num_samples, Din))
 
 print(r)
 
-r2 = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples,Din))
+r2 = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples, Din))
 
 print(r2)
 
 # process input
 f = nn.Sequential(OrderedDict([
-    ('f1', nn.Linear(Din,Dout)),
+    ('f1', nn.Linear(Din, Dout)),
     ('out', nn.SELU())
 ]))
 Y = f(r2)
 print(Y)
 
-#%%
+# %%
 
 # sampling from normal distribution in torch
 
@@ -1982,7 +2063,7 @@ x = torch.distributions.normal.Normal(loc=mu, scale=std).sample((num_samples, Di
 
 print(x)
 
-#%%
+# %%
 
 # creating data and running through a nn and saving it
 
@@ -2006,7 +2087,7 @@ lb, ub = -1, 1
 x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples, Din))
 
 f = nn.Sequential(OrderedDict([
-    ('f1', nn.Linear(Din,Dout)),
+    ('f1', nn.Linear(Din, Dout)),
     ('out', nn.SELU())
 ]))
 y = f(x)
@@ -2048,7 +2129,7 @@ print(y_eq_y3)
 y_eq_yy3 = y == yy3
 print(y_eq_yy3)
 
-#%%
+# %%
 
 # test for saving everything with torch.save
 
@@ -2072,7 +2153,7 @@ lb, ub = -1, 1
 x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples, Din))
 
 f = nn.Sequential(OrderedDict([
-    ('f1', nn.Linear(Din,Dout)),
+    ('f1', nn.Linear(Din, Dout)),
     ('out', nn.SELU())
 ]))
 y = f(x)
@@ -2092,7 +2173,7 @@ yy3 = f3(xx)
 
 print(yy3)
 
-#%%
+# %%
 
 # my saving code for synthetic data, nvm using torch.save for everything
 
@@ -2126,7 +2207,7 @@ print(yy3)
 # # save model
 # torch.save(f,path / 'f')
 
-#%%
+# %%
 
 import torch
 
@@ -2157,10 +2238,10 @@ y = f(x)
 
 print(y)
 
-section_label = [1]*4 + [2]
+section_label = [1] * 4 + [2]
 print(section_label)
 
-#%%
+# %%
 
 # get list of paths to task
 # https://stackoverflow.com/questions/973473/getting-a-list-of-all-subdirectories-in-the-current-directory
@@ -2176,7 +2257,7 @@ data_path = (data_path / meta_split).expanduser()
 # with path lib
 tasks_folder = [f for f in data_path.iterdir() if f.is_dir()]
 
-assert('f_avg' not in tasks_folder)
+assert ('f_avg' not in tasks_folder)
 
 len_folder = len(tasks_folder)
 print(len_folder)
@@ -2186,9 +2267,9 @@ print()
 # with glob
 p = str(data_path) + '/*/'
 print(p)
-tasks_folder = glob( p )
+tasks_folder = glob(p)
 
-assert('f_avg' not in tasks_folder)
+assert ('f_avg' not in tasks_folder)
 
 len_folder = len(tasks_folder)
 print(len_folder)
@@ -2196,17 +2277,17 @@ print(tasks_folder)
 print()
 
 # with glob and negation
-print( set(glob(str(data_path / "f_avg"))) )
+print(set(glob(str(data_path / "f_avg"))))
 tasks_folder = set(glob(str(data_path / '*'))) - set(glob(str(data_path / "f_avg")))
 
-assert('f_avg' not in tasks_folder)
+assert ('f_avg' not in tasks_folder)
 
 len_folder = len(tasks_folder)
 print(len_folder)
 print(tasks_folder)
 print()
 
-#%%
+# %%
 
 # looping through metasets
 
@@ -2245,7 +2326,7 @@ with tqdm(range(epochs)) as tepochs:
             print(f'test_inputs.shape = {test_inputs.shape}')
             print(f'test_targets.shape = {test_targets.shape}')
 
-#%%
+# %%
 
 from tqdm import tqdm
 
@@ -2256,27 +2337,23 @@ with tqdm(range(5)) as trange:
         print(t)
         time.sleep(1)
 
-
-#%%
+# %%
 
 
 import torch
 import torch.nn as nn
 
-
-l1 = torch.tensor([1,2,3.])**0.5
-l2 = torch.tensor([0,0,0.0])
+l1 = torch.tensor([1, 2, 3.]) ** 0.5
+l2 = torch.tensor([0, 0, 0.0])
 mse = nn.MSELoss()
-loss = mse(l1,l2)
+loss = mse(l1, l2)
 print(loss)
 
-
-#%%
+# %%
 
 import numpy as np
 
-
-x = np.arange(0,10)
+x = np.arange(0, 10)
 print(x)
 
 print(x.max())
@@ -2284,13 +2361,13 @@ print(x.min())
 print(x.mean())
 print(np.median(x))
 
-#%%
+# %%
 
 x = torch.randn(3)
 print(x)
 print(x.argmax(-1))
 
-#%%
+# %%
 
 # testing accuracy function
 # https://discuss.pytorch.org/t/calculating-accuracy-of-the-current-minibatch/4308/11
@@ -2300,16 +2377,16 @@ import torch
 import torch.nn as nn
 
 D = 1
-true = torch.tensor([0,1,0,1,1]).reshape(5,1)
+true = torch.tensor([0, 1, 0, 1, 1]).reshape(5, 1)
 print(f'true.size() = {true.size()}')
 
 batch_size = true.size(0)
 print(f'batch_size = {batch_size}')
-x = torch.randn(batch_size,D)
+x = torch.randn(batch_size, D)
 print(f'x = {x}')
 print(f'x.size() = {x.size()}')
 
-mdl = nn.Linear(D,1)
+mdl = nn.Linear(D, 1)
 logit = mdl(x)
 _, pred = torch.max(logit.data, 1)
 
@@ -2321,7 +2398,7 @@ print(f'true = {true}')
 acc = (true == pred).sum().item()
 print(f'acc = {acc}')
 
-#%%
+# %%
 
 # https://towardsdatascience.com/understanding-dimensions-in-pytorch-6edf9972d3be
 # dimension
@@ -2342,9 +2419,9 @@ of indices (using the remaining set that we'd usually need).
 import torch
 
 x = torch.tensor([
-     [1, 2, 3],
-     [4, 5, 6]
-   ])
+    [1, 2, 3],
+    [4, 5, 6]
+])
 
 print(f'x.size() = {x.size()}')
 
@@ -2363,28 +2440,29 @@ x0 = x.max(0)
 print(x0.values)
 
 y = torch.tensor([[
-         [ 1,  2,  3,  4],
-         [ 5,  6,  7,  8],
-         [ 9, 10, 11, 12]],
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12]],
 
-        [[13, 14, 15, 16],
-         [17, 18, 19, 20],
-         [21, 22, 23, 24]]])
+    [[13, 14, 15, 16],
+     [17, 18, 19, 20],
+     [21, 22, 23, 24]]])
 
 print(y)
 
 # into the screen [1, 13]
-print(y[:,0,0])
+print(y[:, 0, 0])
 # columns [1, 5, 9]
-print(y[0,:,0])
+print(y[0, :, 0])
 # rows [1, 2, 3, 4]
-print(y[0,0,:])
+print(y[0, 0, :])
 
 # for each remaining index, select the largest value in the "screen" dimension
 y0 = y.max(0)
 print(y0.values)
 
-#%%
+
+# %%
 
 # understanding making label predictions
 # https://discuss.pytorch.org/t/how-does-one-get-the-predicted-classification-label-from-a-pytorch-model/91649/3?u=brando_miranda
@@ -2399,6 +2477,7 @@ def calc_accuracy(mdl, X, Y):
     acc = (max_indices == Y).sum().item() / n
     return acc
 
+
 import torch
 import torch.nn as nn
 
@@ -2406,7 +2485,7 @@ import torch.nn as nn
 D, Dout = 1, 5
 batch_size = 16
 x = torch.randn(batch_size, D)
-y = torch.randint(low=0,high=Dout,size=(batch_size,))
+y = torch.randint(low=0, high=Dout, size=(batch_size,))
 
 mdl = nn.Linear(D, Dout)
 logits = mdl(x)
@@ -2425,13 +2504,12 @@ acc = (pred == y).sum().item() / pred.size(0)
 print(acc)
 print(calc_accuracy(mdl, x, y))
 
-#%%
+# %%
 
 # https://discuss.pytorch.org/t/runtimeerror-element-0-of-variables-does-not-require-grad-and-does-not-have-a-grad-fn/11074/20
 
 import torch
 import torch.nn as nn
-
 
 x = torch.randn(1)
 mdl = nn.Linear(1, 1)
@@ -2441,9 +2519,7 @@ print(mdl.weight)
 
 print(y)
 
-
-
-#%%
+# %%
 
 # https://discuss.pytorch.org/t/how-to-get-the-module-names-of-nn-sequential/39682
 # looping through modules but get the one with a specific name
@@ -2454,9 +2530,9 @@ import torch.nn as nn
 from collections import OrderedDict
 
 params = OrderedDict([
-    ('fc0', nn.Linear(in_features=4,out_features=4)),
+    ('fc0', nn.Linear(in_features=4, out_features=4)),
     ('ReLU0', nn.ReLU()),
-    ('fc1L:final', nn.Linear(in_features=4,out_features=1))
+    ('fc1L:final', nn.Linear(in_features=4, out_features=1))
 ])
 mdl = nn.Sequential(params)
 
@@ -2483,7 +2559,7 @@ for name, m in mdl.named_children():
     print(name)
     print(m)
 
-#%%
+# %%
 
 # apply mdl to x until the final layer, then return the embeding
 
@@ -2496,19 +2572,19 @@ Din, Dout = 1, 1
 H = 10
 
 modules = OrderedDict([
-    ('fc0', nn.Linear(in_features=Din,out_features=H)),
+    ('fc0', nn.Linear(in_features=Din, out_features=H)),
     ('ReLU0', nn.ReLU()),
 
-    ('fc1', nn.Linear(in_features=H,out_features=H)),
+    ('fc1', nn.Linear(in_features=H, out_features=H)),
     ('ReLU1', nn.ReLU()),
 
-    ('fc2', nn.Linear(in_features=H,out_features=H)),
+    ('fc2', nn.Linear(in_features=H, out_features=H)),
     ('ReLU2', nn.ReLU()),
 
-    ('fc3', nn.Linear(in_features=H,out_features=H)),
+    ('fc3', nn.Linear(in_features=H, out_features=H)),
     ('ReLU3', nn.ReLU()),
 
-    ('fc4L:final', nn.Linear(in_features=H,out_features=Dout))
+    ('fc4L:final', nn.Linear(in_features=H, out_features=Dout))
 ])
 
 mdl = nn.Sequential(modules)
@@ -2522,7 +2598,7 @@ for name, m in self.base_model.named_children():
 
 print(out.size())
 
-#%%
+# %%
 
 # initializing a constant weight net
 # https://discuss.pytorch.org/t/how-to-add-appropriate-noise-to-a-neural-network-with-constant-weights-so-that-back-propagation-training-works/93411
@@ -2534,7 +2610,7 @@ print(out.size())
 # model = nn.Linear(1, 1)
 # model_copy = copy.deepcopy(model)
 
-#%%
+# %%
 
 print('start')
 
@@ -2564,7 +2640,6 @@ maml_stds = [4.039131189060566e-08,
              9.20683484136399e-08,
              9.789292209743077e-08]
 
-
 # fig = plt.figure()
 fig, ax = plt.subplots(nrows=1, ncols=1)
 
@@ -2586,7 +2661,7 @@ plt.show()
 # fig.savefig(path)
 
 print('done \a')
-#%%
+# %%
 
 # Torch-meta miniImagenet
 # loop through meta-batches of this data set, print the size, make sure it's the size you exepct
@@ -2628,3 +2703,92 @@ with tqdm(range(epochs)) as tepochs:
             print(f'test_inputs.shape = {test_inputs.shape}')
             print(f'test_targets.shape = {test_targets.shape}')
             print()
+
+# %%
+
+import torch
+
+x = torch.tensor([1., 2, 3])
+print(x.mean())
+
+print(x * x)
+print(x @ x)
+print(x.matmul(x))
+
+# x.mm(x) weird error
+
+# %%
+
+import torch
+
+x = torch.randn(12, 20)
+y = torch.randn(20, 30)
+
+out = x @ y
+print(out.size())
+
+# %%
+# https://www.youtube.com/watch?v=46RjXawJQgg&t=1493s
+
+from pathlib import Path
+
+from pandas import read_csv
+
+
+read_csv(Path())
+
+#%%
+
+print('hello-world')
+xx = 2
+
+print(xx)
+
+print(' ')
+
+
+##
+print('end!')
+
+# %%
+
+# let's see how big the random values from the normal are
+
+import torch
+
+D = 8
+w = torch.tensor([0.1]*D)
+print(f'w.size() = {w.size()}')
+mu = w
+std = mu * 0.05
+noise = torch.distributions.normal.Normal(loc=mu, scale=std).sample()
+
+print('--- noise ')
+print(noise.size())
+print(noise)
+
+print('--- w')
+print(w.size())
+print(w)
+
+# %%
+
+# editing parameters in pytorch in place without error: https://discuss.pytorch.org/t/how-are-layer-weights-and-biases-initialized-by-default/13073/41
+
+import torch
+import torch.nn as nn
+from collections import OrderedDict
+
+Din, Dout = 8, 1
+
+base_model = nn.Sequential(OrderedDict([
+    ('f1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU())
+]))
+
+with torch.no_grad():
+    for i, w in enumerate(base_model.parameters()):
+        print(f'--- i = {i}')
+        print(w)
+        w += w + 0.001
+        print(w)
