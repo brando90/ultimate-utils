@@ -238,6 +238,14 @@ def save_ckpt_meta_learning(args, meta_learner, debug=False):
     args.tb = tb
     return
 
+def save_checkpoint_simple(args, meta_learner):
+    # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
+    args.path_2_save_ckpt.mkdir(parents=True, exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+
+    args.base_model = "check the meta_learner field in the checkpoint not in the args field"  # so that we don't save the child model so many times since it's part of the meta-learner
+    # note this obj has the last episode/outer_i we ran
+    torch.save({'args': args, 'meta_learner': meta_learner}, args.path_2_save_ckpt / Path('/ckpt_file'))
+
 def resume_ckpt_meta_learning(args):
     path_to_ckpt = args.resume_ckpt_path / Path('db')
     with open(path_to_ckpt, 'rb') as db_file: 

@@ -2759,14 +2759,15 @@ import torch
 D = 8
 w = torch.tensor([0.1]*D)
 print(f'w.size() = {w.size()}')
-mu = w
-std = mu * 0.05
+mu = torch.zeros(w.size())
+std = w * 1.5e-2  # two decimal places and a little more
 noise = torch.distributions.normal.Normal(loc=mu, scale=std).sample()
 
 print('--- noise ')
 print(noise.size())
 print(noise)
 
+w += noise
 print('--- w')
 print(w.size())
 print(w)
@@ -2792,3 +2793,115 @@ with torch.no_grad():
         print(w)
         w += w + 0.001
         print(w)
+
+# %%
+
+# pickle vs torch.save
+
+# def log_validation(args, meta_learner, outer_opt, meta_val_set):
+#     """ Log the validation loss, acc. Checkpoint the model if that flag is on. """
+#     if args.save_ckpt:  # pickle vs torch.save https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
+#         # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
+#         path_to_ckpt = args.logger.current_logs_path
+#         path_to_ckpt.mkdir(parents=True, exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+#         ckpt_path_plus_path = path_to_ckpt / Path('db')
+#
+#         args.base_model = "check the meta_learner field in the checkpoint not in the args field"  # so that we don't save the child model so many times since it's part of the meta-learner
+#         # note this obj has the last episode/outer_i we ran
+#         torch.save({'args': args, 'meta_learner': meta_learner}, ckpt_path_plus_path)
+#     acc_mean, acc_std, loss_mean, loss_std = meta_eval(args, meta_learner, meta_val_set)
+#     if acc_mean > args.best_acc:
+#         args.best_acc, args.loss_of_best = acc_mean, loss_mean
+#         args.logger.loginfo(
+#             f"***> Stats of Best Acc model: meta-val loss: {args.loss_of_best} +- {loss_std}, meta-val acc: {args.best_acc} +- {acc_std}")
+#     return acc_mean, acc_std, loss_mean, loss_std
+
+# %%
+
+import numpy as np
+from sklearn.linear_model import LinearRegression
+X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
+# y = 1 * x_0 + 2 * x_1 + 3
+y = np.dot(X, np.array([1, 2])) + 3
+reg = LinearRegression()
+print(reg)
+reg = LinearRegression().fit(X, y)
+print(reg)
+reg.score(X, y)
+
+reg.coef_
+
+reg.intercept_
+
+reg.predict(np.array([[3, 5]]))
+
+# %%
+
+# https://stackoverflow.com/questions/63818676/what-is-the-machine-precision-in-pytorch-and-when-should-one-use-doubles
+# https://discuss.pytorch.org/t/how-does-one-start-using-double-without-unexpected-bugs/95715
+# https://discuss.pytorch.org/t/what-is-the-machine-precision-of-pytorch-with-cpus-or-gpus/9384
+
+import torch
+
+x1 = torch.tensor(1e-6)
+x2 = torch.tensor(1e-7)
+x3 = torch.tensor(1e-8)
+x4 = torch.tensor(1e-9)
+
+eps = torch.tensor(1e-11)
+
+print(x1.dtype)
+print(x1)
+print(x1+eps)
+
+print(x2)
+print(x2+eps)
+
+print(x3)
+print(x3+eps)
+
+print(x4)
+print(x4+eps)
+
+# %%
+
+# python float is a C double
+# NumPy's standard numpy.float is the same (so C double), also numpy.float64.
+
+import torch
+
+xf = torch.tensor(1e-7)
+xd = torch.tensor(1e-7, dtype=torch.double)
+epsf = torch.tensor(1e-11)
+
+print(xf.dtype)
+print(xf)
+print(xf.item())
+print(type(xf.item()))
+
+#
+print('\n> test when a+eps = a')
+print(xf.dtype)
+print(f'xf = {xf}')
+print(f'xf + 1e-7 = {xf + 1e-7}')
+print(f'xf + 1e-11 = {xf + 1e-11}')
+print(f'xf + 1e-8 = {xf + 1e-8}')
+print(f'xf + 1e-16 = {xf + 1e-16}')
+# after seeing the above it seems that there are errors if things are small
+
+print('\n> test when a+eps = a')
+x = torch.tensor(1e-7, dtype=torch.double)
+print(f'xf = {x}')
+print(f'xf + 1e-7 = {x + 1e-7}')
+print(f'xf + 1e-11 = {x + 1e-11}')
+print(f'xf + 1e-8 = {x + 1e-8}')
+print(f'xf + 1e-16 = {x + 1e-16}')
+# using doubles clearly is better but still has some errors
+
+print('\n> test when a+eps = a')
+x = torch.tensor(1e-4)
+print(f'xf = {x}')
+print(f'xf + 1e-7 = {x + 1e-7}')
+print(f'xf + 1e-11 = {x + 1e-11}')
+print(f'xf + 1e-8 = {x + 1e-8}')
+print(f'xf + 1e-16 = {x + 1e-16}')

@@ -20,6 +20,9 @@ events.out.tfevents.*
 logs*
 *.log
 
+# ckpts
+ckpt*
+
 # for images
 *.png
 test_img_*
