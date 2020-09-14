@@ -187,9 +187,9 @@ def report_times(start, verbose=False):
     minutes = seconds / 60
     hours = minutes / 60
     if verbose:
-        print(f"--- {seconds} {'seconds '+meta_str} ---")
-        print(f"--- {minutes} {'minutes '+meta_str} ---")
-        print(f"--- {hours} {'hours '+meta_str} ---")
+        print(f"--- {seconds} {'seconds ' + meta_str} ---")
+        print(f"--- {minutes} {'minutes ' + meta_str} ---")
+        print(f"--- {hours} {'hours ' + meta_str} ---")
         print("\a")
     ##
     msg = f"time passed: hours:{hours}, minutes={minutes}, seconds={seconds}"
@@ -370,6 +370,11 @@ def get_cluster_jobids(args):
     if "MY_CONDOR_JOB_ID" in os.environ:
         args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
         args.jobid = args.condor_jobid
+    if "PBS_JOBID" in os.environ:
+        try:
+            args.jobid = int(os.environ["PBS_JOBID"])
+        except:
+            args.jobid = os.environ["PBS_JOBID"]
     return args
 
 
