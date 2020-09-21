@@ -336,6 +336,7 @@ def my_print(*args, filepath="~/my_stdout.txt"):
     Keyword Arguments:
         filepath {str} -- where to save contents of printing (default: {'~/my_stdout.txt'})
     """
+    import sys
     filepath = Path(filepath).expanduser()
     # do normal print
     __builtins__["print"](*args, file=sys.__stdout__)  # prints to terminal

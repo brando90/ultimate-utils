@@ -2867,6 +2867,12 @@ print(x4+eps)
 
 # python float is a C double
 # NumPy's standard numpy.float is the same (so C double), also numpy.float64.
+# https://www.doc.ic.ac.uk/~eedwards/compsys/float/
+# https://stackoverflow.com/questions/1049722/what-is-2s-complement
+# https://www.cs.cornell.edu/~tomf/notes/cps104/twoscomp.html#whyworks
+# https://stackoverflow.com/questions/7524838/fixed-point-vs-floating-point-number
+# https://en.wikipedia.org/wiki/Single-precision_floating-point_format
+# https://www.cs.cornell.edu/~tomf/notes/cps104/twoscomp.html#whyworks
 
 import torch
 
@@ -2905,3 +2911,43 @@ print(f'xf + 1e-7 = {x + 1e-7}')
 print(f'xf + 1e-11 = {x + 1e-11}')
 print(f'xf + 1e-8 = {x + 1e-8}')
 print(f'xf + 1e-16 = {x + 1e-16}')
+
+#%%
+
+# https://pytorch.org/docs/stable/torchvision/models.html
+
+#%%
+
+import torch
+
+print(torch.zeros(2))
+m = torch.distributions.MultivariateNormal(torch.zeros(2), torch.eye(2))
+x = m.sample()
+print(x)
+
+# m = torch.distributions.MultivariateNormal(torch.zeros(1, 3), torch.eye(1, 3))
+# mu = m.sample()
+# print(mu)
+
+m = torch.distributions.MultivariateNormal(torch.zeros(1, 5), torch.eye(5))
+y = m.sample()
+print(y)
+
+#%%
+
+from pathlib import Path
+from matplotlib import pyplot as plt
+
+import numpy as np
+
+path = Path('~/data/test_fig.png').expanduser()
+
+# x = np.linspace(0, 2*np.pi, 50)
+x = np.random.uniform(0, 2*np.pi, 100)
+noise = np.random.normal(0.0, 0.05, 100)
+print(noise)
+y = np.sin(x) + noise
+plt.figure()
+plt.scatter(x, y)
+plt.show()
+plt.savefig(path)
