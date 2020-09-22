@@ -2939,7 +2939,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-path = Path('~/data/test_fig.pdf').expanduser()
+path = Path('~/data/').expanduser()
 
 # x = np.linspace(0, 2*np.pi, 50)
 x = np.random.uniform(0, 2 * np.pi, 100)
@@ -2950,7 +2950,8 @@ plt.figure()
 plt.scatter(x, y)
 plt.ylabel('f(x)')
 plt.ylabel('x (raw feature)')
-plt.savefig(path)
+plt.savefig(path / 'test_fig.pdf')
+plt.savefig(path / 'test_fig.png')
 plt.show()
 
 # %%
@@ -2969,6 +2970,9 @@ print(server)
 # https://stackoverflow.com/questions/784201/is-there-a-python-mta-mail-transfer-agent
 # https://www.quora.com/How-does-one-send-e-mails-from-Python-using-MTA-Mail-Transfer-Agent-rather-than-an-SMTP-library
 # https://www.reddit.com/r/learnpython/comments/ixlq81/how_does_one_send_emails_from_python_using_mta/
+
+# Q why can't I just send an email directly?
+# Q why do smtp libraries exist
 
 # %%
 
@@ -3091,3 +3095,24 @@ if path_to_pdf.exists():
 server.send_message(msg)
 # server.sendmail(from_address, to_address, full_message)
 server.quit()
+
+#%%
+
+# Here, we used "w" letter in our argument, which indicates write and will create a file if it does not exist in library
+# Plus sign indicates both read and write.
+
+# with open('data.json', 'w+') as f:
+#     json.dump(self.stats, f)
+
+#%%
+
+import numpy as np
+from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
+
+path = Path('~/data/logs/').expanduser()
+tb = SummaryWriter(log_dir=path)
+# tb = SummaryWriter(log_dir=args.current_logs_path)
+
+for i in range(3):
+    loss = i + np.random.normal(loc=0, scale=1)
+    tb.add_scalar('loss', loss, i)

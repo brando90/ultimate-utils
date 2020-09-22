@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-from pdb import set_trace as st
+import json
 
 
 class Logger:
@@ -126,6 +126,9 @@ class Logger:
         ## Initialize where to save and what the split of the experiment is
         split = self.split if split is None else split
         current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
+        torch.save(self.stats, current_logs_path / 'experiment_stats')
+        with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
+            json.dump(self.stats, f)
 
         ## https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
         ## mpl.rcParams["errorbar.capsize"] = 3
@@ -177,6 +180,7 @@ class Logger:
 
             fig.savefig(current_logs_path / 'meta_train_eval.svg' )
             fig.savefig(current_logs_path / 'meta_train_eval.pdf' )
+            fig.savefig(current_logs_path / 'meta_train_eval.png' )
         elif nb_plots == 2:
             #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True) 
             #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)

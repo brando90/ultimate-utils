@@ -137,8 +137,6 @@ def send_email_pdf_figs(path_to_pdf, subject, message, destination, password_pat
 
 def send_mail_mta():
     """
-    TODO
-
     # MTA (Mail Transfer Agent)
     # https://stackoverflow.com/questions/784201/is-there-a-python-mta-mail-transfer-agent
     # https://www.quora.com/How-does-one-send-e-mails-from-Python-using-MTA-Mail-Transfer-Agent-rather-than-an-SMTP-library
