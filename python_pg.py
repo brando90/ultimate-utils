@@ -2734,10 +2734,9 @@ from pathlib import Path
 
 from pandas import read_csv
 
-
 read_csv(Path())
 
-#%%
+# %%
 
 print('hello-world')
 xx = 2
@@ -2745,7 +2744,6 @@ xx = 2
 print(xx)
 
 print(' ')
-
 
 ##
 print('end!')
@@ -2757,7 +2755,7 @@ print('end!')
 import torch
 
 D = 8
-w = torch.tensor([0.1]*D)
+w = torch.tensor([0.1] * D)
 print(f'w.size() = {w.size()}')
 mu = torch.zeros(w.size())
 std = w * 1.5e-2  # two decimal places and a little more
@@ -2820,6 +2818,7 @@ with torch.no_grad():
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
+
 X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
 # y = 1 * x_0 + 2 * x_1 + 3
 y = np.dot(X, np.array([1, 2])) + 3
@@ -2852,16 +2851,16 @@ eps = torch.tensor(1e-11)
 
 print(x1.dtype)
 print(x1)
-print(x1+eps)
+print(x1 + eps)
 
 print(x2)
-print(x2+eps)
+print(x2 + eps)
 
 print(x3)
-print(x3+eps)
+print(x3 + eps)
 
 print(x4)
-print(x4+eps)
+print(x4 + eps)
 
 # %%
 
@@ -2912,11 +2911,11 @@ print(f'xf + 1e-11 = {x + 1e-11}')
 print(f'xf + 1e-8 = {x + 1e-8}')
 print(f'xf + 1e-16 = {x + 1e-16}')
 
-#%%
+# %%
 
 # https://pytorch.org/docs/stable/torchvision/models.html
 
-#%%
+# %%
 
 import torch
 
@@ -2933,24 +2932,26 @@ m = torch.distributions.MultivariateNormal(torch.zeros(1, 5), torch.eye(5))
 y = m.sample()
 print(y)
 
-#%%
+# %%
 
 from pathlib import Path
 from matplotlib import pyplot as plt
 
 import numpy as np
 
-path = Path('~/data/test_fig.png').expanduser()
+path = Path('~/data/test_fig.pdf').expanduser()
 
 # x = np.linspace(0, 2*np.pi, 50)
-x = np.random.uniform(0, 2*np.pi, 100)
+x = np.random.uniform(0, 2 * np.pi, 100)
 noise = np.random.normal(0.0, 0.05, 100)
 print(noise)
 y = np.sin(x) + noise
 plt.figure()
 plt.scatter(x, y)
-plt.show()
+plt.ylabel('f(x)')
+plt.ylabel('x (raw feature)')
 plt.savefig(path)
+plt.show()
 
 # %%
 
@@ -2977,35 +2978,39 @@ server = smtplib.SMTP('smtp.intel-research.net', 25)
 server.starttls()
 print(server)
 
+
 # %%
 
-from socket import gethostname
-from email.message import EmailMessage
-import smtplib
+# from socket import gethostname
+# from email.message import EmailMessage
+# import smtplib
+#
+# server = smtplib.SMTP('smtp.gmail.com', 587)
+# server.starttls()
+# # not a real email account nor password, its all ok!
+# server.login('slurm.miranda@gmail.com', 'dummy123!@#$321')
+#
+# # craft message
+# msg = EmailMessage()
+#
+# message = f'{message}\nSend from Hostname: {gethostname()}'
+# msg.set_content(message)
+# msg['Subject'] = subject
+# msg['From'] = 'slurm.miranda@gmail.com'
+# msg['To'] = destination
+# # send msg
+# server.send_message(msg)
 
-server = smtplib.SMTP('smtp.gmail.com', 587)
-server.starttls()
-# not a real email account nor password, its all ok!
-server.login('slurm.miranda@gmail.com', 'dummy123!@#$321')
+# %%
 
-# craft message
-msg = EmailMessage()
-
-message = f'{message}\nSend from Hostname: {gethostname()}'
-msg.set_content(message)
-msg['Subject'] = subject
-msg['From'] = 'slurm.miranda@gmail.com'
-msg['To'] = destination
-# send msg
-server.send_message(msg)
-
-#%%
+# send email with smtp intel
 
 def send_email(message):
     from socket import gethostname
     import smtplib
     hostname = gethostname()
     from_address = 'slurm.miranda@gmail.com'
+    from_address = 'miranda9@intel-research.net.'
     # to_address = [ 'iam-alert@intel-research.net']
     to_address = ['brando.science@gmail.com']
     subject = f"Test msg from: {hostname}"
@@ -3020,5 +3025,69 @@ def send_email(message):
     server.quit()
     # sys.exit(1)
 
+
+print('start')
 send_email('HelloWorld')
 print('done email test!')
+
+
+# %%
+
+def send_email2(message):
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from socket import gethostname
+    import smtplib
+    server = smtplib.SMTP('smtp.intel-research.net')
+    # craft message
+    msg = MIMEMultipart()
+
+    message = f'{message}\nSend from Hostname: {gethostname()}'
+    msg['Subject'] = 'Test email'
+    msg['From'] = 'miranda9@intel-research.net.'
+    msg['To'] = 'brando.science@gmail.com'
+    msg.attach(MIMEText(message, "plain"))
+    # send message
+    server.send_message(msg)
+    # server.sendmail(from_address, to_address, full_message)
+    server.quit()
+
+
+print('start')
+send_email2('HelloWorld')
+print('done email test!')
+
+#%%
+
+from pathlib import Path
+
+message = 'HelloWorld'
+path_to_pdf = Path('~/data/test_fig.pdf').expanduser()
+
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from socket import gethostname
+import smtplib
+
+server = smtplib.SMTP('smtp.intel-research.net')
+# craft message
+msg = MIMEMultipart()
+
+message = f'{message}\nSend from Hostname: {gethostname()}'
+msg['Subject'] = 'Test email'
+msg['From'] = 'miranda9@intel-research.net.'
+msg['To'] = 'brando.science@gmail.com'
+msg.attach(MIMEText(message, "plain"))
+# attach pdf
+if path_to_pdf.exists():
+    with open(path_to_pdf, "rb") as f:
+        # attach = email.mime.application.MIMEApplication(f.read(),_subtype="pdf")
+        attach = MIMEApplication(f.read(), _subtype="pdf")
+    attach.add_header('Content-Disposition', 'attachment', filename=str(path_to_pdf))
+    msg.attach(attach)
+
+# send message
+server.send_message(msg)
+# server.sendmail(from_address, to_address, full_message)
+server.quit()
