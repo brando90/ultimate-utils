@@ -2951,3 +2951,74 @@ plt.figure()
 plt.scatter(x, y)
 plt.show()
 plt.savefig(path)
+
+# %%
+
+from socket import gethostname
+from email.message import EmailMessage
+import smtplib
+
+server = smtplib.SMTP('smtp.gmail.com', 587)
+server.starttls()
+print(server)
+
+# %%
+
+# MTA (Mail Transfer Agent)
+# https://stackoverflow.com/questions/784201/is-there-a-python-mta-mail-transfer-agent
+# https://www.quora.com/How-does-one-send-e-mails-from-Python-using-MTA-Mail-Transfer-Agent-rather-than-an-SMTP-library
+# https://www.reddit.com/r/learnpython/comments/ixlq81/how_does_one_send_emails_from_python_using_mta/
+
+# %%
+
+import smtplib
+
+server = smtplib.SMTP('smtp.intel-research.net', 25)
+server.starttls()
+print(server)
+
+# %%
+
+from socket import gethostname
+from email.message import EmailMessage
+import smtplib
+
+server = smtplib.SMTP('smtp.gmail.com', 587)
+server.starttls()
+# not a real email account nor password, its all ok!
+server.login('slurm.miranda@gmail.com', 'dummy123!@#$321')
+
+# craft message
+msg = EmailMessage()
+
+message = f'{message}\nSend from Hostname: {gethostname()}'
+msg.set_content(message)
+msg['Subject'] = subject
+msg['From'] = 'slurm.miranda@gmail.com'
+msg['To'] = destination
+# send msg
+server.send_message(msg)
+
+#%%
+
+def send_email(message):
+    from socket import gethostname
+    import smtplib
+    hostname = gethostname()
+    from_address = 'slurm.miranda@gmail.com'
+    # to_address = [ 'iam-alert@intel-research.net']
+    to_address = ['brando.science@gmail.com']
+    subject = f"Test msg from: {hostname}"
+    ##
+    message = f'Test msg from {hostname}: {message}'
+    full_message = f'From: {from_address}\n' \
+                   f'To: {to_address}\n' \
+                   f'Subject: {subject}\n' \
+                   f'{message}'
+    server = smtplib.SMTP('smtp.intel-research.net')
+    server.sendmail(from_address, to_address, full_message)
+    server.quit()
+    # sys.exit(1)
+
+send_email('HelloWorld')
+print('done email test!')

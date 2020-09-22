@@ -332,18 +332,20 @@ def my_print(*args, filepath="~/my_stdout.txt"):
     from utils.utils import my_print as print
 
     to overwrite builtin print function
-    
+
     Keyword Arguments:
         filepath {str} -- where to save contents of printing (default: {'~/my_stdout.txt'})
     """
+    # https://stackoverflow.com/questions/61084916/how-does-one-make-an-already-opened-file-readable-e-g-sys-stdout
     import sys
+    from builtins import print as builtin_print
     filepath = Path(filepath).expanduser()
     # do normal print
-    __builtins__["print"](*args, file=sys.__stdout__)  # prints to terminal
+    builtin_print(*args, file=sys.__stdout__)  # prints to terminal
     # open my stdout file in update mode
     with open(filepath, "a+") as f:
         # save the content we are trying to print
-        __builtins__["print"](*args, file=f)  # saves to file
+        builtin_print(*args, file=f)  # saves to file
 
 
 def collect_content_from_file(filepath):

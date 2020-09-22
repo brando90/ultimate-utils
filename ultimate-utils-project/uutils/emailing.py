@@ -31,6 +31,7 @@ def send_email_old(subject, message, destination):
     # send msg
     server.send_message(msg)
 
+
 def send_email(subject, message, destination, password_path=None):
     """ Send an e-mail from with message to destination email.
 
@@ -48,8 +49,11 @@ def send_email(subject, message, destination, password_path=None):
     import smtplib
     import json
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+    except:
+        server = smtplib.SMTP('smtp.intel-research.net', 25)
     with open(password_path) as f:
         config = json.load(f)
         server.login('slurm.miranda@gmail.com', config['password'])
@@ -64,6 +68,7 @@ def send_email(subject, message, destination, password_path=None):
         # send msg
         server.send_message(msg)
 
+
 def send_email_pdf_figs(path_to_pdf, subject, message, destination, password_path=None):
     # credits: http://linuxcursor.com/python-programming/06-how-to-send-pdf-ppt-attachment-with-html-body-in-python-script
     from socket import gethostname
@@ -74,8 +79,11 @@ def send_email_pdf_figs(path_to_pdf, subject, message, destination, password_pat
     import smtplib
     import json
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+    except:
+        server = smtplib.SMTP('smtp.intel-research.net', 25)
     with open(password_path) as f:
         config = json.load(f)
         server.login('slurm.miranda@gmail.com', config['password'])
