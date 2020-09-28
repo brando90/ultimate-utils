@@ -1,23 +1,13 @@
-#from torch.utils.tensorboard import SummaryWriter # https://deeplizard.com/learn/video/psexxmdrufm
+from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 from pathlib import Path
 
-def log_train_to_tensorboard(args, **kwargs):
-    """Logs to tensorboard given by experiment args.
-    
-    Arguments:
-        args {Namespace} -- arguments for experiment
-    """
-    args.tb.add_scalar('Meta-Loss-train', kwargs['meta_loss'], kwargs['outer_i'])
-    args.tb.add_scalar('Outer-error-train', kwargs['outer_train_acc'], kwargs['outer_i'])
 
-def log_val_to_tensorboard(args, **kwargs):
-    """Logs to tensorboard given by experiment args.
-    
-    Arguments:
-        args {Namespace} -- arguments for experiment
-    """
-    args.tb.add_scalar('Meta-Loss-val', kwargs['loss_mean'], kwargs['outer_i'])
-    args.tb.add_scalar('Outer-error-val', kwargs['acc_mean'], kwargs['outer_i'])
+def log_2_tb(args, tag1, tag2, epoch, loss, acc):
+    tb = args.tb
+    # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
+    tb.add_scalar(tag1, loss, epoch)
+    tb.add_scalar(tag2, acc, epoch)
+
 
 def test():
     import numpy as np
@@ -30,6 +20,7 @@ def test():
     for i in range(3):
         loss = i + np.random.normal(loc=0, scale=1)
         tb.add_scalar('loss', loss, i)
+
 
 if __name__ == '__main__':
     test()

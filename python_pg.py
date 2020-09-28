@@ -3116,3 +3116,22 @@ tb = SummaryWriter(log_dir=path)
 for i in range(3):
     loss = i + np.random.normal(loc=0, scale=1)
     tb.add_scalar('loss', loss, i)
+
+# %%
+
+# https://pytorch.org/tutorials/beginner/saving_loading_models.html
+
+# Saving & Loading Model for Inference
+# Save/Load state_dict (Recommended)
+# Save:
+torch.save(model.state_dict(), PATH)
+
+# Load:
+model = TheModelClass(*args, **kwargs)
+model.load_state_dict(torch.load(PATH))
+model.eval()
+
+# %%
+
+# https://discuss.pytorch.org/t/how-does-load-a-sequential-model-from-a-string/97648
+# https://stackoverflow.com/questions/64109883/how-does-one-load-a-sequential-model-from-a-string-in-pytorch
