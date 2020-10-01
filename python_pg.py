@@ -2665,6 +2665,8 @@ print('done \a')
 
 # Torch-meta miniImagenet
 # loop through meta-batches of this data set, print the size, make sure it's the size you exepct
+
+import torchmeta
 from torchmeta.utils.data import BatchMetaDataLoader
 from torchmeta.transforms import ClassSplitter
 # from torchmeta.toy import Sinusoid
@@ -3124,14 +3126,210 @@ for i in range(3):
 # Saving & Loading Model for Inference
 # Save/Load state_dict (Recommended)
 # Save:
-torch.save(model.state_dict(), PATH)
+# torch.save(model.state_dict(), PATH)
+#
+# # Load:
+# model = TheModelClass(*args, **kwargs)
+# model.load_state_dict(torch.load(PATH))
+# model.eval()
 
-# Load:
-model = TheModelClass(*args, **kwargs)
-model.load_state_dict(torch.load(PATH))
-model.eval()
+# %%
+
+# Save:
+# torch.save({
+#             'epoch': epoch,
+#             'model_state_dict': model.state_dict(),
+#             'optimizer_state_dict': optimizer.state_dict(),
+#             'loss': loss,
+#               ...
+#             }, PATH)
+# # Load:
+# model = TheModelClass(*args, **kwargs)
+# optimizer = TheOptimizerClass(*args, **kwargs)
+#
+# checkpoint = torch.load(PATH)
+# model.load_state_dict(checkpoint['model_state_dict'])
+# optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+# epoch = checkpoint['epoch']
+# loss = checkpoint['loss']
+#
+# model.eval()
+# # - or -
+# model.train()
 
 # %%
 
 # https://discuss.pytorch.org/t/how-does-load-a-sequential-model-from-a-string/97648
 # https://stackoverflow.com/questions/64109883/how-does-one-load-a-sequential-model-from-a-string-in-pytorch
+
+# %%
+
+torch.save({'f': f,
+            'f_state_dict': f.state_dict(),
+            'f_str': str(f),
+            'f_modules': f._modules,
+            'f_modules_str': str(f._modules)
+            }, path2avg_f)
+
+#%%
+
+from pathlib import Path
+from torch.utils.tensorboard import SummaryWriter
+import numpy as np
+
+path = Path('~/data/tb_test/').expanduser()
+# path = Path('~/logs/logs_Sep29_12-38-08_jobid_-1/tb').expanduser()
+writer = SummaryWriter(path)
+
+for n_iter in range(100):
+    writer.add_scalar('Loss/train', np.random.random(), n_iter)
+    writer.add_scalar('Loss/test', np.random.random(), n_iter)
+    writer.add_scalar('Accuracy/train', np.random.random(), n_iter)
+    writer.add_scalar('Accuracy/test', np.random.random(), n_iter)
+
+print('done! \a')
+
+#%%
+
+db = torch.load(str(args.resume_ckpt_path))
+# args.epchs = db['epoch']  # we can start counting from zero
+# args.epoch += 1  # this is needed so that it starts on the next batch since it says the last batch it *did* and range counts with 0 indexing.
+# meta_learner = db['meta_learner']
+args.base_model = db['f']
+# in case loading directly doesn't work
+modules = eval(db['f_modules_str'])
+args.base_model = torch.nn.Sequential(modules)
+f_state_dict = db['f_state_dict']
+args.base_model.load_state_dict(f_state_dict)
+
+
+#%%
+
+# Torch-meta miniImagenet
+
+import torchmeta
+from torchmeta.utils.data import BatchMetaDataLoader
+from torchmeta.transforms import ClassSplitter
+
+from pathlib import Path
+
+from tqdm import tqdm
+
+data_path = Path('~/data/').expanduser()
+meta_split = 'train'
+dataset = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_split=meta_split, download=True)
+# dataset = torchmeta.datasets.Omniglot(data_path, num_classes_per_task=5, meta_split=meta_split, download=True)
+
+print(f'type(metaset_miniimagenet) = {type(dataset)}')
+print(f'len(metaset_miniimagenet) = {len(dataset)}')
+shots, test_shots = 5, 15
+metaset = ClassSplitter(
+    dataset,
+    num_train_per_class=shots,
+    num_test_per_class=test_shots,
+    shuffle=True)
+batch_size = 16
+num_workers = 0
+meta_dataloader = BatchMetaDataLoader(metaset, batch_size=batch_size, num_workers=num_workers)
+epochs = 2
+
+print(f'batch_size = {batch_size}')
+print(f'len(metaset) = {len(metaset)}')
+print(f'len(meta_dataloader) = {len(meta_dataloader)}\n')
+with tqdm(range(epochs)) as tepochs:
+    for epoch in tepochs:
+        print(f'\n[epoch={epoch}]')
+        for batch_idx, batch in enumerate(meta_dataloader):
+            print(f'batch_idx = {batch_idx}')
+            train_inputs, train_targets = batch['train']
+            test_inputs, test_targets = batch['test']
+            print(f'train_inputs.shape = {train_inputs.shape}')
+            print(f'train_targets.shape = {train_targets.shape}')
+            print(f'test_inputs.shape = {test_inputs.shape}')
+            print(f'test_targets.shape = {test_targets.shape}')
+            print()
+            break
+        break
+
+#%%
+
+from torchmeta.datasets.helpers import omniglot
+from torchmeta.datasets.helpers import miniimagenet
+from torchmeta.utils.data import BatchMetaDataLoader
+
+from pathlib import Path
+
+meta_split = 'train'
+data_path = Path('~/data/').expanduser()
+dataset = omniglot(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
+dataset = miniimagenet(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
+dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
+
+for batch in dataloader:
+    train_inputs, train_targets = batch["train"]
+    print('Train inputs shape: {0}'.format(train_inputs.shape))    # (16, 25, 1, 28, 28)
+    print('Train targets shape: {0}'.format(train_targets.shape))  # (16, 25)
+
+    test_inputs, test_targets = batch["test"]
+    print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
+    print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
+
+#%%
+
+import torch
+
+from torchmeta.datasets.helpers import omniglot
+from torchmeta.datasets.helpers import miniimagenet
+from torchmeta.utils.data import BatchMetaDataLoader
+
+from pathlib import Path
+
+import copy
+
+meta_split = 'train'
+data_path = Path('~/data/').expanduser()
+dataset = omniglot(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
+dataset = miniimagenet(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
+dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
+
+model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=False)
+# torch.nn.Conv2d()
+
+fc_out_features = 5
+
+def replace_bn(module, name):
+    """
+    Recursively put desired batch norm in nn.module module.
+
+    set module = net to start code.
+    """
+    # go through all attributes of module nn.module (e.g. network or layer) and put batch norms if present
+    for attr_str in dir(module):
+        target_attr = getattr(module, attr_str)
+        if type(target_attr) == torch.nn.BatchNorm2d:
+            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum, target_attr.affine,
+                                          track_running_stats=False)
+            setattr(module, attr_str, new_bn)
+
+    # iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
+    for name, immediate_child_module in module.named_children():
+        replace_bn(immediate_child_module, name)
+
+replace_bn(model, 'model')
+model.fc = torch.nn.Linear(in_features=512, out_features=fc_out_features, bias=True)
+
+# modify_resnet_for_fsl(model)
+
+for batch in dataloader:
+    train_inputs, train_targets = batch["train"]
+    print('Train inputs shape: {0}'.format(train_inputs.shape))    # (16, 25, 1, 28, 28)
+    print('Train targets shape: {0}'.format(train_targets.shape))  # (16, 25)
+    test_inputs, test_targets = batch["test"]
+    print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
+    print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
+    first_meta_batch = train_inputs[0]  # task
+    nk_task = first_meta_batch
+    out = model(nk_task)
+    print(f'resnet out.size(): {out.size()}')
+    break
+print('success\a')
