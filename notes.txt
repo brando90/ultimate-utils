@@ -1,3 +1,10 @@
+tensorboard --logdir ~/data/tb_test/
+tensorboard --logdir /Users/brando/data/logs/tb_test
+
+tensorboard --logdir /Users/brando/data/logs/logs_Sep29_12-49-59_jobid_383786.iam-pbs/tb
+
+----
+
 checking installations for conda: https://stackoverflow.com/questions/59903548/how-does-one-check-if-conda-develop-installed-my-project-packages/59903590#59903590
 python -c "import sys; [print(p) for p in sys.path]"
 conda develop -u .
@@ -27,10 +34,12 @@ condor_submit -i interactive.sub
 condor_submit -i request_cpus=8 request_gpus=1
 ### condor_submit -i request_cpus=8 request_gpus=1 -requirements="(CUDADeviceName!='Tesla K40m')"
 
-
 condor_submit job.sub
 
 condor_status --compact -af:h Machine NumDynamicSlots TotalCpus TotalGpus Cpus Gpus  State CUDADeviceName Memory
+
+see my jobs:
+condor_q -nobatch
 
 kill job: condor_rm <job_id>
 condor_rm miranda9
@@ -87,7 +96,7 @@ swqueue
 
 using slurm in HAL (use to check partition): https://wiki.ncsa.illinois.edu/display/ISL20/Job+management+with+SLURM
 
-#!/home/miranda9/.conda/envs/automl/bin/python3.7
+#!/home/miranda9/.conda/envs/automl-meta-learning_wmlce-v1.7.0-py3.7/bin/python3.7
 #SBATCH --job-name="miranda9job"
 #SBATCH --output="demo.%j.%N.out"
 #SBATCH --error="demo.%j.%N.err"
@@ -102,20 +111,6 @@ using slurm in HAL (use to check partition): https://wiki.ncsa.illinois.edu/disp
 #SBATCH --export=ALL
 #SBATCH --gres=gpu:v100:1
 
-#!/home/miranda9/.conda/envs/automl/bin/python3.7
-#SBATCH --job-name="miranda9job"
-#SBATCH --output="demo.%j.%N.out"
-#SBATCH --error="demo.%j.%N.err"
-#SBATCH --partition=gpu
-#SBATCH --time=4:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=16
-#SBATCH --sockets-per-node=1
-#SBATCH --cores-per-socket=4
-#SBATCH --threads-per-core=4
-#SBATCH --mem-per-cpu=1200
-#SBATCH --export=ALL
-#SBATCH --gres=gpu:v100:1
 
 
 hal slurm job management: https://wiki.ncsa.illinois.edu/display/ISL20/Job+management+with+SLURM
@@ -130,35 +125,21 @@ module load wmlce/1.7.0-py3.7
 
 create copy of wmlce env that HAL has
 conda create --name=automl-meta-learning_wmlce-v1.7.0-py3.7 --clone=wmlce-v1.7.0-py3.7
-conda activate automl-meta-learning_wmlce-v1.7.0-py3.6
-conda remove --name automl-meta-learning_wmlce-v1.7.0-py3.7 --all
+conda activate automl-meta-learning_wmlce-v1.7.0-py3.7
+conda remove --name xx --all
 
 prepend the 1.7.0 code for wmlce
-conda config --prepend channels \
-https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-ai/conda/#/
-
-create my own env
-conda create -n automl-meta-learning python=3.7
-conda activate automl-meta-learning
-
-# conda install pytorch powerai-release=1.7.0
-# conda install torchvision powerai-release=0.4.2
-install the most recent powerai wmlce
-conda config --prepend channels https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-ai/conda/
-conda create -n my_new_env python=3.7 powerai=1.7.0
-conda activate my_new_env
+conda config --prepend channels https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-ai/conda/#/
 
 pip install torchmeta==1.3.1
 pip install --no-deps torchmeta==1.3.1
-
-conda create -n dawei python=3.7
 
 https://github.com/h5py/h5py/issues/1678
 https://github.com/IBM/powerai/issues/270
 https://github.com/IBM/powerai/issues/269
 https://stackoverflow.com/questions/64049603/how-does-one-install-torchmeta-for-a-ppc64le-architecture-in-pytorch
 https://pypi.org/project/torchmeta/1.3.1/#files
-
+https://github.com/IBM/powerai/issues/271
 
 from setuptools import setup, find_packages
 from os import path
@@ -219,6 +200,44 @@ https://stackoverflow.com/questions/53152047/python-package-not-found-although-i
 https://stackoverflow.com/questions/39811929/package-installed-by-conda-python-cannot-find-it
 https://stackoverflow.com/questions/31003994/anaconda-site-packages
 https://docs.conda.io/projects/conda/en/latest/commands/list.html
+
+----
+nano
+
+https://wiki.ncsa.illinois.edu/display/ISL20/Nano+cluster
+https://kb.iu.edu/d/avmy
+
+ssh miranda9@nano.ncsa.illinois.edu
+
+to get one GPU and one CPU core on node 7 for 1 hour for interactive use:
+qsub -I -l nodes=nano7:ppn=1:gpus=1,walltime=3600
+to get entire node 1 for 1 hour for exclusive interactive use:
+qsub -I -l nodes=nano1:ppn=12,walltime=3600  
+#!
+#PBS -V
+#PBS -M brando.science@gmail.com
+#PBS -m abe
+#PBS -l nodes=1:ppn=4:gpus=1,walltime=96:00:00
+
+get conda https://gist.github.com/arose13/fcc1d2d5ad67503ba9842ea64f6bac35
+# Setup Ubuntu
+sudo apt update --yes
+sudo apt upgrade --yes
+
+# Get Miniconda and make it the main Python interpreter
+https://gist.github.com/arose13/fcc1d2d5ad67503ba9842ea64f6bac35
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+bash ~/miniconda.sh -b -p ~/miniconda
+rm ~/miniconda.sh
+export PATH=~/miniconda/bin:$PATH
+conda install conda-build
+
+https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+ssh-keygen -t rsa -b 4096 -C "miranda9@illinois.edu"
+
+https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+pbcopy < ~/.ssh/id_rsa.pub
+cat < ~/.ssh/id_rsa.pub
 
 ----
 

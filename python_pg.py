@@ -3276,6 +3276,9 @@ for batch in dataloader:
 
 #%%
 
+# replacing a module in in a pytorch model
+# https://discuss.pytorch.org/t/how-to-modify-a-pretrained-model/60509/11
+
 import torch
 
 from torchmeta.datasets.helpers import omniglot
@@ -3315,6 +3318,13 @@ def replace_bn(module, name):
     for name, immediate_child_module in module.named_children():
         replace_bn(immediate_child_module, name)
 
+def convert_bn(model):
+    for module in model.modules():
+        if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
+            module.__init__(module.num_features, module.eps,
+                            module.momentum, module.affine,
+                            track_running_stats=False)
+
 replace_bn(model, 'model')
 model.fc = torch.nn.Linear(in_features=512, out_features=fc_out_features, bias=True)
 
@@ -3332,4 +3342,55 @@ for batch in dataloader:
     out = model(nk_task)
     print(f'resnet out.size(): {out.size()}')
     break
+
 print('success\a')
+
+# %%
+
+import torch
+
+import torchvision.transforms as transforms
+
+# import torchmeta
+# from torchmeta.datasets.helpers import omniglot
+from torchmeta.datasets.helpers import miniimagenet
+from torchmeta.utils.data import BatchMetaDataLoader
+
+from pathlib import Path
+
+meta_split = 'train'
+data_path = Path('~/data/').expanduser()
+
+normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+data_augmentation_transforms = transforms.Compose([
+    transforms.RandomResizedCrop(84),
+    transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(
+        brightness=0.4,
+        contrast=0.4,
+        saturation=0.4,
+        hue=0.2),
+    transforms.ToTensor(),
+    normalize])
+dataset = miniimagenet(data_path,
+                       transform=data_augmentation_transforms,
+                       ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
+dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
+
+model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=False)
+
+for batch in dataloader:
+    train_inputs, train_targets = batch["train"]
+    print('Train inputs shape: {0}'.format(train_inputs.shape))    # (16, 25, 1, 28, 28)
+    print('Train targets shape: {0}'.format(train_targets.shape))  # (16, 25)
+    test_inputs, test_targets = batch["test"]
+    print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
+    print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
+    first_meta_batch = train_inputs[0]  # task
+    nk_task = first_meta_batch
+    out = model(nk_task)
+    print(f'resnet out.size(): {out.size()}')
+    break
+
+print('success\a')
+
