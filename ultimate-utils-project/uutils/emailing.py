@@ -69,13 +69,13 @@ def send_email(subject, message, destination, password_path=None):
     except:
         server = smtplib.SMTP('smtp.intel-research.net', 25)
         from_address = 'miranda9@intel-research.net.'
-        ##
+        #
         message = f'{message}\nSend from Hostname: {gethostname()}'
         full_message = f'From: {from_address}\n' \
                        f'To: {destination}\n' \
                        f'Subject: {subject}\n' \
                        f'{message}'
-        server = smtplib.SMTP('smtp.intel-research.net')
+        # server = smtplib.SMTP('smtp.intel-research.net')
         server.sendmail(from_address, destination, full_message)
         server.quit()
 

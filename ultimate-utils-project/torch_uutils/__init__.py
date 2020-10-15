@@ -384,16 +384,18 @@ def gradient_clip(args, meta_opt):
         ValueError: For invalid arguments to args.grad_clip_mode
     """
     #do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-    if args.grad_clip is not None:
+    # note: grad_clip_rate is a number for clipping the other is the type
+    # of clipping we are doing
+    if args.grad_clip_rate is not None:
         if args.grad_clip_mode == 'clip_all_seperately':
             for group_idx, group in enumerate(meta_opt.param_groups):
                 for p_idx, p in enumerate(group['params']):
-                    nn.utils.clip_grad_norm_(p, args.grad_clip)
+                    nn.utils.clip_grad_norm_(p, args.grad_clip_rate)
         elif args.grad_clip_mode == 'clip_all_together':
             # [y for x in list_of_lists for y in x] 
             all_params = [ p for group in meta_opt.param_groups for p in group['params'] ]
-            nn.utils.clip_grad_norm_(all_params, args.grad_clip)
-        elif args.grad_clip_mode == 'no_grad_clip' or args.grad_clip_mode is None: # i.e. do not clip if grad_clip is None
+            nn.utils.clip_grad_norm_(all_params, args.grad_clip_rate)
+        elif args.grad_clip_mode == 'no_grad_clip' or args.grad_clip_mode is None: # i.e. do not clip if grad_clip_rate is None
             pass
         else:
             raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')

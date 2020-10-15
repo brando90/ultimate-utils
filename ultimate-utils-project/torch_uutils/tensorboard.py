@@ -4,11 +4,11 @@ from pathlib import Path
 import numpy as np
 # from torch.utils.tensorboard import SummaryWriter
 
-def log_2_tb(args, tag1, tag2, epoch, loss, acc):
+def log_2_tb(args, tag1, tag2, it, loss, acc):
     tb = args.tb
     # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
-    tb.add_scalar(tag1, loss, epoch)
-    tb.add_scalar(tag2, acc, epoch)
+    tb.add_scalar(tag1, loss, it)
+    tb.add_scalar(tag2, acc, it)
 
 def test():
     import numpy as np
