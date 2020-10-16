@@ -1,35 +1,36 @@
 from pathlib import Path
 from socket import gethostname
 
-def send_email_old(subject, message, destination):
-    """ Send an e-mail from with message to destination email.
-
-    NOTE: if you get an error with google gmails you might need to do this: 
-    https://stackoverflow.com/questions/16512592/login-credentials-not-working-with-gmail-smtp
-    
-    Arguments:
-        message {str} -- message string to send.
-        destination {str} -- destination email (as string)
-    """
-    from socket import gethostname
-    from email.message import EmailMessage
-    import smtplib
-
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    # not a real email account nor password, its all ok!
-    server.login('slurm.miranda@gmail.com', 'dummy123!@#$321')
-
-    # craft message
-    msg = EmailMessage()
-
-    message = f'{message}\nSend from Hostname: {gethostname()}'
-    msg.set_content(message)
-    msg['Subject'] = subject
-    msg['From'] = 'slurm.miranda@gmail.com'
-    msg['To'] = destination
-    # send msg
-    server.send_message(msg)
+# def send_email_old(subject, message, destination):
+#     """ Send an e-mail from with message to destination email.
+#
+#     NOTE: if you get an error with google gmails you might need to do this:
+#     https://stackoverflow.com/questions/16512592/login-credentials-not-working-with-gmail-smtp
+#
+#     Arguments:
+#         message {str} -- message string to send.
+#         destination {str} -- destination email (as string)
+#     """
+#     from socket import gethostname
+#     from email.message import EmailMessage
+#     import smtplib
+#
+#     # server = smtplib.SMTP('smtp.gmail.com', 587)
+#     server = smtplib.SMTP('smtp.gmail.com', 25)
+#     server.starttls()
+#     # not a real email account nor password, its all ok!
+#     server.login('slurm.miranda@gmail.com', 'dummy123!@#$321')
+#
+#     # craft message
+#     msg = EmailMessage()
+#
+#     message = f'{message}\nSend from Hostname: {gethostname()}'
+#     msg.set_content(message)
+#     msg['Subject'] = subject
+#     msg['From'] = 'slurm.miranda@gmail.com'
+#     msg['To'] = destination
+#     # send msg
+#     server.send_message(msg)
 
 
 def send_email(subject, message, destination, password_path=None):
@@ -51,6 +52,7 @@ def send_email(subject, message, destination, password_path=None):
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
+        # server = smtplib.SMTP('smtp.gmail.com', 25)
         server.starttls()
         with open(password_path) as f:
             config = json.load(f)

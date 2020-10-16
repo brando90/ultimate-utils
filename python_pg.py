@@ -3491,3 +3491,25 @@ total_classes = 64
 n = 5
 number_tasks = comb(total_classes, n)
 print(number_tasks)
+
+#%%
+
+# saving a json file save json file
+# human readable pretty print https://stackoverflow.com/questions/12943819/how-to-prettyprint-a-json-file
+
+import json
+
+data = 'data string'
+with open('data.txt', 'w') as outfile:
+    json.dump(data, outfile)
+
+# json.dump(data, open('data.txt', 'w'))
+
+# with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
+#     json.dump(self.stats, f)
+# data_ars = {key:value for (key,value) in dictonary.items()}
+# x = {key:str(value) for (key,value) in args.__dict__.items()}
+
+with open(args.current_logs_path / 'args.json', 'w+') as argsfile:
+    args_data = {key: str(value) for (key, value) in args.__dict__.items()}
+    json.dump(args_data, argsfile, indent=4)

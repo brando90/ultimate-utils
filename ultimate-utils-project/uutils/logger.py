@@ -128,7 +128,7 @@ class Logger:
         current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
         torch.save(self.stats, current_logs_path / 'experiment_stats')
         with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
-            json.dump(self.stats, f)
+            json.dump(self.stats, f, indent=4)
 
         ## https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
         ## mpl.rcParams["errorbar.capsize"] = 3
