@@ -144,7 +144,7 @@ class Logger:
         train_acc_y = self.stats['train']['acc']
         assert(len(train_acc_y) == len(train_loss_y))
         # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_train_x = np.array([ self.args.log_train_freq*(i+1) for i in range(len(train_loss_y))] )
+        episodes_train_x = np.array([self.args.log_train_freq*(i+1) for i in range(len(train_loss_y))] )
         assert(len(episodes_train_x) == len(train_loss_y))
 
         eval_loss_y = self.stats['eval_stats']['mean']['loss']
