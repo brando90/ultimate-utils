@@ -1,4 +1,4 @@
-#from __future__ import division, print_function, absolute_import
+# from __future__ import division, print_function, absolute_import
 
 import os
 import sys
@@ -109,12 +109,32 @@ class Logger:
     def pickle_stuff(self):
         raise('Not implemented')
 
-    def save_final_plots(
+    def log_model_and_meta_learner_as_string(self, base_model, meta_learner, current_logs_path=None):
+        """
+        Note: we are NOT checkpointing here because log_validation hadles that
+        """
+        try:
+            current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
+            # DO NOT checkpoint here, torch.save(model, current_logs_path / '')
+            with open(current_logs_path / 'base_model_and_meta_learner', 'w+') as f:
+                # json.dump({'base_model': str(base_model), 'meta_learner': str(meta_learner)}, f, indent=4)
+                f.write(str(base_model))
+                f.write(str(meta_learner))
+        except:
+            pass
+
+    def save_stats(self, current_logs_path=None):
+        current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
+        torch.save(self.stats, current_logs_path / 'experiment_stats')
+        with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
+            json.dump(self.stats, f, indent=4)
+
+    def save_current_plots_and_stats(
             self,
-            title,
-            x_axis,
-            y_axis_loss,
-            y_axis_acc,
+            title='Meta-Learnig & Evaluation Curves',
+            x_axis='(meta) iterations',
+            y_axis_loss='Meta-Loss',
+            y_axis_acc='Meta-Accuracy',
 
             nb_plots=1,
             split=None,
@@ -123,15 +143,16 @@ class Logger:
             grid=True,
             show=False):
         plt.xkcd() if xkcd else None
-        ## Initialize where to save and what the split of the experiment is
+
+        # Initialize where to save and what the split of the experiment is
         split = self.split if split is None else split
         current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
-        torch.save(self.stats, current_logs_path / 'experiment_stats')
-        with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
-            json.dump(self.stats, f, indent=4)
 
-        ## https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
-        ## mpl.rcParams["errorbar.capsize"] = 3
+        # save current stats
+        self.save_stats(current_logs_path)
+
+        # https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
+        # mpl.rcParams["errorbar.capsize"] = 3
 
         plt.style.use('default')
 
