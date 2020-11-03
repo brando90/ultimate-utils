@@ -453,6 +453,25 @@ def functional_diff_norm(f1, f2, lb, ub, p=2):
     norm = integrate.quad(lambda x: abs(f1(x) - f2(x))**p, lb, ub)[0]**(1/p)
     return norm
 
+def accuracy(output, target, topk=(1,)):
+    """Computes the accuracy over the k top predictions for the specified values of k
+    In top-5 accuracy you give yourself credit for having the right answer
+    if the right answer appears in your top five guesses.
+    """
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+        return res
+
 def test():
     print()
 
