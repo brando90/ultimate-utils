@@ -7127,3 +7127,14 @@ print(img)
 # meta-lstm
 # images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
 #image = PILI.open(self.images[idx]).convert('RGB')
+
+#%%
+
+from tqdm import tqdm
+
+train_iters = 2
+with tqdm(range(train_iters), total=train_iters) as pbar_epochs:
+    print(range(train_iters))
+    print(list(range(train_iters)))
+    for epoch in pbar_epochs:
+        print(epoch)
