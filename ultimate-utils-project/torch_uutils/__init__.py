@@ -22,6 +22,7 @@ from pathlib import Path
 
 import copy
 
+from pdb import set_trace as st
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -462,8 +463,10 @@ def accuracy(output, target, topk=(1,)):
         maxk = max(topk)
         batch_size = target.size(0)
 
+        # st()
         _, pred = output.topk(maxk, 1, True, True)
         pred = pred.t()
+        # st()
         correct = pred.eq(target.view(1, -1).expand_as(pred))
 
         res = []
