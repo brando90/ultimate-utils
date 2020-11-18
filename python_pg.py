@@ -7138,3 +7138,174 @@ with tqdm(range(train_iters), total=train_iters) as pbar_epochs:
     print(list(range(train_iters)))
     for epoch in pbar_epochs:
         print(epoch)
+
+#%%
+
+
+## sinusioid function
+print('Starting Sinusioid cell')
+
+import torchmeta
+# from torchmeta.toy import Sinusoid
+from torchmeta.utils.data import BatchMetaDataLoader
+# from torchmeta.transforms import ClassSplitter
+
+# from tqdm import tqdm
+
+batch_size = 16
+shots = 5
+test_shots = 15
+dataset = torchmeta.toy.helpers.sinusoid(shots=shots, test_shots=test_shots)
+dataloader = BatchMetaDataLoader(dataset, batch_size=batch_size, num_workers=4)
+
+# print(f'batch_size = {batch_size}')
+# print(f'len(dataloader) = {len(dataloader)}\n')
+# for batch_idx, batch in enumerate(dataloader):
+#     print(f'batch_idx = {batch_idx}')
+#     train_inputs, train_targets = batch['train']
+#     test_inputs, test_targets = batch['test']
+#     print(f'train_inputs.shape = {train_inputs.shape}')
+#     print(f'train_targets.shape = {train_targets.shape}')
+#     print(f'test_inputs.shape = {test_inputs.shape}')
+#     print(f'test_targets.shape = {test_targets.shape}')
+#     if batch_idx >= 1:  # halt after 2 iterations
+#         break
+
+# two tasks are different
+dl = enumerate(dataloader)
+
+_,x1 = next(dl)
+x1,_ = x1['train']
+print(f'x1 = {x1.sum()}')
+_,x2 = next(dl)
+x2,_ = x2['train']
+print(f'x2 = {x2.sum()}')
+
+assert(x1.sum() != x2.sum())
+print('assert pass, tasks have different data')
+
+# same task twice
+dl = enumerate(dataloader)
+
+_,x1 = next(dl)
+x1,_ = x1['train']
+print(f'x1 = {x1.sum()}')
+dl = enumerate(dataloader)
+_,x2 = next(dl)
+x2,_ = x2['train']
+print(f'x2 = {x2.sum()}')
+
+assert(x1.sum() == x2.sum())
+
+print('DONE\a')
+
+#%%
+
+# https://github.com/tristandeleu/pytorch-meta/issues/69
+
+from torchmeta.toy.helpers import sinusoid
+from torchmeta.utils.data import BatchMetaDataLoader
+
+batch_size = 16
+shots = 5
+test_shots = 15
+
+# Seed the dataset with `seed = 0`
+dataset = sinusoid(shots=shots, test_shots=test_shots, seed=0)
+# `num_workers = 0` to avoid stochasticity of multiple processes
+dataloader = BatchMetaDataLoader(dataset, batch_size=batch_size,
+                                 shuffle=False, num_workers=0)
+
+batch = next(iter(dataloader))
+
+inputs, _ = batch['train']
+print(f'Sum of inputs: {inputs.sum()}')
+
+#%%
+
+# https://github.com/tristandeleu/pytorch-meta/issues/69
+
+from torchmeta.toy.helpers import sinusoid
+from torchmeta.utils.data import BatchMetaDataLoader
+
+def random_hash():
+    return random.randrange(1 << 32)
+
+batch_size = 16
+shots = 5
+test_shots = 15
+
+# Seed the dataset with `seed = 0`
+dataset = sinusoid(shots=shots, test_shots=test_shots, seed=0)
+dataset.__hash__ = random_hash
+# `num_workers = 0` to avoid stochasticity of multiple processes
+dataloader = BatchMetaDataLoader(dataset, batch_size=batch_size,
+                                 shuffle=False, num_workers=0)
+
+batch = next(iter(dataloader))
+
+inputs, _ = batch['train']
+print(f'Sum of inputs: {inputs.sum()}')
+
+#%%
+
+# https://github.com/tristandeleu/pytorch-meta/issues/69
+
+from torchmeta.toy.helpers import sinusoid
+from torchmeta.utils.data import BatchMetaDataLoader
+
+batch_size = 16
+shots = 5
+test_shots = 15
+
+dataset = sinusoid(shots=shots, test_shots=test_shots)
+# `num_workers = 0` to avoid stochasticity of multiple processes
+dataloader = BatchMetaDataLoader(dataset, batch_size=batch_size,
+                                 shuffle=False, num_workers=4)
+
+batch = next(iter(dataloader))
+
+inputs, _ = batch['train']
+print(f'Sum of inputs: {inputs.sum()}')
+
+#%%
+
+from pathlib import Path
+
+import torch
+
+path = '/home/miranda9/data/dataset_LS_fully_connected_NN_with_BN/meta_set_fully_connected_NN_with_BN_std1_8.0_std2_1.0_noise_std0.1/train/fi_fully_connected_NN_with_BN_norm_f_151.97657775878906'
+path = Path(path).expanduser() / 'fi_db.pt'
+path = str(path)
+
+# db = torch.load(path)
+# torch.jit.load(path)
+db = torch.jit.load(str(path))
+
+print(db)
+
+#%%
+
+# secs per it to days
+
+def sect_per_it_2_days(secs_per_it, total_its):
+    days = (secs_per_it*total_its)/(60 * 60 * 24)
+    print(days)
+
+print(f'time in days for resnet18_rfs with 1 inner steps')
+sect_per_it_2_days(4.76, 100000)
+
+print(f'time in days for resnet18_rfs with 1 inner steps')
+sect_per_it_2_days(8.19, 100000)
+
+print(f'time in days for resnet18_rfs with 4 inner steps')
+sect_per_it_2_days(16.11, 100000)
+
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(46.26, 100000)
+
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(3.47, 100000)
+
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(2.7, 100000)
