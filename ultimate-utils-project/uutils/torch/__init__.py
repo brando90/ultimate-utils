@@ -440,7 +440,7 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
 
-def functional_diff_norm(f1, f2, lb, ub, p=2):
+def functional_diff_norm(f1, f2, lb=-1, ub=1, p=2):
     """
     Computes norm:
 
@@ -451,8 +451,10 @@ def functional_diff_norm(f1, f2, lb, ub, p=2):
     https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
     """
     # index is there since it also returns acc/err
-    norm = integrate.quad(lambda x: abs(f1(x) - f2(x))**p, lb, ub)[0]**(1/p)
-    return norm
+    norm, abs_err = integrate.quad(lambda x: abs(f1(x) - f2(x))**p, lb, ub)
+    return norm**(1/p), abs_err
+
+##
 
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k
