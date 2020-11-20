@@ -5,6 +5,20 @@ import sys
 
 for path in sys.path:
     print(path)
+#%%
+def __path_bn_layer_for_functional_eval(self, module, input):
+    for attr_str in dir(module):
+        target_attr = getattr(module, attr_str)
+        print(target_attr)
+        if type(target_attr) == torch.nn.BatchNorm1d:
+            target_attr.track_running_stats = True
+            target_attr.running_mean = input.mean()
+            target_attr.running_var = input.var()
+            target_attr.num_batches_tracked = torch.tensor(0, dtype=torch.long)
+
+    # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
+    for name, immediate_child_module in module.named_children():
+        self._path_bn_layer_for_functional_eval(immediate_child_module, name)
 # %%
 
 import time
@@ -7286,6 +7300,22 @@ print(db)
 
 #%%
 
+import torch
+import torch.nn as nn
+
+from collections import OrderedDict
+
+fc0 = nn.Linear(in_features=1, out_features=1)
+params = [('fc0', fc0)]
+mdl = nn.Sequential(OrderedDict(params))
+
+x = torch.tensor([1.0])
+y = mdl(x)
+
+print(y)
+
+#%%
+
 # secs per it to days
 
 def sect_per_it_2_days(secs_per_it, total_its):
@@ -7309,3 +7339,20 @@ sect_per_it_2_days(3.47, 100000)
 
 print(f'time in days for synthetic with 1 inner steps')
 sect_per_it_2_days(2.7, 100000)
+
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(5.7, 100000)
+
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(46.26, 20000)
+
+#%%
+
+import torch
+
+
+x = torch.tensor([1.0])
+
+# Applies Batch Normalization for each channel across a batch of data.
+torch.nn.functional.batch_norm()
+

@@ -358,9 +358,27 @@ def replace_bn(module, name):
                                           track_running_stats=False)
             setattr(module, attr_str, new_bn)
 
-    # iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
+    # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
     for name, immediate_child_module in module.named_children():
         replace_bn(immediate_child_module, name)
+
+def set_tracking_running_stats(model):
+    """
+    https://discuss.pytorch.org/t/batchnorm1d-with-batchsize-1/52136/8
+    https://stackoverflow.com/questions/64920715/how-to-use-have-batch-norm-not-forget-batch-statistics-it-just-used-in-pytorch
+
+    @param model:
+    @return:
+    """
+    for attr in dir(model):
+        if 'bn' in attr:
+            target_attr = getattr(model, attr)
+            target_attr.track_running_stats = True
+            target_attr.running_mean = torch.nn.Parameter(torch.zeros(target_attr.num_features, requires_grad=False))
+            target_attr.running_var = torch.nn.Parameter(torch.ones(target_attr.num_features, requires_grad=False))
+            target_attr.num_batches_tracked = torch.nn.Parameter(torch.tensor(0, dtype=torch.long), requires_grad=False)
+            # target_attr.reset_running_stats()
+    return
 
 ##
 
