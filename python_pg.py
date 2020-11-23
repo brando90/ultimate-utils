@@ -7346,6 +7346,9 @@ sect_per_it_2_days(5.7, 100000)
 print(f'time in days for synthetic with 1 inner steps')
 sect_per_it_2_days(46.26, 20000)
 
+print(f'time in days for synthetic with 1 inner steps')
+sect_per_it_2_days(2.7, 20_000)
+
 #%%
 
 import torch
