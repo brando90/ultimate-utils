@@ -7352,10 +7352,256 @@ sect_per_it_2_days(2.7, 20_000)
 #%%
 
 import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+# get init
+path_2_init = Path('~/data/logs/logs_Nov17_13-57-11_jobid_416472.iam-pbs/ckpt_file.pt').expanduser()
+ckpt = torch.load(path_2_init)
+mdl = ckpt['f']
+
+#
+Din, Dout = 1, 1
+mdl = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU())
+]))
+mdl2 = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU())
+]))
 
 
-x = torch.tensor([1.0])
+#
+hook1 = SimilarityHook(mdl, "fc1_l1")
+hook2 = SimilarityHook(mdl2, "fc1_l1")
+mdl.eval()
+mdl2.eval()
 
-# Applies Batch Normalization for each channel across a batch of data.
-torch.nn.functional.batch_norm()
+#
+num_samples_per_task = 100
+lb, ub = -1, 1
+x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+with torch.no_grad():
+    mdl(x)
+    mdl2(x)
+hook1.distance(hook2, size=8)
 
+#%%
+
+
+import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+# get init
+path_2_init = Path('~/data/logs/logs_Nov17_13-57-11_jobid_416472.iam-pbs/ckpt_file.pt').expanduser()
+ckpt = torch.load(path_2_init)
+mdl = ckpt['f']
+
+#
+Din, Dout = 1, 1
+mdl = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU())
+]))
+# with torch.no_grad():
+#     mdl.fc1_l1.weight.fill_(2.0)
+#     mdl.fc1_l1.bias.fill_(2.0)
+
+#
+hook1 = SimilarityHook(mdl, "fc1_l1")
+hook2 = SimilarityHook(mdl, "fc1_l1")
+mdl.eval()
+
+# params for doing "good" CCA
+iters = 10
+num_samples_per_task = 100
+size = 8
+# start CCA comparision
+lb, ub = -1, 1
+with torch.no_grad():
+    for _ in range(iters):
+        x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        mdl(x)
+hook1.distance(hook2, size=size)
+
+#%%
+
+import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+# get init
+# path_2_init = Path('~/data/logs/logs_Nov17_13-57-11_jobid_416472.iam-pbs/ckpt_file.pt').expanduser()
+# ckpt = torch.load(path_2_init)
+# mdl = ckpt['f']
+
+#
+Din, Dout = 1, 1
+mdl1 = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU()),
+    ('fc2_l2', nn.Linear(Din, Dout)),
+]))
+mdl2 = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU()),
+    ('fc2_l2', nn.Linear(Din, Dout)),
+]))
+with torch.no_grad():
+    mu = torch.zeros(Din)
+    # std =  1.25e-2
+    std = 10
+    noise = torch.distributions.normal.Normal(loc=mu, scale=std).sample()
+    # mdl2.fc1_l1.weight.fill_(50.0)
+    # mdl2.fc1_l1.bias.fill_(50.0)
+    mdl2.fc1_l1.weight += noise
+    mdl2.fc1_l1.bias += noise
+
+#
+hook1 = SimilarityHook(mdl1, "fc2_l2")
+hook2 = SimilarityHook(mdl2, "fc2_l2")
+mdl1.eval()
+mdl2.eval()
+
+# params for doing "good" CCA
+iters = 10
+num_samples_per_task = 500
+size = 8
+# start CCA comparision
+lb, ub = -1, 1
+with torch.no_grad():
+    for _ in range(iters):
+        x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        y1 = mdl1(x)
+        y2 = mdl2(x)
+        print((y1-y2).norm(2))
+dist = hook1.distance(hook2, size=size)
+print(f'dist={dist}')
+
+#%%
+
+a = ("John", "Charles", "Mike")
+b = ("Jenny", "Christy", "Monica", "Vicky")
+
+lst = zip(a, b)
+lst = list(lst)
+print(lst)
+
+#%%
+
+lst = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+lst = zip(*lst)
+lst = list(lst)
+print(lst)
+
+import numpy as np
+
+average_per_layer = [np.average(l) for l in lst]
+average_total = np.average(average_per_layer)
+print(average_per_layer)
+print(average_total)
+
+#%%
+
+import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+import copy
+
+# get init
+path_2_init = Path('~/data/logs/logs_Nov17_13-57-11_jobid_416472.iam-pbs/ckpt_file.pt').expanduser()
+ckpt = torch.load(path_2_init)
+mdl = ckpt['f']
+mdl1 = mdl
+# mdl2 = copy.deepcopy(mdl1)
+mdl2 = copy.deepcopy(mdl)
+
+#
+Din, Dout = 1, 1
+# mdl1 = nn.Sequential(OrderedDict([
+#     ('fc1_l1', nn.Linear(in_features=1, out_features=300, bias=True)),
+#     ('bn1_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu1', nn.ReLU()),
+#     ('fc2_l1', nn.Linear(in_features=300, out_features=300, bias=True)),
+#     ('bn2_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu2', nn.ReLU()),
+#     ('fc3_l1', nn.Linear(in_features=300, out_features=300, bias=True)),
+#     ('bn3_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu3', nn.ReLU()),
+#     ('fc4_final_l2', nn.Linear(in_features=300, out_features=1, bias=True))
+# ]))
+# mdl2 = nn.Sequential(OrderedDict([
+#     ('fc1_l1', nn.Linear(in_features=1, out_features=300, bias=True)),
+#     ('bn1_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu1', nn.ReLU()),
+#     ('fc2_l1', nn.Linear(in_features=300, out_features=300, bias=True)),
+#     ('bn2_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu2', nn.ReLU()),
+#     ('fc3_l1', nn.Linear(in_features=300, out_features=300, bias=True)),
+#     ('bn3_l1', nn.BatchNorm1d(300, eps=1e-05, momentum=0.1, affine=True, track_running_stats=False)),
+#     ('relu3', nn.ReLU()),
+#     ('fc4_final_l2', nn.Linear(in_features=300, out_features=1, bias=True))
+# ]))
+
+# with torch.no_grad():
+#     mu = torch.zeros(Din)
+#     # std =  1.25e-2
+#     std = 10
+#     noise = torch.distributions.normal.Normal(loc=mu, scale=std).sample()
+#     # mdl2.fc1_l1.weight.fill_(50.0)
+#     # mdl2.fc1_l1.bias.fill_(50.0)
+#     mdl2.fc1_l1.weight += noise
+#     mdl2.fc1_l1.bias += noise
+
+#
+# hook1 = SimilarityHook(mdl1, "fc1_l1")
+# hook2 = SimilarityHook(mdl2, "fc1_l1")
+hook1 = SimilarityHook(mdl1, "fc2_l1")
+hook2 = SimilarityHook(mdl2, "fc2_l1")
+mdl1.eval()
+mdl2.eval()
+
+# params for doing "good" CCA
+iters = 10
+num_samples_per_task = 500
+size = 8
+# start CCA comparision
+lb, ub = -1, 1
+# with torch.no_grad():
+#     for _ in range(iters):
+#         # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
+#         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+#         y1 = mdl1(x)
+#         y2 = mdl2(x)
+#         print((y1-y2).norm(2))
+for _ in range(iters):
+    x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
+    # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+    y1 = mdl1(x)
+    y2 = mdl2(x)
+    print((y1-y2).norm(2))
+dist = hook1.distance(hook2, size=size)
+print(f'dist={dist}')

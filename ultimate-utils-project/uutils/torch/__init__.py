@@ -458,24 +458,6 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
 
-def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
-    """
-    Computes norm:
-
-    ||f||_p = (int_S |f|^p dmu)^1/p
-
-    https://en.wikipedia.org/wiki/Lp_space
-
-    https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
-    """
-    # index is there since it also returns acc/err
-    if 'torch' in str(type(f1)) or 'torch' in str(type(f2)):
-        pointwise_diff = lambda x: abs(f1(torch.tensor([x])) - f2(torch.tensor([x]))) ** p
-    else:
-        pointwise_diff = lambda x: abs(f1(x) - f2(x)) ** p
-    norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
-    return norm**(1/p), abs_err
-
 ##
 
 def accuracy(output, target, topk=(1,)):
@@ -498,9 +480,86 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(1.0 / batch_size))
         return res
+##
+
+def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
+    """
+    Computes norm:
+
+    ||f||_p = (int_S |f|^p dmu)^1/p
+
+    https://en.wikipedia.org/wiki/Lp_space
+
+    https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
+    """
+    # index is there since it also returns acc/err
+    if 'torch' in str(type(f1)) or 'torch' in str(type(f2)):
+        pointwise_diff = lambda x: abs(f1(torch.tensor([x])) - f2(torch.tensor([x]))) ** p
+    else:
+        pointwise_diff = lambda x: abs(f1(x) - f2(x)) ** p
+    norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
+    return norm**(1/p), abs_err
+
+def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
+    # meta_batch [T, N*K, CHW], [T, K, D]
+    from anatome import SimilarityHook
+    # get sim/dis functions
+    hook1 = SimilarityHook(mdl1, layer_name)
+    hook2 = SimilarityHook(mdl2, layer_name)
+    mdl1.eval()
+    mdl2.eval()
+    for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
+        # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
+        x = torch.torch.distributions.Uniform(low=-1, high=1).sample((500, 1))
+        # x = meta_batch
+        mdl1(x)
+        mdl2(x)
+    dist = hook1.distance(hook2, size=cca_size)
+    return dist
+
+def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=8, iters=2):
+    # meta_batch [T, N*K, CHW], [T, K, D]
+    from anatome import SimilarityHook
+    # get sim/dis functions
+    hook1 = SimilarityHook(mdl1, layer_name)
+    hook2 = SimilarityHook(mdl2, layer_name)
+    mdl1.eval()
+    mdl2.eval()
+    for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
+        x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
+        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((num_samples_per_task, 1))
+        mdl1(x)
+        mdl2(x)
+    dist = hook1.distance(hook2, size=cca_size)
+    return dist
+
+# def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
+#     # meta_batch [T, N*K, CHW], [T, K, D]
+#     from anatome import SimilarityHook
+#     # get sim/dis functions
+#     hook1 = SimilarityHook(mdl1, layer_name)
+#     hook2 = SimilarityHook(mdl2, layer_name)
+#     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
+#         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+#         mdl1(x)
+#         mdl2(x)
+#     dist = hook1.distance(hook2, size=cca_size)
+#     return dist
+
+# def cca(mdl1, mdl2, dataloader, cca_size=8, iters=10):
+#     # with torch.no_grad()
+#     for _ in range(iters):
+#         next()
+#         mdl1(x)
+#         mdl2(x)
+
+#######
 
 def test():
     print()
+
 
 if __name__ == '__main__':
     pass
