@@ -7605,3 +7605,42 @@ for _ in range(iters):
     print((y1-y2).norm(2))
 dist = hook1.distance(hook2, size=size)
 print(f'dist={dist}')
+
+#%%
+
+from sklearn.metrics import explained_variance_score
+y_true = [3, -0.5, 2, 7]
+y_pred = [2.5, 0.0, 2, 8]
+explained_variance_score(y_true, y_pred)
+
+y_true = [[0.5, 1], [-1, 1], [7, -6]]
+y_pred = [[0, 2], [-1, 2], [8, -5]]
+ev = explained_variance_score(y_true, y_pred, multioutput='uniform_average')
+ev_raw = explained_variance_score(y_true, y_pred, multioutput='raw_values')
+ev_weighted = explained_variance_score(y_true, y_pred, multioutput='variance_weighted')
+
+print(ev_raw)
+print(ev_weighted)
+
+#%%
+# import sklearn.metrics.mean_squared_error as mse, not possible because is a funciton is my guess?
+# https://stackoverflow.com/questions/40823418/why-cant-i-import-from-a-module-alias
+from sklearn.metrics import mean_squared_error
+
+y_true = [3, -0.5, 2, 7]
+y_pred = [2.5, 0.0, 2, 8]
+mean_squared_error(y_true, y_pred)
+
+y_true = [3, -0.5, 2, 7]
+y_pred = [2.5, 0.0, 2, 8]
+mean_squared_error(y_true, y_pred, squared=False)
+
+y_true = [[0.5, 1],[-1, 1],[7, -6]]
+y_pred = [[0, 2],[-1, 2],[8, -5]]
+mean_squared_error(y_true, y_pred)
+
+mean_squared_error(y_true, y_pred, squared=False)
+
+mean_squared_error(y_true, y_pred, multioutput='raw_values')
+
+mean_squared_error(y_true, y_pred, multioutput=[0.3, 0.7])

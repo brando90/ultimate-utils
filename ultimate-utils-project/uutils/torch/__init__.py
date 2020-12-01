@@ -535,6 +535,55 @@ def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din
     dist = hook1.distance(hook2, size=cca_size)
     return dist
 
+def ned(f, y):
+    """
+    Normalized euncleadian distance
+
+    ned = 0.5*np.var(x - y) / (np.var(x) + np.var(y)) = 0.5 variance of difference / total variance individually
+
+    reference: https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance
+
+    @param x:
+    @param y:
+    @return:
+    """
+    ned = 0.5*np.var(f - y) / (np.var(f) + np.var(y))
+    return ned
+
+def r2_symmetric(f, y, r2_type='explained_variance'):
+    """
+    Normalized (symmetric) R^2 with respect to two vectors:
+
+
+
+    reference:
+    - https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance
+    - https://en.wikipedia.org/wiki/Coefficient_of_determination#:~:text=R2%20is%20a%20statistic,predictions%20perfectly%20fit%20the%20data.
+    - https://scikit-learn.org/stable/modules/model_evaluation.html#explained-variance-score
+    - https://en.wikipedia.org/wiki/Fraction_of_variance_unexplained
+    - https://en.wikipedia.org/wiki/Explained_variation
+
+    @param x:
+    @param y:
+    @return:
+    """
+    # import sklearn.metrics.explained_variance_score as evar
+    from sklearn.metrics import mean_squared_error as mse
+    f = f if type(f) != torch.Tensor else f.detach().cpu().numpy()
+    y = y if type(y) != torch.Tensor else y.detach().cpu().numpy()
+    if r2_type == 'my_explained_variance':
+        # evar_f2y
+        # evar_y2f
+        # r2 = (evar_f2y + evar_y2f) / (np.var(f) + np.var(y))
+        raise ValueError(f'Not implemented: {r2_type}')
+    elif r2_type == '1_minus_total_residuals':
+        r2 = 1 - ((2 * mse(f, y)) / (np.var(f) + np.var(y)))
+    elif r2_type == 'ned':
+        return ned(f, y)
+    else:
+        raise ValueError(f'Not implemented: {r2_type}')
+    return r2
+
 # def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
 #     # meta_batch [T, N*K, CHW], [T, K, D]
 #     from anatome import SimilarityHook
