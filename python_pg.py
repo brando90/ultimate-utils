@@ -7644,3 +7644,69 @@ mean_squared_error(y_true, y_pred, squared=False)
 mean_squared_error(y_true, y_pred, multioutput='raw_values')
 
 mean_squared_error(y_true, y_pred, multioutput=[0.3, 0.7])
+
+#%%
+
+
+import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+import copy
+
+#
+Din, Dout = 1, 1
+mdl1 = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU()),
+    ('fc2_l2', nn.Linear(Din, Dout)),
+]))
+mdl2 = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU()),
+    ('fc2_l2', nn.Linear(Din, Dout)),
+]))
+
+if torch.cuda.is_available():
+    mdl1 = mdl1.cuda()
+    mdl2 = mdl2.cuda()
+
+with torch.no_grad():
+    mu = torch.zeros(Din)
+    # std =  1.25e-2
+    std = 10
+    noise = torch.distributions.normal.Normal(loc=mu, scale=std).sample()
+    # mdl2.fc1_l1.weight.fill_(50.0)
+    # mdl2.fc1_l1.bias.fill_(50.0)
+    mdl2.fc1_l1.weight += noise
+    mdl2.fc1_l1.bias += noise
+hook1 = SimilarityHook(mdl1, "fc2_l1")
+hook2 = SimilarityHook(mdl2, "fc2_l1")
+mdl1.eval()
+mdl2.eval()
+
+# params for doing "good" CCA
+iters = 10
+num_samples_per_task = 500
+size = 8
+# start CCA comparision
+lb, ub = -1, 1
+
+for _ in range(iters):
+    x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
+    if torch.cuda.is_available():
+        x = x.cuda()
+    # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+    y1 = mdl1(x)
+    y2 = mdl2(x)
+    print((y1-y2).norm(2))
+dist = hook1.distance(hook2, size=size)
+print(f'dist={dist}')
+
+# %%
+
+# other cca library for layer https://discuss.pytorch.org/t/what-is-a-good-cca-cka-library-for-pytorch-that-works-ideally-with-gpu/104889

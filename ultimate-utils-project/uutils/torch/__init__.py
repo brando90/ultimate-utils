@@ -511,8 +511,8 @@ def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
         # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
         # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
-        x = torch.torch.distributions.Uniform(low=-1, high=1).sample((500, 1))
-        # x = meta_batch
+        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((500, 1))
+        x = meta_batch
         mdl1(x)
         mdl2(x)
     dist = hook1.distance(hook2, size=cca_size)
