@@ -577,7 +577,8 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         # r2 = (evar_f2y + evar_y2f) / (np.var(f) + np.var(y))
         raise ValueError(f'Not implemented: {r2_type}')
     elif r2_type == '1_minus_total_residuals':
-        r2 = 1 - ((2 * mse(f, y)) / (np.var(f) + np.var(y)))
+        # r2 = 1 - ((2 * mse(f, y)) / (np.var(f) + np.var(y)))
+        r2 = 1 - ((mse(f, y)) / (np.var(f) + np.var(y)))
     elif r2_type == 'ned':
         return ned(f, y)
     else:

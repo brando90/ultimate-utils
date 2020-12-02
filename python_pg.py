@@ -7710,3 +7710,4 @@ print(f'dist={dist}')
 # %%
 
 # other cca library for layer https://discuss.pytorch.org/t/what-is-a-good-cca-cka-library-for-pytorch-that-works-ideally-with-gpu/104889
+# https://github.com/jameschapman19/cca_zoo
