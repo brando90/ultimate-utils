@@ -21,8 +21,10 @@ depending which package manager your using.
 
 First, what is the difference between package and project? I am not sure if there is a rigurous formal definition but from reading tutorials:
 
-- project: the folder where `setup.py` is the the rest of the packages & modules are.
-- module: the namespace with collection of values (e.g. functions, constants, classes, etc). Usually a single file `module.py` or a folder with a `__init__.py` (usually called a package & it can have other modules in it).
+- project: the folder where `setup.py` is the rest of the packages & modules are.
+- module: the namespace with collection of values (e.g. functions, constants, classes, etc). 
+  Usually a single file `module.py` or a folder with a `__init__.py` 
+  (usually called a package & it can have other modules in it).
 - package: a module (single namespace) with other modules & usually other packages.
 - python file vs module: no difference but TODO in more detail.
 

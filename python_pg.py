@@ -7711,3 +7711,29 @@ print(f'dist={dist}')
 
 # other cca library for layer https://discuss.pytorch.org/t/what-is-a-good-cca-cka-library-for-pytorch-that-works-ideally-with-gpu/104889
 # https://github.com/jameschapman19/cca_zoo
+
+
+# %%
+
+# walrus operator
+# https://therenegadecoder.com/code/the-controversy-behind-the-walrus-operator-in-python/
+
+
+(x := 1)
+print(x)
+
+#
+from pathlib import Path
+
+path = Path('~/data/coq-hott-dataset-serpi/contrib/HoTTBook.feat').expanduser()
+with open(path) as f:
+    while line := f.read():
+        print(line)
+
+#
+[result for x in values if (result := func(x)) < 10]
+
+if result := do_something():
+        do_more(result)
+
+[y := f(x), y**2, y**3]
