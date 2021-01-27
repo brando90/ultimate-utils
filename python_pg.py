@@ -7796,3 +7796,44 @@ class IncreaseAllNumbers(lark.Transformer):
 
 IncreaseAllNumbers(visit_tokens=True).transform(tree1)
 
+# %%
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+torch.manual_seed(1)
+word_to_ix = {"hello": 0, "world": 1}
+embeds = nn.Embedding(2, 5)  # 2 words in vocab, 5 dimensional embeddings
+print(type(embeds))
+lookup_tensor = torch.tensor([word_to_ix["hello"]], dtype=torch.long)
+hello_embed = embeds(lookup_tensor)
+print(hello_embed)
+
+# %%
+
+my_set = {1, 2, 3}
+print(my_set)
+print(type(my_set))
+print(len(my_set))
+print(1 in my_set)
+
+print(my_set.pop())
+print(my_set.pop())
+print(my_set.pop())
+
+# %%
+
+from collections import defaultdict
+
+lst = [('a', 1), ('b', 2), ('a', 0)]
+# collect values for a in one place, collect values for b in another
+d = defaultdict(list)  # creates a default dict of key to empty list
+for k,v in lst:
+    d[k].append(v)
+
+print(d)
+print(dict(d))
+lst2 = d.items()
+print(sorted(lst2))
