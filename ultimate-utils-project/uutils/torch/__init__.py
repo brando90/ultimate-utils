@@ -500,12 +500,12 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
     return norm**(1/p), abs_err
 
-def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
+def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2, cca_distance='pwcca'):
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
-    hook1 = SimilarityHook(mdl1, layer_name)
-    hook2 = SimilarityHook(mdl2, layer_name)
+    hook1 = SimilarityHook(mdl1, layer_name, cca_distance)
+    hook2 = SimilarityHook(mdl2, layer_name, cca_distance)
     mdl1.eval()
     mdl2.eval()
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
@@ -515,6 +515,7 @@ def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
         x = meta_batch
         mdl1(x)
         mdl2(x)
+    # dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
     dist = hook1.distance(hook2, size=cca_size)
     return dist
 
@@ -539,7 +540,7 @@ def ned(f, y):
     """
     Normalized euncleadian distance
 
-    ned = 0.5*np.var(x - y) / (np.var(x) + np.var(y)) = 0.5 variance of difference / total variance individually
+    ned = sqrt 0.5*np.var(x - y) / (np.var(x) + np.var(y)) = 0.5 variance of difference / total variance individually
 
     reference: https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance
 
@@ -547,14 +548,14 @@ def ned(f, y):
     @param y:
     @return:
     """
-    ned = 0.5*np.var(f - y) / (np.var(f) + np.var(y))
+    ned = ( 0.5*np.var(f - y) / (np.var(f) + np.var(y)) )**0.5
     return ned
 
 def r2_symmetric(f, y, r2_type='explained_variance'):
     """
     Normalized (symmetric) R^2 with respect to two vectors:
 
-
+        check if statements for equation.
 
     reference:
     - https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance
@@ -562,6 +563,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
     - https://scikit-learn.org/stable/modules/model_evaluation.html#explained-variance-score
     - https://en.wikipedia.org/wiki/Fraction_of_variance_unexplained
     - https://en.wikipedia.org/wiki/Explained_variation
+    - https://en.wikipedia.org/wiki/Mahalanobis_distance
 
     @param x:
     @param y:
@@ -569,18 +571,32 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
     """
     # import sklearn.metrics.explained_variance_score as evar
     from sklearn.metrics import mean_squared_error as mse
+    from sklearn.metrics import r2_score
+
     f = f if type(f) != torch.Tensor else f.detach().cpu().numpy()
     y = y if type(y) != torch.Tensor else y.detach().cpu().numpy()
-    if r2_type == 'my_explained_variance':
+    if r2_type == 'average_r2s':
+        r2_f = r2_score(y_true=f, y_pred=y)
+        r2_y = r2_score(y_true=y, y_pred=f)
+        r2 = 0.5*r2_f + 0.5*r2_y
+    elif r2_type == 'mohalanobis':
+        # https://en.wikipedia.org/wiki/Mahalanobis_distance
+        from scipy.spatial import distance
+        # xy = np.vstack((f.T,y.T))
+        # S = np.cov(xy)
+        # r2 = distance.mahalanobis(f.squeeze(), y.squeeze(), S)
+        raise ValueError(f'Not implemented: {r2_type}')
+    elif r2_type == '1_minus_total_residuals':
+        # not using this anymore, gave weird results
+        # r2 = 1 - ((2 * mse(f, y)) / (np.var(f) + np.var(y)))
+        r2 = 1 - ((mse(f, y)) / (np.var(f) + np.var(y)))
+    elif r2_type == 'ned':
+        r2 = ned(f, y)
+    elif r2_type == 'my_explained_variance':
         # evar_f2y
         # evar_y2f
         # r2 = (evar_f2y + evar_y2f) / (np.var(f) + np.var(y))
         raise ValueError(f'Not implemented: {r2_type}')
-    elif r2_type == '1_minus_total_residuals':
-        # r2 = 1 - ((2 * mse(f, y)) / (np.var(f) + np.var(y)))
-        r2 = 1 - ((mse(f, y)) / (np.var(f) + np.var(y)))
-    elif r2_type == 'ned':
-        return ned(f, y)
     else:
         raise ValueError(f'Not implemented: {r2_type}')
     return r2

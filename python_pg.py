@@ -7837,3 +7837,26 @@ print(d)
 print(dict(d))
 lst2 = d.items()
 print(sorted(lst2))
+
+#%%
+import numpy as np
+
+x = np.random.randn(1, 10)
+xx = np.array([x, x]).reshape([])
+
+print(xx.shape)
+
+c = np.cov(xx)
+
+# %%
+
+import numpy as np
+
+x = np.random.randn(2, 10)
+
+print(x.shape)
+
+c = np.cov(x)
+
+print(c)
+print(c.shape)
