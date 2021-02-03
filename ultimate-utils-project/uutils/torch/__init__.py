@@ -500,12 +500,12 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
     return norm**(1/p), abs_err
 
-def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2, cca_distance='pwcca'):
+def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=2, iters=2, cxa_dist_type='pwcca'):
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
-    hook1 = SimilarityHook(mdl1, layer_name, cca_distance)
-    hook2 = SimilarityHook(mdl2, layer_name, cca_distance)
+    hook1 = SimilarityHook(mdl1, layer_name, cxa_dist_type)
+    hook2 = SimilarityHook(mdl2, layer_name, cxa_dist_type)
     mdl1.eval()
     mdl2.eval()
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
@@ -517,7 +517,14 @@ def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2, cca_distance='p
         mdl2(x)
     # dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
     dist = hook1.distance(hook2, size=cca_size)
+    if cxa_dist_type == 'lincka':
+        sim = dist  # only true for cka for this library
+        dist = 1 - sim  # since dist = 1 - sim but cka is outputing in this library the sim
     return dist
+
+def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2, cxa_sim_type='pwcca'):
+    dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
+    return 1 - dist
 
 def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=8, iters=2):
     # meta_batch [T, N*K, CHW], [T, K, D]
@@ -592,6 +599,8 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         r2 = 1 - ((mse(f, y)) / (np.var(f) + np.var(y)))
     elif r2_type == 'ned':
         r2 = ned(f, y)
+    elif r2_type == 'cosine':
+        raise ValueError(f'Not implemented {r2_type}')
     elif r2_type == 'my_explained_variance':
         # evar_f2y
         # evar_y2f
@@ -621,11 +630,52 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
 #         mdl1(x)
 #         mdl2(x)
 
+def l2_sim_torch(x1, x2, sim_type='nes_torch', dim=1):
+    if sim_type == 'nes_torch':
+        sim = nes_torch(x1, x2, dim)
+    elif sim_type == 'cosine_torch':
+        cos = nn.CosineSimilarity(dim=dim)
+        sim = cos(x1, x2)
+    else:
+        raise ValueError(f'Not implemented sim_type={sim_type}')
+    return sim
+
+def ned_torch(x1, x2, dim=1, eps=1e-8):
+    """
+    Normalized eucledian distance in pytorch.
+
+    https://discuss.pytorch.org/t/how-does-one-compute-the-normalized-euclidean-distance-similarity-in-a-numerically-stable-way-in-a-vectorized-way-in-pytorch/110829
+    https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance/498753?noredirect=1#comment937825_498753
+
+    :param x1:
+    :param x2:
+    :param dim:
+    :param eps:
+    :return:
+    """
+    ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
+    return ned_2 ** 0.5
+
+def nes_torch(x1, x2, dim=1, eps=1e-8):
+    return 1 - ned_torch(x1, x2, dim, eps)
+
 #######
 
-def test():
-    print()
+def test_ned():
+    import torch.nn as nn
 
+    dim = 1  # apply cosine accross the second dimension/feature dimension
+
+    k = 4  # number of examples
+    d = 8  # dimension of feature space
+    x1 = torch.randn(k, d)
+    x2 = x1 * 3
+    print(f'x1 = {x1.size()}')
+    ned_tensor = ned(x1, x2, dim=dim)
+    print(ned_tensor)
+    print(ned_tensor.size())
+    print(nes(x1, x2, dim=dim))
 
 if __name__ == '__main__':
-    pass
+    test_ned()
+    print('Done\a')

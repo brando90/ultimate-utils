@@ -7860,3 +7860,222 @@ c = np.cov(x)
 
 print(c)
 print(c.shape)
+
+# %%
+
+import torch
+import torch.nn as nn
+
+from collections import OrderedDict
+
+params = OrderedDict([
+    ('fc1', nn.Linear(in_features=4, out_features=4)),
+    ('ReLU1', nn.ReLU()),
+    ('fc2', nn.Linear(in_features=4, out_features=4)),
+    ('ReLU2', nn.ReLU()),
+    ('fc3', nn.Linear(in_features=4, out_features=1)),
+])
+mdl = nn.Sequential(params)
+
+for name, m in mdl.named_children():
+    print(f'{name}, {m}')
+
+print()
+
+# for m in mdl.modules():
+#     print(m)
+#
+# print()
+#
+# for name, m in mdl.named_modules():
+#     print(name)
+#     print(m)
+#
+# print()
+#
+# for name, m in mdl.named_children():
+#     print(name)
+#     print(m)
+
+# %%
+
+# Meaning of dimension in pytorch operations: https://discuss.pytorch.org/t/whats-different-between-dim-1-and-dim-0/61094/5
+
+# input tensor of dimensions B x C, B = number of batches, C = number of classes.
+B = 8
+C = 3
+inputs = torch.rand(size=(B, C))
+soft_dim0 = torch.softmax(inputs, dim=0)
+soft_dim1 = torch.softmax(inputs, dim=1)
+print('**** INPUTS ****')
+print(inputs)
+print(inputs.size())
+print('**** SOFTMAX DIM=0 ****')
+print(soft_dim0)
+print(f'soft_dim0[0, :].sum()={soft_dim0[0, :].sum()}')
+print(f'soft_dim0[:, 0].sum()={soft_dim0[:, 0].sum()}')
+print(soft_dim0.size())
+# print('**** SOFTMAX DIM=1 ****')
+# print(soft_dim1)
+
+
+# %%
+
+# cosine similarity
+
+import torch.nn as nn
+
+dim = 1  # apply cosine accross the second dimension/feature dimension
+cos = nn.CosineSimilarity(dim=dim)  # eps defaults to 1e-8 for numerical stability
+
+k = 4  # number of examples
+d = 8  # dimension
+x1 = torch.randn(k, d)
+x2 = x1 * 3
+print(f'x1 = {x1.size()}')
+cos_similarity_tensor = cos(x1, x2)
+print(cos_similarity_tensor)
+print(cos_similarity_tensor.size())
+
+
+# %%
+
+import torch.nn as nn
+
+
+def ned(x1, x2, dim=1, eps=1e-8):
+    ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
+    return ned_2 ** 0.5
+
+def nes(x1, x2, dim=1, eps=1e-8):
+    return 1 - ned(x1, x2, dim, eps)
+
+dim = 1  # apply cosine accross the second dimension/feature dimension
+
+k = 4  # number of examples
+d = 8  # dimension of feature space
+x1 = torch.randn(k, d)
+x2 = x1 * 3
+print(f'x1 = {x1.size()}')
+ned_tensor = ned(x1, x2, dim=dim)
+print(ned_tensor)
+print(ned_tensor.size())
+print(nes(x1, x2, dim=dim))
+
+# %%
+
+import torch
+
+# trying to convert a list of tensors to a torch.tensor
+
+x = torch.randn(3, 1)
+xs = [x, x]
+# xs = torch.tensor(xs)
+xs = torch.as_tensor(xs)
+
+# %%
+
+import torch
+
+# trying to convert a list of tensors to a torch.tensor
+
+x = torch.randn(4)
+xs = [x.numpy(), x.numpy()]
+# xs = torch.tensor(xs)
+xs = torch.as_tensor(xs)
+
+print(xs)
+print(xs.size())
+
+# %%
+
+import torch
+
+# trying to convert a list of tensors to a torch.tensor
+
+x = torch.randn(4)
+xs = [x.numpy(), x.numpy(), x.numpy()]
+xs = [xs, xs]
+# xs = torch.tensor(xs)
+xs = torch.as_tensor(xs)
+
+print(xs)
+print(xs.size())
+
+# %%
+
+# You could use torch.cat or torch.stack to create a tensor from the list.
+
+import torch
+
+x = torch.randn(4)
+xs = [x, x]
+xs = torch.cat(xs)
+print(xs.size())
+# xs = torch.stack(xs)
+# print(xs.size())
+
+
+# %%
+
+import torch
+
+# stack vs cat
+
+# cat "extends" a list in the given dimension e.g. adds more rows or columns
+
+x = torch.randn(2, 3)
+print(f'{x.size()}')
+
+# add more rows (thus increasing the dimensionality of the column space to 2 -> 6)
+xnew_from_cat = torch.cat((x, x, x), 0)
+print(f'{xnew_from_cat.size()}')
+
+# add more columns (thus increasing the dimensionality of the row space to 3 -> 9)
+xnew_from_cat = torch.cat((x, x, x), 1)
+print(f'{xnew_from_cat.size()}')
+
+print()
+
+# stack serves the same role as append in lists. i.e. it doesn't change the original
+# vector space but instead adds a new index to the new tensor, so you retain the ability
+# get the original tensor you added to the list by indexing in the new dimension
+xnew_from_stack = torch.stack((x, x, x, x), 0)
+print(f'{xnew_from_stack.size()}')
+
+xnew_from_stack = torch.stack((x, x, x, x), 1)
+print(f'{xnew_from_stack.size()}')
+
+xnew_from_stack = torch.stack((x, x, x, x), 2)
+print(f'{xnew_from_stack.size()}')
+
+# default appends at the from
+xnew_from_stack = torch.stack((x, x, x, x))
+print(f'{xnew_from_stack.size()}')
+
+print('I like to think of xnew_from_stack as a \"tensor list\" that you can pop from the front')
+
+print()
+
+lst = []
+print(f'{x.size()}')
+for i in range(10):
+    x += i  # say we do something with x at iteration i
+    lst.append(x)
+# lstt = torch.stack([x for _ in range(10)])
+lstt = torch.stack(lst)
+print(lstt.size())
+
+print()
+
+# lst = []
+# print(f'{x.size()}')
+# for i in range(10):
+#     x += i  # say we do something with x at iteration i
+#     for j in range(11):
+#         x += j
+#         lstx
+#     lst.append(x)
+# # lstt = torch.stack([x for _ in range(10)])
+# lstt = torch.stack(lst)
+# print(lstt.size())
