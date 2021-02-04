@@ -7829,8 +7829,8 @@ from collections import defaultdict
 
 lst = [('a', 1), ('b', 2), ('a', 0)]
 # collect values for a in one place, collect values for b in another
-d = defaultdict(list)  # creates a default dict of key to empty list
-for k,v in lst:
+d = defaultdict(list)  # creates a default dict of value to empty list
+for k, v in lst:
     d[k].append(v)
 
 print(d)
@@ -8079,3 +8079,85 @@ print()
 # # lstt = torch.stack([x for _ in range(10)])
 # lstt = torch.stack(lst)
 # print(lstt.size())
+
+#%%
+
+import torch
+
+# A class that represents an individual node in a
+# Binary Tree
+class Node:
+    def __init__(self, val):
+        self.left = None
+        self.right = None
+        self.val = val
+
+# A function to do postorder tree traversal
+def print_postorder(root):
+    # don't do anything if root is Nothing, else traverse according to PostOrder traversal
+    # (i.e. left & right until done then print)
+    if root:  # if it's None it's False so does nothing, it's true if it's not None
+        # First post order print left child (if None this does nothing and then does Post order of the right)
+        print_postorder(root.left)
+
+        # Once right has been done for current node do Post order of right tree (if root.right is None do nothing)
+        print_postorder(root.right)
+
+        # After everything has been printed in post order way, then you can now print the data of current node
+        print(root.val)
+
+root = Node(1)
+root.left = Node(2)
+root.right = Node(3)
+root.left.left = Node(4)
+root.left.right = Node(5)
+
+print("\nPostorder traversal of binary tree is")
+print_postorder(root)
+
+# %%
+
+class Node:
+    """Node class for general trees"""
+    def __init__(self, val):
+        self.children = []
+        self.val = val  # value of current node
+
+    def forward(self, children_embeddings):
+        # just do a sum of children and current value
+        return self.val + sum(children_embeddings)
+
+# create top
+root = Node(1)
+# create left
+left = Node(2)
+left.children = [Node(4), Node(5)]
+# create right
+right = Node(3)
+# create entire tree
+root.children = [left, right]
+
+# A function to do postorder tree traversal
+def compute_embedding_bottom_up(root, verbose=False):
+    '''
+    What we want is to compute all subtrees
+    @param root:
+    @return:
+    '''
+    # don't do anything if root is Nothing, else traverse according to PostOrder traversal
+    if root:  # if it's None it's False so does nothing, it's true if it's not None
+        # Traverse the entire childrens in post order before continuing
+        children_embedings = []
+        for children in root.children:
+            child_embeding = compute_embedding_bottom_up(children, verbose)
+            children_embedings.append(child_embeding)
+        # After everything has been computed in post order, compute the current embedding
+        root_embedding = root.forward(children_embedings)
+        print(root_embedding) if verbose else None
+        return root_embedding
+
+# should print 4 5 11 3 15
+compute_embedding_bottom_up(root, verbose=True)
+
+
+
