@@ -8222,3 +8222,168 @@ print(xs.size())
 mean_xs = xs.mean(dim=0)
 
 print(mean_xs)
+
+# %%
+
+'''
+Need:
+- 1 vocabulary of green terms
+- 2 vocabulary of black terms (coq/gallina constructs)
+- 3 ast trees so we can traverse them (postorder ideally)
+- 4 traversal code for generating a embedding using tree_nn
+'''
+# import numpy as np
+import torch
+import torch.nn as nn
+from collections import OrderedDict
+# import torch.nn.functional as F
+# import torch.optim as optim
+# from torch.utils.data import DataLoader
+# from torch.utils import data
+
+class TreeNN(torch.nn.Module):
+    def __init__(self, vocab, embed_dim, constructors):
+        """
+            vocab = [idx:word]
+        """
+        super().__init__()
+        # artity 0 are embeddings/vectors
+        self.vocab = vocab
+        self.embed_dim = embed_dim
+        self.vocab_2_idx = {word: idx for idx, word in enumerate(vocab)}  # e.g. {"hello": 0, "world": 1}
+        self.embeds = nn.Embedding(len(self.vocab), embed_dim)  # V words in vocab, D size embedding
+        # arity k are FNN
+        self.constructors = constructors
+        self.cons_2_fnn = {}
+        for cons in self.constructors:
+            fnn = self.get_cons_fnn()
+            self.cons_2_fnn[cons] = fnn
+
+    def forward(self, asts):
+        """compute embeddings bottom up, so all the children of the ast have to be computed first"""
+        # ast = asts[0]
+        # embeds = [self.compute_embedding_bottom_up(ast) for ast in asts]
+        # return embeds
+        ast = asts
+        return self.compute_embedding_bottom_up(ast)
+
+    def compute_embedding_bottom_up(self, ast):
+        children_embeddings = []
+        for child in ast.children:
+            if child in self.vocab:
+                lookup_tensor = torch.tensor([self.vocab_2_idx[child]], dtype=torch.long)
+                child_embed = self.embeds(lookup_tensor)
+            else:
+                child_embed = self.compute_embedding_bottom_up(child)
+            children_embeddings.append(child_embed)
+        embed = torch.stack(children_embeddings, dim=0).mean(dim=0)
+        cons_fnn = self.cons_2_fnn[ast.val]
+        return cons_fnn(embed)
+
+    def get_cons_fnn(self):
+        # TODO improve, check if arity is variable or fixed, what NN to choose?
+        fnn = nn.Sequential(OrderedDict([
+            ('fc0', nn.Linear(in_features=self.embed_dim, out_features=self.embed_dim)),
+            ('SeLU0', nn.SELU()),
+            ('fc1', nn.Linear(in_features=self.embed_dim, out_features=self.embed_dim))
+        ]))
+        return fnn
+
+class Node:
+    """Node class for general trees"""
+    def __init__(self, val):
+        self.children = []
+        self.val = val  # value of current node
+
+    def __repr__(self):
+        self.print_post_order()
+        return ''
+
+    def print_post_order(self):
+        """print all the children first then the current node last"""
+        for child in self.children:
+            if type(child) is str:
+                print(child)
+            else:
+                child.print_post_order()
+        print(self.val)
+
+class JsonToAst:
+    def __init__(self):
+        self.base_cases = {"Ind", "Var"}
+
+    def generate_ast(self, term):
+        '''
+        Assumption is that at term is of the form:
+            term = {
+                cons: [...,term,...]
+            }
+
+            base case:
+            term = {
+                cons: [...,string,...]
+            }
+        '''
+        for cons, args in term.items():
+            root = Node(cons)
+            if cons in self.base_cases:
+                args = args[0]  # TODO ask lasse what to do here
+                root.children = [args]
+            else:
+                for term in args:
+                    child = self.generate_ast(term)
+                    root.children.append(child)
+        return root
+
+####
+
+def test():
+    json2ast = JsonToAst()
+    term = {
+        "App": [
+            {
+                "Ind": [
+                    "Coq.Relations.Relation_Operators.clos_refl_trans",
+                    "0"
+                ]
+            },
+            {
+                "Var": [
+                    "A"
+                ]
+            },
+            {
+                "Var": [
+                    "R"
+                ]
+            }
+        ]
+    }
+    ast = json2ast.generate_ast(term)
+    print(ast)
+    #
+    vocab = ["R", "A", "Coq.Relations.Relation_Operators.clos_refl_trans"]
+    constructors = ["App", "Ind", "Var"]
+    #
+    embed_dim = 4
+    term_encoder = TreeNN(vocab, embed_dim, constructors)
+    term_embedding = term_encoder(ast)
+    print(term_embedding)
+    print(term_embedding.size())
+
+
+if __name__ == '__main__':
+    test()
+    print('done\a')
+
+#%%
+
+import torch
+
+x = torch.randn(4, 3, 2)
+xs = torch.cat([x, x, x], dim=0)
+print(xs.size())
+xs = torch.cat([x, x, x], dim=1)
+print(xs.size())
+xs = torch.cat([x, x, x], dim=2)
+print(xs.size())
