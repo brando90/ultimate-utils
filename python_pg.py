@@ -8159,5 +8159,66 @@ def compute_embedding_bottom_up(root, verbose=False):
 # should print 4 5 11 3 15
 compute_embedding_bottom_up(root, verbose=True)
 
+# %%
+
+class Node:
+    """Node class for general trees"""
+    def __init__(self, val):
+        self.children = []
+        self.val = val  # value of current node
+
+    def forward(self, children_embeddings):
+        # just do a sum of children and current value
+        return self.val + sum(children_embeddings)
+
+    term = {
+        "App": [
+            {
+                "Ind": [
+                    "Coq.Relations.Relation_Operators.clos_refl_trans",
+                    "0"
+                ]
+            },
+            {
+                "Var": [
+                    "A"
+                ]
+            },
+            {
+                "Var": [
+                    "R"
+                ]
+            }
+        ]
+    }
 
 
+def embed():
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import torch.optim as optim
+
+    torch.manual_seed(1)
+    word_to_ix = {"hello": 0, "world": 1}
+    embeds = nn.Embedding(2, 5)  # 2 words in vocab, 5 dimensional embeddings
+    print(type(embeds))
+    lookup_tensor = torch.tensor([word_to_ix["hello"]], dtype=torch.long)
+    hello_embed = embeds(lookup_tensor)
+    print(hello_embed)
+
+# %%
+
+import torch
+
+x = torch.randn(5, 1)
+
+print(x.size())
+
+xs = torch.stack([x, x, x])
+
+print(xs)
+print(xs.size())
+mean_xs = xs.mean(dim=0)
+
+print(mean_xs)
