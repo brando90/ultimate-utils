@@ -8387,3 +8387,29 @@ xs = torch.cat([x, x, x], dim=1)
 print(xs.size())
 xs = torch.cat([x, x, x], dim=2)
 print(xs.size())
+
+#%%
+term = {
+    "App": [
+        {
+            "Ind": [
+                "Coq.Relations.Relation_Operators.clos_refl_trans",
+                "0"
+            ]
+        },
+        {
+            "Var": [
+                "A"
+            ]
+        },
+        {
+            "Var": [
+                "R"
+            ]
+        }
+    ]
+}
+
+print(term.keys())
+keys = list(term.keys())
+print(keys[0])
