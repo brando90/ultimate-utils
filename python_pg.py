@@ -8419,3 +8419,50 @@ print(keys[0])
 # python conditional ternery operator
 
 x = 'true' if True else 'false'
+
+#%%
+
+import torch
+
+x = torch.randn([5, 12])
+print(x.mean())
+print(x.mean().size())
+
+y = torch.tensor(x)
+
+print(y.size())
+
+#%%
+
+# https://discuss.pytorch.org/t/identity-element-for-stack-operator-torch-stack-emtpty-x-x-empty-tensor-exists/111459
+
+import torch
+
+empty = torch.tensor([])
+x = torch.randn(3, 5, 7)
+
+print(torch.cat([empty, x], dim=0).size())
+print(torch.stack([empty, x], dim=0).size())
+
+#%%
+
+import torch
+
+x = torch.randn(5, 4)
+for layer in range(x.size(1)):
+    print(f'{layer=}')
+
+#%%
+
+# selecting indices arbitrarily i.e. x[*,indicies,*] were * denotes that the rest of the layers are kept the same
+
+# but for only the last 3 layers [T, L] -> [1]
+x = torch.randn(5, 4)
+# compute average of first 3 layer
+
+L = x.size(1)
+indices = torch.tensor(range(L-1))
+xx = x.index_select(dim=1, index=indices)
+print(f'{x=}')
+print(f'{xx=}')
+print(xx.size())

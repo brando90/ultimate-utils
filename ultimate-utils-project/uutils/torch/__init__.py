@@ -659,6 +659,169 @@ def ned_torch(x1, x2, dim=1, eps=1e-8):
 def nes_torch(x1, x2, dim=1, eps=1e-8):
     return 1 - ned_torch(x1, x2, dim, eps)
 
+
+def tensorify(lst):
+    """
+    List must be nested list of tensors (with no varying lengths within a dimension).
+    Nested list of nested lengths [D1, D2, ... DN] -> tensor([D1, D2, ..., DN)
+
+    :return: nested list D
+    """
+    # base case, if the current list is not nested anymore, make it into tensor
+    if type(lst[0]) != list:
+        if type(lst) == torch.Tensor:
+            return lst
+        elif type(lst[0]) == torch.Tensor:
+            return torch.stack(lst, dim=0)
+        else:  # if the elements of lst are floats or something like that
+            return torch.tensor(lst)
+    current_dimension_i = len(lst)
+    for d_i in range(current_dimension_i):
+        tensor = tensorify(lst[d_i])
+        lst[d_i] = tensor
+    # end of loop lst[d_i] = tensor([D_i, ... D_0])
+    tensor_lst = torch.stack(lst, dim=0)
+    return tensor_lst
+
+def print_results_old(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all_diffs_cka, all_diffs_neds):
+    print(f'experiment {args.data_path}\n')
+
+    print(f'Meta Val loss (using query set of course, (k_val = {args.k_eval}))')
+    meta_val_loss_mean = np.average(all_meta_eval_losses)
+    meta_val_loss_std = np.std(all_meta_eval_losses)
+    print(f'-> meta_val_loss = {meta_val_loss_mean} +-{meta_val_loss_std}')
+
+    print(f'\nFuntional difference according to query set, (approx integral with k_val = {args.k_eval})')
+    diff_qry_mean = np.average(all_diffs_qry)
+    diff_qry_std = np.std(all_diffs_qry)
+    print(f'-> diff_qrt_mean = {diff_qry_mean} +-{diff_qry_std}')
+
+    print(f'Funtional difference according to cca (k_val = {args.k_eval})')
+    diff_cca_mean = np.average(all_diffs_cca)
+    diff_cca_std = np.std(all_diffs_cca)
+    print(f'-> diff_cca_mean = {diff_cca_mean} +-{diff_cca_std}')
+
+    print(f'Funtional difference according to cka (k_val = {args.k_eval})')
+    diff_cka_mean = np.average(all_diffs_cka)
+    diff_cka_std = np.std(all_diffs_cka)
+    print(f'-> diff_cka_mean = {diff_cka_mean} +-{diff_cka_std}')
+
+    # print(f'Funtional difference according to cka (k_val = {args.k_eval})')
+    # diff_cka_mean = np.average(all_diffs_cka)
+    # diff_cka_std = np.std(all_diffs_cka)
+    # print(f'-> diff_cca_mean = {diff_cka_mean} +-{diff_cka_std}')
+
+    print(f'Funtional difference according to ned (k_val = {args.k_eval})')
+    diff_ned_mean = np.average(all_diffs_neds)
+    diff_ned_std = np.std(all_diffs_neds)
+    print(f'-> diff_ned_mean = {diff_ned_mean} +-{diff_ned_std}')
+
+    # print(f'Funtional difference according to r2s_avg (k_val = {args.k_eval})')
+    # diff_r2avg_mean = np.average(all_diffs_r2_avg)
+    # diff_r2avg_std = np.std(all_diffs_r2_avg)
+    # print(f'-> diff_r2avg_mean = {diff_r2avg_mean} +-{diff_r2avg_std}')
+
+    # print(f'Funtional difference according to integral approx')
+    # diff_approx_int_mean = np.average(all_diffs_approx_int)
+    # diff_approx_int_std = np.std(all_diffs_approx_int)
+    # print(f'-> diff_qrt_mean = {diff_approx_int_mean} +-{diff_approx_int_std}')
+
+    # print(f'Funtional difference according to r2_1_mse_var')
+    # diff_r2_1_mse_var_mean = np.average(all_diffs_r2_1_mse_var)
+    # diff_r2_1_mse_var_std = np.std(all_diffs_r2_1_mse_var)
+    # print(f'-> diff_ned_mean = {diff_r2_1_mse_var_mean} +-{diff_r2_1_mse_var_std}')
+
+
+def print_results(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all_diffs_cka, all_diffs_neds):
+    print(f'experiment {args.data_path}\n')
+
+    print(f'Meta Val loss (using query set of course, (k_val = {args.k_eval}))')
+    meta_val_loss_mean = np.average(all_meta_eval_losses)
+    meta_val_loss_std = np.std(all_meta_eval_losses)
+    print(f'-> meta_val_loss = {meta_val_loss_mean} +-{meta_val_loss_std}')
+
+    print(f'\nFuntional difference according to query set, (approx integral with k_val = {args.k_eval})')
+    diff_qry_mean = np.average(all_diffs_qry)
+    diff_qry_std = np.std(all_diffs_qry)
+    print(f'-> diff_qrt_mean = {diff_qry_mean} +-{diff_qry_std}')
+
+    print(f'Funtional difference according to cca (k_val = {args.k_eval})')
+    diff_cca_mean = np.average(all_diffs_cca)
+    diff_cca_std = np.std(all_diffs_cca)
+    print(f'-> diff_cca_mean = {diff_cca_mean} +-{diff_cca_std}')
+
+    print(f'Funtional difference according to cka (k_val = {args.k_eval})')
+    diff_cka_mean = np.average(all_diffs_cka)
+    diff_cka_std = np.std(all_diffs_cka)
+    print(f'-> diff_cka_mean = {diff_cka_mean} +-{diff_cka_std}')
+
+    # print(f'Funtional difference according to cka (k_val = {args.k_eval})')
+    # diff_cka_mean = np.average(all_diffs_cka)
+    # diff_cka_std = np.std(all_diffs_cka)
+    # print(f'-> diff_cca_mean = {diff_cka_mean} +-{diff_cka_std}')
+
+    print(f'Funtional difference according to ned (k_val = {args.k_eval})')
+    diff_ned_mean = np.average(all_diffs_neds)
+    diff_ned_std = np.std(all_diffs_neds)
+    print(f'-> diff_ned_mean = {diff_ned_mean} +-{diff_ned_std}')
+
+    # print(f'Funtional difference according to r2s_avg (k_val = {args.k_eval})')
+    # diff_r2avg_mean = np.average(all_diffs_r2_avg)
+    # diff_r2avg_std = np.std(all_diffs_r2_avg)
+    # print(f'-> diff_r2avg_mean = {diff_r2avg_mean} +-{diff_r2avg_std}')
+
+    # print(f'Funtional difference according to integral approx')
+    # diff_approx_int_mean = np.average(all_diffs_approx_int)
+    # diff_approx_int_std = np.std(all_diffs_approx_int)
+    # print(f'-> diff_qrt_mean = {diff_approx_int_mean} +-{diff_approx_int_std}')
+
+    # print(f'Funtional difference according to r2_1_mse_var')
+    # diff_r2_1_mse_var_mean = np.average(all_diffs_r2_1_mse_var)
+    # diff_r2_1_mse_var_std = np.std(all_diffs_r2_1_mse_var)
+    # print(f'-> diff_ned_mean = {diff_r2_1_mse_var_mean} +-{diff_r2_1_mse_var_std}')
+
+def compute_result_stats(all_sims):
+    cxas = ['cca', 'cka']
+    l2 = ['nes', 'cosine']
+    stats = {metric: {'avg': None, 'std': None, 'rep': {'avg':None, 'std':None}, 'all': {'avg': None, 'std': None}} for metric, _ in all_sims.items()}
+    for metric, tensor_of_metrics in all_sims.items():
+        if metric in cxas:
+            # compute average cxa per layer: [T, L] -> [L]
+            avg_sims = tensor_of_metrics.mean(dim=0)
+            std_sims = tensor_of_metrics.std(dim=0)
+            # compute representation & all avg cxa [T, L] -> [1]
+            L = tensor_of_metrics.size(1)
+            representation_tensors = tensor_of_metrics.index_select(dim=1, index=range(L-1))
+            avg_sims_representation_layer = representation_tensors.mean()
+            std_sims_representation_layer = representation_tensors.std()
+
+            avg_sims_all = tensor_of_metrics.mean()
+            std_sims_all = tensor_of_metrics.std()
+        elif metric in l2:
+            # compute average cxa per layer: [T, L, K_eval] -> [L]
+            avg_sims = tensor_of_metrics.mean(dim=0)
+            std_sims = tensor_of_metrics.std(dim=0)
+            # compute representation & all avg cxa [T, L, K_eval] -> [1]
+            L = tensor_of_metrics.size(1)
+            representation_tensors = tensor_of_metrics.index_select(dim=1, index=range(L-1))
+            avg_sims_representation_layer = representation_tensors.mean()
+            std_sims_representation_layer = representation_tensors.std()
+
+            avg_sims_all = tensor_of_metrics.mean()
+            std_sims_all = tensor_of_metrics.std()
+        else:
+            # compute average [T] -> [1]
+            avg_sims = tensor_of_metrics.mean(dim=0)
+            std_sims = tensor_of_metrics.std(dim=0)
+        stats[metric]['avg'] = avg_sims
+        stats[metric]['std'] = std_sims
+        if metric in cxas+l2:
+            stats[metric]['rep']['avg'] = avg_sims_representation_layer
+            stats[metric]['rep']['std'] = std_sims_representation_layer
+            stats[metric]['all']['avg'] = avg_sims_all
+            stats[metric]['all']['std'] = std_sims_all
+    return stats
+
 #######
 
 def test_ned():
@@ -674,8 +837,17 @@ def test_ned():
     ned_tensor = ned(x1, x2, dim=dim)
     print(ned_tensor)
     print(ned_tensor.size())
-    print(nes(x1, x2, dim=dim))
+    # print(nes(x1, x2, dim=dim))
+
+def test_tensorify():
+    t = [1, 2, 3]
+    print(tensorify(t).size())
+    tt = [t, t, t]
+    print(tensorify(tt))
+    ttt = [tt, tt, tt]
+    print(tensorify(ttt))
 
 if __name__ == '__main__':
-    test_ned()
+    # test_ned()
+    test_tensorify()
     print('Done\a')
