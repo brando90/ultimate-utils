@@ -8413,3 +8413,9 @@ term = {
 print(term.keys())
 keys = list(term.keys())
 print(keys[0])
+
+#%%
+
+# python conditional ternery operator
+
+x = 'true' if True else 'false'
