@@ -380,6 +380,14 @@ def get_cluster_jobids(args):
             args.jobid = os.environ["PBS_JOBID"]
     return args
 
+def pprint_dict(dict, indent=2):
+    import json
+    # print(json.dumps(str(dict), indent=indent, sort_keys=True))
+    print(json.dumps(json.loads(dict), indent=indent, sort_keys=True))
+    print(json.dumps(json.loads(str(dict)), indent=indent, sort_keys=True))
+
+    import pprint
+    pprint(dict)
 
 if __name__ == "__main__":
     # send_email('msg','miranda9@illinois.edu')

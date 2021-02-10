@@ -630,7 +630,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
 #         mdl1(x)
 #         mdl2(x)
 
-def l2_sim_torch(x1, x2, sim_type='nes_torch', dim=1):
+def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch'):
     if sim_type == 'nes_torch':
         sim = nes_torch(x1, x2, dim)
     elif sim_type == 'cosine_torch':
@@ -653,7 +653,12 @@ def ned_torch(x1, x2, dim=1, eps=1e-8):
     :param eps:
     :return:
     """
-    ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
+    if x1.size(1) == 1:
+        ned_2 = 0.5 * ((x1 - x2)**2 / (x1**2 + x2**2 + eps))
+    else:
+        # num_dims = len(x1.size())
+        # dim = torch.tensor(range(1, num_dims))
+        ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
 def nes_torch(x1, x2, dim=1, eps=1e-8):
@@ -783,7 +788,7 @@ def print_results(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all
 def compute_result_stats(all_sims):
     cxas = ['cca', 'cka']
     l2 = ['nes', 'cosine']
-    stats = {metric: {'avg': None, 'std': None, 'rep': {'avg':None, 'std':None}, 'all': {'avg': None, 'std': None}} for metric, _ in all_sims.items()}
+    stats = {metric: {'avg': None, 'std': None, 'rep': {'avg': None, 'std': None}, 'all': {'avg': None, 'std': None}} for metric, _ in all_sims.items()}
     for metric, tensor_of_metrics in all_sims.items():
         if metric in cxas:
             # compute average cxa per layer: [T, L] -> [L]
@@ -791,7 +796,8 @@ def compute_result_stats(all_sims):
             std_sims = tensor_of_metrics.std(dim=0)
             # compute representation & all avg cxa [T, L] -> [1]
             L = tensor_of_metrics.size(1)
-            representation_tensors = tensor_of_metrics.index_select(dim=1, index=range(L-1))
+            indicies = torch.tensor(range(L-1))
+            representation_tensors = tensor_of_metrics.index_select(dim=1, index=indicies)
             avg_sims_representation_layer = representation_tensors.mean()
             std_sims_representation_layer = representation_tensors.std()
 
@@ -799,11 +805,12 @@ def compute_result_stats(all_sims):
             std_sims_all = tensor_of_metrics.std()
         elif metric in l2:
             # compute average cxa per layer: [T, L, K_eval] -> [L]
-            avg_sims = tensor_of_metrics.mean(dim=0)
-            std_sims = tensor_of_metrics.std(dim=0)
+            avg_sims = tensor_of_metrics.mean(dim=[0, 2])
+            std_sims = tensor_of_metrics.std(dim=[0, 2])
             # compute representation & all avg cxa [T, L, K_eval] -> [1]
             L = tensor_of_metrics.size(1)
-            representation_tensors = tensor_of_metrics.index_select(dim=1, index=range(L-1))
+            indicies = torch.tensor(range(L-1))
+            representation_tensors = tensor_of_metrics.index_select(dim=1, index=indicies)
             avg_sims_representation_layer = representation_tensors.mean()
             std_sims_representation_layer = representation_tensors.std()
 
@@ -827,17 +834,18 @@ def compute_result_stats(all_sims):
 def test_ned():
     import torch.nn as nn
 
-    dim = 1  # apply cosine accross the second dimension/feature dimension
+    # dim = 1  # apply cosine accross the second dimension/feature dimension
 
     k = 4  # number of examples
     d = 8  # dimension of feature space
-    x1 = torch.randn(k, d)
-    x2 = x1 * 3
-    print(f'x1 = {x1.size()}')
-    ned_tensor = ned(x1, x2, dim=dim)
-    print(ned_tensor)
-    print(ned_tensor.size())
-    # print(nes(x1, x2, dim=dim))
+    for d in range(1, d):
+        x1 = torch.randn(k, d)
+        x2 = x1 * 3
+        print(f'x1 = {x1.size()}')
+        ned_tensor = ned_torch(x1, x2)
+        print(ned_tensor)
+        print(ned_tensor.size())
+        #print(ned_torch(x1, x2, dim=dim))
 
 def test_tensorify():
     t = [1, 2, 3]
@@ -848,6 +856,6 @@ def test_tensorify():
     print(tensorify(ttt))
 
 if __name__ == '__main__':
-    # test_ned()
-    test_tensorify()
+    test_ned()
+    # test_tensorify()
     print('Done\a')
