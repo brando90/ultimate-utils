@@ -680,6 +680,7 @@ def tensorify(lst):
             return torch.stack(lst, dim=0)
         else:  # if the elements of lst are floats or something like that
             return torch.tensor(lst)
+    # recursive case, for every sub list get it into tensor (recursively) form and then combine with torch.stack
     current_dimension_i = len(lst)
     for d_i in range(current_dimension_i):
         tensor = tensorify(lst[d_i])
