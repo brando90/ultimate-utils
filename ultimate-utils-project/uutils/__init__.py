@@ -380,7 +380,6 @@ def get_cluster_jobids(args):
             args.jobid = int(os.environ["PBS_JOBID"])
         except:
             args.jobid = os.environ["PBS_JOBID"]
-    return args
 
 def pprint_dict(dict, indent=2):
     import json
