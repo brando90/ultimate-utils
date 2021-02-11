@@ -361,7 +361,9 @@ def collect_content_from_file(filepath):
 
 
 def get_cluster_jobids(args):
-    ## Get Get job number of cluster
+    import os
+
+    # Get Get job number of cluster
     args.jobid = -1
     args.slurm_jobid, args.slurm_array_task_id = -1, -1
     if "SLURM_JOBID" in os.environ:
