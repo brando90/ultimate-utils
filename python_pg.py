@@ -8828,3 +8828,11 @@ print(vars(options_foo))
 options_baz = Namespace(**vars(options_foo), **vars(options_bar))
 
 print(options_baz)
+
+#%%
+
+import torch
+
+x = torch.randn(5, 4)
+
+print(x.var(dim=1).size() == torch.Size([5]))
