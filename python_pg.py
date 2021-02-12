@@ -2024,6 +2024,7 @@ print(y_proc)
 
 # %%
 
+# merge dict
 # union dictionaries, https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression-in-python
 
 d1 = {'a': 1, 'b': 2.5}
@@ -8811,3 +8812,19 @@ import torch
 
 x = torch.randn(5, 4)
 print(x.isnan().any())
+
+#%%
+
+from argparse import Namespace
+
+# The 2 initial objects
+options_foo = Namespace(foo="foo")
+options_bar = Namespace(bar="bar")
+
+# The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
+print(vars(options_foo))
+
+# the merged object
+options_baz = Namespace(**vars(options_foo), **vars(options_bar))
+
+print(options_baz)

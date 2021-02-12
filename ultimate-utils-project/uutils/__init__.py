@@ -359,8 +359,7 @@ def collect_content_from_file(filepath):
 
 ## cluster stuff
 
-
-def get_cluster_jobids(args):
+def get_cluster_jobids_old(args):
     import os
 
     # Get Get job number of cluster
@@ -381,6 +380,28 @@ def get_cluster_jobids(args):
         except:
             args.jobid = os.environ["PBS_JOBID"]
 
+def load_cluster_jobids_to(args):
+    import os
+
+    # Get Get job number of cluster
+    args.jobid = -1
+    args.slurm_jobid, args.slurm_array_task_id = -1, -1
+    if "SLURM_JOBID" in os.environ:
+        args.slurm_jobid = int(os.environ["SLURM_JOBID"])
+        args.jobid = args.slurm_jobid
+    if "SLURM_ARRAY_TASK_ID" in os.environ:
+        args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    args.condor_jobid = -1
+    if "MY_CONDOR_JOB_ID" in os.environ:
+        args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
+        args.jobid = args.condor_jobid
+    if "PBS_JOBID" in os.environ:
+        # args.num_workers = 8
+        try:
+            args.jobid = int(os.environ["PBS_JOBID"])
+        except:
+            args.jobid = os.environ["PBS_JOBID"]
+
 def pprint_dict(dict, indent=2):
     import json
     # print(json.dumps(str(dict), indent=indent, sort_keys=True))
@@ -389,6 +410,19 @@ def pprint_dict(dict, indent=2):
 
     import pprint
     pprint(dict)
+
+def create_logs_dir_and_load(opts):
+    from uutils import load_cluster_jobids_to
+    from datetime import datetime
+
+    load_cluster_jobids_to(opts)
+    # opts.log_root = Path('~/data/logs/').expanduser()
+    # create and load in args path to current experiments from log folder path
+    opts.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    opts.log_experiment_dir = opts.log_root / f'logs_{opts.current_time}_jobid_{opts.jobid}'
+    opts.log_experiment_dir.mkdir(parents=True, exist_ok=True)
+    # create and load in args path to checkpoint (same as experiment log path)
+    opts.checkpoint_dir = opts.log_experiment_dir
 
 if __name__ == "__main__":
     # send_email('msg','miranda9@illinois.edu')

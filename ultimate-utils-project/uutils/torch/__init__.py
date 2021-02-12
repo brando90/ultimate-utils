@@ -6,6 +6,8 @@ Utils class with useful helper functions
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 
 '''
+from datetime import datetime
+
 import torch
 import torch.nn as nn
 
@@ -644,20 +646,25 @@ def ned_torch(x1, x2, dim=1, eps=1e-8):
     """
     Normalized eucledian distance in pytorch.
 
+    For comparison of two vecs directly make sure vecs are of size [K]
+    For comparison of two batch of 1D acs (e.g. scores) make sure it's of shape [B, 1]
+    For the rest specify the dimension. Common use case [B, D] -> [B, 1] for comparing two set of
+    activations of size D.
+
     https://discuss.pytorch.org/t/how-does-one-compute-the-normalized-euclidean-distance-similarity-in-a-numerically-stable-way-in-a-vectorized-way-in-pytorch/110829
     https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance/498753?noredirect=1#comment937825_498753
-
-    :param x1:
-    :param x2:
-    :param dim:
-    :param eps:
-    :return:
     """
-    if x1.size(1) == 1:
+    # to compute ned for two individual vectors e.g to compute a loss (NOT BATCHES/COLLECTIONS of vectorsc)
+    if len(x1.size()) == 1:
+        # [K] -> [1]
+        ned_2 = 0.5 * ((x1 - x2).var() / (x1.var() + x2.var() + eps))
+    # if the input is a (row) vector e.g. when comparing two batches of acts of D=1 like with scores right before sf
+    elif x1.size(1) == 1:  # note this special case is needed since var over dim=1 in this case is nan.
+        # [B, 1] -> [B, 1]
         ned_2 = 0.5 * ((x1 - x2)**2 / (x1**2 + x2**2 + eps))
+    # common case is if input is a batch
     else:
-        # num_dims = len(x1.size())
-        # dim = torch.tensor(range(1, num_dims))
+        # e.g. [B, D] -> [B, 1]
         ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
