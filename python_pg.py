@@ -8954,3 +8954,30 @@ d3 = hook1.distance(hook2, size=None)
 print(f'{d1=}')
 print(f'{d2=}')
 print(f'{d3=}')
+
+#%%
+
+# https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+# https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
+
+from sklearn.model_selection import train_test_split
+
+# overall split 85:10:5
+
+X = list(range(100))
+y = list(range(len(X)))
+
+# first do 85:15 then do 2:1 for val split
+# its ok to set it to False since its ok to shuffle but then allow reproducibility with random_state
+# shuffle = False  # shufflebool, default=True, Whether or not to shuffle the data before splitting. If shuffle=False then stratify must be None.
+random_state = 1  # Controls the shuffling applied to the data before applying the split. Pass an int for reproducible output across multiple function calls.
+test_size = 0.15
+X_train, X_val_test, y_train, y_val_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+print(len(X_train))
+print(len(X_val_test))
+
+# then 2/3 for val, 1/3 for test to get 10:5 split
+test_size = 1.0/3.0
+X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size, random_state=random_state)
+print(len(X_val))
+print(len(X_test))
