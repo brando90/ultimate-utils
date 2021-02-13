@@ -8840,6 +8840,8 @@ print(x.var(dim=1).size() == torch.Size([5]))
 
 #%%
 
+# pretty printing dictionaries and dics of tensors
+
 def _to_json_dict_with_strings(dictionary):
     """
     Convert dict to dict with leafs only being strings. So it recursively makes keys to strings
@@ -8873,8 +8875,9 @@ def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
     with open(path, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
 
-def my_pprint(dic):
+def pprint_dic(dic):
     """
+    This pretty prints a json
 
     @param dic:
     @return:
@@ -8886,14 +8889,68 @@ def my_pprint(dic):
     # make all keys strings recursively with their naitve str function
     dic = to_json(dic)
     # pretty print
-    pretty_dic = json.dumps(dic, indent=4, sort_keys=True)
-    print(pretty_dic)
-    # print(json.dumps(dic, indent=4, sort_keys=True))
+    # pretty_dic = json.dumps(dic, indent=4, sort_keys=True)
+    # print(pretty_dic)
+    print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
     # return pretty_dic
 
+def pprint_namespace(ns):
+    """ pretty prints a namespace """
+    pprint_dic(ns)
+
 import torch
-import json
+# import json  # results in non serializabe errors for torch.Tensors
+from pprint import pprint
 
 dic = {'x': torch.randn(1, 3), 'rec': {'y': torch.randn(1, 3)}}
 
-my_pprint(dic)
+pprint_dic(dic)
+pprint(dic)
+
+# %%
+
+import torch
+import torch.nn as nn
+from anatome import SimilarityHook
+
+from collections import OrderedDict
+
+from pathlib import Path
+
+# get init
+path_2_init = Path('~/data/logs/logs_Nov17_13-57-11_jobid_416472.iam-pbs/ckpt_file.pt').expanduser()
+ckpt = torch.load(path_2_init)
+mdl = ckpt['f']
+
+#
+Din, Dout = 100, 1
+mdl = nn.Sequential(OrderedDict([
+    ('fc1_l1', nn.Linear(Din, Dout)),
+    ('out', nn.SELU())
+]))
+# with torch.no_grad():
+#     mdl.fc1_l1.weight.fill_(2.0)
+#     mdl.fc1_l1.bias.fill_(2.0)
+
+#
+hook1 = SimilarityHook(mdl, "fc1_l1")
+hook2 = SimilarityHook(mdl, "fc1_l1")
+mdl.eval()
+
+# params for doing "good" CCA
+iters = 10
+num_samples_per_task = 100
+# size = 8
+# start CCA comparision
+lb, ub = -1, 1
+with torch.no_grad():
+    for _ in range(iters):
+        x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        mdl(x)
+d1 = hook1.distance(hook2)
+d2 = hook1.distance(hook2, size=4)
+d3 = hook1.distance(hook2, size=None)
+
+print(f'{d1=}')
+print(f'{d2=}')
+print(f'{d3=}')

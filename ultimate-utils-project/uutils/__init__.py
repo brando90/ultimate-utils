@@ -403,15 +403,31 @@ def load_cluster_jobids_to(args):
         except:
             args.jobid = os.environ["PBS_JOBID"]
 
-def pprint_dict(dict, indent=2):
+def pprint_dict(dic):
+    pprint_any_dict(dic)
+
+def pprint_any_dict(dic):
+    """
+    This pretty prints a json.
+
+    @param dic:
+    @return:
+
+    Note: this is not the same as pprint.
+    """
     import json
-    # print(json.dumps(str(dict), indent=indent, sort_keys=True))
-    print(json.dumps(json.loads(dict), indent=indent, sort_keys=True))
-    print(json.dumps(json.loads(str(dict)), indent=indent, sort_keys=True))
 
-    import pprint
-    pprint(dict)
+    # make all keys strings recursively with their naitve str function
+    dic = to_json(dic)
+    # pretty print
+    # pretty_dic = json.dumps(dic, indent=4, sort_keys=True)
+    # print(pretty_dic)
+    print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
+    # return pretty_dic
 
+def pprint_namespace(ns):
+    """ pretty prints a namespace """
+    pprint_any_dict(ns)
 
 def _to_json_dict_with_strings(dictionary):
     """
@@ -425,8 +441,10 @@ def _to_json_dict_with_strings(dictionary):
     e.g.
 
     """
+    # base case: if the input is not a dict make it into a string and return it
     if type(dictionary) != dict:
         return str(dictionary)
+    # recurse into all the values that are dictionaries
     d = {k: _to_json_dict_with_strings(v) for k, v in dictionary.items()}
     return d
 

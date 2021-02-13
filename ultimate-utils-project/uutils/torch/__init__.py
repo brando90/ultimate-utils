@@ -502,7 +502,8 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
     return norm**(1/p), abs_err
 
-def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=2, iters=2, cxa_dist_type='pwcca'):
+def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_dist_type='pwcca'):
+    # print(cca_size)
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
@@ -519,16 +520,16 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=2, iters=2, cxa_dist_t
         mdl2(x)
     # dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
     dist = hook1.distance(hook2, size=cca_size)
-    if cxa_dist_type == 'lincka':
-        sim = dist  # only true for cka for this library
-        dist = 1 - sim  # since dist = 1 - sim but cka is outputing in this library the sim
+    # if cxa_dist_type == 'lincka':
+    #     sim = dist  # only true for cka for this library
+    #     dist = 1 - sim  # since dist = 1 - sim but cka is outputing in this library the sim
     return dist
 
-def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2, cxa_sim_type='pwcca'):
+def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_sim_type='pwcca'):
     dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
     return 1 - dist
 
-def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=8, iters=2):
+def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2):
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
@@ -612,7 +613,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         raise ValueError(f'Not implemented: {r2_type}')
     return r2
 
-# def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=8, iters=2):
+# def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2):
 #     # meta_batch [T, N*K, CHW], [T, K, D]
 #     from anatome import SimilarityHook
 #     # get sim/dis functions
@@ -625,7 +626,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
 #     dist = hook1.distance(hook2, size=cca_size)
 #     return dist
 
-# def cca(mdl1, mdl2, dataloader, cca_size=8, iters=10):
+# def cca(mdl1, mdl2, dataloader, cca_size=None, iters=10):
 #     # with torch.no_grad()
 #     for _ in range(iters):
 #         next()
