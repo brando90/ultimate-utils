@@ -23,6 +23,7 @@ from pathlib import Path
 
 from pdb import set_trace as st
 
+import types
 
 def helloworld(arg1="arg1", arg2="arg2"):
     print("helloworld from uutils __init__.py")
@@ -411,6 +412,40 @@ def pprint_dict(dict, indent=2):
     import pprint
     pprint(dict)
 
+
+def _to_json_dict_with_strings(dictionary):
+    """
+    Convert dict to dict with leafs only being strings. So it recursively makes keys to strings
+    if they are not dictionaries.
+
+    Use case:
+        - saving dictionary of tensors (convert the tensors to strins!)
+        - saving arguments from script (e.g. argparse) for it to be pretty
+
+    e.g.
+
+    """
+    if type(dictionary) != dict:
+        return str(dictionary)
+    d = {k: _to_json_dict_with_strings(v) for k, v in dictionary.items()}
+    return d
+
+def to_json(dic):
+    import types
+    import argparse
+
+    if type(dic) is dict:
+        dic = dict(dic)
+    else:
+        dic = dic.__dict__
+    return _to_json_dict_with_strings(dic)
+
+def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
+    import json
+
+    with open(path, mode) as f:
+        json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
+
 def create_logs_dir_and_load(opts):
     from uutils import load_cluster_jobids_to
     from datetime import datetime
@@ -426,15 +461,15 @@ def create_logs_dir_and_load(opts):
 
 if __name__ == "__main__":
     # send_email('msg','miranda9@illinois.edu')
-    print("sending email test")
-    p = Path(
-        "~/automl-meta-learning/automl/experiments/pw_app.config.json"
-    ).expanduser()
-    send_email(
-        subject="TEST: send_email2",
-        message="MESSAGE",
-        destination="brando.science@gmail.com",
-        password_path=p,
-    )
-    print(f"EMAIL SENT\a")
+    # print("sending email test")
+    # p = Path(
+    #     "~/automl-meta-learning/automl/experiments/pw_app.config.json"
+    # ).expanduser()
+    # send_email(
+    #     subject="TEST: send_email2",
+    #     message="MESSAGE",
+    #     destination="brando.science@gmail.com",
+    #     password_path=p,
+    # )
+    # print(f"EMAIL SENT\a")
     print("Done \n\a")
