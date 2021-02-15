@@ -8984,38 +8984,159 @@ print(len(X_test))
 
 
 #%%
+#%%
 
 """
 global interpreter lock
-The mechanism used by the CPython (the cononical implementation of the Python PL) 
+The mechanism used by the CPython (the cononical implementation of the Python PL)
 interpreter to assure that only one thread executes Python bytecode at a time.
 
-However, some extension modules, either standard or third-party, 
-are designed so as to release the GIL when doing computationally-intensive 
+However, some extension modules, either standard or third-party,
+are designed so as to release the GIL when doing computationally-intensive
 tasks such as compression or hashing. Also, the GIL is always released when doing I/O.
 
-Past efforts to create a “free-threaded” interpreter 
-(one which locks shared data at a much finer granularity) 
-have not been successful because performance suffered in the 
-common single-processor case. It is believed that overcoming this performance 
-issue would make the implementation much more complicated 
+Past efforts to create a “free-threaded” interpreter
+(one which locks shared data at a much finer granularity)
+have not been successful because performance suffered in the
+common single-processor case. It is believed that overcoming this performance
+issue would make the implementation much more complicated
 and therefore costlier to maintain.
-"""
 
+According to this post multiprocessing library is the right library to use (and not asyncio)
+https://leimao.github.io/blog/Python-Concurrency-High-Level/
+
+nice basic python mp tutorial: https://docs.python.org/3/library/multiprocessing.html
+
+TODO:
+    - spawn vs fork: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process.run
+"""
 
 # The multiprocessing package offers both local and remote concurrency,
 # effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads.
 # Due to this, the multiprocessing module allows the programmer
 # to fully leverage multiple processors on a given machine.
 # It runs on both Unix and Windows.
+# from multiprocessing.context import Process
+import os
 
+import time
+from multiprocessing import Process
 from multiprocessing import Pool
 
+# Ex1: compute a map in parallel
+
 def f(x):
+    # time.sleep(1)
     return x*x
 
-if __name__ == '__main__':
-    with Pool(5) as p:
-        print(p.map(f, [1, 2, 3]))
+def main1():
+    with Pool(5) as pool:
+        print(pool.map(f, [1, 2, 3, 4, 5]))
 
-    print('testing if this line runs only after the array has been mapped by process p')
+# Ex2: example of start and join
+
+def f2(name):
+    print('hello', name)
+
+def main2():
+    p = Process(target=f2, args=('bob',))
+    p.start()
+    p.join()
+
+# Ex3: example of halting the line like in go and then continuing after everyone is done
+
+def f3(arg):
+    print('--- Inside process ---')
+    print(f'args to f3 is {arg}!')
+    print('parent process:', os.getppid())
+    pid = os.getpid()
+    print(f'process started with pid={pid}')
+    time.sleep(1)
+    print(f'--- process done with pid={pid}')
+    print('--- Inside process ---')
+
+def main3():
+    """
+    Example of how to wait incorrectly (it will not work since it will start a process but not
+    start the next until the current one is done)
+    :return:
+    """
+    print(f'main process pid {os.getpid()}')
+    num_processes = 4
+    processes = [Process(target=f3, args=('arg!',)) for _ in range(num_processes)]
+    for p in processes:
+        print()
+        print(p)
+        p.start()
+        print(f'starting from the main process (pid={os.getpid()}) process with pid {p.pid}')
+        p.join()  # wrong!
+    print('main 3 done')
+
+def main4():
+    """
+    Example of how to wait correctly, it blocks for all processes but calls p.start() on all of them first
+    :return:
+    """
+    print(f'main process pid {os.getpid()}')
+    num_processes = 4
+    processes = [Process(target=f3, args=('arg!',)) for _ in range(num_processes)]
+    for p in processes:
+        print()
+        print(p)
+        p.start()
+        print(f'starting from the main process (pid={os.getpid()}) process with pid {p.pid}')
+    # wait group! call join on all processes and block until they are all done
+    for p in processes:
+        p.join()
+    print('main 4 done')
+
+
+# Ex5: wait group implementation (i.e. block until all process declare they are done)
+
+def heavy_compute(args, secs=1):
+    time.sleep(secs)
+
+def serial_code_blocking_wrong():
+    """
+    Example of how to wait incorrectly (it will not work since it will start a process but not
+    start the next until the current one is done)
+    :return:
+    """
+    num_processes = 4
+    processes = [Process(target=heavy_compute, args=('arg!',)) for _ in range(num_processes)]
+    for p in processes:
+        p.start()
+        p.join()  # wrong!
+
+def parallel_code_blocking_correctly():
+    """
+    Example of how to wait incorrectly (it will not work since it will start a process but not
+    start the next until the current one is done)
+    :return:
+    """
+    num_processes = 4
+    processes = [Process(target=heavy_compute, args=('arg!',)) for _ in range(num_processes)]
+    for p in processes:
+        p.start()
+    # wait group! call join on all processes and block until they are all done
+    for p in processes:
+        p.join()
+
+def main5():
+    start = time.time()
+    serial_code_blocking_wrong()
+    print(f'serial (wrong) execution time = {time.time() - start}')
+    start = time.time()
+    parallel_code_blocking_correctly()
+    print(f'parallel execution time = {time.time() - start}')
+    # first should be 4 secs second should 1 second
+
+if __name__ == '__main__':
+    start = time.time()
+    # main1()
+    # main2()
+    # main3()
+    # main4()
+    main5()
+    print(f'total execution time = {time.time() - start}')
+    print('Done with __main__!\a\n')
