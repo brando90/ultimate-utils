@@ -9140,3 +9140,66 @@ if __name__ == '__main__':
     main5()
     print(f'total execution time = {time.time() - start}')
     print('Done with __main__!\a\n')
+
+
+# %%
+
+"""
+Goal: train in a mp way by computing each example in a seperate process.
+
+
+tutorial: https://pytorch.org/docs/stable/notes/multiprocessing.html
+full example: https://github.com/pytorch/examples/blob/master/mnist_hogwild/main.py
+
+Things to figure out:
+- fork or spwan for us? see pytorch but see this too https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process.run
+- shared memory
+- do we need num_workers=0, 1 or 2? (one for main thread other for pre-fetching batches)
+- run test and check that the 112 process do improve the time for a loop (add progress part for dataloder
+
+docs: https://pytorch.org/docs/stable/multiprocessing.html#module-torch.multiprocessing
+
+(original python mp, they are compatible: https://docs.python.org/3/library/multiprocessing.html)
+"""
+from datetime import time
+
+import torch
+from torch.multiprocessing import Pool
+
+def train(cpu_parallel=True):
+    num_cpus = get_num_cpus()  # 112 is the plan for intel's clsuter as an arparse or function
+    model.shared_memory()  # TODO do we need this?
+    # add progressbar for data loader to check if multiprocessing is helping
+    for batch_idx, batch in dataloader:
+        # do this mellow with pool when cpu_parallel=True
+        with Pool(num_cpus) as pool:
+            losses = pool.map(target=model.forward, args=batch)
+            loss = torch.sum(losses)
+            # now do .step as normal
+
+if __name__ == '__main__':
+    start = time.time()
+    train()
+    print(f'execution time: {time.time() - start}')
+
+#%%
+
+import torch
+
+print(torch.multiprocessing.get_all_sharing_strategies())
+print(torch.multiprocessing.get_sharing_strategy())
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+
+#%%
+
+# getting the id of the process wrt to the pooling: https://stackoverflow.com/questions/10190981/get-a-unique-id-for-worker-in-python-multiprocessing-pool
+
+import multiprocessing
+
+def f(x):
+    print(multiprocessing.current_process())
+    return x * x
+
+p = multiprocessing.Pool()
+print(p.map(f, range(6)))
