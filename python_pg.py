@@ -8981,3 +8981,41 @@ test_size = 1.0/3.0
 X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size, random_state=random_state)
 print(len(X_val))
 print(len(X_test))
+
+
+#%%
+
+"""
+global interpreter lock
+The mechanism used by the CPython (the cononical implementation of the Python PL) 
+interpreter to assure that only one thread executes Python bytecode at a time.
+
+However, some extension modules, either standard or third-party, 
+are designed so as to release the GIL when doing computationally-intensive 
+tasks such as compression or hashing. Also, the GIL is always released when doing I/O.
+
+Past efforts to create a “free-threaded” interpreter 
+(one which locks shared data at a much finer granularity) 
+have not been successful because performance suffered in the 
+common single-processor case. It is believed that overcoming this performance 
+issue would make the implementation much more complicated 
+and therefore costlier to maintain.
+"""
+
+
+# The multiprocessing package offers both local and remote concurrency,
+# effectively side-stepping the Global Interpreter Lock by using subprocesses instead of threads.
+# Due to this, the multiprocessing module allows the programmer
+# to fully leverage multiple processors on a given machine.
+# It runs on both Unix and Windows.
+
+from multiprocessing import Pool
+
+def f(x):
+    return x*x
+
+if __name__ == '__main__':
+    with Pool(5) as p:
+        print(p.map(f, [1, 2, 3]))
+
+    print('testing if this line runs only after the array has been mapped by process p')
