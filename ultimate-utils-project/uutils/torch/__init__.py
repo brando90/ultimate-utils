@@ -688,6 +688,9 @@ def tensorify(lst):
     :return: nested list D
     """
     # base case, if the current list is not nested anymore, make it into tensor
+    if type(lst) != list:
+        # if it's a float or a tensor already (the single element)
+        return torch.tensor(lst)
     if type(lst[0]) != list:
         if type(lst) == torch.Tensor:
             return lst
@@ -703,6 +706,25 @@ def tensorify(lst):
     # end of loop lst[d_i] = tensor([D_i, ... D_0])
     tensor_lst = torch.stack(lst, dim=0)
     return tensor_lst
+
+def floatify_results(dic):
+    if type(dic) is not dict:
+        if type(dic) is torch.Tensor:
+            if len(dic.size()) == 1:
+                lst_floats = [val.item() for val in dic]
+                return lst_floats
+            elif len(dic.size()) == 0:
+                return dic.squeeze().item()
+            else:
+                raise ValueError(f'Invalid value: {dic}')
+    elif type(dic) is None:
+        return dic
+    else:
+        d = {}
+        for k, v in dic.items():
+            d[k] = floatify_results(v)
+        return d
+
 
 def print_results_old(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all_diffs_cka, all_diffs_neds):
     print(f'experiment {args.data_path}\n')

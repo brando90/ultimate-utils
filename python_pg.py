@@ -9248,3 +9248,19 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+#%%
+
+# counting number of processors: https://stackoverflow.com/questions/23816546/how-many-processes-should-i-run-in-parallel
+
+#%%
+
+# List of tuples
+students = [ ('jack', 34, 'Sydeny' , 'Australia') ,
+             ('Riti', 30, 'Delhi' , 'India' ) ,
+             ('Vikas', 31, 'Mumbai' , 'India' ) ,
+             ('Neelu', 32, 'Bangalore' , 'India' ) ,
+             ('John', 16, 'New York' , 'US') ,
+             ('Mike', 17, 'las vegas' , 'US')  ]
+# Create DataFrame object from a list of tuples
+dfObj = pd.DataFrame(students, columns = ['Name' , 'Age', 'City' , 'Country'], index=['a', 'b', 'c' , 'd' , 'e' , 'f'])
