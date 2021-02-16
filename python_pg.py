@@ -9203,3 +9203,48 @@ def f(x):
 
 p = multiprocessing.Pool()
 print(p.map(f, range(6)))
+
+#%%
+
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset
+
+from torch.multiprocessing import Pool
+
+# class SimpleDataSet(Dataset):
+#
+#     def __init__(self, D, num_examples=20):
+#         self.data = [torch.randn(D) for _ in range(num_examples)]
+#
+#     def __len__(self):
+#         return len(self.data)
+#
+#     def __getitem__(self, idx):
+#         return self.data[idx]
+
+def main():
+    Din, Dout = 3, 1
+    model = nn.Linear(Din, Dout)
+    criterion = nn.MSELoss()
+
+    def get_loss(data_point):
+        x, y = data_point
+        y_pred = model(x)
+        loss = criterion(y_pred, y)
+        return loss
+
+    batch_size = 3
+    num_epochs = 10
+    num_batches = 5
+    num_procs = 5
+    for epoch in range(num_epochs):
+        for i in range(num_batches):
+            batch = [(torch.randn(Din),torch.randn(Dout)) for _ in range(batch_size)]
+            with Pool(num_procs) as pool:
+                losses = pool.map(get_loss, batch)
+                loss = torch.avg(losses)
+                loss.backward()
+
+if __name__ == '__main__':
+    main()
