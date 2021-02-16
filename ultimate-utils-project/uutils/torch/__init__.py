@@ -867,6 +867,33 @@ def compute_result_stats(all_sims):
             stats[metric]['all']['std'] = std_sims_all
     return stats
 
+def get_mean_std_pairs(metric: dict):
+    """
+
+    :param metric: dict with avg & std keys as keys mapping to list or floats
+    e.g.
+        "cca": {
+        ...,
+        "avg": [0.6032, 0.5599, 0.4918, 0.4044],
+        ...,
+        "std": [0.0297, 0.0362, 0.0948, 0.2481]
+    }
+    :return:
+
+    TODO: doing significant figures properly
+    """
+    values_in_columns = []
+    if type(metric['avg']) == list:
+        paired = zip(metric['avg'], metric['std'])
+    else:
+        paired = [(metric['avg'], metric['std'])]
+    # make output
+    # sep = '$\pm$'
+    sep = '+-'
+    for avg, std in paired:
+        values_in_columns.append(f'{avg:.3f}{sep}{std:.3f}')
+    return values_in_columns
+
 #######
 
 def test_ned():
