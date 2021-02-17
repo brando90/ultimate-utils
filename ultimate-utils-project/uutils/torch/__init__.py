@@ -13,6 +13,7 @@ import torch.nn as nn
 
 import numpy as np
 import scipy.integrate as integrate
+import pandas as pd
 
 from collections import OrderedDict
 
@@ -25,6 +26,10 @@ from pathlib import Path
 import copy
 
 from pdb import set_trace as st
+
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 150)
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -893,6 +898,7 @@ def get_mean_std_pairs(metric: dict):
     for avg, std in paired:
         values_in_columns.append(f'{avg:.3f}{sep}{std:.3f}')
     return values_in_columns
+
 
 #######
 

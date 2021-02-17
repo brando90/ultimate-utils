@@ -9,6 +9,7 @@ import time
 import math
 import numpy as np
 import random
+import pandas as pd
 
 import time
 import logging
@@ -24,6 +25,9 @@ from pathlib import Path
 from pdb import set_trace as st
 
 import types
+
+from pandas import DataFrame
+
 
 def helloworld(arg1="arg1", arg2="arg2"):
     print("helloworld from uutils __init__.py")
@@ -463,6 +467,39 @@ def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
 
     with open(path, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
+
+##
+
+def to_table(df):
+    """
+    Need to pass the rows, columns data etc to table and create axis to create the table I want.
+    But honestly the to latex function is much better.
+    :param df:
+    :return:
+    """
+    from pandas.plotting import table
+    # table()
+    # df = df.astype(str)
+    table(data=df.values)
+    table(df)
+    df.plot(table=True)
+
+def to_latex_is_rapid_learning_real(df: DataFrame):
+    # put the |c|...|c| for each column
+    column_format = '|'
+    num_columns = len(df.columns) + 1  # +1 because the "index" df is the rows
+    for _ in range(num_columns):
+        column_format = column_format + 'c|'
+    latex = df.to_latex(column_format=column_format)
+    # replace \toprule, \midrule, \bottomrule with \hline (looks better plus don't need to import \usepackage{booktabs}
+    rules = ['\\toprule', '\\midrule', '\\bottomrule']
+    latex = latex.replace(rules[0], '\\hline')
+    latex = latex.replace(rules[1], '\\hline')
+    latex = latex.replace(rules[2], '\\hline')
+    latex = latex.replace('+-', ' $\\pm$ ')
+    return latex
+
+##
 
 def create_logs_dir_and_load(opts):
     from uutils import load_cluster_jobids_to
