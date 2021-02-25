@@ -9424,3 +9424,6 @@ if __name__ == "__main__":
 
 #%%
 
+# split string
+
+print("asdf-ghjkl;".split('-'))
