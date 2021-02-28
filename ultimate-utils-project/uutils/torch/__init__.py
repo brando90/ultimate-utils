@@ -658,7 +658,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> torch.Tens
             compare x1 and x2.
         2. For comparison of two batch of representation of size 1D (e.g. scores) make sure it's of shape [B, 1].
             In this case each number *is* the representation of the example. Thus a collection of reps
-            [B, 1] is mapped to a rep of the same size [B, 1]. Note usually D does decrease since reps are not of size 1
+            [B, 1] is mapped to a rep of size [B]. Note usually D does decrease since reps are not of size 1
             (see case 3)
         3. For the rest specify the dimension. Common use case [B, D] -> [B, 1] for comparing two set of
             activations of size D. In the case when D=1 then we have [B, 1] -> [B, 1]. If you meant x1, x2 [D, 1] to be
@@ -847,10 +847,10 @@ def compute_result_stats(all_sims):
             avg_sims_all = tensor_of_metrics.mean()
             std_sims_all = tensor_of_metrics.std()
         elif metric in l2:
-            # compute average cxa per layer: [T, L, K_eval] -> [L]
+            # compute average l2 per layer: [T, L, K_eval] -> [L]
             avg_sims = tensor_of_metrics.mean(dim=[0, 2])
             std_sims = tensor_of_metrics.std(dim=[0, 2])
-            # compute representation & all avg cxa [T, L, K_eval] -> [1]
+            # compute representation & all avg l2 [T, L, K_eval] -> [1]
             L = tensor_of_metrics.size(1)
             indicies = torch.tensor(range(L-1))
             representation_tensors = tensor_of_metrics.index_select(dim=1, index=indicies)

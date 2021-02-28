@@ -9427,3 +9427,82 @@ if __name__ == "__main__":
 # split string
 
 print("asdf-ghjkl;".split('-'))
+
+#%%
+
+# what happens if we do a .item of a vector
+
+x = torch.randn(1)
+print(x.item())
+
+y = torch.randn(1, 1)
+print(y.item())
+
+z = torch.randn(1, 4)
+print(z.item())
+
+# %%
+
+# attention mechanism from transformers: https://towardsdatascience.com/illustrated-self-attention-2d627e33b20a
+
+# -- get data set, each row is an input [N by D] --
+
+import torch
+
+x = [
+  [1, 0, 1, 0], # Input 1
+  [0, 2, 0, 2], # Input 2
+  [1, 1, 1, 1]  # Input 3
+ ]
+x = torch.tensor(x)
+
+print('Usual design matrix where the rows N is the # of examples and D columns the features [N, D]')
+print(f'X = [N, D] = {x.size()}\n')
+
+# -- get query, key, value matrices
+
+w_key = [
+  [0, 0, 1],
+  [1, 1, 0],
+  [0, 1, 0],
+  [1, 1, 0]
+]
+w_query = [
+  [1, 0, 1],
+  [1, 0, 0],
+  [0, 0, 1],
+  [0, 1, 1]
+]
+w_value = [
+  [0, 2, 0],
+  [0, 3, 0],
+  [1, 0, 3],
+  [1, 1, 0]
+]
+w_key = torch.tensor(w_key)
+w_query = torch.tensor(w_query)
+w_value = torch.tensor(w_value)
+
+print(f'w_key = [D, D_k] = {w_key.size()}')
+print(f'w_qry = [D, D_qry] = {w_query.size()}')
+print(f'w_val = [D, D_v] = {w_value.size()}\n')
+
+# -- get Q, K, V matrices for each inputs --
+
+keys = x @ w_key
+querys = x @ w_query
+values = x @ w_value
+
+# print(keys)
+# print(querys)
+# print(values)
+print(f'keys = K = [N, D_k] = {keys.size()}')
+print(f'qry = Q = [N, D_q] = {querys.size()}')
+print(f'val = V = [N, D_v] = {values.size()}\n')
+
+# -- calculate attention socres --
+
+attn_scores = querys @ keys.T
+
+print('Attention scores Q @ K.T')
+print(f'attn_scores = [N, N] = {attn_scores.size()}')
