@@ -9602,3 +9602,17 @@ print(sf_qk_v)
 print((values[:, None] * attn_scores_softmax.T[:, :, None]).sum(dim=0))
 print('Each row i is a context vector weighted with qry i with all keys for 1...Tx by vectors v 1...Tx')
 print('i.e. AV[i,:] = sum^Tx_{t=1} a[i,t] v[:,i]')
+
+#%%
+
+from pathlib import Path
+from types import SimpleNamespace
+from torch.utils.tensorboard import SummaryWriter
+
+import pickle
+
+args = SimpleNamespace(log_dir=Path('~/Desktop/').expanduser())
+tb = SummaryWriter(log_dir=args.log_dir)  # uncomment for documentation to work
+
+# TypeError: cannot pickle 'tensorflow.python._pywrap_file_io.WritableFile' object
+# pickle.dump(tb, open(args.log_dir / 'tb_test' ,'w'))
