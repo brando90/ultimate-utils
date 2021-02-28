@@ -5,7 +5,9 @@ import sys
 
 for path in sys.path:
     print(path)
-#%%
+
+
+# %%
 def __path_bn_layer_for_functional_eval(self, module, input):
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)
@@ -19,6 +21,8 @@ def __path_bn_layer_for_functional_eval(self, module, input):
     # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
     for name, immediate_child_module in module.named_children():
         self._path_bn_layer_for_functional_eval(immediate_child_module, name)
+
+
 # %%
 
 import time
@@ -3078,7 +3082,7 @@ print('start')
 send_email2('HelloWorld')
 print('done email test!')
 
-#%%
+# %%
 
 from pathlib import Path
 
@@ -3113,7 +3117,7 @@ server.send_message(msg)
 # server.sendmail(from_address, to_address, full_message)
 server.quit()
 
-#%%
+# %%
 
 # Here, we used "w" letter in our argument, which indicates write and will create a file if it does not exist in library
 # Plus sign indicates both read and write.
@@ -3121,7 +3125,7 @@ server.quit()
 # with open('data.json', 'w+') as f:
 #     json.dump(self.stats, f)
 
-#%%
+# %%
 
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
@@ -3186,7 +3190,7 @@ torch.save({'f': f,
             'f_modules_str': str(f._modules)
             }, path2avg_f)
 
-#%%
+# %%
 
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
@@ -3204,7 +3208,7 @@ for n_iter in range(100):
 
 print('done! \a')
 
-#%%
+# %%
 
 db = torch.load(str(args.resume_ckpt_path))
 # args.epchs = db['epoch']  # we can start counting from zero
@@ -3217,8 +3221,7 @@ args.base_model = torch.nn.Sequential(modules)
 f_state_dict = db['f_state_dict']
 args.base_model.load_state_dict(f_state_dict)
 
-
-#%%
+# %%
 
 # Torch-meta miniImagenet
 
@@ -3266,7 +3269,7 @@ with tqdm(range(epochs)) as tepochs:
             break
         break
 
-#%%
+# %%
 
 from torchmeta.datasets.helpers import omniglot
 from torchmeta.datasets.helpers import miniimagenet
@@ -3282,14 +3285,14 @@ dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
 
 for batch in dataloader:
     train_inputs, train_targets = batch["train"]
-    print('Train inputs shape: {0}'.format(train_inputs.shape))    # (16, 25, 1, 28, 28)
+    print('Train inputs shape: {0}'.format(train_inputs.shape))  # (16, 25, 1, 28, 28)
     print('Train targets shape: {0}'.format(train_targets.shape))  # (16, 25)
 
     test_inputs, test_targets = batch["test"]
-    print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
-    print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
+    print('Test inputs shape: {0}'.format(test_inputs.shape))  # (16, 75, 1, 28, 28)
+    print('Test targets shape: {0}'.format(test_targets.shape))  # (16, 75)
 
-#%%
+# %%
 
 # replacing a module in in a pytorch model
 # https://discuss.pytorch.org/t/how-to-modify-a-pretrained-model/60509/11
@@ -3311,7 +3314,6 @@ dataset = miniimagenet(data_path, ways=5, shots=5, test_shots=15, meta_split=met
 dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
 
 
-
 def replace_bn(module, name):
     """
     Recursively put desired batch norm in nn.module module.
@@ -3322,7 +3324,8 @@ def replace_bn(module, name):
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)
         if type(target_attr) == torch.nn.BatchNorm2d:
-            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum, target_attr.affine,
+            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum,
+                                          target_attr.affine,
                                           track_running_stats=False)
             setattr(module, attr_str, new_bn)
 
@@ -3330,12 +3333,14 @@ def replace_bn(module, name):
     for name, immediate_child_module in module.named_children():
         replace_bn(immediate_child_module, name)
 
+
 def convert_bn(model):
     for module in model.modules():
         if isinstance(module, torch.nn.modules.batchnorm._BatchNorm):
             module.__init__(module.num_features, module.eps,
                             module.momentum, module.affine,
                             track_running_stats=False)
+
 
 fc_out_features = 5
 
@@ -3357,11 +3362,11 @@ model.fc = torch.nn.Linear(in_features=2048, out_features=fc_out_features, bias=
 
 for batch in dataloader:
     train_inputs, train_targets = batch["train"]
-    print('Train inputs shape: {0}'.format(train_inputs.shape))    # (16, 25, 1, 28, 28)
+    print('Train inputs shape: {0}'.format(train_inputs.shape))  # (16, 25, 1, 28, 28)
     print('Train targets shape: {0}'.format(train_targets.shape))  # (16, 25)
     test_inputs, test_targets = batch["test"]
-    print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
-    print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
+    print('Test inputs shape: {0}'.format(test_inputs.shape))  # (16, 75, 1, 28, 28)
+    print('Test targets shape: {0}'.format(test_targets.shape))  # (16, 75)
     first_meta_batch = train_inputs[0]  # task
     nk_task = first_meta_batch
     out = model(nk_task)
@@ -3421,7 +3426,7 @@ print(len(dataloader))
 
 print('success\a')
 
-#%%
+# %%
 
 import torch
 
@@ -3460,7 +3465,7 @@ print(f'len normal = {len(dataloader)}')
 
 print('success\a')
 
-#%%
+# %%
 
 import torch
 
@@ -3508,7 +3513,7 @@ with tqdm(dataloader, total=num_batches) as pbar:
 
 print('success\a')
 
-#%%
+# %%
 
 from math import comb
 
@@ -3517,7 +3522,7 @@ n = 5
 number_tasks = comb(total_classes, n)
 print(number_tasks)
 
-#%%
+# %%
 
 # saving a json file save json file
 # human readable pretty print https://stackoverflow.com/questions/12943819/how-to-prettyprint-a-json-file
@@ -7072,12 +7077,12 @@ with open(args.current_logs_path / 'args.json', 'w+') as argsfile:
     args_data = {key: str(value) for (key, value) in args.__dict__.items()}
     json.dump(args_data, argsfile, indent=4)
 
-#%%
+# %%
 
 # get gpu model as string: https://stackoverflow.com/questions/64526139/how-does-one-get-the-model-of-the-gpu-in-python-and-save-it-as-a-string
 
 
-#%%
+# %%
 
 mean = [120.39586422 / 255.0, 115.59361427 / 255.0, 104.54012653 / 255.0]
 # [0.47214064400000005, 0.45330829125490196, 0.4099612805098039]
@@ -7094,7 +7099,7 @@ print(std)
 print(std2)
 print(std == std2)
 
-#%%
+# %%
 
 # references:
 # https://stackoverflow.com/questions/20486700/why-we-always-divide-rgb-values-by-255
@@ -7121,7 +7126,7 @@ images = [glob.glob(os.path.join(root, label, '*')) for label in labels]
 
 label_idx = 0
 img_idx = 0
-img = Image.open(images[img_idx][img_idx]) #.convert('RGB')
+img = Image.open(images[img_idx][img_idx])  # .convert('RGB')
 
 # check image as 0-255
 a = np.asarray(img)  # 0-255 image range
@@ -7135,15 +7140,14 @@ print((a == a2).all())
 img = transform(img)
 print(img)
 
-
 # rfs
-#img = np.asarray(self.imgs[item]).astype('uint8')
+# img = np.asarray(self.imgs[item]).astype('uint8')
 
 # meta-lstm
 # images = [glob.glob(os.path.join(root, label, '*')) for label in self.labels]
-#image = PILI.open(self.images[idx]).convert('RGB')
+# image = PILI.open(self.images[idx]).convert('RGB')
 
-#%%
+# %%
 
 from tqdm import tqdm
 
@@ -7154,7 +7158,7 @@ with tqdm(range(train_iters), total=train_iters) as pbar_epochs:
     for epoch in pbar_epochs:
         print(epoch)
 
-#%%
+# %%
 
 
 ## sinusioid function
@@ -7163,6 +7167,7 @@ print('Starting Sinusioid cell')
 import torchmeta
 # from torchmeta.toy import Sinusoid
 from torchmeta.utils.data import BatchMetaDataLoader
+
 # from torchmeta.transforms import ClassSplitter
 
 # from tqdm import tqdm
@@ -7189,32 +7194,32 @@ dataloader = BatchMetaDataLoader(dataset, batch_size=batch_size, num_workers=4)
 # two tasks are different
 dl = enumerate(dataloader)
 
-_,x1 = next(dl)
-x1,_ = x1['train']
+_, x1 = next(dl)
+x1, _ = x1['train']
 print(f'x1 = {x1.sum()}')
-_,x2 = next(dl)
-x2,_ = x2['train']
+_, x2 = next(dl)
+x2, _ = x2['train']
 print(f'x2 = {x2.sum()}')
 
-assert(x1.sum() != x2.sum())
+assert (x1.sum() != x2.sum())
 print('assert pass, tasks have different data')
 
 # same task twice
 dl = enumerate(dataloader)
 
-_,x1 = next(dl)
-x1,_ = x1['train']
+_, x1 = next(dl)
+x1, _ = x1['train']
 print(f'x1 = {x1.sum()}')
 dl = enumerate(dataloader)
-_,x2 = next(dl)
-x2,_ = x2['train']
+_, x2 = next(dl)
+x2, _ = x2['train']
 print(f'x2 = {x2.sum()}')
 
-assert(x1.sum() == x2.sum())
+assert (x1.sum() == x2.sum())
 
 print('DONE\a')
 
-#%%
+# %%
 
 # https://github.com/tristandeleu/pytorch-meta/issues/69
 
@@ -7236,15 +7241,17 @@ batch = next(iter(dataloader))
 inputs, _ = batch['train']
 print(f'Sum of inputs: {inputs.sum()}')
 
-#%%
+# %%
 
 # https://github.com/tristandeleu/pytorch-meta/issues/69
 
 from torchmeta.toy.helpers import sinusoid
 from torchmeta.utils.data import BatchMetaDataLoader
 
+
 def random_hash():
     return random.randrange(1 << 32)
+
 
 batch_size = 16
 shots = 5
@@ -7262,7 +7269,7 @@ batch = next(iter(dataloader))
 inputs, _ = batch['train']
 print(f'Sum of inputs: {inputs.sum()}')
 
-#%%
+# %%
 
 # https://github.com/tristandeleu/pytorch-meta/issues/69
 
@@ -7283,7 +7290,7 @@ batch = next(iter(dataloader))
 inputs, _ = batch['train']
 print(f'Sum of inputs: {inputs.sum()}')
 
-#%%
+# %%
 
 from pathlib import Path
 
@@ -7299,7 +7306,7 @@ db = torch.jit.load(str(path))
 
 print(db)
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -7315,13 +7322,15 @@ y = mdl(x)
 
 print(y)
 
-#%%
+
+# %%
 
 # secs per it to days
 
 def sect_per_it_2_days(secs_per_it, total_its):
-    days = (secs_per_it*total_its)/(60 * 60 * 24)
+    days = (secs_per_it * total_its) / (60 * 60 * 24)
     print(days)
+
 
 print(f'time in days for resnet18_rfs with 1 inner steps')
 sect_per_it_2_days(4.76, 100000)
@@ -7350,7 +7359,7 @@ sect_per_it_2_days(46.26, 20000)
 print(f'time in days for synthetic with 1 inner steps')
 sect_per_it_2_days(2.7, 20_000)
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -7376,7 +7385,6 @@ mdl2 = nn.Sequential(OrderedDict([
     ('out', nn.SELU())
 ]))
 
-
 #
 hook1 = SimilarityHook(mdl, "fc1_l1")
 hook2 = SimilarityHook(mdl2, "fc1_l1")
@@ -7392,7 +7400,7 @@ with torch.no_grad():
     mdl2(x)
 hook1.distance(hook2, size=8)
 
-#%%
+# %%
 
 
 import torch
@@ -7435,7 +7443,7 @@ with torch.no_grad():
         mdl(x)
 hook1.distance(hook2, size=size)
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -7489,11 +7497,11 @@ with torch.no_grad():
         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
         y1 = mdl1(x)
         y2 = mdl2(x)
-        print((y1-y2).norm(2))
+        print((y1 - y2).norm(2))
 dist = hook1.distance(hook2, size=size)
 print(f'dist={dist}')
 
-#%%
+# %%
 
 a = ("John", "Charles", "Mike")
 b = ("Jenny", "Christy", "Monica", "Vicky")
@@ -7502,7 +7510,7 @@ lst = zip(a, b)
 lst = list(lst)
 print(lst)
 
-#%%
+# %%
 
 lst = [
     [1, 2, 3],
@@ -7520,7 +7528,7 @@ average_total = np.average(average_per_layer)
 print(average_per_layer)
 print(average_total)
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
@@ -7603,13 +7611,14 @@ for _ in range(iters):
     # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
     y1 = mdl1(x)
     y2 = mdl2(x)
-    print((y1-y2).norm(2))
+    print((y1 - y2).norm(2))
 dist = hook1.distance(hook2, size=size)
 print(f'dist={dist}')
 
-#%%
+# %%
 
 from sklearn.metrics import explained_variance_score
+
 y_true = [3, -0.5, 2, 7]
 y_pred = [2.5, 0.0, 2, 8]
 explained_variance_score(y_true, y_pred)
@@ -7623,7 +7632,7 @@ ev_weighted = explained_variance_score(y_true, y_pred, multioutput='variance_wei
 print(ev_raw)
 print(ev_weighted)
 
-#%%
+# %%
 # import sklearn.metrics.mean_squared_error as mse, not possible because is a funciton is my guess?
 # https://stackoverflow.com/questions/40823418/why-cant-i-import-from-a-module-alias
 from sklearn.metrics import mean_squared_error
@@ -7636,8 +7645,8 @@ y_true = [3, -0.5, 2, 7]
 y_pred = [2.5, 0.0, 2, 8]
 mean_squared_error(y_true, y_pred, squared=False)
 
-y_true = [[0.5, 1],[-1, 1],[7, -6]]
-y_pred = [[0, 2],[-1, 2],[8, -5]]
+y_true = [[0.5, 1], [-1, 1], [7, -6]]
+y_pred = [[0, 2], [-1, 2], [8, -5]]
 mean_squared_error(y_true, y_pred)
 
 mean_squared_error(y_true, y_pred, squared=False)
@@ -7646,7 +7655,7 @@ mean_squared_error(y_true, y_pred, multioutput='raw_values')
 
 mean_squared_error(y_true, y_pred, multioutput=[0.3, 0.7])
 
-#%%
+# %%
 
 
 import torch
@@ -7704,7 +7713,7 @@ for _ in range(iters):
     # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
     y1 = mdl1(x)
     y2 = mdl2(x)
-    print((y1-y2).norm(2))
+    print((y1 - y2).norm(2))
 dist = hook1.distance(hook2, size=size)
 print(f'dist={dist}')
 
@@ -7735,9 +7744,9 @@ with open(path) as f:
 [result for x in values if (result := func(x)) < 10]
 
 if result := do_something():
-        do_more(result)
+    do_more(result)
 
-[y := f(x), y**2, y**3]
+[y := f(x), y ** 2, y ** 3]
 
 # %%
 
@@ -7782,9 +7791,12 @@ MYSTR: LETTER (LETTER | "." | "_" | DIGIT)*
 %ignore " "
 """
 parser = Lark(grammar)
-tree1 = parser.parse("(apply (const HOL.Trueprop) (apply (apply (const HOL.implies) (apply (apply (const HOL.conj) (free A)) (free B))) (apply (apply (const HOL.conj) (free B)) (free A))))")
-print(parser.parse("(apply (const HOL.Trueprop) (apply (apply (const HOL.implies) (apply (apply (const HOL.conj) (free A)) (free B))) (apply (apply (const HOL.conj) (free B)) (free A))))"))
+tree1 = parser.parse(
+    "(apply (const HOL.Trueprop) (apply (apply (const HOL.implies) (apply (apply (const HOL.conj) (free A)) (free B))) (apply (apply (const HOL.conj) (free B)) (free A))))")
+print(parser.parse(
+    "(apply (const HOL.Trueprop) (apply (apply (const HOL.implies) (apply (apply (const HOL.conj) (free A)) (free B))) (apply (apply (const HOL.conj) (free B)) (free A))))"))
 print(tree1.pretty())
+
 
 class IncreaseAllNumbers(lark.Transformer):
     def _call_userfunc(self, tree, children):
@@ -7794,6 +7806,7 @@ class IncreaseAllNumbers(lark.Transformer):
 
     def _call_userfunc_token(self, c):
         print(c)
+
 
 IncreaseAllNumbers(visit_tokens=True).transform(tree1)
 
@@ -7839,7 +7852,7 @@ print(dict(d))
 lst2 = d.items()
 print(sorted(lst2))
 
-#%%
+# %%
 import numpy as np
 
 x = np.random.randn(1, 10)
@@ -7938,7 +7951,6 @@ cos_similarity_tensor = cos(x1, x2)
 print(cos_similarity_tensor)
 print(cos_similarity_tensor.size())
 
-
 # %%
 
 import torch.nn as nn
@@ -7948,8 +7960,10 @@ def ned(x1, x2, dim=1, eps=1e-8):
     ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
+
 def nes(x1, x2, dim=1, eps=1e-8):
     return 1 - ned(x1, x2, dim, eps)
+
 
 dim = 1  # apply cosine accross the second dimension/feature dimension
 
@@ -8081,9 +8095,10 @@ print()
 # lstt = torch.stack(lst)
 # print(lstt.size())
 
-#%%
+# %%
 
 import torch
+
 
 # A class that represents an individual node in a
 # Binary Tree
@@ -8092,6 +8107,7 @@ class Node:
         self.left = None
         self.right = None
         self.val = val
+
 
 # A function to do postorder tree traversal
 def print_postorder(root):
@@ -8107,6 +8123,7 @@ def print_postorder(root):
         # After everything has been printed in post order way, then you can now print the data of current node
         print(root.val)
 
+
 root = Node(1)
 root.left = Node(2)
 root.right = Node(3)
@@ -8116,10 +8133,12 @@ root.left.right = Node(5)
 print("\nPostorder traversal of binary tree is")
 print_postorder(root)
 
+
 # %%
 
 class Node:
     """Node class for general trees"""
+
     def __init__(self, val):
         self.children = []
         self.val = val  # value of current node
@@ -8127,6 +8146,7 @@ class Node:
     def forward(self, children_embeddings):
         # just do a sum of children and current value
         return self.val + sum(children_embeddings)
+
 
 # create top
 root = Node(1)
@@ -8137,6 +8157,7 @@ left.children = [Node(4), Node(5)]
 right = Node(3)
 # create entire tree
 root.children = [left, right]
+
 
 # A function to do postorder tree traversal
 def compute_embedding_bottom_up(root, verbose=False):
@@ -8157,13 +8178,16 @@ def compute_embedding_bottom_up(root, verbose=False):
         print(root_embedding) if verbose else None
         return root_embedding
 
+
 # should print 4 5 11 3 15
 compute_embedding_bottom_up(root, verbose=True)
+
 
 # %%
 
 class Node:
     """Node class for general trees"""
+
     def __init__(self, val):
         self.children = []
         self.val = val  # value of current node
@@ -8208,6 +8232,7 @@ def embed():
     hello_embed = embeds(lookup_tensor)
     print(hello_embed)
 
+
 # %%
 
 import torch
@@ -8237,6 +8262,8 @@ Need:
 import torch
 import torch.nn as nn
 from collections import OrderedDict
+
+
 # import torch.nn.functional as F
 # import torch.optim as optim
 # from torch.utils.data import DataLoader
@@ -8290,8 +8317,10 @@ class TreeNN(torch.nn.Module):
         ]))
         return fnn
 
+
 class Node:
     """Node class for general trees"""
+
     def __init__(self, val):
         self.children = []
         self.val = val  # value of current node
@@ -8308,6 +8337,7 @@ class Node:
             else:
                 child.print_post_order()
         print(self.val)
+
 
 class JsonToAst:
     def __init__(self):
@@ -8335,6 +8365,7 @@ class JsonToAst:
                     child = self.generate_ast(term)
                     root.children.append(child)
         return root
+
 
 ####
 
@@ -8377,7 +8408,7 @@ if __name__ == '__main__':
     test()
     print('done\a')
 
-#%%
+# %%
 
 import torch
 
@@ -8389,7 +8420,7 @@ print(xs.size())
 xs = torch.cat([x, x, x], dim=2)
 print(xs.size())
 
-#%%
+# %%
 term = {
     "App": [
         {
@@ -8415,13 +8446,13 @@ print(term.keys())
 keys = list(term.keys())
 print(keys[0])
 
-#%%
+# %%
 
 # python conditional ternery operator
 
 x = 'true' if True else 'false'
 
-#%%
+# %%
 
 import torch
 
@@ -8433,7 +8464,7 @@ y = torch.tensor(x)
 
 print(y.size())
 
-#%%
+# %%
 
 # https://discuss.pytorch.org/t/identity-element-for-stack-operator-torch-stack-emtpty-x-x-empty-tensor-exists/111459
 
@@ -8445,7 +8476,7 @@ x = torch.randn(3, 5, 7)
 print(torch.cat([empty, x], dim=0).size())
 print(torch.stack([empty, x], dim=0).size())
 
-#%%
+# %%
 
 import torch
 
@@ -8453,7 +8484,7 @@ x = torch.randn(5, 4)
 for layer in range(x.size(1)):
     print(f'{layer=}')
 
-#%%
+# %%
 
 # selecting indices arbitrarily i.e. x[*,indicies,*] were * denotes that the rest of the layers are kept the same
 
@@ -8462,15 +8493,16 @@ x = torch.randn(5, 4)
 # compute average of first 3 layer
 
 L = x.size(1)
-indices = torch.tensor(range(L-1))
+indices = torch.tensor(range(L - 1))
 xx = x.index_select(dim=1, index=indices)
 print(f'{x=}')
 print(f'{xx=}')
 print(xx.size())
 
-#%%
+# %%
 
 import torch
+
 
 def ned_torch(x1, x2, dim=1, eps=1e-4):
     """
@@ -8488,306 +8520,307 @@ def ned_torch(x1, x2, dim=1, eps=1e-4):
     ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
+
 out1 = torch.tensor([[-3.6291e-01],
-        [-1.7674e+00],
-        [-2.1817e+00],
-        [-2.0127e+00],
-        [-1.6210e+00],
-        [-7.1149e-01],
-        [-8.0512e-01],
-        [-3.3430e-01],
-        [-6.6400e-01],
-        [-8.5222e-01],
-        [-1.1699e+00],
-        [-8.9726e-01],
-        [-7.2273e-02],
-        [-4.6621e-01],
-        [-1.7938e+00],
-        [-2.1175e+00],
-        [-1.2470e+00],
-        [-1.5756e-01],
-        [-6.4363e-01],
-        [-6.0576e-01],
-        [-1.6676e+00],
-        [-1.9971e+00],
-        [-5.9432e-01],
-        [-3.4780e-01],
-        [-6.0348e-01],
-        [-1.7820e+00],
-        [-2.2057e-01],
-        [-3.8268e-02],
-        [-1.5633e+00],
-        [-3.5840e-01],
-        [-5.7379e-02],
-        [-2.5210e-01],
-        [-1.9601e+00],
-        [-3.7318e-01],
-        [ 1.2341e-02],
-        [-2.2946e+00],
-        [-5.3198e-01],
-        [-2.3140e+00],
-        [-1.6823e+00],
-        [-4.7436e-01],
-        [-2.6047e-01],
-        [-2.1642e+00],
-        [-4.7522e-01],
-        [-5.7305e-01],
-        [ 2.8821e-01],
-        [-2.7846e-01],
-        [-2.5561e-01],
-        [-2.2448e+00],
-        [-1.1109e-02],
-        [-1.6171e+00],
-        [-2.3253e+00],
-        [-1.8158e+00],
-        [-1.5101e+00],
-        [ 1.1949e-01],
-        [-1.2281e+00],
-        [-4.2565e-01],
-        [-1.0244e+00],
-        [-2.0581e+00],
-        [-1.0552e+00],
-        [ 2.5954e-01],
-        [ 2.7600e-01],
-        [-1.2441e+00],
-        [ 2.5143e-01],
-        [-1.9237e+00],
-        [-2.0799e+00],
-        [-2.0188e+00],
-        [-1.2017e-01],
-        [-2.0858e+00],
-        [-1.4656e+00],
-        [-2.4549e-01],
-        [-2.3728e+00],
-        [-8.0225e-01],
-        [-4.2496e-01],
-        [-8.0095e-01],
-        [ 4.3450e-01],
-        [ 3.3060e-01],
-        [-2.1804e+00],
-        [-1.8725e+00],
-        [-1.2165e+00],
-        [-1.9400e+00],
-        [-2.2042e+00],
-        [-1.8880e+00],
-        [-1.2850e+00],
-        [ 1.2322e-01],
-        [-4.6162e-01],
-        [-8.0890e-01],
-        [-7.8389e-01],
-        [-2.1397e+00],
-        [ 4.1263e-01],
-        [-2.2107e+00],
-        [ 2.4144e-01],
-        [-3.8620e-01],
-        [-2.1676e+00],
-        [ 3.2484e-02],
-        [-1.6298e+00],
-        [-1.6220e+00],
-        [-1.3770e+00],
-        [-2.1185e+00],
-        [-1.1192e+00],
-        [-1.3630e+00],
-        [-4.5632e-01],
-        [-1.8549e+00],
-        [ 3.4460e-01],
-        [-2.3489e-01],
-        [-2.1207e+00],
-        [-7.0951e-01],
-        [ 2.8363e-01],
-        [-1.1481e+00],
-        [-5.5500e-01],
-        [-1.9301e+00],
-        [-1.2247e+00],
-        [-5.3754e-01],
-        [-5.6930e-01],
-        [ 2.5710e-01],
-        [-1.5921e+00],
-        [ 2.5347e-01],
-        [ 1.0652e-01],
-        [-1.1256e+00],
-        [-1.4893e+00],
-        [ 4.2699e-01],
-        [-9.1180e-01],
-        [-9.7470e-01],
-        [-1.1939e+00],
-        [ 3.5195e-01],
-        [-2.1075e+00],
-        [-1.5541e-01],
-        [-2.3053e+00],
-        [-2.2581e+00],
-        [-1.4817e+00],
-        [-4.7145e-01],
-        [ 1.5247e-01],
-        [ 7.7248e-02],
-        [-2.1716e+00],
-        [-4.0977e-01],
-        [-7.6577e-01],
-        [ 2.2840e-01],
-        [-1.9727e+00],
-        [-1.6670e+00],
-        [-1.7057e+00],
-        [-2.3080e+00],
-        [-4.0681e-01],
-        [ 1.0423e-03],
-        [-1.5651e+00],
-        [-5.2567e-01],
-        [-1.3016e+00],
-        [-1.6186e+00],
-        [-1.5546e+00],
-        [-1.7983e+00],
-        [ 1.1193e-01],
-        [-1.0648e+00]])
+                     [-1.7674e+00],
+                     [-2.1817e+00],
+                     [-2.0127e+00],
+                     [-1.6210e+00],
+                     [-7.1149e-01],
+                     [-8.0512e-01],
+                     [-3.3430e-01],
+                     [-6.6400e-01],
+                     [-8.5222e-01],
+                     [-1.1699e+00],
+                     [-8.9726e-01],
+                     [-7.2273e-02],
+                     [-4.6621e-01],
+                     [-1.7938e+00],
+                     [-2.1175e+00],
+                     [-1.2470e+00],
+                     [-1.5756e-01],
+                     [-6.4363e-01],
+                     [-6.0576e-01],
+                     [-1.6676e+00],
+                     [-1.9971e+00],
+                     [-5.9432e-01],
+                     [-3.4780e-01],
+                     [-6.0348e-01],
+                     [-1.7820e+00],
+                     [-2.2057e-01],
+                     [-3.8268e-02],
+                     [-1.5633e+00],
+                     [-3.5840e-01],
+                     [-5.7379e-02],
+                     [-2.5210e-01],
+                     [-1.9601e+00],
+                     [-3.7318e-01],
+                     [1.2341e-02],
+                     [-2.2946e+00],
+                     [-5.3198e-01],
+                     [-2.3140e+00],
+                     [-1.6823e+00],
+                     [-4.7436e-01],
+                     [-2.6047e-01],
+                     [-2.1642e+00],
+                     [-4.7522e-01],
+                     [-5.7305e-01],
+                     [2.8821e-01],
+                     [-2.7846e-01],
+                     [-2.5561e-01],
+                     [-2.2448e+00],
+                     [-1.1109e-02],
+                     [-1.6171e+00],
+                     [-2.3253e+00],
+                     [-1.8158e+00],
+                     [-1.5101e+00],
+                     [1.1949e-01],
+                     [-1.2281e+00],
+                     [-4.2565e-01],
+                     [-1.0244e+00],
+                     [-2.0581e+00],
+                     [-1.0552e+00],
+                     [2.5954e-01],
+                     [2.7600e-01],
+                     [-1.2441e+00],
+                     [2.5143e-01],
+                     [-1.9237e+00],
+                     [-2.0799e+00],
+                     [-2.0188e+00],
+                     [-1.2017e-01],
+                     [-2.0858e+00],
+                     [-1.4656e+00],
+                     [-2.4549e-01],
+                     [-2.3728e+00],
+                     [-8.0225e-01],
+                     [-4.2496e-01],
+                     [-8.0095e-01],
+                     [4.3450e-01],
+                     [3.3060e-01],
+                     [-2.1804e+00],
+                     [-1.8725e+00],
+                     [-1.2165e+00],
+                     [-1.9400e+00],
+                     [-2.2042e+00],
+                     [-1.8880e+00],
+                     [-1.2850e+00],
+                     [1.2322e-01],
+                     [-4.6162e-01],
+                     [-8.0890e-01],
+                     [-7.8389e-01],
+                     [-2.1397e+00],
+                     [4.1263e-01],
+                     [-2.2107e+00],
+                     [2.4144e-01],
+                     [-3.8620e-01],
+                     [-2.1676e+00],
+                     [3.2484e-02],
+                     [-1.6298e+00],
+                     [-1.6220e+00],
+                     [-1.3770e+00],
+                     [-2.1185e+00],
+                     [-1.1192e+00],
+                     [-1.3630e+00],
+                     [-4.5632e-01],
+                     [-1.8549e+00],
+                     [3.4460e-01],
+                     [-2.3489e-01],
+                     [-2.1207e+00],
+                     [-7.0951e-01],
+                     [2.8363e-01],
+                     [-1.1481e+00],
+                     [-5.5500e-01],
+                     [-1.9301e+00],
+                     [-1.2247e+00],
+                     [-5.3754e-01],
+                     [-5.6930e-01],
+                     [2.5710e-01],
+                     [-1.5921e+00],
+                     [2.5347e-01],
+                     [1.0652e-01],
+                     [-1.1256e+00],
+                     [-1.4893e+00],
+                     [4.2699e-01],
+                     [-9.1180e-01],
+                     [-9.7470e-01],
+                     [-1.1939e+00],
+                     [3.5195e-01],
+                     [-2.1075e+00],
+                     [-1.5541e-01],
+                     [-2.3053e+00],
+                     [-2.2581e+00],
+                     [-1.4817e+00],
+                     [-4.7145e-01],
+                     [1.5247e-01],
+                     [7.7248e-02],
+                     [-2.1716e+00],
+                     [-4.0977e-01],
+                     [-7.6577e-01],
+                     [2.2840e-01],
+                     [-1.9727e+00],
+                     [-1.6670e+00],
+                     [-1.7057e+00],
+                     [-2.3080e+00],
+                     [-4.0681e-01],
+                     [1.0423e-03],
+                     [-1.5651e+00],
+                     [-5.2567e-01],
+                     [-1.3016e+00],
+                     [-1.6186e+00],
+                     [-1.5546e+00],
+                     [-1.7983e+00],
+                     [1.1193e-01],
+                     [-1.0648e+00]])
 out2 = torch.tensor([[-0.2625],
-        [ 0.5472],
-        [ 0.7860],
-        [ 0.6886],
-        [ 0.4628],
-        [-0.0615],
-        [-0.0075],
-        [-0.2790],
-        [-0.0889],
-        [ 0.0196],
-        [ 0.2027],
-        [ 0.0456],
-        [-0.4300],
-        [-0.2029],
-        [ 0.5624],
-        [ 0.7491],
-        [ 0.2472],
-        [-0.3808],
-        [-0.1006],
-        [-0.1225],
-        [ 0.4897],
-        [ 0.6796],
-        [-0.1291],
-        [-0.2712],
-        [-0.1238],
-        [ 0.5556],
-        [-0.3445],
-        [-0.4496],
-        [ 0.4295],
-        [-0.2651],
-        [-0.4386],
-        [-0.3263],
-        [ 0.6583],
-        [-0.2565],
-        [-0.4788],
-        [ 0.8512],
-        [-0.1650],
-        [ 0.8623],
-        [ 0.4981],
-        [-0.1982],
-        [-0.3215],
-        [ 0.7760],
-        [-0.1977],
-        [-0.1413],
-        [-0.6378],
-        [-0.3111],
-        [-0.3243],
-        [ 0.8224],
-        [-0.4653],
-        [ 0.4606],
-        [ 0.8688],
-        [ 0.5751],
-        [ 0.3989],
-        [-0.5406],
-        [ 0.2363],
-        [-0.2263],
-        [ 0.1189],
-        [ 0.7148],
-        [ 0.1367],
-        [-0.6213],
-        [-0.6308],
-        [ 0.2456],
-        [-0.6166],
-        [ 0.6373],
-        [ 0.7274],
-        [ 0.6922],
-        [-0.4024],
-        [ 0.7307],
-        [ 0.3732],
-        [-0.3302],
-        [ 0.8962],
-        [-0.0092],
-        [-0.2267],
-        [-0.0099],
-        [-0.7222],
-        [-0.6623],
-        [ 0.7853],
-        [ 0.6078],
-        [ 0.2296],
-        [ 0.6467],
-        [ 0.7990],
-        [ 0.6167],
-        [ 0.2691],
-        [-0.5427],
-        [-0.2056],
-        [-0.0054],
-        [-0.0198],
-        [ 0.7618],
-        [-0.7096],
-        [ 0.8028],
-        [-0.6109],
-        [-0.2490],
-        [ 0.7779],
-        [-0.4904],
-        [ 0.4679],
-        [ 0.4634],
-        [ 0.3221],
-        [ 0.7496],
-        [ 0.1735],
-        [ 0.3141],
-        [-0.2086],
-        [ 0.5977],
-        [-0.6703],
-        [-0.3363],
-        [ 0.7509],
-        [-0.0627],
-        [-0.6352],
-        [ 0.1902],
-        [-0.1517],
-        [ 0.6410],
-        [ 0.2344],
-        [-0.1618],
-        [-0.1435],
-        [-0.6199],
-        [ 0.4461],
-        [-0.6178],
-        [-0.5331],
-        [ 0.1772],
-        [ 0.3869],
-        [-0.7178],
-        [ 0.0540],
-        [ 0.0902],
-        [ 0.2166],
-        [-0.6746],
-        [ 0.7433],
-        [-0.3821],
-        [ 0.8573],
-        [ 0.8301],
-        [ 0.3825],
-        [-0.1999],
-        [-0.5596],
-        [-0.5162],
-        [ 0.7803],
-        [-0.2355],
-        [-0.0302],
-        [-0.6034],
-        [ 0.6656],
-        [ 0.4893],
-        [ 0.5117],
-        [ 0.8589],
-        [-0.2372],
-        [-0.4723],
-        [ 0.4306],
-        [-0.1686],
-        [ 0.2787],
-        [ 0.4614],
-        [ 0.4245],
-        [ 0.5650],
-        [-0.5362],
-        [ 0.1421]])
+                     [0.5472],
+                     [0.7860],
+                     [0.6886],
+                     [0.4628],
+                     [-0.0615],
+                     [-0.0075],
+                     [-0.2790],
+                     [-0.0889],
+                     [0.0196],
+                     [0.2027],
+                     [0.0456],
+                     [-0.4300],
+                     [-0.2029],
+                     [0.5624],
+                     [0.7491],
+                     [0.2472],
+                     [-0.3808],
+                     [-0.1006],
+                     [-0.1225],
+                     [0.4897],
+                     [0.6796],
+                     [-0.1291],
+                     [-0.2712],
+                     [-0.1238],
+                     [0.5556],
+                     [-0.3445],
+                     [-0.4496],
+                     [0.4295],
+                     [-0.2651],
+                     [-0.4386],
+                     [-0.3263],
+                     [0.6583],
+                     [-0.2565],
+                     [-0.4788],
+                     [0.8512],
+                     [-0.1650],
+                     [0.8623],
+                     [0.4981],
+                     [-0.1982],
+                     [-0.3215],
+                     [0.7760],
+                     [-0.1977],
+                     [-0.1413],
+                     [-0.6378],
+                     [-0.3111],
+                     [-0.3243],
+                     [0.8224],
+                     [-0.4653],
+                     [0.4606],
+                     [0.8688],
+                     [0.5751],
+                     [0.3989],
+                     [-0.5406],
+                     [0.2363],
+                     [-0.2263],
+                     [0.1189],
+                     [0.7148],
+                     [0.1367],
+                     [-0.6213],
+                     [-0.6308],
+                     [0.2456],
+                     [-0.6166],
+                     [0.6373],
+                     [0.7274],
+                     [0.6922],
+                     [-0.4024],
+                     [0.7307],
+                     [0.3732],
+                     [-0.3302],
+                     [0.8962],
+                     [-0.0092],
+                     [-0.2267],
+                     [-0.0099],
+                     [-0.7222],
+                     [-0.6623],
+                     [0.7853],
+                     [0.6078],
+                     [0.2296],
+                     [0.6467],
+                     [0.7990],
+                     [0.6167],
+                     [0.2691],
+                     [-0.5427],
+                     [-0.2056],
+                     [-0.0054],
+                     [-0.0198],
+                     [0.7618],
+                     [-0.7096],
+                     [0.8028],
+                     [-0.6109],
+                     [-0.2490],
+                     [0.7779],
+                     [-0.4904],
+                     [0.4679],
+                     [0.4634],
+                     [0.3221],
+                     [0.7496],
+                     [0.1735],
+                     [0.3141],
+                     [-0.2086],
+                     [0.5977],
+                     [-0.6703],
+                     [-0.3363],
+                     [0.7509],
+                     [-0.0627],
+                     [-0.6352],
+                     [0.1902],
+                     [-0.1517],
+                     [0.6410],
+                     [0.2344],
+                     [-0.1618],
+                     [-0.1435],
+                     [-0.6199],
+                     [0.4461],
+                     [-0.6178],
+                     [-0.5331],
+                     [0.1772],
+                     [0.3869],
+                     [-0.7178],
+                     [0.0540],
+                     [0.0902],
+                     [0.2166],
+                     [-0.6746],
+                     [0.7433],
+                     [-0.3821],
+                     [0.8573],
+                     [0.8301],
+                     [0.3825],
+                     [-0.1999],
+                     [-0.5596],
+                     [-0.5162],
+                     [0.7803],
+                     [-0.2355],
+                     [-0.0302],
+                     [-0.6034],
+                     [0.6656],
+                     [0.4893],
+                     [0.5117],
+                     [0.8589],
+                     [-0.2372],
+                     [-0.4723],
+                     [0.4306],
+                     [-0.1686],
+                     [0.2787],
+                     [0.4614],
+                     [0.4245],
+                     [0.5650],
+                     [-0.5362],
+                     [0.1421]])
 
 x1 = out1
 x2 = out2
@@ -8806,14 +8839,14 @@ print(ned)
 
 # conclusion, if you only have 1 number calling .var will result in nan since 1 number doesn't have a variance.
 
-#%%
+# %%
 
 import torch
 
 x = torch.randn(5, 4)
 print(x.isnan().any())
 
-#%%
+# %%
 
 from argparse import Namespace
 
@@ -8829,7 +8862,7 @@ options_baz = Namespace(**vars(options_foo), **vars(options_bar))
 
 print(options_baz)
 
-#%%
+# %%
 
 import torch
 
@@ -8838,7 +8871,7 @@ x = torch.randn(5, 4)
 print(x.var(dim=1).size() == torch.Size([5]))
 
 
-#%%
+# %%
 
 # pretty printing dictionaries and dics of tensors
 
@@ -8859,6 +8892,7 @@ def _to_json_dict_with_strings(dictionary):
     d = {k: _to_json_dict_with_strings(v) for k, v in dictionary.items()}
     return d
 
+
 def to_json(dic):
     import types
     import argparse
@@ -8869,11 +8903,13 @@ def to_json(dic):
         dic = dic.__dict__
     return _to_json_dict_with_strings(dic)
 
+
 def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
     import json
 
     with open(path, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
+
 
 def pprint_dic(dic):
     """
@@ -8894,9 +8930,11 @@ def pprint_dic(dic):
     print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
     # return pretty_dic
 
+
 def pprint_namespace(ns):
     """ pretty prints a namespace """
     pprint_dic(ns)
+
 
 import torch
 # import json  # results in non serializabe errors for torch.Tensors
@@ -8955,7 +8993,7 @@ print(f'{d1=}')
 print(f'{d2=}')
 print(f'{d3=}')
 
-#%%
+# %%
 
 # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
 # https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
@@ -8977,14 +9015,13 @@ print(len(X_train))
 print(len(X_val_test))
 
 # then 2/3 for val, 1/3 for test to get 10:5 split
-test_size = 1.0/3.0
+test_size = 1.0 / 3.0
 X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size, random_state=random_state)
 print(len(X_val))
 print(len(X_test))
 
-
-#%%
-#%%
+# %%
+# %%
 
 """
 global interpreter lock
@@ -9023,25 +9060,30 @@ import time
 from multiprocessing import Process
 from multiprocessing import Pool
 
+
 # Ex1: compute a map in parallel
 
 def f(x):
     # time.sleep(1)
-    return x*x
+    return x * x
+
 
 def main1():
     with Pool(5) as pool:
         print(pool.map(f, [1, 2, 3, 4, 5]))
+
 
 # Ex2: example of start and join
 
 def f2(name):
     print('hello', name)
 
+
 def main2():
     p = Process(target=f2, args=('bob',))
     p.start()
     p.join()
+
 
 # Ex3: example of halting the line like in go and then continuing after everyone is done
 
@@ -9054,6 +9096,7 @@ def f3(arg):
     time.sleep(1)
     print(f'--- process done with pid={pid}')
     print('--- Inside process ---')
+
 
 def main3():
     """
@@ -9071,6 +9114,7 @@ def main3():
         print(f'starting from the main process (pid={os.getpid()}) process with pid {p.pid}')
         p.join()  # wrong!
     print('main 3 done')
+
 
 def main4():
     """
@@ -9096,6 +9140,7 @@ def main4():
 def heavy_compute(args, secs=1):
     time.sleep(secs)
 
+
 def serial_code_blocking_wrong():
     """
     Example of how to wait incorrectly (it will not work since it will start a process but not
@@ -9107,6 +9152,7 @@ def serial_code_blocking_wrong():
     for p in processes:
         p.start()
         p.join()  # wrong!
+
 
 def parallel_code_blocking_correctly():
     """
@@ -9122,6 +9168,7 @@ def parallel_code_blocking_correctly():
     for p in processes:
         p.join()
 
+
 def main5():
     start = time.time()
     serial_code_blocking_wrong()
@@ -9130,6 +9177,7 @@ def main5():
     parallel_code_blocking_correctly()
     print(f'parallel execution time = {time.time() - start}')
     # first should be 4 secs second should 1 second
+
 
 if __name__ == '__main__':
     start = time.time()
@@ -9140,7 +9188,6 @@ if __name__ == '__main__':
     main5()
     print(f'total execution time = {time.time() - start}')
     print('Done with __main__!\a\n')
-
 
 # %%
 
@@ -9166,6 +9213,7 @@ from datetime import time
 import torch
 from torch.multiprocessing import Pool
 
+
 def train(cpu_parallel=True):
     num_cpus = get_num_cpus()  # 112 is the plan for intel's clsuter as an arparse or function
     model.shared_memory()  # TODO do we need this?
@@ -9177,12 +9225,13 @@ def train(cpu_parallel=True):
             loss = torch.sum(losses)
             # now do .step as normal
 
+
 if __name__ == '__main__':
     start = time.time()
     train()
     print(f'execution time: {time.time() - start}')
 
-#%%
+# %%
 
 import torch
 
@@ -9191,26 +9240,29 @@ print(torch.multiprocessing.get_sharing_strategy())
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-#%%
+# %%
 
 # getting the id of the process wrt to the pooling: https://stackoverflow.com/questions/10190981/get-a-unique-id-for-worker-in-python-multiprocessing-pool
 
 import multiprocessing
 
+
 def f(x):
     print(multiprocessing.current_process())
     return x * x
 
+
 p = multiprocessing.Pool()
 print(p.map(f, range(6)))
 
-#%%
+# %%
 
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 
 from torch.multiprocessing import Pool
+
 
 # class SimpleDataSet(Dataset):
 #
@@ -9240,32 +9292,33 @@ def main():
     num_procs = 5
     for epoch in range(num_epochs):
         for i in range(num_batches):
-            batch = [(torch.randn(Din),torch.randn(Dout)) for _ in range(batch_size)]
+            batch = [(torch.randn(Din), torch.randn(Dout)) for _ in range(batch_size)]
             with Pool(num_procs) as pool:
                 losses = pool.map(get_loss, batch)
                 loss = torch.avg(losses)
                 loss.backward()
 
+
 if __name__ == '__main__':
     main()
 
-#%%
+# %%
 
 # counting number of processors: https://stackoverflow.com/questions/23816546/how-many-processes-should-i-run-in-parallel
 
-#%%
+# %%
 
 # List of tuples
-students = [ ('jack', 34, 'Sydeny' , 'Australia') ,
-             ('Riti', 30, 'Delhi' , 'India' ) ,
-             ('Vikas', 31, 'Mumbai' , 'India' ) ,
-             ('Neelu', 32, 'Bangalore' , 'India' ) ,
-             ('John', 16, 'New York' , 'US') ,
-             ('Mike', 17, 'las vegas' , 'US')  ]
+students = [('jack', 34, 'Sydeny', 'Australia'),
+            ('Riti', 30, 'Delhi', 'India'),
+            ('Vikas', 31, 'Mumbai', 'India'),
+            ('Neelu', 32, 'Bangalore', 'India'),
+            ('John', 16, 'New York', 'US'),
+            ('Mike', 17, 'las vegas', 'US')]
 # Create DataFrame object from a list of tuples
-dfObj = pd.DataFrame(students, columns = ['Name' , 'Age', 'City' , 'Country'], index=['a', 'b', 'c' , 'd' , 'e' , 'f'])
+dfObj = pd.DataFrame(students, columns=['Name', 'Age', 'City', 'Country'], index=['a', 'b', 'c', 'd', 'e', 'f'])
 
-#%%
+# %%
 
 """
 Goal: train in a mp way by computing each example in a seperate process.
@@ -9305,18 +9358,20 @@ from torch.utils.data import Dataset, DataLoader
 
 from torch.multiprocessing import Pool
 
+
 class SimpleDataSet(Dataset):
 
     def __init__(self, Din, num_examples=23):
         self.x_dataset = [torch.randn(Din) for _ in range(num_examples)]
         # target function is x*x
-        self.y_dataset = [x**2 for x in self.x_dataset]
+        self.y_dataset = [x ** 2 for x in self.x_dataset]
 
     def __len__(self):
         return len(self.x_dataset)
 
     def __getitem__(self, idx):
         return self.x_dataset[idx], self.y_dataset[idx]
+
 
 def get_loss(args):
     x, y, model = args
@@ -9325,10 +9380,12 @@ def get_loss(args):
     loss = criterion(y_pred, y)
     return loss
 
+
 def get_dataloader(D, num_workers, batch_size):
     ds = SimpleDataSet(D)
     dl = DataLoader(ds, batch_size=batch_size, num_workers=num_workers)
     return dl
+
 
 def train_fake_data():
     num_workers = 2
@@ -9378,11 +9435,12 @@ https://pytorch.org/tutorials/intermediate/dist_tuto.html
 
 """
 """run.py:"""
-#!/usr/bin/env python
+# !/usr/bin/env python
 import os
 import torch
 import torch.distributed as dist
 from torch.multiprocessing import Process
+
 
 def run(rank, size):
     """
@@ -9391,6 +9449,7 @@ def run(rank, size):
     This is the function that is actually ran in each distributed process.
     """
     pass
+
 
 def init_process_and_run_parallel_fun(rank, size, fn, backend='gloo'):
     """
@@ -9422,13 +9481,13 @@ if __name__ == "__main__":
     for p in processes:
         p.join()  # blocks until p is done
 
-#%%
+# %%
 
 # split string
 
 print("asdf-ghjkl;".split('-'))
 
-#%%
+# %%
 
 # what happens if we do a .item of a vector
 
@@ -9443,17 +9502,19 @@ print(z.item())
 
 # %%
 
-# attention mechanism from transformers: https://towardsdatascience.com/illustrated-self-attention-2d627e33b20a
+# attention mechanism from transformers
+# inspired from but slightly modified to match equations from paper properly (better vectorization)
+# https://towardsdatascience.com/illustrated-self-attention-2d627e33b20a
 
 # -- get data set, each row is an input [N by D] --
 
 import torch
 
 x = [
-  [1, 0, 1, 0], # Input 1
-  [0, 2, 0, 2], # Input 2
-  [1, 1, 1, 1]  # Input 3
- ]
+    [1.0, 0, 1, 0],  # Input 1
+    [0, 2, 0, 2],  # Input 2
+    [1, 1, 1, 1]  # Input 3
+]
 x = torch.tensor(x)
 
 print('Usual design matrix where the rows N is the # of examples and D columns the features [N, D]')
@@ -9462,22 +9523,22 @@ print(f'X = [N, D] = {x.size()}\n')
 # -- get query, key, value matrices
 
 w_key = [
-  [0, 0, 1],
-  [1, 1, 0],
-  [0, 1, 0],
-  [1, 1, 0]
+    [0.0, 0, 1],
+    [1, 1, 0],
+    [0, 1, 0],
+    [1, 1, 0]
 ]
 w_query = [
-  [1, 0, 1],
-  [1, 0, 0],
-  [0, 0, 1],
-  [0, 1, 1]
+    [1.0, 0, 1],
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, 1, 1]
 ]
 w_value = [
-  [0, 2, 0],
-  [0, 3, 0],
-  [1, 0, 3],
-  [1, 1, 0]
+    [0.0, 2, 0],
+    [0, 3, 0],
+    [1, 0, 3],
+    [1, 1, 0]
 ]
 w_key = torch.tensor(w_key)
 w_query = torch.tensor(w_query)
@@ -9491,7 +9552,7 @@ print(f'w_val = [D, D_v] = {w_value.size()}\n')
 
 keys = x @ w_key
 querys = x @ w_query
-values = x @ w_value
+values = x @ w_value  # [N, D] [D, Dv] = [N, Dv]
 
 # print(keys)
 # print(querys)
@@ -9502,7 +9563,42 @@ print(f'val = V = [N, D_v] = {values.size()}\n')
 
 # -- calculate attention socres --
 
+# [q1 ; q2; q3 ] @ [k1, k2, k3]
 attn_scores = querys @ keys.T
 
 print('Attention scores Q @ K.T')
 print(f'attn_scores = [N, N] = {attn_scores.size()}')
+print(f'each row i indicates how query values for input i compares to the keys for all others inputs\n')
+
+# -- get real attention --
+
+# have rows sum to 1
+attn_scores_softmax = attn_scores.softmax(dim=1)
+print(attn_scores_softmax[0, :].sum())
+print(attn_scores_softmax[0, :])
+print('a[0,0]=<q0, k0>, a[0,1]=<q0,k1> , a[0,2]=<q0,k2>')
+# print(attn_scores_softmax)
+print('Thus, each row i is a (normalized) weight [0,1] indicating how much each qry input i compares to all others inputs keys')
+
+# For readability, approximate the above as follows
+attn_scores_softmax = [
+    [0.0, 0.5, 0.5],
+    [0.0, 1.0, 0.0],
+    [0.0, 0.9, 0.1]
+]
+attn_scores_softmax = torch.tensor(attn_scores_softmax)
+
+# -- --
+
+# the output of attention from the tutorial:
+print((values[:, None] * attn_scores_softmax.T[:, :, None]).sum(dim=0))
+
+# using the equation from the paper [N, N] [N, Dv] = [N, Dv]
+sf_qk_v = attn_scores_softmax @ values
+
+print('Here is the attentted "context" vectors!')
+print(f'Atten(QK.T) @ V = A*V = [N, Dv] = {sf_qk_v.size()}')
+print(sf_qk_v)
+print((values[:, None] * attn_scores_softmax.T[:, :, None]).sum(dim=0))
+print('Each row i is a context vector weighted with qry i with all keys for 1...Tx by vectors v 1...Tx')
+print('i.e. AV[i,:] = sum^Tx_{t=1} a[i,t] v[:,i]')
