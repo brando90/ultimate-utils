@@ -9612,7 +9612,78 @@ from torch.utils.tensorboard import SummaryWriter
 import pickle
 
 args = SimpleNamespace(log_dir=Path('~/Desktop/').expanduser())
-tb = SummaryWriter(log_dir=args.log_dir)  # uncomment for documentation to work
+tb = import torch
+
+class ResNet(torch.nn.Module):
+    def __init__(self, module):
+        super().__init__()
+        self.module = module
+
+    def forward(self, inputs):
+        return self.module(inputs) + inputsSummaryWriter(log_dir=args.log_dir)  # uncomment for documentation to work
 
 # TypeError: cannot pickle 'tensorflow.python._pywrap_file_io.WritableFile' object
 # pickle.dump(tb, open(args.log_dir / 'tb_test' ,'w'))
+
+# %%
+
+import torch
+
+class ResNet(torch.nn.Module):
+    def __init__(self, module):
+        super().__init__()
+        self.module = module
+
+    def forward(self, inputs):
+        return self.module(inputs) + inputs
+
+#
+# mdl = nn.Sequential()
+
+# %%
+
+# layer norm
+
+import torch.nn as nn
+
+input = torch.randn(20, 5, 10, 10)
+# With Learnable Parameters
+m = nn.LayerNorm(input.size()[1:])
+# Without Learnable Parameters
+m = nn.LayerNorm(input.size()[1:], elementwise_affine=False)
+# Normalize over last two dimensions
+m = nn.LayerNorm([10, 10])
+# Normalize over last dimension of size 10
+m = nn.LayerNorm(10)
+# Activating the module
+output = m(input)
+
+input = torch.randn(20, 256)
+# With Learnable Parameters
+m = nn.LayerNorm(normalized_shape=256)
+# Without Learnable Parameters
+# m = nn.LayerNorm(input.size()[1:], elementwise_affine=False)
+# Normalize over last two dimensions
+# m = nn.LayerNorm([10, 10])
+# Normalize over last dimension of size 10
+# m = nn.LayerNorm(10)
+# Activating the module
+output = m(input)
+
+print(output.size())
+
+print('-- testing batch size 1 --')
+
+input = torch.randn(1, 256)
+# With Learnable Parameters
+m = nn.LayerNorm(normalized_shape=256)
+# Without Learnable Parameters
+# m = nn.LayerNorm(input.size()[1:], elementwise_affine=False)
+# Normalize over last two dimensions
+# m = nn.LayerNorm([10, 10])
+# Normalize over last dimension of size 10
+# m = nn.LayerNorm(10)
+# Activating the module
+output = m(input)
+
+print(output.size())
