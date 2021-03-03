@@ -9687,3 +9687,43 @@ m = nn.LayerNorm(normalized_shape=256)
 output = m(input)
 
 print(output.size())
+
+#%%
+
+# f string formatting
+# https://miguendes.me/73-examples-to-help-you-master-pythons-f-strings#how-to-add-leading-zeros
+
+# fixed digits after f f-string
+print(f'{10.1234:.2f}')
+
+# add 5 leading zeros (note you need the 0 infront of 5
+print(f'{42:05}')
+
+num = 42
+
+f"{num:05}"
+'00042'
+
+f'{num:+010}'
+'+000000042'
+
+f'{num:-010}'
+'0000000042'
+
+f"{num:010}"
+'0000000042'
+
+num = -42
+
+f'{num:+010}'
+'-000000042'
+
+f'{num:010}'
+'-000000042'
+
+f'{num:-010}'
+'-000000042'
+
+# %%
+
+# check the device for c
