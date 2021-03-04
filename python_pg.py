@@ -86,25 +86,25 @@ def report_times(start, verbose=False):
     msg = f'time passed: hours:{hours}, minutes={minutes}, seconds={seconds}'
     return msg, seconds, minutes, hours
 
-
-def params_in_comp_graph():
-    import torch
-    import torch.nn as nn
-    from torchviz import make_dot
-    fc0 = nn.Linear(in_features=3, out_features=1)
-    params = [('fc0', fc0)]
-    mdl = nn.Sequential(OrderedDict(params))
-
-    x = torch.randn(1, 3)
-    # x.requires_grad = True  # uncomment to put in computation graph
-    y = torch.randn(1)
-
-    l = (mdl(x) - y) ** 2
-
-    # make_dot(l, params=dict(mdl.named_parameters()))
-    params = dict(mdl.named_parameters())
-    # params = {**params, 'x':x}
-    make_dot(l, params=params).render('data/debug/test_img_l', format='png')
+#
+# def params_in_comp_graph():
+#     import torch
+#     import torch.nn as nn
+#     # from torchviz import make_dot
+#     fc0 = nn.Linear(in_features=3, out_features=1)
+#     params = [('fc0', fc0)]
+#     mdl = nn.Sequential(OrderedDict(params))
+#
+#     x = torch.randn(1, 3)
+#     # x.requires_grad = True  # uncomment to put in computation graph
+#     y = torch.randn(1)
+#
+#     l = (mdl(x) - y) ** 2
+#
+#     # make_dot(l, params=dict(mdl.named_parameters()))
+#     params = dict(mdl.named_parameters())
+#     # params = {**params, 'x':x}
+#     make_dot(l, params=params).render('data/debug/test_img_l', format='png')
 
 
 def check_if_tensor_is_detached():
@@ -185,94 +185,94 @@ def torch_concat():
     g1 = torch.randn(3, 3)
     g2 = torch.randn(3, 3)
 
+#
+# def inner_loop1():
+#     n_inner_iter = 5
+#     inner_opt = torch.optim.SGD(net.parameters(), lr=1e-1)
+#
+#     qry_losses = []
+#     qry_accs = []
+#     meta_opt.zero_grad()
+#     for i in range(task_num):
+#         with higher.innerloop_ctx(
+#                 net, inner_opt, copy_initial_weights=False
+#         ) as (fnet, diffopt):
+#             # Optimize the likelihood of the support set by taking
+#             # gradient steps w.r.t. the model's parameters.
+#             # This adapts the model's meta-parameters to the task.
+#             # higher is able to automatically keep copies of
+#             # your network's parameters as they are being updated.
+#             for _ in range(n_inner_iter):
+#                 spt_logits = fnet(x_spt[i])
+#                 spt_loss = F.cross_entropy(spt_logits, y_spt[i])
+#                 diffopt.step(spt_loss)
+#
+#             # The final set of adapted parameters will induce some
+#             # final loss and accuracy on the query dataset.
+#             # These will be used to update the model's meta-parameters.
+#             qry_logits = fnet(x_qry[i])
+#             qry_loss = F.cross_entropy(qry_logits, y_qry[i])
+#             qry_losses.append(qry_loss.detach())
+#             qry_acc = (qry_logits.argmax(
+#                 dim=1) == y_qry[i]).sum().item() / querysz
+#             qry_accs.append(qry_acc)
+#
+#             # Update the model's meta-parameters to optimize the query
+#             # losses across all of the tasks sampled in this batch.
+#             # This unrolls through the gradient steps.
+#             qry_loss.backward()
+#
+#     meta_opt.step()
+#     qry_losses = sum(qry_losses) / task_num
+#     qry_accs = 100. * sum(qry_accs) / task_num
+#     i = epoch + float(batch_idx) / n_train_iter
+#     iter_time = time.time() - start_time
 
-def inner_loop1():
-    n_inner_iter = 5
-    inner_opt = torch.optim.SGD(net.parameters(), lr=1e-1)
 
-    qry_losses = []
-    qry_accs = []
-    meta_opt.zero_grad()
-    for i in range(task_num):
-        with higher.innerloop_ctx(
-                net, inner_opt, copy_initial_weights=False
-        ) as (fnet, diffopt):
-            # Optimize the likelihood of the support set by taking
-            # gradient steps w.r.t. the model's parameters.
-            # This adapts the model's meta-parameters to the task.
-            # higher is able to automatically keep copies of
-            # your network's parameters as they are being updated.
-            for _ in range(n_inner_iter):
-                spt_logits = fnet(x_spt[i])
-                spt_loss = F.cross_entropy(spt_logits, y_spt[i])
-                diffopt.step(spt_loss)
-
-            # The final set of adapted parameters will induce some
-            # final loss and accuracy on the query dataset.
-            # These will be used to update the model's meta-parameters.
-            qry_logits = fnet(x_qry[i])
-            qry_loss = F.cross_entropy(qry_logits, y_qry[i])
-            qry_losses.append(qry_loss.detach())
-            qry_acc = (qry_logits.argmax(
-                dim=1) == y_qry[i]).sum().item() / querysz
-            qry_accs.append(qry_acc)
-
-            # Update the model's meta-parameters to optimize the query
-            # losses across all of the tasks sampled in this batch.
-            # This unrolls through the gradient steps.
-            qry_loss.backward()
-
-    meta_opt.step()
-    qry_losses = sum(qry_losses) / task_num
-    qry_accs = 100. * sum(qry_accs) / task_num
-    i = epoch + float(batch_idx) / n_train_iter
-    iter_time = time.time() - start_time
-
-
-def inner_loop2():
-    n_inner_iter = 5
-    inner_opt = torch.optim.SGD(net.parameters(), lr=1e-1)
-
-    qry_losses = []
-    qry_accs = []
-    meta_opt.zero_grad()
-    meta_loss = 0
-    for i in range(task_num):
-        with higher.innerloop_ctx(
-                net, inner_opt, copy_initial_weights=False
-        ) as (fnet, diffopt):
-            # Optimize the likelihood of the support set by taking
-            # gradient steps w.r.t. the model's parameters.
-            # This adapts the model's meta-parameters to the task.
-            # higher is able to automatically keep copies of
-            # your network's parameters as they are being updated.
-            for _ in range(n_inner_iter):
-                spt_logits = fnet(x_spt[i])
-                spt_loss = F.cross_entropy(spt_logits, y_spt[i])
-                diffopt.step(spt_loss)
-
-            # The final set of adapted parameters will induce some
-            # final loss and accuracy on the query dataset.
-            # These will be used to update the model's meta-parameters.
-            qry_logits = fnet(x_qry[i])
-            qry_loss = F.cross_entropy(qry_logits, y_qry[i])
-            qry_losses.append(qry_loss.detach())
-            qry_acc = (qry_logits.argmax(
-                dim=1) == y_qry[i]).sum().item() / querysz
-            qry_accs.append(qry_acc)
-
-            # Update the model's meta-parameters to optimize the query
-            # losses across all of the tasks sampled in this batch.
-            # This unrolls through the gradient steps.
-            # qry_loss.backward()
-            meta_loss += qry_loss
-
-    qry_losses = sum(qry_losses) / task_num
-    qry_losses.backward()
-    meta_opt.step()
-    qry_accs = 100. * sum(qry_accs) / task_num
-    i = epoch + float(batch_idx) / n_train_iter
-    iter_time = time.time() - start_time
+# def inner_loop2():
+#     n_inner_iter = 5
+#     inner_opt = torch.optim.SGD(net.parameters(), lr=1e-1)
+#
+#     qry_losses = []
+#     qry_accs = []
+#     meta_opt.zero_grad()
+#     meta_loss = 0
+#     for i in range(task_num):
+#         with higher.innerloop_ctx(
+#                 net, inner_opt, copy_initial_weights=False
+#         ) as (fnet, diffopt):
+#             # Optimize the likelihood of the support set by taking
+#             # gradient steps w.r.t. the model's parameters.
+#             # This adapts the model's meta-parameters to the task.
+#             # higher is able to automatically keep copies of
+#             # your network's parameters as they are being updated.
+#             for _ in range(n_inner_iter):
+#                 spt_logits = fnet(x_spt[i])
+#                 spt_loss = F.cross_entropy(spt_logits, y_spt[i])
+#                 diffopt.step(spt_loss)
+#
+#             # The final set of adapted parameters will induce some
+#             # final loss and accuracy on the query dataset.
+#             # These will be used to update the model's meta-parameters.
+#             qry_logits = fnet(x_qry[i])
+#             qry_loss = F.cross_entropy(qry_logits, y_qry[i])
+#             qry_losses.append(qry_loss.detach())
+#             qry_acc = (qry_logits.argmax(
+#                 dim=1) == y_qry[i]).sum().item() / querysz
+#             qry_accs.append(qry_acc)
+#
+#             # Update the model's meta-parameters to optimize the query
+#             # losses across all of the tasks sampled in this batch.
+#             # This unrolls through the gradient steps.
+#             # qry_loss.backward()
+#             meta_loss += qry_loss
+#
+#     qry_losses = sum(qry_losses) / task_num
+#     qry_losses.backward()
+#     meta_opt.step()
+#     qry_accs = 100. * sum(qry_accs) / task_num
+#     i = epoch + float(batch_idx) / n_train_iter
+#     iter_time = time.time() - start_time
 
 
 def error_unexpected_way_to_by_pass_safety():
@@ -834,7 +834,7 @@ def logging_example_from_youtube():
     """https://github.com/CoreyMSchafer/code_snippets/blob/master/Logging-Advanced/employee.py
     """
     import logging
-    import pytorch_playground  # has employee class & code
+    # import pytorch_playground  # has employee class & code
     import sys
 
     logger = logging.getLogger(__name__)
@@ -977,17 +977,17 @@ def subplot():
     fig1.savefig('fig1.png')
     fig2.savefig('fig2.png')
 
-
-def import_utils_test():
-    import uutils
-    import uutils.utils as utils
-    from uutils.utils import logger
-
-    print(uutils)
-    print(utils)
-    print(logger)
-
-    print()
+#
+# def import_utils_test():
+#     import uutils
+#     # import uutils.utils as utils
+#     # from uutils.utils import logger
+#
+#     print(uutils)
+#     print(utils)
+#     print(logger)
+#
+#     print()
 
 
 def sys_path():
@@ -1548,29 +1548,29 @@ for name, w in mdl.named_parameters():
 # %%
 
 ## Q: are parameters are in computation graph?
-import torch
-import torch.nn as nn
-from torchviz import make_dot
-
-from collections import OrderedDict
-
-fc0 = nn.Linear(in_features=3, out_features=1)
-params = [('fc0', fc0)]
-mdl = nn.Sequential(OrderedDict(params))
-
-x = torch.randn(1, 3)
-y = torch.randn(1)
-
-l = (mdl(x) - y) ** 2
-
-# make_dot(l,{x:'x',y:'y','fc0':fc0})
-print(fc0.weight)
-print(fc0.bias)
-print(fc0.weight.to_tens)
-print()
-# make_dot(l,{x:'x',y:'y','fc0':fc0})
-make_dot(l, {'x': x, 'y': y})
-make_dot(l)
+# import torch
+# import torch.nn as nn
+# # from torchviz import make_dot
+#
+# from collections import OrderedDict
+#
+# fc0 = nn.Linear(in_features=3, out_features=1)
+# params = [('fc0', fc0)]
+# mdl = nn.Sequential(OrderedDict(params))
+#
+# x = torch.randn(1, 3)
+# y = torch.randn(1)
+#
+# l = (mdl(x) - y) ** 2
+#
+# # make_dot(l,{x:'x',y:'y','fc0':fc0})
+# print(fc0.weight)
+# print(fc0.bias)
+# print(fc0.weight.to_tens)
+# print()
+# # make_dot(l,{x:'x',y:'y','fc0':fc0})
+# make_dot(l, {'x': x, 'y': y})
+# make_dot(l)
 
 # %%
 
@@ -2582,40 +2582,40 @@ for name, m in mdl.named_children():
 
 # apply mdl to x until the final layer, then return the embeding
 
-import torch
-import torch.nn as nn
-
-from collections import OrderedDict
-
-Din, Dout = 1, 1
-H = 10
-
-modules = OrderedDict([
-    ('fc0', nn.Linear(in_features=Din, out_features=H)),
-    ('ReLU0', nn.ReLU()),
-
-    ('fc1', nn.Linear(in_features=H, out_features=H)),
-    ('ReLU1', nn.ReLU()),
-
-    ('fc2', nn.Linear(in_features=H, out_features=H)),
-    ('ReLU2', nn.ReLU()),
-
-    ('fc3', nn.Linear(in_features=H, out_features=H)),
-    ('ReLU3', nn.ReLU()),
-
-    ('fc4L:final', nn.Linear(in_features=H, out_features=Dout))
-])
-
-mdl = nn.Sequential(modules)
-
-out = x
-for name, m in self.base_model.named_children():
-    if 'final' in name:
-        # return out
-        break
-    out = m(out)
-
-print(out.size())
+# import torch
+# import torch.nn as nn
+# 
+# from collections import OrderedDict
+# 
+# Din, Dout = 1, 1
+# H = 10
+# 
+# modules = OrderedDict([
+#     ('fc0', nn.Linear(in_features=Din, out_features=H)),
+#     ('ReLU0', nn.ReLU()),
+# 
+#     ('fc1', nn.Linear(in_features=H, out_features=H)),
+#     ('ReLU1', nn.ReLU()),
+# 
+#     ('fc2', nn.Linear(in_features=H, out_features=H)),
+#     ('ReLU2', nn.ReLU()),
+# 
+#     ('fc3', nn.Linear(in_features=H, out_features=H)),
+#     ('ReLU3', nn.ReLU()),
+# 
+#     ('fc4L:final', nn.Linear(in_features=H, out_features=Dout))
+# ])
+# 
+# mdl = nn.Sequential(modules)
+# 
+# out = x
+# for name, m in self.base_model.named_children():
+#     if 'final' in name:
+#         # return out
+#         break
+#     out = m(out)
+# 
+# print(out.size())
 
 # %%
 
@@ -3182,13 +3182,13 @@ for i in range(3):
 # https://stackoverflow.com/questions/64109883/how-does-one-load-a-sequential-model-from-a-string-in-pytorch
 
 # %%
-
-torch.save({'f': f,
-            'f_state_dict': f.state_dict(),
-            'f_str': str(f),
-            'f_modules': f._modules,
-            'f_modules_str': str(f._modules)
-            }, path2avg_f)
+#
+# torch.save({'f': f,
+#             'f_state_dict': f.state_dict(),
+#             'f_str': str(f),
+#             'f_modules': f._modules,
+#             'f_modules_str': str(f._modules)
+#             }, path2avg_f)
 
 # %%
 
@@ -7741,10 +7741,10 @@ with open(path) as f:
         print(line)
 
 #
-[result for x in values if (result := func(x)) < 10]
-
-if result := do_something():
-    do_more(result)
+# [result for x in values if (result := func(x)) < 10]
+#
+# if result := do_something():
+#     do_more(result)
 
 [y := f(x), y ** 2, y ** 3]
 
@@ -9208,28 +9208,28 @@ docs: https://pytorch.org/docs/stable/multiprocessing.html#module-torch.multipro
 
 (original python mp, they are compatible: https://docs.python.org/3/library/multiprocessing.html)
 """
-from datetime import time
-
-import torch
-from torch.multiprocessing import Pool
-
-
-def train(cpu_parallel=True):
-    num_cpus = get_num_cpus()  # 112 is the plan for intel's clsuter as an arparse or function
-    model.shared_memory()  # TODO do we need this?
-    # add progressbar for data loader to check if multiprocessing is helping
-    for batch_idx, batch in dataloader:
-        # do this mellow with pool when cpu_parallel=True
-        with Pool(num_cpus) as pool:
-            losses = pool.map(target=model.forward, args=batch)
-            loss = torch.sum(losses)
-            # now do .step as normal
-
-
-if __name__ == '__main__':
-    start = time.time()
-    train()
-    print(f'execution time: {time.time() - start}')
+# from datetime import time
+#
+# import torch
+# from torch.multiprocessing import Pool
+#
+#
+# def train(cpu_parallel=True):
+#     num_cpus = get_num_cpus()  # 112 is the plan for intel's clsuter as an arparse or function
+#     model.shared_memory()  # TODO do we need this?
+#     # add progressbar for data loader to check if multiprocessing is helping
+#     for batch_idx, batch in dataloader:
+#         # do this mellow with pool when cpu_parallel=True
+#         with Pool(num_cpus) as pool:
+#             losses = pool.map(target=model.forward, args=batch)
+#             loss = torch.sum(losses)
+#             # now do .step as normal
+#
+#
+# if __name__ == '__main__':
+#     start = time.time()
+#     train()
+#     print(f'execution time: {time.time() - start}')
 
 # %%
 
@@ -9308,15 +9308,15 @@ if __name__ == '__main__':
 
 # %%
 
-# List of tuples
-students = [('jack', 34, 'Sydeny', 'Australia'),
-            ('Riti', 30, 'Delhi', 'India'),
-            ('Vikas', 31, 'Mumbai', 'India'),
-            ('Neelu', 32, 'Bangalore', 'India'),
-            ('John', 16, 'New York', 'US'),
-            ('Mike', 17, 'las vegas', 'US')]
-# Create DataFrame object from a list of tuples
-dfObj = pd.DataFrame(students, columns=['Name', 'Age', 'City', 'Country'], index=['a', 'b', 'c', 'd', 'e', 'f'])
+# # List of tuples
+# students = [('jack', 34, 'Sydeny', 'Australia'),
+#             ('Riti', 30, 'Delhi', 'India'),
+#             ('Vikas', 31, 'Mumbai', 'India'),
+#             ('Neelu', 32, 'Bangalore', 'India'),
+#             ('John', 16, 'New York', 'US'),
+#             ('Mike', 17, 'las vegas', 'US')]
+# # Create DataFrame object from a list of tuples
+# dfObj = pd.DataFrame(students, columns=['Name', 'Age', 'City', 'Country'], index=['a', 'b', 'c', 'd', 'e', 'f'])
 
 # %%
 
@@ -9604,25 +9604,25 @@ print('Each row i is a context vector weighted with qry i with all keys for 1...
 print('i.e. AV[i,:] = sum^Tx_{t=1} a[i,t] v[:,i]')
 
 #%%
-
-from pathlib import Path
-from types import SimpleNamespace
-from torch.utils.tensorboard import SummaryWriter
-
-import pickle
-
-args = SimpleNamespace(log_dir=Path('~/Desktop/').expanduser())
-tb = import torch
-
-class ResNet(torch.nn.Module):
-    def __init__(self, module):
-        super().__init__()
-        self.module = module
-
-    def forward(self, inputs):
-        return self.module(inputs) + inputsSummaryWriter(log_dir=args.log_dir)  # uncomment for documentation to work
-
-# TypeError: cannot pickle 'tensorflow.python._pywrap_file_io.WritableFile' object
+#
+# from pathlib import Path
+# from types import SimpleNamespace
+# from torch.utils.tensorboard import SummaryWriter
+#
+# import pickle
+#
+# args = SimpleNamespace(log_dir=Path('~/Desktop/').expanduser())
+# tb = import torch
+#
+# class ResNet(torch.nn.Module):
+#     def __init__(self, module):
+#         super().__init__()
+#         self.module = module
+#
+#     def forward(self, inputs):
+#         return self.module(inputs) + inputsSummaryWriter(log_dir=args.log_dir)  # uncomment for documentation to work
+#
+# # TypeError: cannot pickle 'tensorflow.python._pywrap_file_io.WritableFile' object
 # pickle.dump(tb, open(args.log_dir / 'tb_test' ,'w'))
 
 # %%
@@ -9726,4 +9726,9 @@ f'{num:-010}'
 
 # %%
 
-# check the device for c
+# https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html
+# https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+
+src = torch.rand((10, 32, 512))
+tgt = torch.rand((20, 32, 512))
+out = transformer_model(src, tgt)

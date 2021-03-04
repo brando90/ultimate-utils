@@ -160,6 +160,19 @@ class Logger:
             eval_label = 'Val'  # in train split the evaluation of the model should  meta-val set
         else:
             eval_label = 'Test'
+
+        if self.args.target_type == 'regression':
+            tag1 = f'Train loss'
+            tag2 = f'Train_regression accuracy'
+            tag3 = f'{eval_label} loss'
+            tag4 = f'{eval_label}_regression accuracy'
+        elif self.args.target_type == 'classification':
+            tag1 = f'Train loss'
+            tag2 = f'Train accuracy'
+            tag3 = f'{eval_label} loss'
+            tag4 = f'{eval_label}_regression accuracy'
+        else:
+            raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
         
         train_loss_y = self.stats['train']['loss']
         train_acc_y = self.stats['train']['acc']
@@ -181,15 +194,17 @@ class Logger:
         if nb_plots == 1:
             fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
 
-            loss_ax1.plot(episodes_train_x, train_loss_y, label='Train Loss', linestyle='-', marker='o', color='r', linewidth=1)
-            loss_ax1.errorbar(episodes_eval_x, eval_loss_y, yerr=eval_loss_std, label=f'{eval_label} Loss', linestyle='-', marker='o', color='m', linewidth=1, capsize=3)
+
+            loss_ax1.plot(episodes_train_x, train_loss_y, label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
+            loss_ax1.errorbar(episodes_eval_x, eval_loss_y, yerr=eval_loss_std, label=tag2, linestyle='-', marker='o', color='m', linewidth=1, capsize=3)
+
             loss_ax1.legend()
             loss_ax1.set_title(title)
             loss_ax1.set_ylabel(y_axis_loss)
             loss_ax1.grid(grid)
 
-            acc_ax2.plot(episodes_train_x, train_acc_y, label='Train Accuracy', linestyle='-', marker='o', color='b', linewidth=1)
-            acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=f'{eval_label} Accuracy', linestyle='-', marker='o', color='c', linewidth=1, capsize=3)
+            acc_ax2.plot(episodes_train_x, train_acc_y, label=tag3, linestyle='-', marker='o', color='b', linewidth=1)
+            acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=tag4, linestyle='-', marker='o', color='c', linewidth=1, capsize=3)
             acc_ax2.legend()
             acc_ax2.set_xlabel(x_axis)
             acc_ax2.set_ylabel(y_axis_acc)
@@ -202,6 +217,7 @@ class Logger:
             fig.savefig(current_logs_path / 'meta_train_eval.svg' )
             fig.savefig(current_logs_path / 'meta_train_eval.pdf' )
             fig.savefig(current_logs_path / 'meta_train_eval.png' )
+            plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
         elif nb_plots == 2:
             #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True) 
             #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)

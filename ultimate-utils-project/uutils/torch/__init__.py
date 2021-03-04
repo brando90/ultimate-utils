@@ -663,9 +663,17 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> torch.Tens
         3. For the rest specify the dimension. Common use case [B, D] -> [B, 1] for comparing two set of
             activations of size D. In the case when D=1 then we have [B, 1] -> [B, 1]. If you meant x1, x2 [D, 1] to be
             two vectors of size D to be compare feed them with shape [D].
+            This one is also good for computing the NED for two batches of values. e.g. if you have a tensor of size
+            [B, k] and the row is a batch and each entry is the y value for that batch. If a batch is a task then
+            it is computing the NED for that task, which is good because that batch has it's own unique scale that
+            we are trying to normalize and by doing it per task you are normalizing it as you'd expect (i.e. per task).
+
+    Note: you cannot use this to compare two single numbers NED(x,y) is undefined because a single number does not have
+    a variance. Variance[x] = undefined.
 
     https://discuss.pytorch.org/t/how-does-one-compute-the-normalized-euclidean-distance-similarity-in-a-numerically-stable-way-in-a-vectorized-way-in-pytorch/110829
     https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance/498753?noredirect=1#comment937825_498753
+    https://github.com/brando90/Normalized-Euclidean-Distance-and-Similarity
     """
     # to compute ned for two individual vectors e.g to compute a loss (NOT BATCHES/COLLECTIONS of vectorsc)
     if len(x1.size()) == 1:
