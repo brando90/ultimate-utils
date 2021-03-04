@@ -27,6 +27,9 @@ import copy
 
 from pdb import set_trace as st
 
+# from sklearn.linear_model import logistic
+from scipy.stats import logistic
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
@@ -594,6 +597,13 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         r2_f = r2_score(y_true=f, y_pred=y)
         r2_y = r2_score(y_true=y, y_pred=f)
         r2 = 0.5*r2_f + 0.5*r2_y
+    elif r2_type == 'normalized_average_r2s':
+        r2_f = r2_score(y_true=f, y_pred=y)
+        r2_y = r2_score(y_true=y, y_pred=f)
+        r2 = 0.5 * r2_f + 0.5 * r2_y
+        # sig = torch.nn.Sigmoid()
+        # r2 = sig(r2).item()
+        raise ValueError(f'Not implemented {r2_type}')
     elif r2_type == 'mohalanobis':
         # https://en.wikipedia.org/wiki/Mahalanobis_distance
         from scipy.spatial import distance
@@ -617,6 +627,72 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
     else:
         raise ValueError(f'Not implemented: {r2_type}')
     return r2
+
+def normalized_r2_old(y_true, y_pred, normalizer='Sigmoid'):
+    """
+
+    :param normalizer: Sigmoid otherwise use Tanh
+    :param y_true:
+    :param y_pred:
+    :return:
+    """
+    from sklearn.metrics import r2_score
+    from scipy.stats import logistic
+
+    r2 = r2_score(y_true=y_true, y_pred=y_pred)
+    if normalizer == 'Sigmoid':
+        # norm = logistic.cdf
+        # norm_r2 = (1.0/norm(1.0))*norm(r2)
+        norm = logistic.cdf
+        norm_r2 = (1.0/norm(1.0))*norm(r2)
+    else:
+        raise ValueError(f'Normalizer {normalizer} not implemented')
+    return norm_r2
+
+def normalized_r2(y_true, y_pred, normalizer='Sigmoid'):
+    """
+
+    :param normalizer: Sigmoid otherwise use Tanh
+    :param y_true:
+    :param y_pred:
+    :return:
+    """
+    import np
+    from sklearn.metrics import r2_score
+    from scipy.stats import logistic
+
+    r2 = r2_score(y_true=y_true, y_pred=y_pred)
+    if normalizer == 'Sigmoid':
+        if r2 > 0:
+            norm_r2 = 0.5*r2 + 0.5
+        else:
+            norm_r2 = logistic.cdf(r2)
+    elif normalizer == 'tanh':
+        if r2 > 0:
+            norm_r2 = r2
+        else:
+            norm_r2 = np.tanh(r2)
+    else:
+        raise ValueError(f'Normalizer {normalizer} not implemented')
+    return norm_r2
+
+# def normalized_r2_torch(y_true, y_pred, normalizer='Sigmoid'):
+#     """
+#
+#     :param normalizer: Sigmoid otherwise use Tanh
+#     :param y_true:
+#     :param y_pred:
+#     :return:
+#     """
+#     from sklearn.metrics import r2_score
+#     from scipy.stats import logistic
+#
+#     # y_true=qry_y_t.detach().numpy(), y_pred=qry_logits_t.detach().numpy()
+#     sig = torch.nn.Sigmoid() if normalizer == 'Sigmoid' else torch.nn.Tanh()
+#     r2_score = ignite.contrib.metrics.regression.R2Score()
+#     # r2 = r2_score(y_true=y_true, y_pred=y_pred)
+#     norm_r2 = logistic(r2).item()
+#     return norm_r2
 
 # def cca(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2):
 #     # meta_batch [T, N*K, CHW], [T, K, D]
@@ -907,6 +983,24 @@ def get_mean_std_pairs(metric: dict):
         values_in_columns.append(f'{avg:.3f}{sep}{std:.3f}')
     return values_in_columns
 
+###### MISC
+
+# def log_validation(args, meta_learner, outer_opt, meta_val_set, check_point=True):
+#     """ Log the validation loss, acc. Checkpoint the model if that flag is on. """
+#     if check_point:
+#         store_check_point(args, meta_learner)
+#     acc_mean, acc_std, loss_mean, loss_std = meta_eval(args, meta_learner, meta_val_set, iter_limit=args.eval_iters)
+#     if acc_mean > args.best_acc:
+#         args.best_acc, args.best_loss = acc_mean, loss_mean
+#         # args.logger.loginfo(f"***> Stats of Best Acc model: meta-val loss: {args.loss_of_best} +- {loss_std}, meta-val acc: {args.best_acc} +- {acc_std}")
+#         if check_point and acc_mean > 0:  # accs < 0 means its regression not really classificaiton
+#             store_check_point(args, meta_learner, f'ckpt_file_best_loss.pt')
+#     if loss_mean < args.best_loss:
+#         args.best_loss = loss_mean
+#         if check_point:
+#             store_check_point(args, meta_learner, f'ckpt_file_best_loss.pt')
+#     return acc_mean, acc_std, loss_mean, loss_std
+
 
 #######
 
@@ -934,7 +1028,22 @@ def test_tensorify():
     ttt = [tt, tt, tt]
     print(tensorify(ttt))
 
+def test_normalized_r2():
+    # from sklearn.linear_model import logistic
+    from scipy.stats import logistic
+    def norm_r2(r2):
+        return (1.0 / logistic.cdf(1.0)) * logistic.cdf(r2)
+    normalized_r2 = norm_r2
+
+    normalized_r2(-1000)
+    print(f'{normalized_r2(-1000)=}')
+
+    print(f'{normalized_r2(0)}')
+
+    print(f'{normalized_r2(1)}')
+
 if __name__ == '__main__':
-    test_ned()
+    # test_ned()
     # test_tensorify()
+    test_normalized_r2()
     print('Done\a')

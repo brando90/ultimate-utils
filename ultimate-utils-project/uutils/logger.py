@@ -163,14 +163,14 @@ class Logger:
 
         if self.args.target_type == 'regression':
             tag1 = f'Train loss'
-            tag2 = f'Train_regression accuracy'
+            tag2 = f'Train R2'
             tag3 = f'{eval_label} loss'
-            tag4 = f'{eval_label}_regression accuracy'
+            tag4 = f'{eval_label} R2'
         elif self.args.target_type == 'classification':
             tag1 = f'Train loss'
             tag2 = f'Train accuracy'
             tag3 = f'{eval_label} loss'
-            tag4 = f'{eval_label}_regression accuracy'
+            tag4 = f'{eval_label} accuracy'
         else:
             raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
         
