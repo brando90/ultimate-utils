@@ -10,6 +10,28 @@ def log_2_tb(args, tag1, tag2, it, loss, acc):
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc, it)
 
+def log_2_tb_supervisedlearning(args, it, loss, acc_err, split):
+    """
+    :param acc_err:
+    :param loss:
+    :param it:
+    :param args:
+    :param split: train, val, test
+    :return:
+    """
+    tb = args.tb
+    if args.target_type == 'regression':
+        tag1 = f'{split}_loss'
+        tag2 = f'{split}_R2'
+    elif args.target_type == 'classification':
+        tag1 = f'{split}_loss'
+        tag2 = f'{split}_accuracy'
+    else:
+        raise ValueError(f'Error: args.target_type = {args.target_type} not valid.')
+    # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
+    tb.add_scalar(tag1, loss, it)
+    tb.add_scalar(tag2, acc_err, it)
+
 def log_2_tb_metalearning(args, it, loss, acc_err, split):
     """
     :param acc_err:

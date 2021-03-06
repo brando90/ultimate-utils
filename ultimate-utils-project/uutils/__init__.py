@@ -28,6 +28,7 @@ import types
 
 from pandas import DataFrame
 
+from socket import gethostname
 
 def helloworld(arg1="arg1", arg2="arg2"):
     print("helloworld from uutils __init__.py")
@@ -40,6 +41,12 @@ def helloworld2(name="Brando", msg="try to see the params of this function!"):
 def HelloWorld():
     return "HelloWorld in Utils!"
 
+def print_pids():
+    import torch.multiprocessing as mp
+
+    print('running main()')
+    print(f'current process: {mp.current_process()}')
+    print(f'pid: {os.getpid()}')
 
 def parse_args():
     """
@@ -406,6 +413,8 @@ def load_cluster_jobids_to(args):
             args.jobid = int(os.environ["PBS_JOBID"])
         except:
             args.jobid = os.environ["PBS_JOBID"]
+    if 'dgx' in str(gethostname()):
+        args.jobid = f'{args.jobid}_pid_{os.getpid()}'
 
 def pprint_dict(dic):
     pprint_any_dict(dic)

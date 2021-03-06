@@ -9729,6 +9729,74 @@ f'{num:-010}'
 # https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html
 # https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 
-src = torch.rand((10, 32, 512))
-tgt = torch.rand((20, 32, 512))
-out = transformer_model(src, tgt)
+# src = torch.rand((10, 32, 512))
+# tgt = torch.rand((20, 32, 512))
+# out = transformer_model(src, tgt)
+
+# %%
+
+loss = nn.CrossEntropyLoss()
+input = torch.randn(3, 5, requires_grad=True)
+print(input.dtype)
+target = torch.empty(3, dtype=torch.long).random_(5)
+print(target.dtype)
+output = loss(input, target)
+output.backward()
+
+# %%
+
+
+print(spt_logits_t.dtype)
+print(spt_y_t.dtype)
+inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
+
+
+# %%
+
+# view(-1), view(-1, 1)
+# https://stackoverflow.com/questions/50792316/what-does-1-mean-in-pytorch-view
+# the actual value for this dimension will be inferred so that the number of elements in the view matches
+# the original number of elements.
+
+import torch
+
+x = torch.randn(1, 5)
+x = x.view(-1)
+print(x.size())
+
+x = torch.randn(2, 4)
+x = x.view(-1, 8)
+print(x.size())
+
+x = torch.randn(2, 4)
+x = x.view(-1)
+print(x.size())
+
+x = torch.randn(2, 4, 3)
+x = x.view(-1)
+print(x.size())
+
+
+# %%
+
+import torch
+
+x = torch.randn(torch.Size([5, 1028]))
+y = torch.randn(torch.Size([5, 1028]))
+# x = (y == x).view(-1)
+x = (y == x).reshape(-1)
+print(x.size())
+
+
+# %%
+
+# contiguous vs non-contiguous tensors
+# https://discuss.pytorch.org/t/contigious-vs-non-contigious-tensor/30107
+# seems view vs reshape care about
+# note that sometimes `view` doesn't work due
+# to contiguous/non-contiguous memory so call `reshape(...)`
+# instead: https://discuss.pytorch.org/t/contigious-vs-non-contigious-tensor/30107 and see https://stackoverflow.com/questions/49643225/whats-the-difference-between-reshape-and-view-in-pytorch
+# https://stackoverflow.com/questions/48915810/pytorch-contiguous
+# https://stackoverflow.com/questions/54095351/in-pytorch-what-makes-a-tensor-have-non-contiguous-memory
+# https://stackoverflow.com/questions/42479902/how-does-the-view-method-work-in-pytorch
+
