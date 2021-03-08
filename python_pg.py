@@ -9800,3 +9800,106 @@ print(x.size())
 # https://stackoverflow.com/questions/54095351/in-pytorch-what-makes-a-tensor-have-non-contiguous-memory
 # https://stackoverflow.com/questions/42479902/how-does-the-view-method-work-in-pytorch
 
+# %%
+
+# nhttps://pytorch.org/tutorials/beginner/transformer_tutorial.html
+# positional encoder pytorch
+
+# transformer docs
+# where S is the source sequence length,
+# T is the target sequence length, N is the batch size, E is the feature number
+
+import torch
+import torch.nn as nn
+
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)
+
+
+transformer_model = nn.Transformer(nhead=16, num_encoder_layers=12)
+src = torch.rand((10, 32, 512))
+tgt = torch.rand((20, 32, 512))
+out = transformer_model(src, tgt)
+
+# generate_square_subsequent_mask(sz)[SOURCE]
+# Generate a square mask for the sequence.
+# The masked positions are filled with float(‘-inf’).
+# Unmasked positions are filled with float(0.0).
+
+# output = transformer_model(src, tgt, src_mask=src_mask, tgt_mask=tgt_mask)
+
+# Transformer Layers
+# nn.Transformer
+#
+# A transformer model.
+#
+# nn.TransformerEncoder
+#
+# TransformerEncoder is a stack of N encoder layers
+#
+# nn.TransformerDecoder
+#
+# TransformerDecoder is a stack of N decoder layers
+#
+# nn.TransformerEncoderLayer
+#
+# TransformerEncoderLayer is made up of self-attn and feedforward network.
+#
+# nn.TransformerDecoderLayer
+#
+# TransformerDecoderLayer is made up of self-attn, multi-head-attn and feedforward network.
+
+print(out.size())
+
+# %%
+
+# attention
+
+# where S is the source sequence length, T is the target sequence length, N is the batch size, E is the feature number
+# src: (S, N, E)(S,N,E) .
+# tgt: (T, N, E)(T,N,E) .
+# src_mask: (S, S)(S,S) .
+# tgt_mask: (T, T)(T,T)
+
+import torch
+import torch.nn as nn
+
+batch_size = 4
+S = 12
+T = 17
+d_model = 8
+nhead = 1
+transformer_model = nn.Transformer(d_model=d_model, nhead=nhead, num_decoder_layers=6, num_encoder_layers=6)
+src = torch.rand((S, batch_size, d_model))
+tgt = torch.rand((T, batch_size, d_model))
+out = transformer_model(src, tgt)
+
+print(out.size())
+
+mha = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead)
+qry = src
+key = src
+value = src
+out = mha(qry, key, value)
+print(len(out))
+# Shapes for outputs:
+# attn_output: (L, N, E) where L is the target sequence length, N is the batch size, E is the embedding dimension.
+# attn_output_weights: (N, L, S) where N is the batch size,
+# L is the target sequence length, S is the source sequence length.
+print(out[0].size())
+print(out[1].size())
