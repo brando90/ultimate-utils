@@ -8,6 +8,7 @@ utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programm
 '''
 from datetime import datetime
 
+import higher
 import torch
 import torch.nn as nn
 
@@ -29,6 +30,7 @@ from pdb import set_trace as st
 
 # from sklearn.linear_model import logistic
 from scipy.stats import logistic
+from torch.multiprocessing import Pool
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -510,7 +512,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
         pointwise_diff = lambda x: abs(f1(torch.tensor([x])) - f2(torch.tensor([x]))) ** p
     else:
         pointwise_diff = lambda x: abs(f1(x) - f2(x)) ** p
-    norm, abs_err = integrate.quad(pointwise_diff, lb, ub)
+    norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
     return norm**(1/p), abs_err
 
 def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_dist_type='pwcca'):
@@ -985,6 +987,164 @@ def get_mean_std_pairs(metric: dict):
     for avg, std in paired:
         values_in_columns.append(f'{avg:.3f}{sep}{std:.3f}')
     return values_in_columns
+
+# -- similarity comparisons for MAML
+
+def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_names, iter_tasks=None):
+    """
+    :return: sims = dictionary of metrics of tensors
+    sims = {
+        (cxa) cca, cka = tensor([I, L]),
+        (l2) nes, cosine = tensor([I, L, K_eval])
+        nes_output = tensor([I])
+        }
+
+    Important note:
+    -When a Tensor is sent to another process, the Tensor data is shared. If torch.Tensor.grad is not None,
+        it is also shared.
+    - After a Tensor without a torch.Tensor.grad field is sent to the other process,
+        it creates a standard process-specific .grad Tensor that is not automatically shared across all processes,
+        unlike how the Tensor’s data has been shared.
+        - this is good! that way when different tasks are being adapted with MAML, their gradients don't "crash"
+    - above from docs on note box: https://pytorch.org/docs/stable/notes/multiprocessing.html
+
+    Note:
+        - you probably do not have to call share_memory() but it's probably safe to do so. Since docs say the following:
+            Moves the underlying storage to shared memory. This is a no-op if the underlying storage is already in
+            shared memory and for CUDA tensors. Tensors in shared memory cannot be resized.
+            https://pytorch.org/docs/stable/tensors.html#torch.Tensor.share_memory_
+
+    To increase file descriptors
+        ulimit -Sn unlimited
+    """
+    # to have shared memory tensors
+    self.base_model.share_memory()
+    # this is needed so that each process has access to the layer names needed to compute sims, a bit ugly oh well.
+    self.layer_names = layer_names
+
+    # compute similarities in parallel
+    # spt_x.share_memory_(), spt_y.share_memory_(), qry_x.share_memory_(), qry_y.share_memory_()
+    meta_batch_size = spt_x.size(0)
+    iter_tasks = meta_batch_size if iter_tasks is None else min(iter_tasks, meta_batch_size)
+    batch_of_tasks = [(spt_x[t], spt_y[t], qry_x[t], qry_y[t]) for t in range(iter_tasks)]
+
+    # num_procs = iter_tasks
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    # num_procs = 8
+    num_procs = torch.multiprocessing.cpu_count() - 2
+    print(f'num_procs in pool: {num_procs}')
+    with Pool(num_procs) as pool:
+        sims_from_pool = pool.map(self.compute_sim_for_current_task, batch_of_tasks)
+
+    # sims is an T by L lists of lists, i.e. each row corresponds to similarities for a specific task for all layers
+    sims = {'cca': [], 'cka': [], 'nes': [], 'cosine': [], 'nes_output': [], 'query_loss': []}
+    for similiarities_single_dict in sims_from_pool:  # for each result from the multiprocessing result, place in the right sims place
+        for metric, s in similiarities_single_dict.items():
+            sims[metric].append(s)
+
+    # convert everything to torch tensors
+    # sims = {k: tensorify(v) for k, v in sims.items()}
+    similarities = {}
+    for k, v in sims.items():
+        print(f'{k}')
+        similarities[k] = tensorify(v)
+    return similarities
+
+def compute_sim_for_current_task(self, task):
+    # print(f'start: {torch.multiprocessing.current_process()}')
+    # unpack args pased via checking global variables, oh no!
+    layer_names = self.layer_names
+    inner_opt = self.inner_opt
+    # unpack args
+    spt_x_t, spt_y_t, qry_x_t, qry_y_t = task
+    # compute sims
+    with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
+                              track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
+        diffopt.fo = self.fo
+        for i_inner in range(self.args.nb_inner_train_steps):
+            fmodel.train()
+            # base/child model forward pass
+            spt_logits_t = fmodel(spt_x_t)
+            inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
+            # inner-opt update
+            diffopt.step(inner_loss)
+
+        # get similarities cca, cka, nes, cosine and nes_output
+        fmodel.eval()
+        self.base_model.eval()
+
+        # get CCA & CKA per layer (T by 1 by L)
+        x = qry_x_t
+        if torch.cuda.is_available():
+            x = x.cuda()
+        cca = self.get_cxa_similarities_per_layer(self.base_model, fmodel, x, layer_names,
+                                                  sim_type='pwcca')  # 1 by T
+        cka = self.get_cxa_similarities_per_layer(self.base_model, fmodel, x, layer_names,
+                                                  sim_type='lincka')  # 1 by T
+
+        # get l2 sims per layer (T by L by k_eval)
+        nes = self.get_l2_similarities_per_layer(self.base_model, fmodel, qry_x_t, layer_names,
+                                                 sim_type='nes_torch')
+        cosine = self.get_l2_similarities_per_layer(self.base_model, fmodel, qry_x_t, layer_names,
+                                                    sim_type='cosine_torch')
+
+        # (T by 1)
+        y = self.base_model(qry_x_t)
+        y_adapt = fmodel(qry_x_t)
+        # if not torch.cuda.is_available():
+        #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
+        # dim=0 because we have single numbers and we are taking the NES in the batch direction
+        nes_output = torch.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+
+        query_loss = self.args.criterion(y, y_adapt).item()
+    # print(f'done: {torch.multiprocessing.current_process()}')
+    # sims = [cca, cka, nes, cosine, nes_output, query_loss]
+    sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
+    # sims = [sim.detach() for sim in sims]
+    sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
+    return sims
+
+# -- distance comparisons for SL
+
+def get_distance_of_inits(args, batch, f1, f2):
+    layer_names = args.layer_names
+    batch_x, batch_y = batch
+    # get CCA & CKA per layer (T by 1 by L)
+    cca = get_cxa_distances_per_layer(f1, f2, batch_x, layer_names, dist_type='pwcca')  # 1 by T
+    cka = get_cxa_distances_per_layer(f1, f1, batch_x, layer_names, dist_type='lincka')  # 1 by T
+
+    # get l2 sims per layer (T by L by k_eval)
+    # nes = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
+    #                                          sim_type='nes_torch')
+    # cosine = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
+    #                                             sim_type='cosine_torch')
+    #
+    # # (T by 1)
+    # y = f1(qry_x_t)
+    # y_adapt = fmodel(qry_x_t)
+    # # if not torch.cuda.is_available():
+    # #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
+    # # dim=0 because we have single numbers and we are taking the NES in the batch direction
+    # nes_output = torch.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+    #
+    # query_loss = self.args.criterion(y, y_adapt).item()
+    # print(f'done: {torch.multiprocessing.current_process()}')
+    # sims = [cca, cka, nes, cosine, nes_output, query_loss]
+    sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
+    # sims = [sim.detach() for sim in sims]
+    sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
+    return sims
+
+def get_cxa_distances_per_layer(mdl1, mdl2, X, layer_names, dist_type='pwcca'):
+    # get [..., s_l, ...] cca sim per layer (for this data set)
+    from uutils.torch import cxa_sim
+
+    sims_per_layer = []
+    for layer_name in layer_names:
+        # sim = cxa_sim(mdl1, mdl2, X, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
+        sim = cxa_dist(mdl1, mdl2, X, layer_name, iters=1, cxa_sim_type=sim_type)
+        sims_per_layer.append(sim)
+    return sims_per_layer  # [..., s_l, ...]_l
 
 ###### MISC
 

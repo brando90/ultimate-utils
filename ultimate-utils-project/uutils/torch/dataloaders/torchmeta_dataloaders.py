@@ -7,6 +7,41 @@ import torchvision.transforms as transforms
 
 from pathlib import Path
 
+def get_miniimagenet_dataloaders(args):
+    args.trainin_with_epochs = False
+    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
+    args.criterion = nn.CrossEntropyLoss()
+    # args.image_size = 84  # do we need this?
+    from torchmeta.datasets.helpers import miniimagenet
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    data_augmentation_transforms = transforms.Compose([
+        transforms.RandomResizedCrop(84),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(
+            brightness=0.4,
+            contrast=0.4,
+            saturation=0.4,
+            hue=0.2),
+        transforms.ToTensor(),
+        normalize])
+    dataset_train = miniimagenet(args.data_path,
+                                 transform=data_augmentation_transforms,
+                                 ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                                 meta_split='train', download=True)
+    dataset_val = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                               meta_split='val', download=True)
+    dataset_test = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                                meta_split='test', download=True)
+
+    meta_train_dataloader = BatchMetaDataLoader(dataset_train, batch_size=args.meta_batch_size_train,
+                                                num_workers=args.num_workers)
+    meta_val_dataloader = BatchMetaDataLoader(dataset_val, batch_size=args.meta_batch_size_eval,
+                                              num_workers=args.num_workers)
+    meta_test_dataloader = BatchMetaDataLoader(dataset_test, batch_size=args.meta_batch_size_eval,
+                                               num_workers=args.num_workers)
+    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+
+
 def get_transforms_mini_imagenet(args):
     ## get transforms for images
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
