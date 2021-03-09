@@ -1,5 +1,19 @@
 # Ultimate-utils
 
+## Citation
+If you use this implementation consider citing us:
+
+```
+@software{brando2021ultimateutils,
+    author={Brando Miranda},
+    title={The ultimate utils library for Machine Learning and Artificial Intelligence},
+    url={https://github.com/brando90/ultimate-utils},
+    year={2021}
+}
+```
+
+## Ultimate-utils
+
 Hi. 
 I am a collection of useful code that Brando has collected through the years that has been useful accross his projects.
 
