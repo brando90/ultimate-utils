@@ -48,6 +48,17 @@ def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
         w.requires_grad = bool
 
+
+def check_mdl_in_single_gpu(mdl):
+    """
+    note this only checks the first param and from that infers the rest is in gpu.
+
+    https://discuss.pytorch.org/t/how-to-check-if-model-is-on-cuda/180
+    :return:
+    """
+    device = next(mdl.parameters()).device
+    return device
+
 def create_detached_deep_copy_old(mdl):
     mdl_new = copy.deepcopy(mdl)
     detached_params = mdl.state_dict()
@@ -573,6 +584,12 @@ def ned(f, y):
     """
     ned = ( 0.5*np.var(f - y) / (np.var(f) + np.var(y)) )**0.5
     return ned
+
+def r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor):
+    """ returns the accuracy from torch tensors """
+    from sklearn.metrics import r2_score
+    acc = r2_score(y_true=y_true.detach().numpy(), y_pred=y_pred.detach().numpy())
+    return acc
 
 def r2_symmetric(f, y, r2_type='explained_variance'):
     """

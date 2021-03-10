@@ -9903,3 +9903,23 @@ print(len(out))
 # L is the target sequence length, S is the source sequence length.
 print(out[0].size())
 print(out[1].size())
+
+# %%
+
+# https://stackoverflow.com/questions/52981833/sklearn-python-log-loss-for-logistic-regression-evaluation-raised-an-error/66569833#66569833
+
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+
+X, y = load_iris(return_X_y=True)
+clf = LogisticRegression(random_state=0).fit(X, y)
+clf.predict(X[:2, :])
+
+clf.predict_proba(X[:2, :])
+
+
+clf.score(X, y)
+
+y_probs = cls.predict_proba(X)
+qry_loss_t = metrics.log_loss(y, y_probs)
