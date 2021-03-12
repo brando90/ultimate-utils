@@ -9923,3 +9923,77 @@ clf.score(X, y)
 
 y_probs = cls.predict_proba(X)
 qry_loss_t = metrics.log_loss(y, y_probs)
+
+#%%
+
+# refs:
+# https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch
+# https://discuss.pytorch.org/t/how-to-calculate-accuracy-in-pytorch/80476/5
+# https://discuss.pytorch.org/t/how-does-one-get-the-predicted-classification-label-from-a-pytorch-model/91649
+
+# how to get the class prediction
+
+batch_size = 4
+n_classes = 2
+y_logits = torch.randn(batch_size, n_classes)  # usually the scores
+print('scores (logits) for each class for each example in batch (how likely a class is unnormalized)')
+print(y_logits)
+print('the max over entire tensor (not usually what we want)')
+print(y_logits.max())
+print('the max over the n_classes dim. For each example in batch returns: '
+      '1) the highest score for each class (most likely class)\n, and '
+      '2) the idx (=class) with that highest score')
+print(y_logits.max(1))
+
+print('-- calculate accuracy --')
+
+# computing accuracy in pytorch
+"""
+random.choice(a, size=None, replace=True, p=None)
+Generates a random sample from a given 1-D array
+
+for pytorch random choice https://stackoverflow.com/questions/59461811/random-choice-with-pytorch
+"""
+
+import torch
+import torch.nn as nn
+
+in_features = 1
+n_classes = 10
+batch_size = n_classes
+
+mdl = nn.Linear(in_features=in_features, out_features=n_classes)
+
+x = torch.randn(batch_size, in_features)
+y_logits = mdl(x)  # scores/logits for each example in batch [B, n_classes]
+# get for each example in batch the label/idx most likely according to score
+# y_max_idx[b] = y_pred[b] = argmax_{idx \in [n_classes]} y_logit[idx]
+y_max_scores, y_max_idx = y_logits.max(dim=1)
+y_pred = y_max_idx  # predictions are really the inx \in [n_classes] with the highest scores
+y = torch.randint(high=n_classes, size=(batch_size,))
+# accuracy for 1 batch
+assert (y.size(0) == batch_size)
+acc = (y == y_pred).sum() / y.size(0)
+acc = acc.item()
+
+print(y)
+print(y_pred)
+print(acc)
+
+# %%
+
+# topk accuracy
+
+# torch.topk = Returns the k largest elements of the given input tensor along a given dimension.
+
+import torch
+
+batch_size = 2
+n_classes = 3
+y_logits = torch.randn(batch_size, n_classes)
+print('- all values in tensor x')
+print(y_logits)
+print('\n- for each example in batch get top 2 most likely values & classes/idx (since dim=1 is the dim for classes)'
+      '\n1) first are the actual top 2 scores & 2) then the indicies/classes corresponding those largest scores')
+print(y_logits.topk(k=2, dim=1))
+

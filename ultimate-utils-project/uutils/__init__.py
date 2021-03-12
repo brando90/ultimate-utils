@@ -30,6 +30,9 @@ from pandas import DataFrame
 
 from socket import gethostname
 
+def hello():
+    print('hello from uutitls __init__.pyt')
+
 def helloworld(arg1="arg1", arg2="arg2"):
     print("helloworld from uutils __init__.py")
 
