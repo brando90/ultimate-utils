@@ -211,16 +211,28 @@ def calc_accuracy(mdl: torch.nn.Module, X: torch.Tensor, Y: torch.Tensor) -> flo
     """
     # get the scores for each class (or logits)
     y_logits = mdl(X)  # unnormalized probs
-    # return the values & indices with the largest value in the dimension where the scores for each class is
+    # -- return the values & indices with the largest value in the dimension where the scores for each class is
     # get the scores with largest values & their corresponding idx (so the class that is most likely)
-    max_scores, max_idx_class = mdl(X).max(dim=1)  # [B, n_classes] -> [B], # get values & indices with the max vals in the dim with scores for each class/label
+    max_scores, max_idx_class = y_logits.max(dim=1)  # [B, n_classes] -> [B], # get values & indices with the max vals in the dim with scores for each class/label
     # usually 0th coordinate is batch size
     n = X.size(0)
-    assert( n == max_idx_class.size(0))
-    # calulate acc (note .item() to do float division)
-    acc = (max_idx_class == Y).sum().item() / n
-    return acc
+    assert(n == max_idx_class.size(0))
+    # -- calulate acc (note .item() to do float division)
+    acc = (max_idx_class == Y).sum() / n
+    return acc.item()
 
+def calc_accuracy_from_logits(y_logits: torch.Tensor, y: torch.Tensor) -> float:
+    """
+    Returns accuracy between tensors
+    :param y_logits:
+    :param y:
+    :return:
+    """
+    max_logits, max_indices_classes = y_logits.max(dim=1)  # [B, C] -> [B]
+    n_examples = y.size(0)  # usually baatch_size
+    assert(n_examples == max_indices_classes.size(0))
+    acc = (max_indices_classes == y).sum() / n_examples
+    return acc.item()
 
 def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torch.FloatTensor]:
     """
@@ -315,7 +327,7 @@ def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List
         # for each example we compare if the model's best prediction matches the truth. If yes we get an entry of 1.
         # if the k'th top answer of the model matches the truth we get 1.
         # Note: this for any example in batch we can only ever get 1 match (so we never overestimate accuracy <1)
-        target_reshaped = target.view(1, -1).expand_as(y_pred)  # [B] -> [B, 1] -> [B, maxk]
+        target_reshaped = target.view(-1, 1).expand_as(y_pred)  # [B] -> [B, 1] -> [B, maxk]
         # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
         correct = (y_pred == target_reshaped)  # [B, maxk] were for each example we know which topk prediction matched truth
 
@@ -386,13 +398,13 @@ def add_inner_train_stats(diffopt, *args, **kwargs):
 ####
 
 def save_ckpt_meta_learning(args, meta_learner, debug=False):
-    ## https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
-    ## make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
+    # https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
+    # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
     path_to_ckpt = args.logger.current_logs_path
     path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
 
-    ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
+    # Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
     db = {} # database dict
     tb = args.tb
     args.tb = None
@@ -423,7 +435,7 @@ def resume_ckpt_meta_learning(args):
         args_recovered = db['args']
         meta_learner = db['meta_learner']
         args_recovered.base_model = meta_learner.base_model
-        ## combine new args with old args
+        # combine new args with old args
         args.base_model = "no child mdl in args see meta_learner"
         args = args_recovered
         return args, meta_learner
@@ -433,7 +445,7 @@ def test_ckpt_meta_learning(args, meta_learner, verbose=False):
     path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
 
-    ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
+    # Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
     db = {} # database dict
     args.base_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
     db['args'] = args # note this obj has the last episode/outer_i we ran
@@ -1343,7 +1355,7 @@ def test_normalized_r2():
 
     print(f'{normalized_r2(1)}')
 
-def test_topk_accuracy():
+def test_topk_accuracy_and_accuracy():
     import torch
     import torch.nn as nn
 
@@ -1357,11 +1369,18 @@ def test_topk_accuracy():
     y_logits = mdl(x)
     y = torch.randint(high=n_classes, size=(batch_size,))
 
-    accuracy(output=y_logits, target=y, topk=(1, 2, 5))
+    acc_top1, acc_top2, acc_top5 = accuracy(output=y_logits, target=y, topk=(1, 2, 5))
+    acc_top1_, acc_top2_, acc_top5_ = topk_accuracy(output=y_logits, target=y, topk=(1, 2, 5))
+    assert(acc_top5 == acc_top5_)
+    assert(acc_top1 == acc_top1_)
+    acc1 = calc_accuracy(mdl, x, y)
+    acc1_ = calc_accuracy_from_logits(y_logits, y)
+    assert(acc1 == acc1_)
+    assert(acc1_ == acc_top1)
 
 if __name__ == '__main__':
     # test_ned()
     # test_tensorify()
     # test_normalized_r2()
-    test_topk_accuracy()
+    test_topk_accuracy_and_accuracy()
     print('Done\a')

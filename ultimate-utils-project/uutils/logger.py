@@ -67,26 +67,59 @@ class Logger:
     def reset_eval_stats(self):
         self.stats['eval'] = {'loss': [], 'acc': []}
 
-    def batch_info(self, args, **kwargs):
-        phase = kwargs['phase']
-        if phase == 'train':
-            self.stats[phase]['loss'].append(float(kwargs['loss']))
-            self.stats[phase]['acc'].append(float(kwargs['acc']))
-        elif phase == 'eval':
-            self.stats[phase]['loss'].append(float(kwargs['loss']))
-            self.stats[phase]['acc'].append(float(kwargs['acc']))
-            # never log eval, only at the end of the whole eval set of episodes & this gets reset
-        elif phase == 'eval_stats':
-            loss_mean, loss_std = np.mean(self.stats['eval']['loss']), np.std(self.stats['eval']['loss'])
-            acc_mean, acc_std = np.mean(self.stats['eval']['acc']), np.std(self.stats['eval']['acc'])
-            self.stats['eval_stats']['mean']['loss'].append(loss_mean)
-            self.stats['eval_stats']['mean']['acc'].append(acc_mean)
-            self.stats['eval_stats']['std']['loss'].append(loss_std)
-            self.stats['eval_stats']['std']['acc'].append(acc_std)
+    def log_batch_train_info(self, loss, acc):
+        """
+
+        Note: self.stats[train][loss/acc][it] is the loss/acc for the train phase at iteration it.
+        Note: for each training iteration you log time. For each epoch you log at the end of each epoch.
+        :param loss:
+        :param acc:
+        :return:
+        """
+        phase = 'train'
+        self.stats[phase]['loss'].append(float(loss))
+        self.stats[phase]['acc'].append(float(acc))
+
+    def log_batch_eval_info(self, loss, acc):
+        """
+        Intended usage is to collect a bunch of evaluations on different batches and use this
+        function to collect them. Then at the end (once you have all the evals values you want), you
+        call evaluate_logged_eval_stats. Then the eval_stats collect a list mean, std for the
+        eval performance of the model at each time .evaluate_logged_eval_stats is called
+        (usually at the end of an epoch or a iteration).
+
+        Note: self.stats[eval][loss/acc][it] is the loss/acc for the eval phase at iteration it.
+        Notice that an iteration here does not correspond to training.
+        Note:
+        :param loss:
+        :param acc:
+        :return:
+        """
+        phase = 'eval'
+        self.stats[phase]['loss'].append(float(loss))
+        self.stats[phase]['acc'].append(float(acc))
+
+    def evaluate_logged_eval_stats_and_reset(self, reset_stats=True):
+        """
+        Evaluates the stats (mean & std) of the collected eval losses & accs (val or test).
+        It also resets the current list of logged eval stats.
+        This is because this function is meant to be ran at the end of 1 epoch of evaluation.
+        Example usage: collect a bunch of eval errors with log_eval_batch_info after the
+        required number of epochs evaluate the errors.
+
+        Same as old 'eval_stats' function with ._log_batch_info.
+
+        :return:
+        """
+        loss_mean, loss_std = np.mean(self.stats['eval']['loss']), np.std(self.stats['eval']['loss'])
+        acc_mean, acc_std = np.mean(self.stats['eval']['acc']), np.std(self.stats['eval']['acc'])
+        self.stats['eval_stats']['mean']['loss'].append(loss_mean)
+        self.stats['eval_stats']['mean']['acc'].append(acc_mean)
+        self.stats['eval_stats']['std']['loss'].append(loss_std)
+        self.stats['eval_stats']['std']['acc'].append(acc_std)
+        if reset_stats:
             self.reset_eval_stats()
-            return acc_mean, acc_std, loss_mean, loss_std
-        else:
-            raise ValueError("phase {} not supported".format(kwargs['phase']))
+        return acc_mean, acc_std, loss_mean, loss_std
 
     def logdebug(self, msg, *args, **kwargs):
         self.logger.debug(msg)
@@ -123,7 +156,7 @@ class Logger:
         except:
             pass
 
-    def save_stats(self, current_logs_path=None):
+    def save_stats_to_json_file(self, current_logs_path=None):
         current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
         torch.save(self.stats, current_logs_path / 'experiment_stats')
         with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
