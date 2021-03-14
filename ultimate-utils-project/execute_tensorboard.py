@@ -1,12 +1,12 @@
 """
-path_cluster.replace('/home/miranda9/', '~')
+Replaces te prefix with the home path in the cluster with the local so that running tensorboard is seammibgless.
 
-python -c "import sys; sys.argv[0].replace('/home/miranda9/', '~')"
-
+sh /Users/brando/ultimate-utils/run_tb.sh /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
+tbb /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
 """
 
-import os
-import subprocess
+# import os
+# import subprocess
 from copy import deepcopy
 
 from pathlib import Path
@@ -15,6 +15,13 @@ import sys
 
 # print(sys.argv)
 
+def get_path_if_always_same_prefix():
+    """
+
+    Print statement means it outputs to stdout probably so that it can be set in a variable.
+    @return:
+    """
+    print(Path(sys.argv[1].replace('/home/miranda9/', '~/')))
 
 def cluster_path_2_local_path(path_cluster, target_dir='data'):
     """
@@ -61,11 +68,15 @@ def execute_tensorboard():
 
 
 def give_path_to_local_to_bash():
+    """
+
+    @return:
+    """
+    # second argument sys 0th is the 0th argument to python which is the name of this script
     path_cluster = sys.argv[1]
-    # path_cluster = sys.argv[0]
+    # remove the home path by detecting "data" and then get the path to tb locally
     local_dir = cluster_path_2_local_path(path_cluster)
     local_dir = str(local_dir)
-    # sys.stderr.write(local_dir)
     print(local_dir)
 
 # --  test
