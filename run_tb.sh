@@ -3,6 +3,7 @@
 # Tests
 # sh /Users/brando/ultimate-utils/run_tb.sh /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
 # tbb /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
+# alias tbb='sh /Users/brando/ultimate-utils/run_tb.sh'
 # local_dir=$(python -c "import sys; print('ho' + str(sys.argv[1]))" $1)
 
 # -- transform the remote tb path to local path

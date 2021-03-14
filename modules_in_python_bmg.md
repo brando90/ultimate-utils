@@ -1,51 +1,9 @@
-# Ultimate-utils
-
-## Citation
-If you use this implementation consider citing us:
-
-```
-@software{brando2021ultimateutils,
-    author={Brando Miranda},
-    title={The ultimate utils library for Machine Learning and Artificial Intelligence},
-    url={https://github.com/brando90/ultimate-utils},
-    year={2021}
-}
-```
-
-## Installing Ultimate-utils
-
-I am a collection of useful code that Brando has collected through the years that has been useful accross his projects.
-
-To use me get a copy of this repo (I recommend to fork it) clone it as usual in your workspace. 
-Then install it in development mode (
-google it if you don't know what it is or see the `modules_in_python.md`) with:
-
-```
-conda develop ~/ultimate-utils/ultimate-utils-project
-```
-
-or (pip command not tested)
-
-```
-pip install -e ~/ultimate-utils/ultimate-utils-project
-```
-
-depending on which package manager you are using.
-I usually use conda.
-
-## Contributing
-
-Feel free to push code with pull request.
-Please include at least 1 self-contained test before pushing that works.
-
 ### How modules are imported in a python project (not package/modules but projects)
 
 First, what is the difference between package and project? I am not sure if there is a rigurous formal definition but from reading tutorials:
 
 - project: the folder where `setup.py` is the rest of the packages & modules are.
-- module: the namespace with collection of values (e.g. functions, constants, classes, etc). 
-  Usually a single file `module.py` or a folder with a `__init__.py` 
-  (usually called a package & it can have other modules in it).
+- module: the namespace with collection of values (e.g. functions, constants, classes, etc). Usually a single file `module.py` or a folder with a `__init__.py` (usually called a package & it can have other modules in it).
 - package: a module (single namespace) with other modules & usually other packages.
 - python file vs module: no difference but TODO in more detail.
 
@@ -70,7 +28,7 @@ packaging_project/
 
 "packaging_project" is the name of the project name so in the `setup` function in `setup.py` I usually name the named argument name with the project name (TODO what that variable does in more depth).
 
-Now in the root folder of the project (in thius case in `packaging_project`) we put the `setup.py` python file:
+Now in the root folder of the project (in this case in `packaging_project`) we put the `setup.py` python file:
 
 ```
 from setuptools import setup

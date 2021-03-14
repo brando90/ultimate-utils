@@ -3,7 +3,7 @@ Utils class with useful helper functions
 
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 """
-
+import json
 import time
 
 import math
@@ -395,30 +395,6 @@ def get_cluster_jobids_old(args):
         except:
             args.jobid = os.environ["PBS_JOBID"]
 
-def load_cluster_jobids_to(args):
-    import os
-
-    # Get Get job number of cluster
-    args.jobid = -1
-    args.slurm_jobid, args.slurm_array_task_id = -1, -1
-    if "SLURM_JOBID" in os.environ:
-        args.slurm_jobid = int(os.environ["SLURM_JOBID"])
-        args.jobid = args.slurm_jobid
-    if "SLURM_ARRAY_TASK_ID" in os.environ:
-        args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
-    args.condor_jobid = -1
-    if "MY_CONDOR_JOB_ID" in os.environ:
-        args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
-        args.jobid = args.condor_jobid
-    if "PBS_JOBID" in os.environ:
-        # args.num_workers = 8
-        try:
-            args.jobid = int(os.environ["PBS_JOBID"])
-        except:
-            args.jobid = os.environ["PBS_JOBID"]
-    if 'dgx' in str(gethostname()):
-        args.jobid = f'{args.jobid}_pid_{os.getpid()}'
-
 def pprint_dict(dic):
     pprint_any_dict(dic)
 
@@ -540,3 +516,36 @@ if __name__ == "__main__":
     # )
     # print(f"EMAIL SENT\a")
     print("Done \n\a")
+
+
+def save_opts(opts):
+    # save opts that was used for experiment
+    with open(opts.log_root / 'opts.json', 'w') as argsfile:
+        # in case some things can't be saved to json e.g. tb object, torch.Tensors, etc.
+        args_data = {key: str(value) for key, value in opts.__dict__.items()}
+        json.dump(args_data, argsfile, indent=4, sort_keys=True)
+
+
+def load_cluster_jobids_to(args):
+    import os
+
+    # Get Get job number of cluster
+    args.jobid = -1
+    args.slurm_jobid, args.slurm_array_task_id = -1, -1
+    args.condor_jobid = -1
+    if "SLURM_JOBID" in os.environ:
+        args.slurm_jobid = int(os.environ["SLURM_JOBID"])
+        args.jobid = args.slurm_jobid
+    if "SLURM_ARRAY_TASK_ID" in os.environ:
+        args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+    if "MY_CONDOR_JOB_ID" in os.environ:
+        args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
+        args.jobid = args.condor_jobid
+    if "PBS_JOBID" in os.environ:
+        # args.num_workers = 8
+        try:
+            args.jobid = int(os.environ["PBS_JOBID"])
+        except:
+            args.jobid = os.environ["PBS_JOBID"]
+    if 'dgx' in str(gethostname()):
+        args.jobid = f'{args.jobid}_pid_{os.getpid()}'
