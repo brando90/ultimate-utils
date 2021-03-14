@@ -25,44 +25,46 @@ class Logger:
         Arguments:
             args {[type]} -- [description]
         """
-        #super()
+        # super()
         self.args = args
         self.split = args.split
         self.current_logs_path = args.current_logs_path
-        
+
         # logger = logging.getLogger(__name__) # loggers are created in hierarchy using dot notation, thus __name__ ensures no name collisions.
         logger = logging.getLogger()
         level = logging.INFO if args.logging else logging.CRITICAL
-        logger.setLevel(level) # note: CAREFUL with not setting it or logging.UNSET: https://stackoverflow.com/questions/21494468/about-notset-in-python-logging/21494716#21494716
+        logger.setLevel(
+            level)  # note: CAREFUL with not setting it or logging.UNSET: https://stackoverflow.com/questions/21494468/about-notset-in-python-logging/21494716#21494716
 
         ## log to my_stdout.log file
         file_handler = logging.FileHandler(filename=args.my_stdout_filepath)
-        #file_handler.setLevel(logging.INFO) # not setting it means it inherits the logger. It will log everything from DEBUG upwards in severity to this handler.
-        log_format = "{name}:{levelname}:{asctime}:{filename}:{funcName}:lineno {lineno}:->   {message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+        # file_handler.setLevel(logging.INFO) # not setting it means it inherits the logger. It will log everything from DEBUG upwards in severity to this handler.
+        log_format = "{name}:{levelname}:{asctime}:{filename}:{funcName}:lineno {lineno}:->   {message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
         formatter = logging.Formatter(fmt=log_format, style='{')
         file_handler.setFormatter(fmt=formatter)
 
         ## log to stdout/screen
-        stdout_stream_handler = logging.StreamHandler(stream=sys.stdout) # default stderr, though not sure the advatages of logging to one or the other
-        #stdout_stream_handler.setLevel(logging.INFO) # Note: having different set levels means that we can route using a threshold what gets logged to this handler
-        log_format = "{name}:{levelname}:{filename}:{funcName}:lineno {lineno}:->   {message}" # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
+        stdout_stream_handler = logging.StreamHandler(
+            stream=sys.stdout)  # default stderr, though not sure the advatages of logging to one or the other
+        # stdout_stream_handler.setLevel(logging.INFO) # Note: having different set levels means that we can route using a threshold what gets logged to this handler
+        log_format = "{name}:{levelname}:{filename}:{funcName}:lineno {lineno}:->   {message}"  # see for logrecord attributes https://docs.python.org/3/library/logging.html#logrecord-attributes
         formatter = logging.Formatter(fmt=log_format, style='{')
         stdout_stream_handler.setFormatter(fmt=formatter)
 
-        logger.addHandler(hdlr=file_handler) # add this file handler to top the logger
-        logger.addHandler(hdlr=stdout_stream_handler) # add this file handler to the top logger
-        
+        logger.addHandler(hdlr=file_handler)  # add this file handler to top the logger
+        logger.addHandler(hdlr=stdout_stream_handler)  # add this file handler to the top logger
+
         self.logger = logger
-        self.reset_stats()
+        self.reset_stats()  # to intialize a clean logger
 
     def reset_stats(self):
-        self.stats = {  'train': {'loss': [], 'acc': []},
-                        'eval': {'loss': [], 'acc': []},
-                        'eval_stats': {
-                            'mean': {'loss': [], 'acc': []},
-                            'std': {'loss': [], 'acc': []}
+        self.stats = {'train': {'loss': [], 'acc': []},
+                      'eval': {'loss': [], 'acc': []},
+                      'eval_stats': {
+                          'mean': {'loss': [], 'acc': []},
+                          'std': {'loss': [], 'acc': []}
                         }
-                    }
+                      }
 
     def reset_eval_stats(self):
         self.stats['eval'] = {'loss': [], 'acc': []}
@@ -99,7 +101,7 @@ class Logger:
         self.stats[phase]['loss'].append(float(loss))
         self.stats[phase]['acc'].append(float(acc))
 
-    def evaluate_logged_eval_stats_and_reset(self, reset_stats=True):
+    def evaluate_logged_eval_stats_and_reset(self, reset_eval_stats=True):
         """
         Evaluates the stats (mean & std) of the collected eval losses & accs (val or test).
         It also resets the current list of logged eval stats.
@@ -117,7 +119,7 @@ class Logger:
         self.stats['eval_stats']['mean']['acc'].append(acc_mean)
         self.stats['eval_stats']['std']['loss'].append(loss_std)
         self.stats['eval_stats']['std']['acc'].append(acc_std)
-        if reset_stats:
+        if reset_eval_stats:
             self.reset_eval_stats()
         return acc_mean, acc_std, loss_mean, loss_std
 
@@ -132,15 +134,6 @@ class Logger:
 
     def log(self, level, msg, *args, **kwargs):
         self.logger.log(level, msg, *args, **kwargs)
-
-    def log_growing_matplot(self):
-        raise('Not implemented yet')
-    
-    def log_training_losses(self):
-        raise('Not implemented')
-
-    def pickle_stuff(self):
-        raise('Not implemented')
 
     def log_model_and_meta_learner_as_string(self, base_model, meta_learner, current_logs_path=None):
         """
@@ -162,99 +155,77 @@ class Logger:
         with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
             json.dump(self.stats, f, indent=4)
 
-    def save_current_plots_and_stats(
-            self,
-            title='Meta-Learnig & Evaluation Curves',
-            x_axis='(meta) iterations',
-            y_axis_loss='Meta-Loss',
-            y_axis_acc='Meta-Accuracy',
-
-            nb_plots=1,
-            split=None,
-            current_logs_path=None,
-            xkcd=False,
-            grid=True,
-            show=False):
-        plt.xkcd() if xkcd else None
-
-        # Initialize where to save and what the split of the experiment is
-        split = self.split if split is None else split
-        current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
-
-        # save current stats
-        self.save_stats(current_logs_path)
-
-        # https://stackoverflow.com/questions/61415955/why-dont-the-error-limits-in-my-plots-show-in-matplotlib
-        # mpl.rcParams["errorbar.capsize"] = 3
-
-        plt.style.use('default')
-
-        if split == 'meta-train':
-            eval_label = 'Val'  # in train split the evaluation of the model should  meta-val set
-        else:
-            eval_label = 'Test'
-
-        if self.args.target_type == 'regression':
-            tag1 = f'Train loss'
-            tag2 = f'Train R2'
-            tag3 = f'{eval_label} loss'
-            tag4 = f'{eval_label} R2'
-        elif self.args.target_type == 'classification':
-            tag1 = f'Train loss'
-            tag2 = f'Train accuracy'
-            tag3 = f'{eval_label} loss'
-            tag4 = f'{eval_label} accuracy'
-        else:
-            raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
-        
-        train_loss_y = self.stats['train']['loss']
-        train_acc_y = self.stats['train']['acc']
-        assert(len(train_acc_y) == len(train_loss_y))
-        # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_train_x = np.array([self.args.log_train_freq*(i+1) for i in range(len(train_loss_y))] )
-        assert(len(episodes_train_x) == len(train_loss_y))
-
-        eval_loss_y = self.stats['eval_stats']['mean']['loss']
-        eval_acc_y = self.stats['eval_stats']['mean']['acc']
-        assert(len(eval_loss_y) == len(eval_acc_y))
-        eval_loss_std = self.stats['eval_stats']['std']['loss']
-        eval_acc_std = self.stats['eval_stats']['std']['acc'] 
-        assert(len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
-        # plus one so to start episode 1, since 0 is not recorded yet...
-        episodes_eval_x = np.array([ self.args.log_val_freq*(i+1) for i in range(len(eval_loss_y))] )
-        assert(len(episodes_eval_x) == len(eval_acc_y))
-
-        if nb_plots == 1:
-            fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
-
-
-            loss_ax1.plot(episodes_train_x, train_loss_y, label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
-            loss_ax1.errorbar(episodes_eval_x, eval_loss_y, yerr=eval_loss_std, label=tag2, linestyle='-', marker='o', color='m', linewidth=1, capsize=3)
-
-            loss_ax1.legend()
-            loss_ax1.set_title(title)
-            loss_ax1.set_ylabel(y_axis_loss)
-            loss_ax1.grid(grid)
-
-            acc_ax2.plot(episodes_train_x, train_acc_y, label=tag3, linestyle='-', marker='o', color='b', linewidth=1)
-            acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=tag4, linestyle='-', marker='o', color='c', linewidth=1, capsize=3)
-            acc_ax2.legend()
-            acc_ax2.set_xlabel(x_axis)
-            acc_ax2.set_ylabel(y_axis_acc)
-            acc_ax2.grid(grid)
-
-            plt.tight_layout()
-
-            plt.show() if show else None
-
-            fig.savefig(current_logs_path / 'meta_train_eval.svg' )
-            fig.savefig(current_logs_path / 'meta_train_eval.pdf' )
-            fig.savefig(current_logs_path / 'meta_train_eval.png' )
-            plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
-        elif nb_plots == 2:
-            #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True) 
-            #fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
-            raise ValueError(f" not implemented nb_plots = {nb_plots}")
-        else:
-            raise ValueError(f" not implemented nb_plots = {nb_plots}")
-        return
+    # def save_current_plots_and_stats(
+    #         self,
+    #         title='Meta-Learnig & Evaluation Curves',
+    #         x_axis='(meta) iterations',
+    #         y_axis_loss='Meta-Loss',
+    #         y_axis_acc='Meta-Accuracy',
+    #
+    #         grid=True,
+    #         show=False):
+    #     # Initialize where to save and what the split of the experiment is
+    #     current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
+    #
+    #     # save current stats
+    #     self.save_stats_to_json_file(current_logs_path)
+    #     plt.style.use('default')
+    #
+    #     eval_label = 'Val' if split == 'meta-train' else 'Test'
+    #
+    #     if self.args.target_type == 'regression':
+    #         tag1 = f'Train loss'
+    #         tag2 = f'Train R2'
+    #         tag3 = f'{eval_label} loss'
+    #         tag4 = f'{eval_label} R2'
+    #     elif self.args.target_type == 'classification':
+    #         tag1 = f'Train loss'
+    #         tag2 = f'Train accuracy'
+    #         tag3 = f'{eval_label} loss'
+    #         tag4 = f'{eval_label} accuracy'
+    #     else:
+    #         raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
+    #
+    #     train_loss_y = self.stats['train']['loss']
+    #     train_acc_y = self.stats['train']['acc']
+    #     assert (len(train_acc_y) == len(train_loss_y))
+    #     # plus one so to start episode 1, since 0 is not recorded yet...
+    #     episodes_train_x = np.array([self.args.log_train_freq * (i + 1) for i in range(len(train_loss_y))])
+    #     assert (len(episodes_train_x) == len(train_loss_y))
+    #
+    #     eval_loss_y = self.stats['eval_stats']['mean']['loss']
+    #     eval_acc_y = self.stats['eval_stats']['mean']['acc']
+    #     assert (len(eval_loss_y) == len(eval_acc_y))
+    #     eval_loss_std = self.stats['eval_stats']['std']['loss']
+    #     eval_acc_std = self.stats['eval_stats']['std']['acc']
+    #     assert (len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
+    #     # plus one so to start episode 1, since 0 is not recorded yet...
+    #     episodes_eval_x = np.array([self.args.log_val_freq * (i + 1) for i in range(len(eval_loss_y))])
+    #     assert (len(episodes_eval_x) == len(eval_acc_y))
+    #
+    #     fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
+    #
+    #     loss_ax1.plot(episodes_train_x, train_loss_y, label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
+    #     loss_ax1.plot(episodes_eval_x, eval_loss_y, label=tag2, linestyle='-', marker='o', color='m', linewidth=1)
+    #
+    #     loss_ax1.legend()
+    #     loss_ax1.set_title(title)
+    #     loss_ax1.set_ylabel(y_axis_loss)
+    #     loss_ax1.grid(grid)
+    #
+    #     acc_ax2.plot(episodes_train_x, train_acc_y, label=tag3, linestyle='-', marker='o', color='b', linewidth=1)
+    #     acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=tag4, linestyle='-', marker='o',
+    #                      color='c', linewidth=1, capsize=3)
+    #     acc_ax2.legend()
+    #     acc_ax2.set_xlabel(x_axis)
+    #     acc_ax2.set_ylabel(y_axis_acc)
+    #     acc_ax2.grid(grid)
+    #
+    #     plt.tight_layout()
+    #
+    #     plt.show() if show else None
+    #
+    #     fig.savefig(current_logs_path / 'meta_train_eval.svg')
+    #     fig.savefig(current_logs_path / 'meta_train_eval.pdf')
+    #     fig.savefig(current_logs_path / 'meta_train_eval.png')
+    #     plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures

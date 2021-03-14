@@ -4,8 +4,11 @@ from pathlib import Path
 from meta_learning.datasets.mini_imagenet import MetaImageNet, ImageNet
 
 import torch
+from meta_learning.datasets.rand_fnn import RandFNN
 from torch import nn, nn as nn
 from torch.utils.data import DataLoader
+from torchmeta.toy.helpers import sinusoid
+from torchmeta.transforms import ClassSplitter
 from torchmeta.utils.data import BatchMetaDataLoader
 from torchvision import transforms as transforms
 
@@ -111,6 +114,47 @@ def get_transforms_mini_imagenet(args):
             normalize])
 
     return train_transform, val_transform, test_transform
+
+def get_torchmeta_sinusoid_dataloaders(args):
+    # tran = transforms.Compose([torch.tensor])
+    # dataset = sinusoid(shots=args.k_eval, test_shots=args.k_shots, transform=tran)
+    dataset = sinusoid(shots=args.k_eval, test_shots=args.k_eval)
+    meta_train_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_train,
+                                                num_workers=args.num_workers)
+    meta_val_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
+                                              num_workers=args.num_workers)
+    meta_test_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
+                                               num_workers=args.num_workers)
+    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+
+def get_torchmeta_rand_fnn_dataloaders(args):
+    # get data
+    dataset_train = RandFNN(args.data_path, 'train')
+    dataset_val = RandFNN(args.data_path, 'val')
+    dataset_test = RandFNN(args.data_path, 'test')
+    # get meta-sets
+    metaset_train = ClassSplitter(dataset_train,
+                                  num_train_per_class=args.k_shots,
+                                  num_test_per_class=args.k_eval,
+                                  shuffle=True)
+    metaset_val = ClassSplitter(dataset_val, num_train_per_class=args.k_shots,
+                                num_test_per_class=args.k_eval,
+                                shuffle=True)
+    metaset_test = ClassSplitter(dataset_test, num_train_per_class=args.k_shots,
+                                 num_test_per_class=args.k_eval,
+                                 shuffle=True)
+    # get meta-dataloader
+    meta_train_dataloader = BatchMetaDataLoader(metaset_train,
+                                                batch_size=args.meta_batch_size_train,
+                                                num_workers=args.num_workers)
+    meta_val_dataloader = BatchMetaDataLoader(metaset_val,
+                                              batch_size=args.meta_batch_size_eval,
+                                              num_workers=args.num_workers)
+    meta_test_dataloader = BatchMetaDataLoader(metaset_test,
+                                               batch_size=args.meta_batch_size_eval,
+                                               num_workers=args.num_workers)
+    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+
 
 # ---- teats ----
 

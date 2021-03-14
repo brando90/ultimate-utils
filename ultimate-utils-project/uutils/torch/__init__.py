@@ -188,12 +188,11 @@ def check_two_models_equal(model1, model2):
 
 def are_all_params_leafs(mdl):
     all_leafs = True
-    for (name, w) in mdl.named_parameters():
+    for name, w in mdl.named_parameters():
         all_leafs = all_leafs and w.is_leaf
     return all_leafs
 
 def calc_error(mdl: torch.nn.Module, X: torch.Tensor, Y):
-    # acc == (true != mdl(x).max(1).item() / true.size(0)
     train_acc = calc_accuracy(mdl, X, Y)
     train_err = 1.0 - train_acc
     return train_err
@@ -783,10 +782,38 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         raise ValueError(f'Not implemented: {r2_type}')
     return r2
 
-def normalized_r2_old(y_true, y_pred, normalizer='Sigmoid'):
+def compressed_r2_score(y_true, y_pred, compressor='tanh'):
     """
+    The idea is that the negative part of the r2_score doesn't go to -infinity.
+    Once it is negative we know we it's performing at chance and the predictor is trash.
+    So for the sake of making things easier to plot we squish everything bellow r2<0 with a tanh
+    by default so r2 is bounded between [-1,1] where 0 is chance
+    (as good as predicting average target y without using any features from x).
+    Interpretation
+        - cr2>0 standard r2 interpretation
+        - cr2=0 standard horizontal chance interpretation
+        - cr2 < 0 squished r2 score (all negative values are very bad)
 
-    :param normalizer: Sigmoid otherwise use Tanh
+    compressed_r2_score(r2) =
+    {
+        r2   if r2 >0,
+        0   if r2==0,
+        tanh(r2)   if r2 <0
+    }
+
+    If compressor=Sigmoid then
+        - cr2>0.5 standard r2 interpretation
+        - cr2=0.5 standard horizontal chance interpretation
+        - cr2 < 0.5 squished r2 score (all values bellow 0.5 are very bad)
+
+    compressed_r2_score(r2, Sigmoid) =
+    {
+        0.5r2+0.5 if r2 >0,
+        0 if r2==0,
+        tanh(r2) if r2 <0
+    }
+
+    :param compressor: Sigmoid otherwise use Tanh
     :param y_true:
     :param y_pred:
     :return:
@@ -795,41 +822,30 @@ def normalized_r2_old(y_true, y_pred, normalizer='Sigmoid'):
     from scipy.stats import logistic
 
     r2 = r2_score(y_true=y_true, y_pred=y_pred)
-    if normalizer == 'Sigmoid':
-        # norm = logistic.cdf
-        # norm_r2 = (1.0/norm(1.0))*norm(r2)
-        norm = logistic.cdf
-        norm_r2 = (1.0/norm(1.0))*norm(r2)
+    if compressor == 'Sigmoid':
+        if r2 > 0:
+            # so that cr2 intercepts at 0.5
+            compressed_r2 = 0.5*r2 + 0.5
+        else:
+            compressed_r2 = logistic.cdf(r2)
+    elif compressor == 'tanh':
+        if r2 > 0:
+            compressed_r2 = r2
+        else:
+            compressed_r2 = np.tanh(r2)
     else:
-        raise ValueError(f'Normalizer {normalizer} not implemented')
-    return norm_r2
+        raise ValueError(f'compressor {compressor} not implemented')
+    return compressed_r2
 
-def normalized_r2(y_true, y_pred, normalizer='Sigmoid'):
+def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, compressor='tanh'):
     """
-
-    :param normalizer: Sigmoid otherwise use Tanh
+    Though it seems this function is not needed, surprisingly! It processes torch tensors just fine...
     :param y_true:
     :param y_pred:
+    :param compressor:
     :return:
     """
-    import np
-    from sklearn.metrics import r2_score
-    from scipy.stats import logistic
-
-    r2 = r2_score(y_true=y_true, y_pred=y_pred)
-    if normalizer == 'Sigmoid':
-        if r2 > 0:
-            norm_r2 = 0.5*r2 + 0.5
-        else:
-            norm_r2 = logistic.cdf(r2)
-    elif normalizer == 'tanh':
-        if r2 > 0:
-            norm_r2 = r2
-        else:
-            norm_r2 = np.tanh(r2)
-    else:
-        raise ValueError(f'Normalizer {normalizer} not implemented')
-    return norm_r2
+    return compressed_r2_score(y_true.detach().numpy(), y_pred.detach().numpy(), compressor)
 
 # def normalized_r2_torch(y_true, y_pred, normalizer='Sigmoid'):
 #     """
@@ -1341,27 +1357,20 @@ def test_tensorify():
     ttt = [tt, tt, tt]
     print(tensorify(ttt))
 
-def test_normalized_r2():
-    # from sklearn.linear_model import logistic
-    from scipy.stats import logistic
-    def norm_r2(r2):
-        return (1.0 / logistic.cdf(1.0)) * logistic.cdf(r2)
-    normalized_r2 = norm_r2
-
-    normalized_r2(-1000)
-    print(f'{normalized_r2(-1000)=}')
-
-    print(f'{normalized_r2(0)}')
-
-    print(f'{normalized_r2(1)}')
+def test_compressed_r2_score():
+    y = torch.randn(10, 1)
+    y_pred = 2 * y
+    c_r2 = compressed_r2_score(y, y_pred)
+    c_r2_torch = compressed_r2_score_from_torch(y, y_pred)
+    assert(c_r2_torch == c_r2)
 
 def test_topk_accuracy_and_accuracy():
     import torch
     import torch.nn as nn
 
-    in_features = 1
+    in_features = 32
     n_classes = 10
-    batch_size = 4
+    batch_size = 1024
 
     mdl = nn.Linear(in_features=in_features, out_features=n_classes)
 
@@ -1381,6 +1390,6 @@ def test_topk_accuracy_and_accuracy():
 if __name__ == '__main__':
     # test_ned()
     # test_tensorify()
-    # test_normalized_r2()
+    test_compressed_r2_score()
     test_topk_accuracy_and_accuracy()
     print('Done\a')

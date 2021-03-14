@@ -9997,3 +9997,27 @@ print('\n- for each example in batch get top 2 most likely values & classes/idx 
       '\n1) first are the actual top 2 scores & 2) then the indicies/classes corresponding those largest scores')
 print(y_logits.topk(k=2, dim=1))
 
+# %%
+
+from copy import deepcopy
+
+from pathlib import Path
+
+path_cluster = '/home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb'
+path_cluster_intel = '/homes/miranda9/data/logs/logs_Dec04_15-49-00_jobid_446010.iam-pbs/tb'
+path_vision = '/home/miranda9/data/logs/logs_Dec04_18-39-14_jobid_1528/tb'
+dirs = path_cluster.split('/')
+
+for dir_name in deepcopy(dirs):
+    if dir_name == 'data':
+        break
+    else:
+        dirs.pop(0)
+dirs = ['~'] + dirs
+dirs = '/'.join(dirs)
+dir = Path(dirs).expanduser()
+
+path_cluster.replace('/home/miranda9/', '~')
+
+print(dir)
+
