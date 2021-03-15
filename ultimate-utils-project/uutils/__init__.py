@@ -7,6 +7,8 @@ import json
 import time
 
 import math
+
+import dill
 import numpy as np
 import random
 import pandas as pd
@@ -189,27 +191,11 @@ def timeSince(start):
     return msg, h
 
 
-def report_times(start, verbose=False):
-    """
-    How much time has passed since the time "start"
-
-    :param float start: the number representing start (usually time.time())
-    """
-    meta_str = ""
-    ## REPORT TIMES
-    start_time = start
-    seconds = time.time() - start_time
-    minutes = seconds / 60
-    hours = minutes / 60
-    if verbose:
-        print(f"--- {seconds} {'seconds ' + meta_str} ---")
-        print(f"--- {minutes} {'minutes ' + meta_str} ---")
-        print(f"--- {hours} {'hours ' + meta_str} ---")
-        print("\a")
-    ##
-    msg = f"time passed: hours:{hours}, minutes={minutes}, seconds={seconds}"
-    return msg, seconds, minutes, hours
-
+def report_times(start):
+    import time
+    duration_secs = time.time() - start
+    msg = f"time passed: hours:{duration_secs/(60**2)}, minutes={duration_secs/60}, seconds={duration_secs}"
+    return msg
 
 def is_NaN(value):
     """
@@ -218,9 +204,23 @@ def is_NaN(value):
     """
     return not np.isfinite(value) or np.isinf(value) or np.isnan(value)
 
+def make_args_pickable(args):
+    """ Makes a namespace pickable """
+    pickable_args = argparse.Namespace()
+    # - go through fields in args, if they are not pickable make it a string else leave as it
+    # The vars() function returns the __dict__ attribute of the given object.
+    for field in vars(args):
+        field_val = getattr(args, field)
+        if not dill.pickles(field):
+            field_val = str(field_val)
+        setattr(args, field, field_val)
+    return pickable_args
+
+def make_opts_pickable(opts):
+    """ Makes a namespace pickable """
+    return make_args_pickable(opts)
 
 ##
-
 
 def make_and_check_dir2(path):
     """

@@ -139,6 +139,19 @@ def move_to_ddp(rank, opts, model):
 
     return model
 
+def clean_end_with_sigsegv_hack(rank):
+    """
+    this is is just a hack to pause all processes that are not the lead worker i.e. rank=0.
+
+    :return:
+    """
+    from datetime import time
+
+    if is_running_parallel(rank):
+        torch.distributed.barrier()
+        if rank != 0:
+            time.sleep(1)
+
 # -- tests
 
 def test_setup():

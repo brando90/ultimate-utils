@@ -155,77 +155,77 @@ class Logger:
         with open(current_logs_path / 'experiment_stats.json', 'w+') as f:
             json.dump(self.stats, f, indent=4)
 
-    # def save_current_plots_and_stats(
-    #         self,
-    #         title='Meta-Learnig & Evaluation Curves',
-    #         x_axis='(meta) iterations',
-    #         y_axis_loss='Meta-Loss',
-    #         y_axis_acc='Meta-Accuracy',
-    #
-    #         grid=True,
-    #         show=False):
-    #     # Initialize where to save and what the split of the experiment is
-    #     current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
-    #
-    #     # save current stats
-    #     self.save_stats_to_json_file(current_logs_path)
-    #     plt.style.use('default')
-    #
-    #     eval_label = 'Val' if split == 'meta-train' else 'Test'
-    #
-    #     if self.args.target_type == 'regression':
-    #         tag1 = f'Train loss'
-    #         tag2 = f'Train R2'
-    #         tag3 = f'{eval_label} loss'
-    #         tag4 = f'{eval_label} R2'
-    #     elif self.args.target_type == 'classification':
-    #         tag1 = f'Train loss'
-    #         tag2 = f'Train accuracy'
-    #         tag3 = f'{eval_label} loss'
-    #         tag4 = f'{eval_label} accuracy'
-    #     else:
-    #         raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
-    #
-    #     train_loss_y = self.stats['train']['loss']
-    #     train_acc_y = self.stats['train']['acc']
-    #     assert (len(train_acc_y) == len(train_loss_y))
-    #     # plus one so to start episode 1, since 0 is not recorded yet...
-    #     episodes_train_x = np.array([self.args.log_train_freq * (i + 1) for i in range(len(train_loss_y))])
-    #     assert (len(episodes_train_x) == len(train_loss_y))
-    #
-    #     eval_loss_y = self.stats['eval_stats']['mean']['loss']
-    #     eval_acc_y = self.stats['eval_stats']['mean']['acc']
-    #     assert (len(eval_loss_y) == len(eval_acc_y))
-    #     eval_loss_std = self.stats['eval_stats']['std']['loss']
-    #     eval_acc_std = self.stats['eval_stats']['std']['acc']
-    #     assert (len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
-    #     # plus one so to start episode 1, since 0 is not recorded yet...
-    #     episodes_eval_x = np.array([self.args.log_val_freq * (i + 1) for i in range(len(eval_loss_y))])
-    #     assert (len(episodes_eval_x) == len(eval_acc_y))
-    #
-    #     fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
-    #
-    #     loss_ax1.plot(episodes_train_x, train_loss_y, label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
-    #     loss_ax1.plot(episodes_eval_x, eval_loss_y, label=tag2, linestyle='-', marker='o', color='m', linewidth=1)
-    #
-    #     loss_ax1.legend()
-    #     loss_ax1.set_title(title)
-    #     loss_ax1.set_ylabel(y_axis_loss)
-    #     loss_ax1.grid(grid)
-    #
-    #     acc_ax2.plot(episodes_train_x, train_acc_y, label=tag3, linestyle='-', marker='o', color='b', linewidth=1)
-    #     acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=tag4, linestyle='-', marker='o',
-    #                      color='c', linewidth=1, capsize=3)
-    #     acc_ax2.legend()
-    #     acc_ax2.set_xlabel(x_axis)
-    #     acc_ax2.set_ylabel(y_axis_acc)
-    #     acc_ax2.grid(grid)
-    #
-    #     plt.tight_layout()
-    #
-    #     plt.show() if show else None
-    #
-    #     fig.savefig(current_logs_path / 'meta_train_eval.svg')
-    #     fig.savefig(current_logs_path / 'meta_train_eval.pdf')
-    #     fig.savefig(current_logs_path / 'meta_train_eval.png')
-    #     plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+    def save_current_plots_and_stats(
+            self,
+            title='Meta-Learnig & Evaluation Curves',
+            x_axis='(meta) iterations',
+            y_axis_loss='Meta-Loss',
+            y_axis_acc='Meta-Accuracy',
+
+            grid=True,
+            show=False):
+        # Initialize where to save and what the split of the experiment is
+        current_logs_path = self.current_logs_path if current_logs_path is None else current_logs_path
+
+        # save current stats
+        self.save_stats_to_json_file(current_logs_path)
+        plt.style.use('default')
+
+        eval_label = 'Val' if split == 'meta-train' else 'Test'
+
+        if self.args.target_type == 'regression':
+            tag1 = f'Train loss'
+            tag2 = f'Train R2'
+            tag3 = f'{eval_label} loss'
+            tag4 = f'{eval_label} R2'
+        elif self.args.target_type == 'classification':
+            tag1 = f'Train loss'
+            tag2 = f'Train accuracy'
+            tag3 = f'{eval_label} loss'
+            tag4 = f'{eval_label} accuracy'
+        else:
+            raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
+
+        train_loss_y = self.stats['train']['loss']
+        train_acc_y = self.stats['train']['acc']
+        assert (len(train_acc_y) == len(train_loss_y))
+        # plus one so to start episode 1, since 0 is not recorded yet...
+        episodes_train_x = np.array([self.args.log_train_freq * (i + 1) for i in range(len(train_loss_y))])
+        assert (len(episodes_train_x) == len(train_loss_y))
+
+        eval_loss_y = self.stats['eval_stats']['mean']['loss']
+        eval_acc_y = self.stats['eval_stats']['mean']['acc']
+        assert (len(eval_loss_y) == len(eval_acc_y))
+        eval_loss_std = self.stats['eval_stats']['std']['loss']
+        eval_acc_std = self.stats['eval_stats']['std']['acc']
+        assert (len(eval_acc_std) == len(eval_loss_std) and len(eval_loss_y) == len(eval_loss_std))
+        # plus one so to start episode 1, since 0 is not recorded yet...
+        episodes_eval_x = np.array([self.args.log_val_freq * (i + 1) for i in range(len(eval_loss_y))])
+        assert (len(episodes_eval_x) == len(eval_acc_y))
+
+        fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
+
+        loss_ax1.plot(episodes_train_x, train_loss_y, label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
+        loss_ax1.plot(episodes_eval_x, eval_loss_y, label=tag2, linestyle='-', marker='o', color='m', linewidth=1)
+
+        loss_ax1.legend()
+        loss_ax1.set_title(title)
+        loss_ax1.set_ylabel(y_axis_loss)
+        loss_ax1.grid(grid)
+
+        acc_ax2.plot(episodes_train_x, train_acc_y, label=tag3, linestyle='-', marker='o', color='b', linewidth=1)
+        acc_ax2.errorbar(episodes_eval_x, eval_acc_y, yerr=eval_acc_std, label=tag4, linestyle='-', marker='o',
+                         color='c', linewidth=1, capsize=3)
+        acc_ax2.legend()
+        acc_ax2.set_xlabel(x_axis)
+        acc_ax2.set_ylabel(y_axis_acc)
+        acc_ax2.grid(grid)
+
+        plt.tight_layout()
+
+        plt.show() if show else None
+
+        fig.savefig(current_logs_path / 'meta_train_eval.svg')
+        fig.savefig(current_logs_path / 'meta_train_eval.pdf')
+        fig.savefig(current_logs_path / 'meta_train_eval.png')
+        plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
