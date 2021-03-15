@@ -36,7 +36,7 @@ I usually use conda.
 ## Contributing
 
 Feel free to push code with pull request.
-Please include at least 1 self-contained test before pushing that works.
+Please include at least 1 self-contained test (that works) before pushing.
 
 ### How modules are imported in a python project
 
