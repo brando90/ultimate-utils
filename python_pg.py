@@ -10021,3 +10021,24 @@ path_cluster.replace('/home/miranda9/', '~')
 
 print(dir)
 
+# %%
+
+# floats f-string
+
+var = 1.0
+print(f'{var}')
+
+# f adds many ugly 0's
+var = 1
+print(f'{var:f}')
+
+var = 0.0001
+print(f'{var}')
+
+# ok it truncates, no!
+
+var = 1.0
+print(f'{var:.2f}')
+
+var = 0.0001
+print(f'{var:.2f}')

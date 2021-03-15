@@ -1,11 +1,11 @@
-'''
+"""
 Torch Based Utils/universal methods
 
 Utils class with useful helper functions
 
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 
-'''
+"""
 from datetime import datetime
 from typing import List
 
@@ -75,7 +75,7 @@ def create_detached_deep_copy_old(mdl):
     return mdl_new
 
 def create_detached_deep_copy(human_mdl, mdl_to_copy):
-    '''
+    """
     create a deep detached copy of mdl_new.
     Needs the human_mdl (instantiated by a human) as an empty vessel and then
     copy the parameters from the real model we want (mdl_to_copy) and returns a filled in
@@ -83,7 +83,7 @@ def create_detached_deep_copy(human_mdl, mdl_to_copy):
     Essentially does:
     empty_vessel_mdl = deep_copy(human_mdl)
     mdl_new.fill() <- copy(from=mdl_to_copy,to=human_mdl)
-    '''
+    """
     empty_vessel_mdl = copy.deepcopy(human_mdl)
     # set to detached
     detached_params = empty_vessel_mdl.state_dict()
@@ -1312,26 +1312,29 @@ def get_cxa_distances_per_layer(mdl1, mdl2, X, layer_names, dist_type='pwcca'):
         sims_per_layer.append(sim)
     return sims_per_layer  # [..., s_l, ...]_l
 
-###### MISC
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self, name):
+        self.name = name
+        self.reset()
 
-# def log_validation(args, meta_learner, outer_opt, meta_val_set, check_point=True):
-#     """ Log the validation loss, acc. Checkpoint the model if that flag is on. """
-#     if check_point:
-#         store_check_point(args, meta_learner)
-#     acc_mean, acc_std, loss_mean, loss_std = meta_eval(args, meta_learner, meta_val_set, iter_limit=args.eval_iters)
-#     if acc_mean > args.best_acc:
-#         args.best_acc, args.best_loss = acc_mean, loss_mean
-#         # args.logger.loginfo(f"***> Stats of Best Acc model: meta-val loss: {args.loss_of_best} +- {loss_std}, meta-val acc: {args.best_acc} +- {acc_std}")
-#         if check_point and acc_mean > 0:  # accs < 0 means its regression not really classificaiton
-#             store_check_point(args, meta_learner, f'ckpt_file_best_loss.pt')
-#     if loss_mean < args.best_loss:
-#         args.best_loss = loss_mean
-#         if check_point:
-#             store_check_point(args, meta_learner, f'ckpt_file_best_loss.pt')
-#     return acc_mean, acc_std, loss_mean, loss_std
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
 
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
 
-#######
+    def __str__(self):
+        fmtstr = '{name} {val} ({avg})'
+        return fmtstr.format(**self.__dict__)
+
+# -- tests
 
 def test_ned():
     import torch.nn as nn
