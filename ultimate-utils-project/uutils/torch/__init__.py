@@ -1324,15 +1324,73 @@ class AverageMeter(object):
         self.sum = 0
         self.count = 0
 
-    def update(self, val, n=1):
+    def update(self, val, n):
+        """
+        Note: usually n=batch_size so that we can keep track of the total sum.
+        If you don't log the batch size the quantity your tracking is the average of the sample means
+        which has the same expectation but because your tracking emperical estimates you will have a
+        different variance. Thus, it's recommended to have n=batch_size
+
+        :param val:
+        :param n: usually the batch size
+        :return:
+        """
         self.val = val
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
 
+    def item(self):
+        return self.avg
+
     def __str__(self):
-        fmtstr = '{name} {val} ({avg})'
+        fmtstr = '{name} val:{val} avg:{avg}'
         return fmtstr.format(**self.__dict__)
+
+# -- not using for now
+
+class AverageStdMeter(object):
+    """Computes and stores the average & std and current value.
+
+    I decided not to use this because it might make ppl do mistakes. For example if you are
+    logging here the val as the batch loss then this class would compute the variance of the
+    sample mean. This will be an under estimate of the quantity you (usually) really care about which
+    is the variance of the loss on new examples (not the average). The reason you want this is as follows:
+    in ML usually we really want is to be able to predict well unseen examples. So we really want a low
+    l(f(x), y) for a new example. So the RV we are interested is l for a single example. In meta-learning
+    it would be similar. We want to have a low loss on a new task. If this is the quantity we care about
+    then computing the spread over a set of batch means would underestimate the quantity we really care about.
+    Thus, unless you can get a flatten list of losses for each example (which libraries like pytorch don't
+    usually give) this object might not be as useful as one might think.
+    Note for meta-learning you'd get very bad estimates of the std since this class would return the std of
+    the sample mean std_N = st/sqrt{N} which is an underestimate by sqrt{N}. You might be expecting to
+    measure the std (the spread of the losses of tasks) but you wouldn't actually be getting that.
+    You could multiply it by sqrt{N} but that introduce more errors since your std_N is usually computed
+    using a sample (not the true Var[] operator). You might be tempted to use N=1 and that would work
+    if your using the true Var[] opertor but if your computing it emprically you'd get NaN since the
+    variance is undefined for 1 element.
+    """
+    def __init__(self, name):
+        self.name = name
+        self.reset()
+        raise ValueError('Dont use.')
+
+    def reset(self):
+        self.vals = []
+        self.avg = 0
+        self.std = 0
+
+    def update(self, val):
+        self.vals.append(val)
+        self.avg = np.mean(self.vals)
+        self.std = np.std(self.vals)
+
+    def items(self):
+        return self.avg, self.std
+
+    def __str__(self):
+        fmtstr = '{name} {avg} +- {std}'
+        return fmtstr.format(self.name, self.avg, self.std)
 
 # -- tests
 

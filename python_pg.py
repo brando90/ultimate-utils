@@ -10042,3 +10042,57 @@ print(f'{var:.2f}')
 
 var = 0.0001
 print(f'{var:.2f}')
+
+# %%
+
+import bisect
+from collections import OrderedDict
+
+p = 0
+x = bisect.bisect_left([10, 20], p)
+print(x)
+p = 10
+x = bisect.bisect_left([10, 20], p)
+print(x)
+p = 11
+x = bisect.bisect_left([10, 20], p)
+print(x)
+p = 21
+x = bisect.bisect_left([10, 20], p)
+print(x)
+
+#
+# p = 10
+# x = bisect.bisect_left(OrderedDict({10: 'a', 11: 'b'}), p)
+# print()
+
+# %%
+
+import bisect
+
+flatten_lst_files = ['f1', 'f2', 'f3']
+cummulative_counts = [4, 5+6, 5+7+1]
+print(cummulative_counts)
+files = {'f1': list(range(5)), 'f2': list(range(7)), 'f3': list(range(2))}
+
+def get_lower_cummulative(file_idx):
+    if file_idx == 0:
+        return file_idx
+    else:
+        return cummulative_counts[file_idx-1] + 1
+
+def get_node_idx(idx):
+    file_idx = bisect.bisect_left(cummulative_counts, idx)
+    file = flatten_lst_files[file_idx]
+    print(file)
+    lower_cummulative_val = get_lower_cummulative(file_idx)
+    node_idx = idx - lower_cummulative_val
+    # print(node_idx)
+    node = files[file][node_idx]
+    # print(node)
+    return node
+
+for idx in range(5+7+2):
+    node = get_node_idx(idx)
+    print(node)
+    print()

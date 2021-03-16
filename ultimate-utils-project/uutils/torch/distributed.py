@@ -117,6 +117,27 @@ def is_running_parallel(rank):
     """if it's not serial then it's parallel. """
     return not is_running_serially(rank)
 
+
+def is_lead_worker(rank):
+    """
+    -1 = means serial code so main proc = lead worker = master
+    0 = first rank is the lead worker (in charge of printing, logging, checkpoiniting etc.)
+    :return:
+    """
+    am_I_lead_worker = rank == 0 or is_running_serially(rank)
+    return am_I_lead_worker
+
+def print_process_info(rank):
+    """
+    Prints the rank given, the current process obj name/info and the pid (according to os python lib).
+
+    :param rank:
+    :return:
+    """
+    print(f'{rank=}')
+    print(f'{mp.current_process()=}')
+    print(f'{os.getpid()=}')
+
 def move_to_ddp(rank, opts, model):
     if is_running_parallel(rank):
         # model.criterion = self.opts.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
