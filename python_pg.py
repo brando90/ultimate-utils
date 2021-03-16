@@ -10068,6 +10068,8 @@ print(x)
 
 # %%
 
+# for indexing into an interval to get the index the value corresponds to
+
 import bisect
 
 flatten_lst_files = ['f1', 'f2', 'f3']
@@ -10082,7 +10084,9 @@ def get_lower_cummulative(file_idx):
         return cummulative_counts[file_idx-1] + 1
 
 def get_node_idx(idx):
+    # gets the index for the value we want
     file_idx = bisect.bisect_left(cummulative_counts, idx)
+    # now get the actual value
     file = flatten_lst_files[file_idx]
     print(file)
     lower_cummulative_val = get_lower_cummulative(file_idx)
@@ -10096,3 +10100,57 @@ for idx in range(5+7+2):
     node = get_node_idx(idx)
     print(node)
     print()
+
+# %%
+
+# computing cummulative sums counts frequencies
+
+import pandas as pd
+
+# importing numpy module
+import numpy as np
+
+# making list of values
+values = [3, 4, 7, 2, 0]
+
+# making series from list
+series = pd.Series(values)
+
+# calling method
+cumsum = list(series.cumsum())
+cumsum = np.array(series.cumsum())
+
+# display
+print(cumsum)
+
+
+# %%
+
+# splitting list of files into 3 train, val, test
+
+import numpy as np
+
+def split_two(lst, ratio=[0.5, 0.5]):
+    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    train_ratio = ratio[0]
+    # note this function needs only the "middle" index to split, the remaining is the rest of the split
+    indices_for_splittin = [int(len(lst) * train_ratio)]
+    train, test = np.split(lst, indices_for_splittin)
+    return train, test
+
+def split_three(lst, ratio=[0.8, 0.1, 0.1]):
+    import numpy as np
+
+    train_r, val_r, test_r = ratio
+    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    # note we only need to give the first 2 indices to split, the last one it returns the rest of the list or empty
+    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r+val_r))]
+    train, val, test = np.split(lst, indicies_for_splitting)
+    return train, val, test
+
+files = list(range(10))
+train, test = split_two(files)
+print(train, test)
+train, val, test = split_three(files)
+print(train, val, test)
+

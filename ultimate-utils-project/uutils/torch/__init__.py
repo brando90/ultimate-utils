@@ -1372,7 +1372,6 @@ class AverageStdMeter(object):
     """
     def __init__(self, name):
         self.name = name
-        self.reset()
         raise ValueError('Dont use.')
 
     def reset(self):
@@ -1391,6 +1390,40 @@ class AverageStdMeter(object):
     def __str__(self):
         fmtstr = '{name} {avg} +- {std}'
         return fmtstr.format(self.name, self.avg, self.std)
+
+def split_train_val_test(X, y, random_state=1, ratio=[0.80, 0.10, 0.10]):
+
+    # shuffle = False  # shufflebool, default=True, Whether or not to shuffle the data_lib before splitting. If shuffle=False then stratify must be None.
+    X_train, X_val_test, y_train, y_val_test = train_test_split(X, y,
+                                                                test_size=test_size,
+                                                                random_state=random_state)
+    print(len(X_train))
+    print(len(X_val_test))
+
+    # then 2/3 for val, 1/3 for test to get 10:5 split
+    test_size = 1.0 / 3.0
+    X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size,
+                                                     random_state=random_state)
+    return X_train, X_val, X_test, y_train, y_val, y_test
+
+
+def split_two(lst, ratio=[0.5, 0.5]):
+    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    train_ratio = ratio[0]
+    # note this function needs only the "middle" index to split, the remaining is the rest of the split
+    indices_for_splittin = [int(len(lst) * train_ratio)]
+    train, test = np.split(lst, indices_for_splittin)
+    return train, test
+
+def split_three(lst, ratio=[0.8, 0.1, 0.1]):
+    import numpy as np
+
+    train_r, val_r, test_r = ratio
+    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    # note we only need to give the first 2 indices to split, the last one it returns the rest of the list or empty
+    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r+val_r))]
+    train, val, test = np.split(lst, indicies_for_splitting)
+    return train, val, test
 
 # -- tests
 
@@ -1447,6 +1480,13 @@ def test_topk_accuracy_and_accuracy():
     acc1_ = calc_accuracy_from_logits(y_logits, y)
     assert(acc1 == acc1_)
     assert(acc1_ == acc_top1)
+
+def split_test():
+    files = list(range(10))
+    train, test = split_two(files)
+    print(train, test)
+    train, val, test = split_three(files)
+    print(train, val, test)
 
 if __name__ == '__main__':
     # test_ned()
