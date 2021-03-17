@@ -2,6 +2,7 @@
 
 # to test impots
 import sys
+from typing import List, NewType
 
 for path in sys.path:
     print(path)
@@ -10154,3 +10155,26 @@ print(train, test)
 train, val, test = split_three(files)
 print(train, val, test)
 
+# %%
+
+from typing import List, NewType
+
+# https://stackoverflow.com/questions/33045222/how-do-you-alias-a-type-in-python
+
+Vector = List[float]        # alias shortens
+URL = NewType("URL", str)  # new type
+
+# this is better since URL is a string but any string is NOT usually a URL
+print(URL is str)
+
+# %%
+
+# convert list of ints to tensor
+
+import torch
+
+y_batch = [944104324, 146561759, 938461041, 1035383419]
+y_batch = torch.tensor(y_batch)
+print(y_batch)
+print(type(y_batch))
+print(y_batch.dtype)
