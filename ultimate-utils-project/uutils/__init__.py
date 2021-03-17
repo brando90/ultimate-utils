@@ -4,6 +4,7 @@ Utils class with useful helper functions
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 """
 import json
+import subprocess
 import time
 
 import math
@@ -455,6 +456,28 @@ def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
 
     with open(path, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
+
+def save_args_to_sorted_json(args, dirpath):
+    with open(dirpath / 'args.json', 'w+') as argsfile:
+        args_data = {key: str(value) for (key, value) in args.__dict__.items()}
+        json.dump(args_data, argsfile, indent=4, sort_keys=True)
+
+def save_opts_to_sorted_json(opts, dirpath):
+    save_args_to_sorted_json(args, dirpath)
+
+def save_git_hash_if_possible_in_args(args, path_to_repo_root):
+    """
+    :param args:
+    :param path_to_repo_root: e.g. '~/automl-meta-learning/'
+    :return:
+    """
+    try:
+        githash = subprocess.check_output(
+            ['git', '-C', str(Path(path_to_repo_root).expanduser()), 'rev-parse', 'HEAD'])
+        args.githash = githash
+        print(f'githash: {githash} \n"')
+    except:
+        args.githash = -1
 
 ##
 

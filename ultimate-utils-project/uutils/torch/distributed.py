@@ -117,7 +117,6 @@ def is_running_parallel(rank):
     """if it's not serial then it's parallel. """
     return not is_running_serially(rank)
 
-
 def is_lead_worker(rank):
     """
     -1 = means serial code so main proc = lead worker = master

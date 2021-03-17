@@ -10073,19 +10073,19 @@ print(x)
 import bisect
 
 flatten_lst_files = ['f1', 'f2', 'f3']
-cummulative_counts = [4, 5+6, 5+7+1]
-print(cummulative_counts)
+cummulative_end_index = [4, 5 + 6, 5 + 7 + 1]
+print(cummulative_end_index)
 files = {'f1': list(range(5)), 'f2': list(range(7)), 'f3': list(range(2))}
 
 def get_lower_cummulative(file_idx):
     if file_idx == 0:
         return file_idx
     else:
-        return cummulative_counts[file_idx-1] + 1
+        return cummulative_end_index[file_idx - 1] + 1
 
 def get_node_idx(idx):
     # gets the index for the value we want
-    file_idx = bisect.bisect_left(cummulative_counts, idx)
+    file_idx = bisect.bisect_left(cummulative_end_index, idx)
     # now get the actual value
     file = flatten_lst_files[file_idx]
     print(file)
