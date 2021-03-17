@@ -10178,3 +10178,19 @@ y_batch = torch.tensor(y_batch)
 print(y_batch)
 print(type(y_batch))
 print(y_batch.dtype)
+
+# %%
+
+# counter
+
+from collections import Counter
+
+vocab = Counter()
+lst = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+for elem in lst:
+    vocab.update([elem])
+
+print(vocab)
+
+vocab.update(lst)
+print(vocab)
