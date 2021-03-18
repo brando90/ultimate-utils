@@ -144,13 +144,11 @@ def move_to_ddp(rank, opts, model):
         if torch.cuda.is_available():
             # create model and move it to GPU with id rank
             tactic_predictor = model.to(opts.gpu)
-            # tactic_predictor = DistributedDataParallel(model, device_ids=[opts.gpu])
-            model = model(model, find_unused_parameters=True, device_ids=[opts.gpu])
+            model = DistributedDataParallel(model, find_unused_parameters=True, device_ids=[opts.gpu])
         else:
             # if we want multiple cpu just make sure the model is shared properly accross the cpus with shared_memory()
             # note that op is a no op if it's already in shared_memory
             model = model.share_memory()
-            # tactic_predictor = DistributedDataParallel(tactic_predictor)  # I think removing the devices ids should be fine...
             model = DistributedDataParallel(model, find_unused_parameters=True)  # I think removing the devices ids should be fine...
     else:  # running serially
         if torch.cuda.is_available():
