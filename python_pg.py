@@ -10194,3 +10194,29 @@ print(vocab)
 
 vocab.update(lst)
 print(vocab)
+
+print(Counter(['a', 'a', 'b']))
+
+# Counter({'R': 1, 'A': 1, 'Coq.Relations.Relation_Operators.clos_refl_trans': 1, '0': 1})
+# vocab.update(['adsf'])
+# vocab
+# Counter({'R': 1, 'A': 1, 'Coq.Relations.Relation_Operators.clos_refl_trans': 1, '0': 1, 'adsf': 1})
+# Counter(a=0)
+# Counter({'a': 0})
+# vocab.update({'qwert':0}
+
+#%%
+
+from argparse import Namespace
+
+opts = Namespace(rank=-1, world_size=0, batch_size=4, split='train', num_workers=0)
+opts.path2dataprep = Path('~/data/lasse_datasets_coq/dag_data_prep.pt').expanduser()
+opts.path2vocabs = Path('~/data/lasse_datasets_coq/dag_counters.pt').expanduser()
+opts.path2hash2idx = Path('~/data/lasse_datasets_coq/dag_hash2index.pt').expanduser()
+
+counters = torch.load(opts.path2vocabs)
+vocab = counters['leafs_counter']
+constructors = counters['cons_counter']
+db_hash2idx = torch.load(opts.path2hash2idx)
+hash2idx = db_hash2idx['hash2idx']
+num_tactic_hashes = len(hash2idx.keys())
