@@ -1,14 +1,15 @@
 """
 For code used in distributed training.
 """
+from pdb import set_trace as st
+
 import time
 from argparse import Namespace
+from pathlib import Path
 from typing import Tuple
 
 import torch
 import torch.distributed as dist
-
-import os
 
 from torch import Tensor, nn, optim
 
@@ -17,6 +18,23 @@ import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
+# st()
+from torch.utils.tensorboard import SummaryWriter
+
+# st()
+import os
+
+def set_gpu_id_if_available_simple(opts):
+    """
+    Main idea is opts.gpu = rank for simple case except in debug/serially running.
+
+    :param opts:
+    :return:
+    """
+    # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
+    opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
+    # if in debug mode overwrite the previous decision, debug is ran serially with gpu or cpu so device name is enough
+    opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu") if opts.debug else opts.gpu
 
 def process_batch_ddp(opts, batch):
     """
@@ -70,7 +88,7 @@ def find_free_port():
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return str(s.getsockname()[1])
 
-def setup_process(rank, world_size, master_port, backend='gloo'):
+def setup_process(opts, rank, world_size, master_port, backend='gloo'):
     """
     Initialize the distributed environment (for each process).
 
@@ -104,7 +122,9 @@ def setup_process(rank, world_size, master_port, backend='gloo'):
             # unsure if this is really needed
             # os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
             # os.environ['NCCL_IB_DISABLE'] = '1'
+            # You need to call torch.cuda.set_device(rank) before init_process_group is called.
             backend = 'nccl'
+            torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
         print(f'{backend=}')
         # Initializes the default distributed process group, and this will also initialize the distributed package.
         dist.init_process_group(backend, rank=rank, world_size=world_size)
@@ -160,7 +180,7 @@ def print_gpu_info():
     # get device name if possible
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     try:
-        print(f'\nopts.gpu_name = {torch.cuda.get_device_name(0)}\n')
+        print(f'\ngpu_name = {torch.cuda.get_device_name(0)}\n')
     except:
         pass
     print(f'{device=}')
@@ -205,18 +225,20 @@ def clean_end_with_sigsegv_hack(rank):
 
 # -- tests
 
-def runfn_test(rank, world_size, master_port):
+def runfn_test(rank, opts, world_size, master_port):
+    opts.gpu = rank
     setup_process(rank, world_size, master_port)
     cleanup(rank)
 
 def test_setup():
     print('test_setup')
+    opts = Namespace()
     if torch.cuda.is_available():
         world_size = torch.cuda.device_count()
     else:
         world_size = 4
-    master_port = find_free_port()
-    mp.spawn(runfn_test, args=(world_size, master_port), nprocs=world_size)
+    opts.master_port = find_free_port()
+    mp.spawn(runfn_test, args=(opts, world_size, opts.master_port), nprocs=world_size)
     print('successful test_setup!')
 
 class QuadraticDataset(Dataset):
@@ -247,10 +269,11 @@ def get_dist_dataloader_test(rank, opts):
 
 def run_parallel_training_loop(rank, opts):
     print_process_info(rank)
+    print_gpu_info()
     opts.gpu = rank
     # You need to call torch.cuda.set_device(rank) before init_process_group is called.
     torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
-    setup_process(rank, opts.world_size, opts.master_port)
+    setup_process(opts, rank, opts.world_size, opts.master_port)
 
     # get ddp model
     opts.Din, opts.Dout = 10, 10
@@ -271,6 +294,8 @@ def run_parallel_training_loop(rank, opts):
             # Forward pass
             outputs = model(images)
             loss = criterion(outputs, labels)
+            if rank == 0:
+                print(f'{loss=}')
 
             # Backward and optimize
             optimizer.zero_grad()
@@ -287,22 +312,113 @@ def test_basic_ddp_example():
     - https://pytorch.org/tutorials/intermediate/ddp_tutorial.html
 
     """
-    print('test_setup')
+    print('test_basic_ddp_example')
     opts = Namespace(epochs=3, batch_size=8)
     if torch.cuda.is_available():
         opts.world_size = torch.cuda.device_count()
     else:
         opts.world_size = 4
     opts.master_port = find_free_port()
+    print('about to run mp.spawn---')
     mp.spawn(run_parallel_training_loop, args=(opts,), nprocs=opts.world_size)
+
+class TestDistAgent:
+    def __init__(self, opts, model, criterion, dataloader, optimizer):
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.opts = opts
+        self.dataloader = dataloader
+        if is_lead_worker(self.opts.rank):
+            # from torch.utils.tensorboard import SummaryWriter
+            opts.tb_dir = Path('~/ultimate-utils/').expanduser()
+            self.opts.tb = SummaryWriter(log_dir=opts.tb_dir)
+
+    def train(self, n_epoch):
+        for i, (images, labels) in enumerate(self.dataloader):
+            if torch.cuda.is_available():
+                images = images.cuda(non_blocking=True)
+                labels = labels.cuda(non_blocking=True)
+            # Forward pass
+            outputs = self.model(images)
+            loss = self.criterion(outputs, labels)
+            self.log(f'{i=}: {loss=}')
+
+            # Backward and optimize
+            self.optimizer.zero_grad()
+            loss.backward()  # When the backward() returns, param.grad already contains the synchronized gradient tensor.
+            self.optimizer.step()
+        return loss.item()
+
+    def log(self, string):
+        """ logs only if you are rank 0"""
+        if is_lead_worker(self.opts.rank):
+            # print(string + f' rank{self.opts.rank}')
+            print(string)
+
+    def log_tb(self, it, tag1, loss):
+        if is_lead_worker(self.opts.rank):
+            self.opts.tb.add_scalar(it, tag1, loss)
+
+def run_parallel_training_loop_with_tb(rank, opts):
+    print_process_info(rank)
+    print_gpu_info()
+    opts.rank = rank
+    opts.gpu = rank
+    # You need to call torch.cuda.set_device(rank) before init_process_group is called.
+    torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
+    setup_process(opts, rank, opts.world_size, opts.master_port)
+
+    # get ddp model
+    opts.Din, opts.Dout = 10, 10
+    model = nn.Linear(opts.Din, opts.Dout)
+    model = move_to_ddp(rank, opts, model)
+    criterion = nn.MSELoss().to(opts.gpu)
+
+    # can distributed dataloader
+    dataloader = get_dist_dataloader_test(rank, opts)
+    optimizer = torch.optim.SGD(model.parameters(), 1e-4)
+
+    # do training
+    agent = TestDistAgent(opts, model, criterion, dataloader, optimizer)
+    for n_epoch in range(opts.epochs):
+        agent.log(f'\n{n_epoch=}')
+
+        # training
+        train_loss, train_acc = agent.train(n_epoch)
+        agent.log(f'{n_epoch=}: {train_loss=}')
+        agent.log_tb(it=n_epoch, tag1='train_loss', loss=train_loss)
+
+    # Destroy a given process group, and deinitialize the distributed package
+    cleanup(rank)
+
+def test_basic_ddp_example_with_tensorboard():
+    """
+    Useful links:
+    - https://github.com/yangkky/distributed_tutorial/blob/master/src/mnist-distributed.py
+    - https://pytorch.org/tutorials/intermediate/ddp_tutorial.html
+
+    """
+    print('test_basic_ddp_example_with_tensorboard')
+    opts = Namespace(epochs=3, batch_size=8)
+    if torch.cuda.is_available():
+        opts.world_size = torch.cuda.device_count()
+    else:
+        opts.world_size = 4
+    opts.master_port = find_free_port()
+    print('about to run mp.spawn---')
+
+    # self.opts.tb = SummaryWriter(log_dir=opts.tb_dir)
+    mp.spawn(run_parallel_training_loop_with_tb, args=(opts,), nprocs=opts.world_size)
 
 def test_basic_mnist_example():
     pass
 
 if __name__ == '__main__':
-    print('starting __main__')
+    print('starting distributed.__main__')
     start = time.time()
     # test_setup()
-    test_basic_ddp_example()
-    print(f'execution length = {time.time() - start}')
-    print('Done!\a\n')
+    # test_basic_ddp_example()
+    test_basic_ddp_example_with_tensorboard()
+    print(f'execution length = {time.time() - start} seconds')
+    print('Done Distributed!\a\n')
