@@ -1,0 +1,51 @@
+####################
+#
+# Experiments script
+# Simple HTCondor submit description file
+#
+# reference: https://gitlab.engr.illinois.edu/Vision/vision-gpu-servers/-/wikis/HTCondor-user-guide#submit-jobs
+#
+# chmod a+x ~/ultimate-utils/main.sh
+# condor_submit job.sub
+#
+####################
+
+Executable = /home/miranda9/ultimate-utils/main.sh
+SUBMIT_FILE = main.sh
+
+# Output Files
+Log          = $(SUBMIT_FILE).log$(CLUSTER)
+Output       = $(SUBMIT_FILE).o$(CLUSTER)
+Error        = $(SUBMIT_FILE).o$(CLUSTER)
+
+# environment="BASH_ENV=/usr/share/lmod/lmod/init/bash"
+# getenv = True
+# cuda_version = 10.2
+# cuda_version = 11.0
+
+# Use this to make sure 1 gpu is available. The key words are case insensitive.
+# REquest_gpus = 1
+REquest_gpus = 2
+requirements = (CUDADeviceName != "Tesla K40m")
+requirements = (CUDADeviceName == "GeForce GTX TITAN X")
+# requirements = (CUDADeviceName == "Quadro RTX 6000")
+# requirements = ((CUDADeviceName != "Tesla K40m")) && (TARGET.Arch == "X86_64") && (TARGET.OpSys == "LINUX") && (TARGET.Disk >= RequestDisk) && (TARGET.Memory >= RequestMemory) && (TARGET.Cpus >= RequestCpus) && (TARGET.gpus >= Requestgpus) && ((TARGET.FileSystemDomain == MY.FileSystemDomain) || (TARGET.HasFileTransfer))
+# requirements = (CUDADeviceName == "Tesla K40m")
+# requirements = (CUDADeviceName == "GeForce GTX TITAN X")
+
+# Note: to use multiple CPUs instead of the default (one CPU), use request_cpus as well
+# Request_cpus = 1
+Request_cpus = 4
+# Request_cpus = 5
+# Request_cpus = 8
+# Request_cpus = 16
+# Request_cpus = 32
+
+# E-mail option
+Notify_user = brando.science@gmail.com
+Notification = always
+
+Environment = MY_CONDOR_JOB_ID= $(CLUSTER)
+
+# "Queue" means add the setup until this line to the queue (needs to be at the end of script).
+Queue

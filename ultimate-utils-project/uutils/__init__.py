@@ -561,9 +561,15 @@ def load_cluster_jobids_to(args):
         args.jobid = args.slurm_jobid
     if "SLURM_ARRAY_TASK_ID" in os.environ:
         args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+
     if "MY_CONDOR_JOB_ID" in os.environ:
         args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
         args.jobid = args.condor_jobid
+    elif str(gethostname()) != 'vision-sched.cs.illinois.edu':
+        # for now log the pid while I figure out how to get the condor id for an interactive job
+        # https://stackoverflow.com/questions/66808622/how-does-one-get-the-job-id-of-an-interactive-job-in-an-env-variable-if-using-co
+        args.jobid = f'{args.jobid}_pid_{os.getpid()}'
+
     if "PBS_JOBID" in os.environ:
         # args.num_workers = 8
         try:

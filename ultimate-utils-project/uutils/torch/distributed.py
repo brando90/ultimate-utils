@@ -1,6 +1,8 @@
 """
 For code used in distributed training.
 """
+import time
+from argparse import Namespace
 from typing import Tuple
 
 import torch
@@ -8,11 +10,28 @@ import torch.distributed as dist
 
 import os
 
-from torch import Tensor
+from torch import Tensor, nn, optim
 
 import torch.multiprocessing as mp
 
 from torch.nn.parallel import DistributedDataParallel
+
+from torch.utils.data import Dataset, DataLoader, DistributedSampler
+
+def process_batch_ddp(opts, batch):
+    """
+    Make sure opts has the gpu for each worker.
+
+    :param opts:
+    :param batch:
+    :return:
+    """
+    x, y = batch
+    if type(x) == torch.Tensor:
+        x = x.to(opts.gpu)
+    if type(y) == torch.Tensor:
+        y = y.to(opts.gpu)
+    return x, y
 
 def set_sharing_strategy(new_strategy=None):
     """
@@ -137,6 +156,20 @@ def print_process_info(rank):
     print(f'{mp.current_process()=}')
     print(f'{os.getpid()=}')
 
+def print_gpu_info():
+    # get device name if possible
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    try:
+        print(f'\nopts.gpu_name = {torch.cuda.get_device_name(0)}\n')
+    except:
+        pass
+    print(f'{device=}')
+
+    # opts.PID = str(os.getpid())
+    if torch.cuda.is_available():
+        nccl = torch.cuda.nccl.version()
+        print(f'{nccl=}')
+
 def move_to_ddp(rank, opts, model):
     if is_running_parallel(rank):
         # model.criterion = self.opts.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
@@ -172,14 +205,104 @@ def clean_end_with_sigsegv_hack(rank):
 
 # -- tests
 
+def runfn_test(rank, world_size, master_port):
+    setup_process(rank, world_size, master_port)
+    cleanup(rank)
+
 def test_setup():
     print('test_setup')
-    world_size = 4
+    if torch.cuda.is_available():
+        world_size = torch.cuda.device_count()
+    else:
+        world_size = 4
     master_port = find_free_port()
-    mp.spawn(setup_process, args=(world_size, master_port), nprocs=4)
-    dist.destroy_process_group()
+    mp.spawn(runfn_test, args=(world_size, master_port), nprocs=world_size)
     print('successful test_setup!')
 
+class QuadraticDataset(Dataset):
+
+    def __init__(self, Din, nb_examples=200):
+        self.Din = Din
+        self.x = torch.randn(nb_examples, self.Din)
+        self.y = self.x**2 + self.x + 3
+
+    def __len__(self):
+        return self.x.size(0)
+
+    def __getitem__(self, idx):
+        return self.x[idx], self.y[idx]
+
+
+def get_dist_dataloader_test(rank, opts):
+    train_dataset = QuadraticDataset(opts.Din)
+    sampler = DistributedSampler(train_dataset, num_replicas=opts.world_size, rank=rank)
+    train_loader = DataLoader(
+        dataset=train_dataset,
+        batch_size=opts.batch_size,
+        shuffle=False,
+        num_workers=0,
+        sampler=sampler,
+        pin_memory=True)
+    return train_loader
+
+def run_parallel_training_loop(rank, opts):
+    print_process_info(rank)
+    opts.gpu = rank
+    # You need to call torch.cuda.set_device(rank) before init_process_group is called.
+    torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
+    setup_process(rank, opts.world_size, opts.master_port)
+
+    # get ddp model
+    opts.Din, opts.Dout = 10, 10
+    model = nn.Linear(opts.Din, opts.Dout)
+    model = move_to_ddp(rank, opts, model)
+    criterion = nn.MSELoss().to(opts.gpu)
+
+    # can distributed dataloader
+    train_loader = get_dist_dataloader_test(rank, opts)
+    optimizer = torch.optim.SGD(model.parameters(), 1e-4)
+
+    # do training
+    for epoch in range(opts.epochs):
+        for i, (images, labels) in enumerate(train_loader):
+            if torch.cuda.is_available():
+                images = images.cuda(non_blocking=True)
+                labels = labels.cuda(non_blocking=True)
+            # Forward pass
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()  # When the backward() returns, param.grad already contains the synchronized gradient tensor.
+            optimizer.step()
+
+    # Destroy a given process group, and deinitialize the distributed package
+    cleanup(rank)
+
+def test_basic_ddp_example():
+    """
+    Useful links:
+    - https://github.com/yangkky/distributed_tutorial/blob/master/src/mnist-distributed.py
+    - https://pytorch.org/tutorials/intermediate/ddp_tutorial.html
+
+    """
+    print('test_setup')
+    opts = Namespace(epochs=3, batch_size=8)
+    if torch.cuda.is_available():
+        opts.world_size = torch.cuda.device_count()
+    else:
+        opts.world_size = 4
+    opts.master_port = find_free_port()
+    mp.spawn(run_parallel_training_loop, args=(opts,), nprocs=opts.world_size)
+
+def test_basic_mnist_example():
+    pass
 
 if __name__ == '__main__':
-    test_setup()
+    print('starting __main__')
+    start = time.time()
+    # test_setup()
+    test_basic_ddp_example()
+    print(f'execution length = {time.time() - start}')
+    print('Done!\a\n')

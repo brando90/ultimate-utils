@@ -10220,3 +10220,74 @@ constructors = counters['cons_counter']
 db_hash2idx = torch.load(opts.path2hash2idx)
 hash2idx = db_hash2idx['hash2idx']
 num_tactic_hashes = len(hash2idx.keys())
+
+
+#%%
+
+# https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html
+
+import torchtext
+from collections import Counter
+
+# text_pipeline = lambda x: [vocab[token] for token in tokenizer(x)]
+# label_pipeline = lambda x: int(x) - 1
+
+counter = Counter()
+
+counter.update(['a', 'a', 'a', 'bob', 'bob', 'cat', 'dog'])
+print(counter)
+
+vocab = torchtext.vocab.Vocab(counter)
+vocab2 = torchtext.vocab.Vocab(counter, min_freq=2)
+
+print(vocab)
+# print('a' in vocab)
+print(vocab['a'])
+print(vocab['bob'])
+print(vocab['cat'])
+print(vocab['dog'])
+print(vocab['asdf'])
+
+print()
+print(vocab2['a'])
+print(vocab2['bob'])
+print(vocab2['cat'])
+print(vocab2['dog'])
+print(vocab['asdf'])
+
+print()
+print(len(vocab))
+
+
+# text_pipeline = lambda x: [vocab[token] for token in tokenizer(x)]
+#
+# from torch.utils.data import DataLoader
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#
+# def collate_batch(batch):
+#     label_list, text_list, offsets = [], [], [0]
+#     for (_label, _text) in batch:
+#          label_list.append(label_pipeline(_label))
+#          processed_text = torch.tensor(text_pipeline(_text), dtype=torch.int64)
+#          text_list.append(processed_text)
+#          offsets.append(processed_text.size(0))
+#     label_list = torch.tensor(label_list, dtype=torch.int64)
+#     offsets = torch.tensor(offsets[:-1]).cumsum(dim=0)
+#     text_list = torch.cat(text_list)
+#     return label_list.to(device), text_list.to(device), offsets.to(device)
+#
+# train_iter = AG_NEWS(split='train')
+# dataloader = DataLoader(train_iter, batch_size=8, shuffle=False, collate_fn=collate_batch)
+
+# %%
+
+import torch
+
+x = torch.randn([1, 4])
+y = torch.randn([1, 4])
+
+xy = torch.stack([x, y])
+print(xy.size())
+
+xy = torch.cat([x, y])
+print(xy.size())

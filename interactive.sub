@@ -1,0 +1,8 @@
+Request_gpus = 2
+Request_cpus = 4
+requirements = (CUDADeviceName != "Tesla K40m")
+# requirements = (CUDADeviceName != "GeForce GTX TITAN X")
+# requirements = (CUDADeviceName == "GeForce GTX TITAN X")
+# requirements = (CUDADeviceName == "Quadro RTX 6000")
+environment = CONDOR_JOB_ID=$(Cluster)
+Queue

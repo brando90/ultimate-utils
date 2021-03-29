@@ -4,8 +4,10 @@ from pathlib import Path
 import numpy as np
 # from torch.utils.tensorboard import SummaryWriter
 
-def log_2_tb(tb, args, it, tag1, loss, tag2, acc):
+def log_2_tb(tb, args, it, tag1: str, loss, tag2: str, acc):
     # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
+    # tag1 = tag1.replace(' ', '_')
+    # tag2 = tag2.replace(' ', '_')
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc, it)
 

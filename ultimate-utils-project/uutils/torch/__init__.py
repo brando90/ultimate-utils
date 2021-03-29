@@ -12,6 +12,7 @@ from typing import List
 import higher
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 import numpy as np
 import scipy.integrate as integrate
@@ -46,12 +47,9 @@ def hello():
 def helloworld():
     print('hello world torch_utils!')
 
-# meta-optimizer utils
-
 def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
         w.requires_grad = bool
-
 
 def check_mdl_in_single_gpu(mdl):
     """
@@ -287,7 +285,10 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
             # compute topk accuracy - the accuracy of the mode's ability to get it right within it's top k guesses/preds
             topk_acc = tot_correct_topk / batch_size  # topk accuracy for entire batch
             list_topk_accs.append(topk_acc)
-        return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
+        if len(list_topk_accs) == 1:
+            return list_topk_accs[0]  # only the top accuracy you requested
+        else:
+            return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
 
 def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torch.FloatTensor]:
     """
@@ -1424,6 +1425,47 @@ def split_three(lst, ratio=[0.8, 0.1, 0.1]):
     indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r+val_r))]
     train, val, test = np.split(lst, indicies_for_splitting)
     return train, val, test
+
+# -- Label smoothing
+
+"""
+refs:
+https://discuss.pytorch.org/t/labels-smoothing-and-categorical-loss-functions-alternatives/11339/12
+https://discuss.pytorch.org/t/cross-entropy-with-one-hot-targets/13580
+https://github.com/pytorch/pytorch/issues/7455
+https://github.com/OpenNMT/OpenNMT-py/blob/e8622eb5c6117269bb3accd8eb6f66282b5e67d9/onmt/utils/loss.py#L186
+https://stackoverflow.com/questions/55681502/label-smoothing-in-pytorch
+
+"""
+
+class LabelSmoothingLoss(nn.Module):
+    """
+    With label smoothing,
+    KL-divergence between q_{smoothed ground truth prob.}(w)
+    and p_{prob. computed by model}(w) is minimized.
+    """
+    def __init__(self, label_smoothing, tgt_vocab_size, ignore_index=-100):
+        assert 0.0 < label_smoothing <= 1.0
+        self.ignore_index = ignore_index
+        super(LabelSmoothingLoss, self).__init__()
+
+        smoothing_value = label_smoothing / (tgt_vocab_size - 2)
+        one_hot = torch.full((tgt_vocab_size,), smoothing_value)
+        one_hot[self.ignore_index] = 0
+        self.register_buffer('one_hot', one_hot.unsqueeze(0))
+
+        self.confidence = 1.0 - label_smoothing
+
+    def forward(self, output, target):
+        """
+        output (FloatTensor): batch_size x n_classes
+        target (LongTensor): batch_size
+        """
+        model_prob = self.one_hot.repeat(target.size(0), 1)
+        model_prob.scatter_(1, target.unsqueeze(1), self.confidence)
+        model_prob.masked_fill_((target == self.ignore_index).unsqueeze(1), 0)
+
+        return F.kl_div(output, model_prob, reduction='sum')
 
 # -- tests
 
