@@ -556,6 +556,7 @@ def load_cluster_jobids_to(args):
     args.jobid = -1
     args.slurm_jobid, args.slurm_array_task_id = -1, -1
     args.condor_jobid = -1
+    args.hostname = str(gethostname())
     if "SLURM_JOBID" in os.environ:
         args.slurm_jobid = int(os.environ["SLURM_JOBID"])
         args.jobid = args.slurm_jobid

@@ -10291,3 +10291,12 @@ print(xy.size())
 
 xy = torch.cat([x, y])
 print(xy.size())
+
+
+#%%
+
+"""
+
+python -m memory_profiler file.py
+
+"""

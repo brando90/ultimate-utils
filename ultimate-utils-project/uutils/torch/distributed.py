@@ -19,7 +19,7 @@ from torch.nn.parallel import DistributedDataParallel
 
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
 # st()
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 # st()
 import os
@@ -31,10 +31,13 @@ def set_gpu_id_if_available_simple(opts):
     :param opts:
     :return:
     """
-    # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
-    opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
-    # if in debug mode overwrite the previous decision, debug is ran serially with gpu or cpu so device name is enough
-    opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu") if opts.debug else opts.gpu
+    if torch.cuda.is_available():
+        # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
+        opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
+        # if in debug mode overwrite the previous decision, debug is ran serially with gpu or cpu so device name is enough
+        opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu") if opts.debug else opts.gpu
+    else:
+        opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def process_batch_ddp(opts, batch):
     """
@@ -330,7 +333,7 @@ class TestDistAgent:
         self.opts = opts
         self.dataloader = dataloader
         if is_lead_worker(self.opts.rank):
-            # from torch.utils.tensorboard import SummaryWriter
+            from torch.utils.tensorboard import SummaryWriter  # I don't think this works
             opts.tb_dir = Path('~/ultimate-utils/').expanduser()
             self.opts.tb = SummaryWriter(log_dir=opts.tb_dir)
 
@@ -417,8 +420,8 @@ def test_basic_mnist_example():
 if __name__ == '__main__':
     print('starting distributed.__main__')
     start = time.time()
-    # test_setup()
-    # test_basic_ddp_example()
-    test_basic_ddp_example_with_tensorboard()
+    test_setup()
+    test_basic_ddp_example()
+    # test_basic_ddp_example_with_tensorboard()
     print(f'execution length = {time.time() - start} seconds')
     print('Done Distributed!\a\n')
