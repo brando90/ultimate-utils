@@ -16,7 +16,7 @@ If you use this implementation consider citing us:
 
 I am a collection of useful code that Brando has collected through the years that has been useful accross his projects.
 
-To use me get a copy of this repo (I recommend to fork it) clone it as usual in your workspace. 
+To use me get a copy of this repo (I recommend to fork it on github) clone it as usual in your workspace. 
 Then install it in development mode (
 google it if you don't know what it is or see the `modules_in_python.md`) with:
 
