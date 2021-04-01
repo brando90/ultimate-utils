@@ -54,6 +54,30 @@ def process_batch_ddp(opts, batch):
         y = y.to(opts.gpu)
     return x, y
 
+def process_batch_ddp_tactic_prediction(opts, batch):
+    """
+    Make sure opts has the gpu for each worker.
+
+    :param opts:
+    :param batch:
+    :return:
+    """
+    processed_batch = {'goal': [], 'local_context': [], 'env': [], 'tac_label': []}
+    if type(batch) is dict:
+        y = torch.tensor(batch['tac_label'], dtype=torch.long).to(opts.gpu)
+        batch['tac_label'] = y
+        processed_batch = batch
+    else:
+        # when treating entire goal, lc, env as 1 AST/ABT
+        x, y = batch
+        if type(x) == torch.Tensor:
+            x = x.to(opts.gpu)
+        if type(y) == torch.Tensor:
+            y = y.to(opts.gpu)
+        processed_batch['goal'] = x
+        processed_batch['tac_label'] = y
+    return processed_batch
+
 def set_sharing_strategy(new_strategy=None):
     """
     https://pytorch.org/docs/stable/multiprocessing.html
