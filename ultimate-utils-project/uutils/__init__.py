@@ -375,27 +375,6 @@ def collect_content_from_file(filepath):
 
 ## cluster stuff
 
-def get_cluster_jobids_old(args):
-    import os
-
-    # Get Get job number of cluster
-    args.jobid = -1
-    args.slurm_jobid, args.slurm_array_task_id = -1, -1
-    if "SLURM_JOBID" in os.environ:
-        args.slurm_jobid = int(os.environ["SLURM_JOBID"])
-        args.jobid = args.slurm_jobid
-    if "SLURM_ARRAY_TASK_ID" in os.environ:
-        args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
-    args.condor_jobid = -1
-    if "MY_CONDOR_JOB_ID" in os.environ:
-        args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
-        args.jobid = args.condor_jobid
-    if "PBS_JOBID" in os.environ:
-        try:
-            args.jobid = int(os.environ["PBS_JOBID"])
-        except:
-            args.jobid = os.environ["PBS_JOBID"]
-
 def pprint_dict(dic):
     pprint_any_dict(dic)
 
@@ -563,13 +542,9 @@ def load_cluster_jobids_to(args):
     if "SLURM_ARRAY_TASK_ID" in os.environ:
         args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
-    if "MY_CONDOR_JOB_ID" in os.environ:
-        args.condor_jobid = int(os.environ["MY_CONDOR_JOB_ID"])
+    if "CONDOR_JOB_ID" in os.environ:
+        args.condor_jobid = int(os.environ["CONDOR_JOB_ID"])
         args.jobid = args.condor_jobid
-    elif str(gethostname()) != 'vision-sched.cs.illinois.edu':
-        # for now log the pid while I figure out how to get the condor id for an interactive job
-        # https://stackoverflow.com/questions/66808622/how-does-one-get-the-job-id-of-an-interactive-job-in-an-env-variable-if-using-co
-        args.jobid = f'{args.jobid}_pid_{os.getpid()}'
 
     if "PBS_JOBID" in os.environ:
         # args.num_workers = 8
@@ -579,3 +554,17 @@ def load_cluster_jobids_to(args):
             args.jobid = os.environ["PBS_JOBID"]
     if 'dgx' in str(gethostname()):
         args.jobid = f'{args.jobid}_pid_{os.getpid()}'
+
+
+def set_system_wide_force_flush():
+    """
+    Force flushes the entire print function everywhere.
+
+    https://stackoverflow.com/questions/230751/how-to-flush-output-of-print-function
+    :return:
+    """
+    import builtins
+    import functools
+    print2 = functools.partial(print, flush=True)
+    builtins.print = print2
+

@@ -3,6 +3,8 @@ For code used in distributed training.
 """
 from pdb import set_trace as st
 
+import sys
+
 import time
 from argparse import Namespace
 from pathlib import Path
@@ -34,8 +36,6 @@ def set_gpu_id_if_available_simple(opts):
     if torch.cuda.is_available():
         # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
         opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
-        # if in debug mode overwrite the previous decision, debug is ran serially with gpu or cpu so device name is enough
-        opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu") if opts.debug else opts.gpu
     else:
         opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -132,17 +132,22 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
     import torch.distributed as dist
     import os
     import torch
+    import sys
+    import functools
+    # import builtins
+    # print2 = functools.partial(print, flush=True); builtins.print = print2
 
     if rank != -1:  # -1 rank indicates serial code
-        print(f'setting up rank={rank} (with world_size={world_size})')
+        # sys.stdout.flush()  # no delay in print statements
+        print(f'----> setting up rank={rank} (with world_size={world_size})')
         # MASTER_ADDR = 'localhost'
         MASTER_ADDR = '127.0.0.1'
         MASTER_PORT = master_port
         # set up the master's ip address so this child process can coordinate
         os.environ['MASTER_ADDR'] = MASTER_ADDR
-        print(f"{MASTER_ADDR=}")
+        print(f"---> {MASTER_ADDR=}")
         os.environ['MASTER_PORT'] = MASTER_PORT
-        print(f"{MASTER_PORT}")
+        print(f"---> {MASTER_PORT}")
 
         # - use NCCL if you are using gpus: https://pytorch.org/tutorials/intermediate/dist_tuto.html#communication-backends
         if torch.cuda.is_available():
@@ -152,12 +157,13 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
             # You need to call torch.cuda.set_device(rank) before init_process_group is called.
             backend = 'nccl'
             torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
-        print(f'{backend=}')
+        print(f'---> {backend=}')
         # Initializes the default distributed process group, and this will also initialize the distributed package.
         dist.init_process_group(backend, rank=rank, world_size=world_size)
         # dist.init_process_group(backend, rank=rank, world_size=world_size)
         # dist.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
-        print(f'--> done setting up rank={rank}')
+        print(f'----> done setting up rank={rank}')
+        torch.distributed.barrier()
 
 def cleanup(rank):
     """ Destroy a given process group, and deinitialize the distributed package """
@@ -192,16 +198,19 @@ def is_lead_worker(rank):
     am_I_lead_worker = rank == 0 or is_running_serially(rank)
     return am_I_lead_worker
 
-def print_process_info(rank):
+def print_process_info(rank, flush=False):
     """
     Prints the rank given, the current process obj name/info and the pid (according to os python lib).
 
+    :param flush:
     :param rank:
     :return:
     """
-    print(f'{rank=}')
-    print(f'{mp.current_process()=}')
-    print(f'{os.getpid()=}')
+    # import sys
+    # sys.stdout.flush()  # no delay in print statements
+    print(f'-> {rank=}', flush=flush)
+    print(f'-> {mp.current_process()=}', flush=flush)
+    print(f'-> {os.getpid()=}', flush=flush)
 
 def print_gpu_info():
     # get device name if possible
@@ -243,7 +252,7 @@ def clean_end_with_sigsegv_hack(rank):
 
     :return:
     """
-    from datetime import time
+    import time
 
     if is_running_parallel(rank):
         torch.distributed.barrier()
