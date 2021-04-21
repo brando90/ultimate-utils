@@ -232,7 +232,6 @@ def make_and_check_dir2(path):
     except OSError:
         pass
 
-
 ####
 
 """
