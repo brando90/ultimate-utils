@@ -212,9 +212,9 @@ def make_args_pickable(args):
     # The vars() function returns the __dict__ attribute of the given object.
     for field in vars(args):
         field_val = getattr(args, field)
-        if not dill.pickles(field):
+        if not dill.pickles(field_val):
             field_val = str(field_val)
-        setattr(args, field, field_val)
+        setattr(pickable_args, field, field_val)
     return pickable_args
 
 def make_opts_pickable(opts):

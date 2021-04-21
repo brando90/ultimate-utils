@@ -51,6 +51,13 @@ def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
         w.requires_grad = bool
 
+def print_dict_of_dataloaders_dataset_types(dataloaders):
+    msg = 'dataset/loader type: '
+    for split, dataloader in dataloaders.items():
+        dataset = dataloader.dataset
+        msg += f'{split}: {dataset}, '
+    print(msg)
+
 def check_mdl_in_single_gpu(mdl):
     """
     note this only checks the first param and from that infers the rest is in gpu.

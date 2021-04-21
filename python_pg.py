@@ -10300,3 +10300,40 @@ print(xy.size())
 python -m memory_profiler file.py
 
 """
+
+#%%
+
+# list of letters
+letters = ['a', 'b', 'd', 'e', 'i', 'j', 'o']
+
+# function that filters vowels
+def filter_vowels(letter):
+    vowels = ['a', 'e', 'i', 'o', 'u']
+
+    if letter in vowels:
+        return True
+    else:
+        return False
+
+print(filter)
+filtered_vowels = filter(filter_vowels, letters)
+
+print('The filtered vowels are:')
+for vowel in filtered_vowels:
+    print(vowel)
+
+# %%
+# The filter() method constructs an iterator from elements of an iterable for which a function returns true.
+
+# filter things that are not None, i.e. we want to keep things that are not None.
+
+list2filter = ['a', 'b', None]
+print(list2filter)
+
+filteredlist = filter(lambda x: x is not None, list2filter)
+print(list(filteredlist))
+
+# this is much better: https://stackoverflow.com/questions/61925671/use-only-some-items-in-a-list-comprehension
+
+#%%
+
