@@ -1355,6 +1355,16 @@ class AverageMeter(object):
         fmtstr = '{name} val:{val} avg:{avg}'
         return fmtstr.format(**self.__dict__)
 
+def flatten2float_list(t: torch.Tensor) -> List[float]:
+    """
+    Maps a tensor to a flatten list of floats
+    :param t:
+    :return:
+    """
+    t = t.view(-1).detach().numpy().tolist()
+    # t = torch.flatten(t).numpy().tolist()
+    return t
+
 # -- not using for now
 
 class AverageStdMeter(object):
