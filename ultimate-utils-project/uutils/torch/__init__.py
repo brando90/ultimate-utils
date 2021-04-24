@@ -9,7 +9,6 @@ utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programm
 from datetime import datetime
 from typing import List
 
-import higher
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -1225,6 +1224,7 @@ def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_nam
     return similarities
 
 def compute_sim_for_current_task(self, task):
+    import higher
     # print(f'start: {torch.multiprocessing.current_process()}')
     # unpack args pased via checking global variables, oh no!
     layer_names = self.layer_names
