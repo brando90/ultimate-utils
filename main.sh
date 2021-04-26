@@ -26,7 +26,7 @@ which python
 #echo CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES
 
 # - run script
-#python ~/ultimate-utils/ultimate-utils-project/uutils/torch/distributed.py
+#python ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch/distributed.py
 #echo MINIMUM TEST WORKS
 python ~/ML4Coq/ml4coq-proj/embeddings_zoo/tree_nns/main_brando.py
 

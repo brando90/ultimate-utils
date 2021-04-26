@@ -54,7 +54,7 @@ def execute_tensorboard():
     DOESN'T WORK.
 
     test:
-    python /Users/brando/ultimate-utils/ultimate-utils-project/execute_tensorboard.py /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
+    python /Users/brando/ultimate-utils/ultimate-utils-proj-src/execute_tensorboard.py /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
 
     @return:
     """
