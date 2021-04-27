@@ -1,9 +1,6 @@
 """
 For code used in distributed training.
 """
-from pdb import set_trace as st
-
-import sys
 
 import time
 from argparse import Namespace
@@ -20,24 +17,35 @@ import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
-# st()
-# from torch.utils.tensorboard import SummaryWriter
 
-# st()
 import os
 
-def set_gpu_id_if_available_simple(opts):
+from pdb import set_trace as st
+
+# def set_gpu_id_if_available_simple(opts):
+#     """
+#     Main idea is opts.gpu = rank for simple case except in debug/serially running.
+#
+#     :param opts:
+#     :return:
+#     """
+#     if torch.cuda.is_available():
+#         # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
+#         opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
+#     else:
+#         opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def set_devices(opts):
     """
-    Main idea is opts.gpu = rank for simple case except in debug/serially running.
+    Set device to the gpu id if its distributed pytorch parallel otherwise to the device available.
 
     :param opts:
     :return:
     """
-    if torch.cuda.is_available():
-        # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
-        opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
+    if is_running_serially(opts.rank):
+        opts.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        opts.device = opts.rank
 
 def process_batch_ddp(opts, batch):
     """
@@ -71,9 +79,9 @@ def process_batch_ddp_tactic_prediction(opts, batch):
         # when treating entire goal, lc, env as 1 AST/ABT
         x, y = batch
         if type(x) == torch.Tensor:
-            x = x.to(opts.gpu)
+            x = x.to(opts.device)
         if type(y) == torch.Tensor:
-            y = y.to(opts.gpu)
+            y = y.to(opts.device)
         processed_batch['goal'] = x
         processed_batch['tac_label'] = y
     return processed_batch
@@ -132,13 +140,11 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
     import torch.distributed as dist
     import os
     import torch
-    import sys
-    import functools
     # import builtins
     # print2 = functools.partial(print, flush=True); builtins.print = print2
+    print(f'setup_process has rank={rank}')
 
-    if rank != -1:  # -1 rank indicates serial code
-        # sys.stdout.flush()  # no delay in print statements
+    if is_running_parallel(rank):
         print(f'----> setting up rank={rank} (with world_size={world_size})')
         # MASTER_ADDR = 'localhost'
         MASTER_ADDR = '127.0.0.1'
@@ -151,24 +157,19 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
 
         # - use NCCL if you are using gpus: https://pytorch.org/tutorials/intermediate/dist_tuto.html#communication-backends
         if torch.cuda.is_available():
-            # unsure if this is really needed
-            # os.environ['NCCL_SOCKET_IFNAME'] = 'eth0'
-            # os.environ['NCCL_IB_DISABLE'] = '1'
-            # You need to call torch.cuda.set_device(rank) before init_process_group is called.
+            # https://github.com/pytorch/pytorch/issues/54550 You need to call torch.cuda.set_device(rank) before init_process_group is called.
             backend = 'nccl'
-            torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
+            torch.cuda.set_device(opts.device)  # is this right if we do parallel cpu?
         print(f'---> {backend=}')
         # Initializes the default distributed process group, and this will also initialize the distributed package.
         dist.init_process_group(backend, rank=rank, world_size=world_size)
-        # dist.init_process_group(backend, rank=rank, world_size=world_size)
-        # dist.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
         print(f'----> done setting up rank={rank}')
         torch.distributed.barrier()
 
 def cleanup(rank):
     """ Destroy a given process group, and deinitialize the distributed package """
     # only destroy the process distributed group if the code is not running serially
-    if rank != -1:  # -1 rank indicates serial code
+    if is_running_parallel(rank):
         dist.destroy_process_group()
 
 def get_batch(batch: Tuple[Tensor, Tensor], rank) -> Tuple[Tensor, Tensor]:
@@ -232,8 +233,8 @@ def move_to_ddp(rank, opts, model):
         # if gpu avail do the standard of creating a model and moving the model to the GPU with id rank
         if torch.cuda.is_available():
             # create model and move it to GPU with id rank
-            tactic_predictor = model.to(opts.gpu)
-            model = DistributedDataParallel(model, find_unused_parameters=True, device_ids=[opts.gpu])
+            model = model.to(opts.device)
+            model = DistributedDataParallel(model, find_unused_parameters=True, device_ids=[opts.device])
         else:
             # if we want multiple cpu just make sure the model is shared properly accross the cpus with shared_memory()
             # note that op is a no op if it's already in shared_memory
@@ -242,7 +243,7 @@ def move_to_ddp(rank, opts, model):
     else:  # running serially
         if torch.cuda.is_available():
             # create model and move it to GPU with id rank
-            model = model.to(opts.gpu)
+            model = model.to(opts.device)
 
     return model
 

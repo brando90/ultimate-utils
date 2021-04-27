@@ -37,8 +37,7 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
 
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda" if use_cuda else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def hello():
     print('hello')
@@ -60,6 +59,16 @@ def print_dict_of_dataloaders_dataset_types(dataloaders):
 def check_mdl_in_single_gpu(mdl):
     """
     note this only checks the first param and from that infers the rest is in gpu.
+
+    https://discuss.pytorch.org/t/how-to-check-if-model-is-on-cuda/180
+    :return:
+    """
+    device = next(mdl.parameters()).device
+    return device
+
+def get_device(mdl):
+    """
+    Checks the device of the first set of params.
 
     https://discuss.pytorch.org/t/how-to-check-if-model-is-on-cuda/180
     :return:
