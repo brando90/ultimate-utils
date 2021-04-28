@@ -22,18 +22,18 @@ import os
 
 from pdb import set_trace as st
 
-# def set_gpu_id_if_available_simple(opts):
-#     """
-#     Main idea is opts.gpu = rank for simple case except in debug/serially running.
-#
-#     :param opts:
-#     :return:
-#     """
-#     if torch.cuda.is_available():
-#         # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
-#         opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
-#     else:
-#         opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def set_gpu_id_if_available_simple(opts):
+    """
+    Main idea is opts.gpu = rank for simple case except in debug/serially running.
+
+    :param opts:
+    :return:
+    """
+    if torch.cuda.is_available():
+        # if running serially then there is only 1 gpu the 0th one otherwise the rank is the gpu in simple cases
+        opts.gpu = 0 if is_running_serially(opts.rank) else opts.rank  # makes sure code works with 1 gpu and serially
+    else:
+        opts.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def set_devices(opts):
     """
