@@ -10337,3 +10337,36 @@ print(list(filteredlist))
 
 #%%
 
+import capnp
+# import dag_api_capnp
+capnp.remove_import_hook()
+try:
+    # first try to see if we are running a benchmark & the capnp schema is in the share conda folder
+    dag_api_capnp = str(Path(os.environ['CONDA_PREFIX'] + '/share/dag_api.capnp').expanduser())
+    dag_api_capnp = capnp.load(dag_api_capnp)
+except:
+    # else run the one in the main project folder
+    dag_api_capnp = str(Path('~/coq-tactician-graph/src/dag_api.capnp').expanduser())
+    dag_api_capnp = capnp.load(dag_api_capnp)
+
+#%%
+
+import capnp
+capnp.remove_import_hook()
+example_msg_capnp = Path("~/ultimate-utils/example_msg.capnp").expanduser()
+example_msg_capnp = capnp.load(str(example_msg_capnp))
+
+# Building
+addresses = example_msg_capnp.AddressBook.newMessage()
+people = addresses.init('people', 1)
+
+#%%
+
+# python index slicing
+
+lst = [1, 2, 3, 4]
+print(lst[:0])
+print(lst[:1])
+print(lst[:2])
+
+# its non inclusive
