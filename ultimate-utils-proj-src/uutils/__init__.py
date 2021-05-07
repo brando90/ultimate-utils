@@ -10,6 +10,7 @@ import time
 import math
 
 import dill
+import networkx as nx
 import numpy as np
 import random
 import pandas as pd
@@ -32,6 +33,8 @@ import types
 from pandas import DataFrame
 
 from socket import gethostname
+
+import pygraphviz as pgv
 
 def hello():
     print('hello from uutitls __init__.pyt')
@@ -567,3 +570,75 @@ def set_system_wide_force_flush():
     print2 = functools.partial(print, flush=True)
     builtins.print = print2
 
+# graph stuff
+
+def draw_nx(g, labels=None):
+    import matplotlib.pyplot as plt
+    if labels is not None:
+        g = nx.relabel_nodes(g, labels)
+    pos = nx.kamada_kawai_layout(g)
+    nx.draw(g, pos, with_labels=True)
+    plt.show()
+
+def draw_nx_attributes_as_labels(g, attribute):
+    # import pylab
+    import matplotlib.pyplot as plt
+    import networkx as nx
+    labels = nx.get_node_attributes(g, attribute)
+    pos = nx.kamada_kawai_layout(g)
+    nx.draw(g, pos, labels=labels, with_labels=True)
+    # nx.draw(g, labels=labels)
+    # pylab.show()
+    plt.show()
+
+def draw_nx_with_pygrapviz():
+    # https://stackoverflow.com/questions/28533111/plotting-networkx-graph-with-node-labels-defaulting-to-node-name/67439711#67439711
+    pass
+
+def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=None, save_file=False):
+    import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
+
+    # https://stackoverflow.com/questions/15345192/draw-more-information-on-graph-nodes-using-pygraphviz
+    # https://stackoverflow.com/a/67442702/1601580
+
+    if path2file is None:
+        path2file = './example.png'
+        path2file = Path(path2file).expanduser()
+        save_file = True
+    if type(path2file) == str:
+        path2file = Path(path2file).expanduser()
+        save_file = True
+
+    g = nx.nx_agraph.to_agraph(g)
+    # to label in pygrapviz make sure to have the AGraph obj have the label attribute set on the nodes
+    g = str(g)
+    g = g.replace(attribute_name, 'label')  # it only
+    print(g)
+    g = pgv.AGraph(g)
+    g.layout()
+    g.draw(path2file)
+
+    # https://stackoverflow.com/questions/20597088/display-a-png-image-from-python-on-mint-15-linux
+    img = mpimg.imread(path2file)
+    plt.imshow(img)
+    plt.show()
+
+    # remove file https://stackoverflow.com/questions/6996603/how-to-delete-a-file-or-folder
+    if not save_file:
+        path2file.unlink()
+
+# -- tests
+
+def test_draw():
+    # import pylab
+    import networkx as nx
+    g = nx.Graph()
+    g.add_node('Golf', size='small')
+    g.add_node('Hummer', size='huge')
+    g.add_node('Soccer', size='huge')
+    g.add_edge('Golf', 'Hummer')
+    draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name='size')
+
+if __name__ == '__main__':
+    test_draw()

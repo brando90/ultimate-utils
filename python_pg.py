@@ -10570,3 +10570,156 @@ plt.show()
 Path('./file.png').expanduser().unlink()
 # import os
 # os.remove('./file.png')
+
+# %%
+
+# networkx to dgl: https://docs.dgl.ai/en/0.6.x/generated/dgl.from_networkx.html
+
+import dgl
+import networkx as nx
+import numpy as np
+import torch
+
+nx_g = nx.DiGraph()
+# Add 3 nodes and two features for them
+nx_g.add_nodes_from([0, 1, 2], feat1=np.zeros((3, 1)), feat2=np.ones((3, 1)))
+# Add 2 edges (1, 2) and (2, 1) with two features, one being edge IDs
+nx_g.add_edge(1, 2, weight=np.ones((1, 1)), eid=np.array([1]))
+nx_g.add_edge(2, 1, weight=np.ones((1, 1)), eid=np.array([0]))
+
+g = dgl.from_networkx(nx_g)
+
+# ... https://docs.dgl.ai/en/0.6.x/generated/dgl.from_networkx.html
+
+
+# %%
+
+import networkx as nx
+import matplotlib.pyplot as plt
+
+G = nx.Graph()
+
+G.add_node('a')
+G.add_node('b', attr1='cons')
+print(f'{G=}')
+
+pos = nx.kamada_kawai_layout(G)
+nx.draw(G, pos, with_labels=True)
+plt.show()
+
+# adding reated edges and nodes: https://stackoverflow.com/questions/28488559/networkx-duplicate-edges/51611005
+
+#%%
+
+import pylab
+import networkx as nx
+g=nx.Graph()
+g.add_node('Golf',size='small')
+g.add_node('Hummer',size='huge')
+g.add_edge('Golf','Hummer')
+labels = nx.get_node_attributes(g, 'size')
+pos = nx.kamada_kawai_layout(g)
+nx.draw(g, pos, labels=labels, with_labels=True)
+# nx.draw(g, labels=labels)
+pylab.show()
+
+
+#%%
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+from pathlib import Path
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+g = g.to_networkx().to_undirected()
+print(f'{g=}')
+
+# relabel
+int2label = {0: "app", 1: "cons", 2: "with", 3: "app3", 4: "app4", 5: "app"}
+g = nx.relabel_nodes(g, int2label)
+
+# https://networkx.org/documentation/stable/reference/drawing.html#module-networkx.drawing.layout
+g = nx.nx_agraph.to_agraph(g)
+print(f'{g=}')
+print(f'{g.string()=}')
+
+# draw
+g.layout()
+g.draw("file.png")
+
+# https://stackoverflow.com/questions/20597088/display-a-png-image-from-python-on-mint-15-linux
+img = mpimg.imread('file.png')
+plt.imshow(img)
+plt.show()
+
+# remove file https://stackoverflow.com/questions/6996603/how-to-delete-a-file-or-folder
+Path('./file.png').expanduser().unlink()
+# import os
+# os.remove('./file.png')
+
+#%%
+
+import pylab
+import networkx as nx
+g=nx.Graph()
+g.add_node('Golf',size='small')
+g.add_node('Hummer',size='huge')
+g.add_edge('Golf','Hummer')
+labels = nx.get_node_attributes(g, 'size')
+pos = nx.kamada_kawai_layout(g)
+nx.draw(g, pos, labels=labels, with_labels=True)
+pylab.show()
+
+#%%
+
+import pygraphviz as pgv
+
+g = pgv.AGraph()
+g.add_node('Golf',label='small')
+g.add_node('Hummer',label='huge')
+g.add_edge('Golf','Hummer')
+# labels = nx.get_node_attributes(g, 'size')
+# pos = nx.kamada_kawai_layout(g)
+# nx.draw(g, pos, labels=labels, with_labels=True)
+# pylab.show()
+g.layout()
+g.draw('file.png')
+
+img = mpimg.imread('file.png')
+plt.imshow(img)
+plt.show()
+
+# Path('./file.png').expanduser().unlink()
+#%%
+
+import pygraphviz as pgv
+G=pgv.AGraph()
+ndlist = [1,2,3]
+for node in ndlist:
+    # label = "Label #" + str(node)
+    label = "app"
+    G.add_node(node, label=label)
+G.layout()
+G.draw('example.png', format='png')
+
+img = mpimg.imread('example.png')
+plt.imshow(img)
+plt.show()
+
+# Path('./file.png').expanduser().unlink()
+
+#%%
+
+# load a graph from a dot for networkx: https://stackoverflow.com/questions/42172548/read-dot-graph-in-networkx-from-a-string-and-not-file
+# G = nx_agraph.from_agraph(pygraphviz.AGraph(dotFormat))
