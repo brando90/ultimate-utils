@@ -87,6 +87,7 @@ def report_times(start, verbose=False):
     msg = f'time passed: hours:{hours}, minutes={minutes}, seconds={seconds}'
     return msg, seconds, minutes, hours
 
+
 #
 # def params_in_comp_graph():
 #     import torch
@@ -185,6 +186,7 @@ def torch_concat():
 
     g1 = torch.randn(3, 3)
     g2 = torch.randn(3, 3)
+
 
 #
 # def inner_loop1():
@@ -977,6 +979,7 @@ def subplot():
 
     fig1.savefig('fig1.png')
     fig2.savefig('fig2.png')
+
 
 #
 # def import_utils_test():
@@ -9579,7 +9582,8 @@ print(attn_scores_softmax[0, :].sum())
 print(attn_scores_softmax[0, :])
 print('a[0,0]=<q0, k0>, a[0,1]=<q0,k1> , a[0,2]=<q0,k2>')
 # print(attn_scores_softmax)
-print('Thus, each row i is a (normalized) weight [0,1] indicating how much each qry input i compares to all others inputs keys')
+print(
+    'Thus, each row i is a (normalized) weight [0,1] indicating how much each qry input i compares to all others inputs keys')
 
 # For readability, approximate the above as follows
 attn_scores_softmax = [
@@ -9604,7 +9608,7 @@ print((values[:, None] * attn_scores_softmax.T[:, :, None]).sum(dim=0))
 print('Each row i is a context vector weighted with qry i with all keys for 1...Tx by vectors v 1...Tx')
 print('i.e. AV[i,:] = sum^Tx_{t=1} a[i,t] v[:,i]')
 
-#%%
+# %%
 #
 # from pathlib import Path
 # from types import SimpleNamespace
@@ -9630,6 +9634,7 @@ print('i.e. AV[i,:] = sum^Tx_{t=1} a[i,t] v[:,i]')
 
 import torch
 
+
 class ResNet(torch.nn.Module):
     def __init__(self, module):
         super().__init__()
@@ -9637,6 +9642,7 @@ class ResNet(torch.nn.Module):
 
     def forward(self, inputs):
         return self.module(inputs) + inputs
+
 
 #
 # mdl = nn.Sequential()
@@ -9689,7 +9695,7 @@ output = m(input)
 
 print(output.size())
 
-#%%
+# %%
 
 # f string formatting
 # https://miguendes.me/73-examples-to-help-you-master-pythons-f-strings#how-to-add-leading-zeros
@@ -9751,7 +9757,6 @@ print(spt_logits_t.dtype)
 print(spt_y_t.dtype)
 inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
 
-
 # %%
 
 # view(-1), view(-1, 1)
@@ -9777,7 +9782,6 @@ x = torch.randn(2, 4, 3)
 x = x.view(-1)
 print(x.size())
 
-
 # %%
 
 import torch
@@ -9787,7 +9791,6 @@ y = torch.randn(torch.Size([5, 1028]))
 # x = (y == x).view(-1)
 x = (y == x).reshape(-1)
 print(x.size())
-
 
 # %%
 
@@ -9812,6 +9815,7 @@ print(x.size())
 
 import torch
 import torch.nn as nn
+
 
 class PositionalEncoding(nn.Module):
 
@@ -9919,13 +9923,12 @@ clf.predict(X[:2, :])
 
 clf.predict_proba(X[:2, :])
 
-
 clf.score(X, y)
 
 y_probs = cls.predict_proba(X)
 qry_loss_t = metrics.log_loss(y, y_probs)
 
-#%%
+# %%
 
 # refs:
 # https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch
@@ -10078,11 +10081,13 @@ cummulative_end_index = [4, 5 + 6, 5 + 7 + 1]
 print(cummulative_end_index)
 files = {'f1': list(range(5)), 'f2': list(range(7)), 'f3': list(range(2))}
 
+
 def get_lower_cummulative(file_idx):
     if file_idx == 0:
         return file_idx
     else:
         return cummulative_end_index[file_idx - 1] + 1
+
 
 def get_node_idx(idx):
     # gets the index for the value we want
@@ -10097,7 +10102,8 @@ def get_node_idx(idx):
     # print(node)
     return node
 
-for idx in range(5+7+2):
+
+for idx in range(5 + 7 + 2):
     node = get_node_idx(idx)
     print(node)
     print()
@@ -10124,30 +10130,32 @@ cumsum = np.array(series.cumsum())
 # display
 print(cumsum)
 
-
 # %%
 
 # splitting list of files into 3 train, val, test
 
 import numpy as np
 
+
 def split_two(lst, ratio=[0.5, 0.5]):
-    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    assert (np.sum(ratio) == 1.0)  # makes sure the splits make sense
     train_ratio = ratio[0]
     # note this function needs only the "middle" index to split, the remaining is the rest of the split
     indices_for_splittin = [int(len(lst) * train_ratio)]
     train, test = np.split(lst, indices_for_splittin)
     return train, test
 
+
 def split_three(lst, ratio=[0.8, 0.1, 0.1]):
     import numpy as np
 
     train_r, val_r, test_r = ratio
-    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    assert (np.sum(ratio) == 1.0)  # makes sure the splits make sense
     # note we only need to give the first 2 indices to split, the last one it returns the rest of the list or empty
-    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r+val_r))]
+    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r + val_r))]
     train, val, test = np.split(lst, indicies_for_splitting)
     return train, val, test
+
 
 files = list(range(10))
 train, test = split_two(files)
@@ -10161,7 +10169,7 @@ from typing import List, NewType
 
 # https://stackoverflow.com/questions/33045222/how-do-you-alias-a-type-in-python
 
-Vector = List[float]        # alias shortens
+Vector = List[float]  # alias shortens
 URL = NewType("URL", str)  # new type
 
 # this is better since URL is a string but any string is NOT usually a URL
@@ -10205,7 +10213,7 @@ print(Counter(['a', 'a', 'b']))
 # Counter({'a': 0})
 # vocab.update({'qwert':0}
 
-#%%
+# %%
 
 from argparse import Namespace
 
@@ -10221,8 +10229,7 @@ db_hash2idx = torch.load(opts.path2hash2idx)
 hash2idx = db_hash2idx['hash2idx']
 num_tactic_hashes = len(hash2idx.keys())
 
-
-#%%
+# %%
 
 # https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html
 
@@ -10258,7 +10265,6 @@ print(vocab['asdf'])
 print()
 print(len(vocab))
 
-
 # text_pipeline = lambda x: [vocab[token] for token in tokenizer(x)]
 #
 # from torch.utils.data import DataLoader
@@ -10292,8 +10298,7 @@ print(xy.size())
 xy = torch.cat([x, y])
 print(xy.size())
 
-
-#%%
+# %%
 
 """
 
@@ -10301,10 +10306,11 @@ python -m memory_profiler file.py
 
 """
 
-#%%
+# %%
 
 # list of letters
 letters = ['a', 'b', 'd', 'e', 'i', 'j', 'o']
+
 
 # function that filters vowels
 def filter_vowels(letter):
@@ -10314,6 +10320,7 @@ def filter_vowels(letter):
         return True
     else:
         return False
+
 
 print(filter)
 filtered_vowels = filter(filter_vowels, letters)
@@ -10335,9 +10342,10 @@ print(list(filteredlist))
 
 # this is much better: https://stackoverflow.com/questions/61925671/use-only-some-items-in-a-list-comprehension
 
-#%%
+# %%
 
 import capnp
+
 # import dag_api_capnp
 capnp.remove_import_hook()
 try:
@@ -10349,9 +10357,10 @@ except:
     dag_api_capnp = str(Path('~/coq-tactician-graph/src/dag_api.capnp').expanduser())
     dag_api_capnp = capnp.load(dag_api_capnp)
 
-#%%
+# %%
 
 import capnp
+
 capnp.remove_import_hook()
 example_msg_capnp = Path("~/ultimate-utils/example_msg.capnp").expanduser()
 example_msg_capnp = capnp.load(str(example_msg_capnp))
@@ -10360,7 +10369,7 @@ example_msg_capnp = capnp.load(str(example_msg_capnp))
 addresses = example_msg_capnp.AddressBook.newMessage()
 people = addresses.init('people', 1)
 
-#%%
+# %%
 
 # python index slicing
 
@@ -10371,22 +10380,193 @@ print(lst[:2])
 
 # its non inclusive
 
-#%%
+# %%
 
 import dgl.data
 
 dataset = dgl.data.CoraGraphDataset()
 print('Number of categories:', dataset.num_classes)
 
-#%%
+# %%
 
 import dgl
 import numpy as np
 import torch
 
 g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
-# Equivalently, PyTorch LongTensors also work.
-g = dgl.graph((torch.LongTensor([0, 0, 0, 0, 0]), torch.LongTensor([1, 2, 3, 4, 5])), num_nodes=6)
 
-# You can omit the number of nodes argument if you can tell the number of nodes from the edge list alone.
-g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]))
+u = np.concatenate([src, dst])
+v = np.concatenate([dst, src])
+# Construct a DGLGraph
+dgl.DGLGraph((u, v))
+
+# %%
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+nx_G = g.to_networkx().to_undirected()
+print(f'{nx_G=}')
+
+# Kamada-Kawaii layout usually looks pretty for arbitrary graphs
+pos = nx.kamada_kawai_layout(nx_G)
+nx.draw(nx_G, pos, with_labels=True)
+
+plt.show()
+
+# %%
+
+# https://stackoverflow.com/questions/28533111/plotting-networkx-graph-with-node-labels-defaulting-to-node-name
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+g = g.to_networkx().to_undirected()
+print(f'{g=}')
+
+labels = {0: "app", 1: "cons", 2: "with", 3: "app3", 4: "app4", 5: "app5"}
+
+# Kamada-Kawaii layout usually looks pretty for arbitrary graphs
+pos = nx.kamada_kawai_layout(g)
+nx.draw(g, pos, labels=labels, with_labels=True)
+
+plt.show()
+
+# %%
+
+from graphviz import Digraph
+
+g = Digraph('G', filename='hello2.gv')
+print(f'{g=}')
+
+g.edge('Hello', 'World')
+
+g.view()
+
+# %%
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+g = g.to_networkx().to_undirected()
+g = nx.nx_agraph.to_agraph(g)
+g.layout()
+# g.draw()
+g.draw("file.png")
+print(f'{g=}')
+
+# plt.show()
+
+# from IPython.display import Image, display
+#
+# def view_pydot(pdot):
+#     plt = Image(pdot.create_png())
+#     display(plt)
+#
+# view_pydot(g)
+
+# %%
+
+# https://stackoverflow.com/questions/28533111/plotting-networkx-graph-with-node-labels-defaulting-to-node-name
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+g = g.to_networkx().to_undirected()
+print(f'{g=}')
+
+# relabel
+int2label = {0: "app", 1: "cons", 2: "with", 3: "app3", 4: "app4", 5: "app5"}
+g = nx.relabel_nodes(g, int2label)
+
+# Kamada-Kawaii layout usually looks pretty for arbitrary graphs
+pos = nx.kamada_kawai_layout(g)
+nx.draw(g, pos, with_labels=True)
+
+plt.show()
+
+#%%
+
+# https://stackoverflow.com/questions/28533111/plotting-networkx-graph-with-node-labels-defaulting-to-node-name
+
+import dgl
+import numpy as np
+import torch
+
+import networkx as nx
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+from pathlib import Path
+
+g = dgl.graph(([0, 0, 0, 0, 0], [1, 2, 3, 4, 5]), num_nodes=6)
+print(f'{g=}')
+print(f'{g.edges()=}')
+
+# Since the actual graph is undirected, we convert it for visualization purpose.
+g = g.to_networkx().to_undirected()
+print(f'{g=}')
+
+# relabel
+int2label = {0: "app", 1: "cons", 2: "with", 3: "app3", 4: "app4", 5: "app5"}
+g = nx.relabel_nodes(g, int2label)
+
+# https://networkx.org/documentation/stable/reference/drawing.html#module-networkx.drawing.layout
+g = nx.nx_agraph.to_agraph(g)
+print(f'{g=}')
+print(f'{g.string()=}')
+
+# draw
+g.layout()
+g.draw("file.png")
+
+# https://stackoverflow.com/questions/20597088/display-a-png-image-from-python-on-mint-15-linux
+img = mpimg.imread('file.png')
+plt.imshow(img)
+plt.show()
+
+# remove file https://stackoverflow.com/questions/6996603/how-to-delete-a-file-or-folder
+Path('./file.png').expanduser().unlink()
+# import os
+# os.remove('./file.png')
