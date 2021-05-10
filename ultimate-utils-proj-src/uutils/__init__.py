@@ -591,9 +591,9 @@ def draw_nx_attributes_as_labels(g, attribute):
     # pylab.show()
     plt.show()
 
-def draw_nx_with_pygrapviz():
-    # https://stackoverflow.com/questions/28533111/plotting-networkx-graph-with-node-labels-defaulting-to-node-name/67439711#67439711
-    pass
+def draw_nx_with_pygraphviz(g, path2file=None, save_file=False):
+    attribute_name = None
+    draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file, save_file)
 
 def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=None, save_file=False):
     import matplotlib.pyplot as plt
@@ -610,12 +610,16 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
         path2file = Path(path2file).expanduser()
         save_file = True
 
+    print(f'\n{g.is_directed()=}')
     g = nx.nx_agraph.to_agraph(g)
-    # to label in pygrapviz make sure to have the AGraph obj have the label attribute set on the nodes
-    g = str(g)
-    g = g.replace(attribute_name, 'label')  # it only
-    print(g)
-    g = pgv.AGraph(g)
+    if attribute_name is not None:
+        print(f'{g=}')
+        # to label in pygrapviz make sure to have the AGraph obj have the label attribute set on the nodes
+        g = str(g)
+        g = g.replace(attribute_name, 'label')
+        print(g)
+        # g = pgv.AGraph(g)
+        g = pgv.AGraph(g)
     g.layout()
     g.draw(path2file)
 
@@ -632,13 +636,25 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
 
 def test_draw():
     # import pylab
-    import networkx as nx
-    g = nx.Graph()
+    # import matplotlib.pyplot as plt
+    import networkx as n
+    # https://stackoverflow.com/questions/20133479/how-to-draw-directed-graphs-using-networkx-in-python
+    g = nx.DiGraph()
+    print(f'{g.is_directed()=}')
+    g.directed = True
+    print(f'{g=}')
     g.add_node('Golf', size='small')
     g.add_node('Hummer', size='huge')
     g.add_node('Soccer', size='huge')
     g.add_edge('Golf', 'Hummer')
+    print(f'{g=}')
+    print(f'{str(g)=}')
+    print(f'{g.is_directed()=}')
     draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name='size')
+    draw_nx_with_pygraphviz(g)
+    draw_nx(g)
 
 if __name__ == '__main__':
+    print('starting __main__ at __init__')
     test_draw()
+    print('Done!\a')
