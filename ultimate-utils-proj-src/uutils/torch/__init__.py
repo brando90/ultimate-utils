@@ -6,6 +6,7 @@ Utils class with useful helper functions
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 
 """
+import gc
 from datetime import datetime
 from typing import List
 
@@ -32,6 +33,7 @@ from pdb import set_trace as st
 # from sklearn.linear_model import logistic
 from scipy.stats import logistic
 from torch.multiprocessing import Pool
+from uutils.torch.uutils_tensorboard import log_2_tb
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -53,8 +55,18 @@ def print_dict_of_dataloaders_dataset_types(dataloaders):
     msg = 'dataset/loader type: '
     for split, dataloader in dataloaders.items():
         dataset = dataloader.dataset
-        msg += f'{split}: {dataset}, '
+        msg += f'{split=}: {dataset=}, '
     print(msg)
+
+def print_dataloaders_info(opts, dataloaders, split):
+    print(f'{split=}')
+    print(f'{dataloaders[split]=}')
+    print(f'{type(dataloaders[split])=}')
+    print(f"{len(dataloaders[split].dataset)=}")
+    print(f"{len(dataloaders[split])=}")
+    print(f"{len(dataloaders[split].dataset)//opts.batch_size=}")
+    if hasattr(opts, 'world_size'):
+        print(f"{len(dataloaders[split])*opts.world_size=}")
 
 def check_mdl_in_single_gpu(mdl):
     """
@@ -1493,6 +1505,62 @@ class LabelSmoothingLoss(nn.Module):
 
         return F.kl_div(output, model_prob, reduction='sum')
 
+def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.01):
+    """
+    Code for training a generic pytorch model with one abtch.
+    The idea is that the user uses (their perhaps custom) data loader to sample a data batch once
+    and then pass them to this code to train until the batch has been overfitted.
+
+    Note: If you are doing regression you will have to adapt this code - however, I do recommend that
+    you track some sort of accuracy for your regression task. For example, track R2 (or some squeezed
+    version of it). This is really useful because your loss has an arbitrary uninterpretable scale
+    while R2 always has a nice interpretation (how far you are from just predicting the mean target y
+    of your data without using any features x). Having this sort of interpretable measure can save you
+    a lot of time - especially when the loss seems to be meaninfuless.
+    For that replace accuracy for your favorite interpretable "acuraccy" function.
+
+    :param opts:
+    :param model:
+    :param train_batch:
+    :param val_batch:
+    :param optimizer:
+    :param tolerance:
+    :return:
+    """
+    avg_loss = AverageMeter('train loss')
+    avg_acc = AverageMeter('train accuracy')
+
+    it = 0
+    train_loss = float('inf')
+    x_train_batch, y_train_batch = train_batch
+    x_val_batch, y_val_batch = val_batch
+    while train_loss > tolerance:
+        model.train()
+        train_loss, logits = model(x_train_batch)
+        avg_loss.update(train_loss.item(), opts.batch_size)
+        train_acc = accuracy(output=logits, target=y_train_batch)
+        avg_acc.update(train_acc.item(), opts.batch_size)
+
+        optimizer.zero_grad()
+        train_loss.backward()  # each process synchronizes it's gradients in the backward pass
+        optimizer.step()  # the right update is done since all procs have the right synced grads
+
+        model.eval()
+        val_loss, logits = model(x_train_batch)
+        avg_loss.update(train_loss.item(), opts.batch_size)
+        val_acc = accuracy(output=logits, target=y_val_batch)
+        avg_acc.update(val_acc.item(), opts.batch_size)
+
+        log_2_tb(it=it, tag1='train loss', loss=train_loss.item(), tag2='train acc', acc=train_acc.item())
+        log_2_tb(it=it, tag1='val loss', loss=val_loss.item(), tag2='val acc', acc=val_acc.item())
+        print(f"\n{it=}: {train_loss=} {train_acc=}")
+        print(f"{it=}: {val_loss=} {val_acc=}")
+
+        it += 1
+        gc.collect()
+
+    return avg_loss.item(), avg_acc.item()
+
 # -- tests
 
 def test_ned():
@@ -1549,14 +1617,14 @@ def test_topk_accuracy_and_accuracy():
     assert(acc1 == acc1_)
     assert(acc1_ == acc_top1)
 
-def split_test():
+def test_split_test():
     files = list(range(10))
     train, test = split_two(files)
     print(train, test)
     train, val, test = split_three(files)
     print(train, val, test)
 
-def split_data_train_val_test():
+def test_split_data_train_val_test():
     from sklearn.model_selection import train_test_split
 
     # overall split 85:10:5
@@ -1580,6 +1648,7 @@ def split_data_train_val_test():
     print(len(X_val))
     print(len(X_test))
 
+# -- __main__
 
 if __name__ == '__main__':
     # test_ned()
