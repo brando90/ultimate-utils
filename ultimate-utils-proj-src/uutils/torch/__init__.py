@@ -47,6 +47,10 @@ def hello():
 def helloworld():
     print('hello world torch_utils!')
 
+# def get_freq_to_log_two_or_three_times(data_loader):
+#     freq = len(data_loader) // 3  # to log approximately 2-3 times.
+#     if fre
+
 def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
         w.requires_grad = bool
@@ -1370,7 +1374,10 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
     def item(self):
-        return self.avg
+        if type(self.avg) is torch.Tensor:
+            return self.avg.item()
+        else:
+            return float(self.avg)
 
     def __str__(self):
         fmtstr = '{name} val:{val} avg:{avg}'

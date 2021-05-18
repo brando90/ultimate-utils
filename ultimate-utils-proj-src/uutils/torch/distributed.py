@@ -170,6 +170,7 @@ def cleanup(rank):
     """ Destroy a given process group, and deinitialize the distributed package """
     # only destroy the process distributed group if the code is not running serially
     if is_running_parallel(rank):
+        torch.distributed.barrier()
         dist.destroy_process_group()
 
 def get_batch(batch: Tuple[Tensor, Tensor], rank) -> Tuple[Tensor, Tensor]:
@@ -227,8 +228,16 @@ def print_gpu_info():
         nccl = torch.cuda.nccl.version()
         print(f'{nccl=}')
 
-def move_to_ddp(rank, opts, model):
-    if is_running_parallel(rank):
+def move_to_ddp(rank, opts, model, force=False):
+    """
+
+    :param rank:
+    :param opts:
+    :param model:
+    :param force: force is meant to force it into DDP. Meant for debugging.
+    :return:
+    """
+    if is_running_parallel(rank) or force:
         # model.criterion = self.opts.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
         # if gpu avail do the standard of creating a model and moving the model to the GPU with id rank
         if torch.cuda.is_available():

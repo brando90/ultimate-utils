@@ -10723,3 +10723,38 @@ plt.show()
 
 # load a graph from a dot for networkx: https://stackoverflow.com/questions/42172548/read-dot-graph-in-networkx-from-a-string-and-not-file
 # G = nx_agraph.from_agraph(pygraphviz.AGraph(dotFormat))
+
+#%%
+
+import dgl.data
+
+dataset = dgl.data.CoraGraphDataset()
+print('-- my print statments --')
+print('Number of categories: {dataset.num_classes} \n')
+
+g = dataset[0]
+print(f'{g=}')
+
+# print('Node features')
+# print(g.ndata)
+# print('Edge features')
+# print(g.edata)
+
+h_node_features = g.ndata['feat']
+print(h_node_features.size())
+
+#%%
+
+import dgl
+import networkx as nx
+import numpy as np
+import torch
+
+nx_g = nx.DiGraph()
+# Add 3 nodes and two features for them
+nx_g.add_nodes_from([0, 1, 2], feat1=np.zeros((3, 1)), feat2=np.ones((3, 1)))
+print(f'{nx_g=}')
+# Add 2 edges (1, 2) and (2, 1) with two features, one being edge IDs
+nx_g.add_edge(1, 2, weight=np.ones((1, 1)), eid=np.array([1]))
+nx_g.add_edge(2, 1, weight=np.ones((1, 1)), eid=np.array([0]))
+print(f'{nx_g=}')
