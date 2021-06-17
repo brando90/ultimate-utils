@@ -10745,7 +10745,7 @@ print(h_node_features.size())
 
 #%%
 
-import dgl
+# import dgl
 import networkx as nx
 import numpy as np
 import torch
