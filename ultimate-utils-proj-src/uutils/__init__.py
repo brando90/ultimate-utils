@@ -506,21 +506,6 @@ def create_logs_dir_and_load(opts):
     # create and load in args path to checkpoint (same as experiment log path)
     opts.checkpoint_dir = opts.log_experiment_dir
 
-if __name__ == "__main__":
-    # send_email('msg','miranda9@illinois.edu')
-    # print("sending email test")
-    # p = Path(
-    #     "~/automl-meta-learning/automl/experiments/pw_app.config.json"
-    # ).expanduser()
-    # send_email(
-    #     subject="TEST: send_email2",
-    #     message="MESSAGE",
-    #     destination="brando.science@gmail.com",
-    #     password_path=p,
-    # )
-    # print(f"EMAIL SENT\a")
-    print("Done \n\a")
-
 
 def save_opts(opts):
     # save opts that was used for experiment
