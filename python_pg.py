@@ -10761,6 +10761,42 @@ print(f'{nx_g=}')
 
 #%%
 
+import random
+
+foo = ['a', 'b', 'c', 'd', 'e']
+print(random.choice(foo))
+
+#%%
+
+pf_body1 = ['Proof.',
+            'unfold lookup_incl;', 'simpl;', 'intros.',
+            'match_destr;', 'unfold equiv in *;', 'subst.',
+            '- apply lookup_in in H1.',
+            'apply in_dom in H1.',
+            'intuition.',
+            '- auto.',
+            'Qed.']
+pf_body1 = pf_body1[1:-1]
+print(pf_body1)
+
+#%%
+
+pf_body1 = [ 'Proof.',
+  'unfold lookup_incl;', 'simpl;', 'intros.',
+  'match_destr;', 'unfold equiv in *;', 'subst.',
+  '- apply lookup_in in H1.',
+    'apply in_dom in H1.',
+    'intuition.',
+  '- auto.',
+'Qed.']
+
+def mask_lemma_in_pf_body(pf_body:str, lemma:str, mask_token:str='<Predict>') -> str:
+    return [tactic_cmd.replace(lemma, mask_token) for tactic_cmd in pf_body]
+
+print(mask_lemma(pf_body1, 'in_dom'))
+
+#%%
+
 from lark import Lark
 json_parser = Lark(r"""
     value: dict
