@@ -10758,3 +10758,32 @@ print(f'{nx_g=}')
 nx_g.add_edge(1, 2, weight=np.ones((1, 1)), eid=np.array([1]))
 nx_g.add_edge(2, 1, weight=np.ones((1, 1)), eid=np.array([0]))
 print(f'{nx_g=}')
+
+#%%
+
+from lark import Lark
+json_parser = Lark(r"""
+    value: dict
+         | list
+         | ESCAPED_STRING
+         | SIGNED_NUMBER
+         | "true" | "false" | "null"
+
+    list : "[" [value ("," value)*] "]"
+
+    dict : "{" [pair ("," pair)*] "}"
+    pair : ESCAPED_STRING ":" value
+
+    %import common.ESCAPED_STRING
+    %import common.SIGNED_NUMBER
+    %import common.WS
+    %ignore WS
+
+    """, start='value')
+text = '{}'
+ast = json_parser.parse(text)
+print(ast.pretty())
+
+text = '{"key": ["item0", "item1", 3.14]}'
+ast = json_parser.parse(text)
+print(ast.pretty())
