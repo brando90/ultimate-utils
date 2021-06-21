@@ -10797,6 +10797,12 @@ print(mask_lemma(pf_body1, 'in_dom'))
 
 #%%
 
+x = [1,2]
+xx = ['a','b']
+print(list(zip(x,xx)))
+
+#%%
+
 from lark import Lark
 json_parser = Lark(r"""
     value: dict
