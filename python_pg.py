@@ -10803,6 +10803,22 @@ print(list(zip(x,xx)))
 
 #%%
 
+thms = "lookup_incl_cons_l_nin (l1 l2:list (A*B)) x y : \
+  lookup_incl l1 l2 -> \
+  ~ In x (domain l1) -> \
+  lookup_incl l1 ((x,y)::l2)."
+pf_bodies = [['Proof.',
+              'unfold lookup_incl;', 'simpl;', 'intros.',
+              'match_destr;', 'unfold equiv in *;', 'subst.',
+              '- apply lookup_in in H1.',
+              'apply in_dom in H1.',
+              'intuition.',
+              '- auto.',
+              'Qed.']]
+pf_bodies[0] = pf_body[0][1:-1]
+
+#%%
+
 from lark import Lark
 json_parser = Lark(r"""
     value: dict
