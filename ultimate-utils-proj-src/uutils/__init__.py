@@ -36,6 +36,8 @@ from socket import gethostname
 
 import pygraphviz as pgv
 
+from lark import Lark, Tree
+
 def hello():
     print('hello from uutitls __init__.pyt')
 
@@ -616,6 +618,11 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
     # remove file https://stackoverflow.com/questions/6996603/how-to-delete-a-file-or-folder
     if not save_file:
         path2file.unlink()
+
+def visualize_lark(string: str, parser: Lark, path2filename: Path):
+    tree = parser.parse(string)
+    tree.pydot__tree_to_png(tree, path2filename)
+    # tree.pydot__tree_to_dot(parser.parse(sentence), filename)
 
 # -- tests
 
