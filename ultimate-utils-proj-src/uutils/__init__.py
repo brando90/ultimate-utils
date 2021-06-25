@@ -36,7 +36,9 @@ from socket import gethostname
 
 import pygraphviz as pgv
 
-from lark import Lark, Tree
+from lark import Lark, tree
+
+from typing import Union
 
 def hello():
     print('hello from uutitls __init__.pyt')
@@ -619,9 +621,13 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
     if not save_file:
         path2file.unlink()
 
-def visualize_lark(string: str, parser: Lark, path2filename: Path):
-    tree = parser.parse(string)
-    tree.pydot__tree_to_png(tree, path2filename)
+def visualize_lark(string: str, parser: Lark, path2filename: Union[str, Path]):
+    if type(path2filename) is str:
+        path2filename = Path(path2filename).expanduser()
+    else:
+        path2filename = path2filename.expanduser()
+    ast = parser.parse(string)
+    tree.pydot__tree_to_png(ast, path2filename)
     # tree.pydot__tree_to_dot(parser.parse(sentence), filename)
 
 # -- tests

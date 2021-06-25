@@ -10845,3 +10845,179 @@ print(ast.pretty())
 text = '{"key": ["item0", "item1", 3.14]}'
 ast = json_parser.parse(text)
 print(ast.pretty())
+
+#%%
+
+from lark import Lark
+json_parser = Lark(r"""
+    value: dict dict "f"
+         | list
+         | ESCAPED_STRING
+         | SIGNED_NUMBER
+         | "true" | "false" | "null"
+
+    list : "[" [value ("," value)*] "]"
+
+    dict : "{" [pair ("," pair)*] "}"
+    pair : ESCAPED_STRING ":" value
+
+    %import common.ESCAPED_STRING
+    %import common.SIGNED_NUMBER
+    %import common.WS
+    %ignore WS
+
+    """, start='value')
+
+text = '{} {} f'
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
+
+# text = '{"key": ["item0", "item1", 3.14, "true"]}'
+# ast = json_parser.parse(text)
+# print(ast)
+# print(ast.pretty())
+
+#%%
+
+from lark import Lark
+json_parser = Lark(r"""
+    pair: pair "," pair // 1
+         | string // 2
+    string : "a" // 3
+        | "b" // 4
+
+    %import common.WS
+    %ignore WS
+
+    """, start='pair', keep_all_tokens=True)
+
+text = 'a'
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
+# rule seq
+rule_seq = ['pair', 'string', "1"]
+rule_seq2 = ['pair->string', 'string->1']
+
+text = "a, b"
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
+rule_seq2 = ['pair -> pair "," pair', 'pair->string', 'pair->string', 'string->a', 'string->b']
+rule_seq3 = [1, 2, 2, 3, 4]
+rule_seq3 = [1, 2, 2, 3, 3, 4, 5]
+
+#%%
+
+from lark import Lark, Tree, Token
+json_parser = Lark(r"""
+    pair: pair "," pair // 1
+         | string // 2
+    string : "a" // 3
+        | "b" // 4
+
+    %import common.WS
+    %ignore WS
+    """, start='pair', keep_all_tokens=True)
+
+text = 'a'
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
+# rule seq
+rule_seq = ['pair', 'string', "1"]
+rule_seq2 = ['pair->string', 'string->1']
+
+text = "a, b"
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
+rule_seq2 = ['pair->pair "," pair', 'pair->string', 'pair->string', 'string->a', 'string->b']
+rule_seq2 = [rule.split('->') for rule in rule_seq2]
+rule_seq3 = [1, 2, 2, 3, 4]
+
+non_terminals = ['pair', 'string']
+terminals = [",", "a", "b"]
+
+def is_terminal(sym):
+    # true if matches hardcoded symbols in grammar or a regex, note this only works if the nt has been checked first.
+    return sym in terminals  # or matches regex
+
+def is_non_terminal(sym):
+    return sym in non_terminals
+
+def build_lark_tree(rule_seq:list[tuple]) -> Tree:
+    print(rule_seq)
+    nt, next_syms = rule_seq[0]
+    if len(rule_seq) == 1:
+        return Tree(nt, [Token('literal', next_syms)])
+    else:
+        rule_seq = rule_seq[1:]
+        next_syms = next_syms.split(" ")
+        asts = []
+        nt_idx = 0
+        for next_sym in next_syms:
+            if is_non_terminal(next_sym):
+                ast = Tree(next_sym, build_lark_tree(rule_seq[nt_idx:]))
+                nt_idx += 1
+            elif is_terminal(next_sym):
+                ast = Token('literal', next_sym)
+            else:
+                raise ValueError(f'Invalid: {next_sym} didnt match anything')
+            asts.append(ast)
+        return Tree(nt, asts)
+
+print('---- generating ast from Rule Seq')
+build_lark_tree(rule_seq2)
+
+#%%
+
+from collections import defaultdict
+
+from lark import Lark, Tree, Token
+from lark.grammar import Rule, NonTerminal, Symbol, Terminal
+from lark.reconstruct import Reconstructor
+
+
+def build(rules: list[Rule], rule_seq: list[int], build_term) -> Tree:
+    def build_rule(rule: Rule) -> Tree:
+        l = []
+        for i, e in enumerate(rule.expansion):
+            if e.is_term:
+                l.append(build_term(e))
+            else:
+                l.append(e)
+                targets[e].append((l, i))
+        return Tree(rule.origin.name, l)
+
+    out: list = [NonTerminal("start")]
+    targets = defaultdict(list)
+    targets[out[0]].append((out, 0))
+    for i in rule_seq:
+        r = rules[i]
+        assert r.alias is None, "Can't have aliases"
+        assert r.options.keep_all_tokens, "need to have keep_all_tokens"
+        assert not (r.options.expand1 or r.origin.name.startswith("_")), "Can't have a rule that expands it's children"
+        ts = targets[r.origin]
+        l, i = ts.pop(0)
+        assert l[i] == r.origin, l
+        l[i] = build_rule(r)
+    return out[0]
+
+
+grammar = r"""
+start: "a" // rule 0
+     | "a" start // rule 1
+"""
+
+parser = Lark(grammar, keep_all_tokens=True)
+
+print(parser.rules)
+
+rule_seq1 = [1, 0]
+ast = build(parser.rules, rule_seq1, lambda t: Token(t.name, "a"))
+print(ast)
+text = Reconstructor(parser).reconstruct(ast, None)  # has string "aa"
+print(repr(text))
+
