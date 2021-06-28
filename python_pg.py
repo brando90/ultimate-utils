@@ -11021,3 +11021,50 @@ print(ast)
 text = Reconstructor(parser).reconstruct(ast, None)  # has string "aa"
 print(repr(text))
 
+
+#%%
+
+from collections import deque
+
+# Initializing a queue
+q = deque()
+
+# Adding elements to a queue
+q.append('a')
+q.append('b')
+q.append('c')
+
+print("Initial queue")
+print(q)
+
+# Removing elements from a queue
+print("\nElements dequeued from the queue")
+print(q.popleft())
+print(q.popleft())
+print(q.popleft())
+
+print("\nQueue after removing elements")
+print(q)
+
+#%%
+
+from typing import Union
+
+from collections import deque
+
+from lark import Lark, Tree, Token
+from lark.grammar import Rule, NonTerminal, Symbol, Terminal
+from lark.reconstruct import Reconstructor
+
+grammar = r"""
+    pair: pair "," pair // 1
+         | string // 2
+    string : "a" // 3
+        | "b" // 4
+
+    %import common.WS
+    %ignore WS
+    """
+parser = Lark(grammar, start='pair', keep_all_tokens=True)
+print(parser.rules)
+print(parser.rules[0])
