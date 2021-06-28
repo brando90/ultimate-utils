@@ -11048,6 +11048,10 @@ print(q)
 
 #%%
 
+# https://github.com/MegaIng/lark_ast_generator/blob/master/ast_generator.py#L114
+
+#%%
+
 from typing import Union
 
 from collections import deque
@@ -11068,3 +11072,7 @@ grammar = r"""
 parser = Lark(grammar, start='pair', keep_all_tokens=True)
 print(parser.rules)
 print(parser.rules[0])
+
+#%%
+
+# I want a queue that removes the
