@@ -36,7 +36,9 @@ from socket import gethostname
 
 import pygraphviz as pgv
 
-from lark import Lark, tree
+from lark import Lark, tree, Tree, Token
+
+from collections import deque
 
 from typing import Union
 
@@ -630,6 +632,67 @@ def visualize_lark(string: str, parser: Lark, path2filename: Union[str, Path]):
     tree.pydot__tree_to_png(ast, path2filename)
     # tree.pydot__tree_to_dot(parser.parse(sentence), filename)
 
+def bfs(root_node : Tree, f) -> Tree:
+    """
+
+    To do BFS you want to process the elements in the dequeue int he order of a queue i.e. the "fair" way - whoever
+    got first you process first and the next children go to the end of the line.
+    Thus: BFS = append + popleft = "append_end + pop_frent".
+    :param root_node: root_node (same as ast since ast object give pointers to top node & it's children)
+    :param f: function to apply to the nodes.
+    :return:
+    """
+    dq = deque([root_node])
+    while len(dq) != 0:
+        current_node = dq.popleft()  # pops from the front of the queue
+        current_node.data = f(current_node.data)
+        for child in current_node.children:
+            dq.append(child)  # adds to the end
+    return root_node
+
+def dfs(root_node : Tree, f) -> Tree:
+    """
+
+    To do DFS we need to implement a stack. In other words we need to go down the depth until the depth has been
+    fully processed. In other words what you want is the the current child you are adding to the dequeue to be processed
+    first i.e. you want it to skip the line. To do that you can append to the front of the queue (with append_left and
+    then pop_left i.e. pop from that same side).
+
+    reference: https://codereview.stackexchange.com/questions/263604/how-does-one-write-dfs-in-python-with-a-deque-without-reversed-for-trees
+    :param root_node:
+    :param f:
+    :return:
+    """
+    dq = deque([root_node])
+    while len(dq) != 0:
+        current_node = dq.popleft()  # to make sure you pop from the front since you are adding at the front.
+        current_node.data = f(current_node.data)
+        # print(current_node.children)
+        for child in reversed(current_node.children):
+            dq.appendleft(child)
+    return root_node
+
+def dfs_stack(ast : Tree, f) -> Tree:
+    stack = [ast]
+    while len(stack) != 0:
+        current_node = stack.pop()  # pop from the end, from the side you are adding
+        current_node.data = f(current_node.data)
+        for child in reversed(current_node.children):
+            stack.append(child)
+    return ast
+
+def dfs_recursive(ast : Tree, f) -> Tree:
+    """
+    Go through the first child in children before processing the rest of the tree.
+    Note that you can apply f after you've processed all the children too to "colour" the nodes in a different order.
+    :param ast:
+    :param f:
+    :return:
+    """
+    ast.data = f(ast.data)
+    for child in ast.children:
+        dfs_recursive(child, f)
+
 # -- tests
 
 def test_draw():
@@ -652,7 +715,35 @@ def test_draw():
     draw_nx_with_pygraphviz(g)
     draw_nx(g)
 
+def test_bfs():
+    # token requires two values due to how Lark works, ignore it
+    ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
+    print()
+    # the key is that 5 should go first than 3,4 because it is BFS
+    bfs(ast, print)
+
+def test_dfs():
+    print()
+    # token requires two values due to how Lark works, ignore it
+    ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
+    # the key is that 3,4 should go first than 5 because it is DFS
+    dfs(ast, print)
+    #
+    print()
+    # token requires two values due to how Lark works, ignore it
+    ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
+    # the key is that 3,4 should go first than 5 because it is DFS
+    dfs_stack(ast, print)
+    #
+    print()
+    # token requires two values due to how Lark works, ignore it
+    ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
+    # the key is that 3,4 should go first than 5 because it is DFS
+    dfs_recursive(ast, print)
+
+
 if __name__ == '__main__':
     print('starting __main__ at __init__')
-    test_draw()
+    # test_draw()
+    test_dfs()
     print('Done!\a')
