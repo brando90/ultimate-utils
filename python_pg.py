@@ -11433,3 +11433,25 @@ print(ast.pretty())
 
 #%%
 
+ctx = {'x': 1}
+names = ['y', 'y']
+all_names = set(list(ctx.keys()) + names)
+print(all_names)
+
+#%%
+import re
+
+bfs_regex = re.compile(r'x\d+')
+
+assert not bfs_regex.match('x')
+print(bfs_regex.match('x'))
+print(bfs_regex.search('x'))
+assert bfs_regex.match('x0')
+print(bfs_regex.match('x0'))
+print(bfs_regex.search('x0'))
+
+#%%
+
+print("_".join(['x0']))
+
+
