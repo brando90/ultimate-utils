@@ -11454,4 +11454,68 @@ print(bfs_regex.search('x0'))
 
 print("_".join(['x0']))
 
+print('123'.isnumeric())
+print('asdfadsf'.isnumeric())
+print('x123'.isnumeric())
 
+#%%
+
+# this checks that both tensors are actually the same
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+embeds = nn.Embedding(1, 1)
+lin = nn.Linear(3, 1)
+embeds.weight = torch.nn.Parameter(lin.weight)
+sgd = optim.SGD(lin.parameters(), 10)
+print(lin.weight)
+print(embeds.weight)
+out = 10*(2 - lin(torch.randn(1, 3)))*2
+out.backward()
+sgd.step()
+print(lin.weight)
+print(embeds.weight)
+
+# this succeded because the weights are the same value after the backward step
+
+#%%
+
+from collections import Counter
+from torchtext.vocab import Vocab
+import torch.nn as nn
+
+counter_vocab = Counter({'a': 1, 'b': 2, '0': 5})
+
+v = Vocab(counter_vocab)
+table = nn.Embedding(len(v), 4)
+
+lookup_tensor = torch.tensor([1, 2, 0], dtype=torch.long)
+embed = table(lookup_tensor)
+
+print(embed.size())
+print(embed.t().size())
+
+att = embed.t() @ embed
+# att = embed.t() * embed
+
+print(att)
+
+from torch.nn.functional import softmax
+
+#%%
+import torch
+
+B, T, D = 4, 12, 512
+x = torch.randn(B, T, D)
+encoder = nn.TransformerEncoderLayer(d_model=512, nhead=8, batch_first=True)
+out = encoder(x)
+print(out.sum())
+
+encoder.batch_first = False
+out = encoder(x)
+print(out.sum())
+
+encoder.batch_first = True
+out = encoder(x)
+print(out.sum())
