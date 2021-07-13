@@ -11519,3 +11519,14 @@ print(out.sum())
 encoder.batch_first = True
 out = encoder(x)
 print(out.sum())
+
+#%%
+import torch
+import torch.nn as nn
+
+decoder_layer = nn.TransformerDecoderLayer(d_model=512, nhead=8)
+transformer_decoder = nn.TransformerDecoder(decoder_layer, num_layers=6)
+memory = torch.rand(10, 32, 512)
+tgt = torch.rand(20, 32, 512)
+out = transformer_decoder(tgt, memory)
+print(out.size())
