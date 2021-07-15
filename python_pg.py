@@ -11535,3 +11535,117 @@ memory = torch.rand(10, 32, 512)
 tgt = torch.rand(20, 32, 512)
 out = transformer_decoder(tgt, memory)
 print(out.size())
+
+#%%
+
+# right shift
+
+# [B, Ty] -> [B, Ty] (right shifted, replace initial vectors with random noise)
+import torch
+from torch import Tensor
+
+y: Tensor = torch.arange(0, 12)
+y = y.view(3, 4)
+print(y.size())
+print(y)
+yy = y.roll(shifts=1, dims=1)
+yy[:, 0] = 0  # SEEMS DANGEROUS!
+print(yy)
+
+# scary, perhaps it's better to only index the first T-1 and then initialize the first as zero...?
+#%%
+
+from torchtext.vocab import vocab
+from collections import Counter, OrderedDict
+counter = Counter(["a", "a", "b", "b", "b"])
+sorted_by_freq_tuples = sorted(counter.items(), key=lambda x: x[1], reverse=True)
+ordered_dict = OrderedDict(sorted_by_freq_tuples)
+v1 = vocab(ordered_dict)
+print(v1['a']) #prints 1
+# print(v1['out of vocab']) #raise RuntimeError since default index is not set
+tokens = ['e', 'd', 'c', 'b', 'a']
+v2 = vocab(OrderedDict([(token, 1) for token in tokens]))
+#adding <unk> token and default index
+unk_token = '<unk>'
+default_index = -1
+if unk_token not in v2:
+    v2.insert_token(unk_token, 0)
+v2.set_default_index(default_index)
+print(v2['<unk>']) #prints 0
+print(v2['out of vocab']) #prints -1
+#make default index same as index of unk_token
+v2.set_default_index(v2[unk_token])
+v2['out of vocab'] is v2[unk_token] #prints True
+
+
+#%%
+
+import torch
+
+# x = torch.randn(2, 3)
+# sz = x.size( )
+sz = 4
+mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+# print(x)
+print(mask)
+
+#%%
+
+def generate_square_subsequent_mask(sz):
+    mask = (torch.triu(torch.ones((sz, sz), device=DEVICE)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    return mask
+
+
+def create_mask(src, tgt):
+    src_seq_len = src.shape[0]
+    tgt_seq_len = tgt.shape[0]
+
+    tgt_mask = generate_square_subsequent_mask(tgt_seq_len)
+    src_mask = torch.zeros((src_seq_len, src_seq_len),device=DEVICE).type(torch.bool)
+
+    src_padding_mask = (src == PAD_IDX).transpose(0, 1)
+    tgt_padding_mask = (tgt == PAD_IDX).transpose(0, 1)
+    return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
+
+#%%
+
+import uutils.torch
+
+# inheritance in python
+# Q: do my subclasses inherit the specific values form parent?
+
+
+class Parent:
+    def __init__(self, field):
+        self.field = field
+        self.child = Child(field)
+
+class Child(Parent):
+    def __init__(self, field):
+        super().__init__(field)
+        self.y = y
+        # print(f'{self.field}')
+
+    def forward(self, x):
+        print(f'{x=}')
+        print(f'{self.field}')
+
+parent = Parent(field=2)
+
+
+# %%
+
+import torch
+from torch.nn.utils.rnn import pad_sequence
+
+# note the sequences start with 2 for SOS and end with 3 for EOS
+special_symbols = ['<unk>', '<pad>', '<sos>', '<eos>']
+PAD_IDX = special_symbols.index('<pad>')
+src_batch = [torch.tensor([2, 7911, 3]), torch.tensor([2,   8269,  5,  18,  3])]
+print(f'batch_size={len(src_batch)}')
+
+src_batch = pad_sequence(src_batch, padding_value=PAD_IDX, batch_first=True)
+print(src_batch.size())
+print(src_batch)

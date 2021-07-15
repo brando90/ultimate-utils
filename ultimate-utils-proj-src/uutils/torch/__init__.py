@@ -35,6 +35,8 @@ from scipy.stats import logistic
 from torch.multiprocessing import Pool
 from uutils.torch.uutils_tensorboard import log_2_tb
 
+import torchtext
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
@@ -46,6 +48,45 @@ def hello():
 
 def helloworld():
     print('hello world torch_utils!')
+
+def insert_unk(vocab: Vocab) -> Vocab:
+    """
+    Inserts unknown token into torchtext vocab.
+    """
+    # undos throwing erros when out of vocab is attempted
+    default_index = -1
+    vocab.set_default_index(default_index)
+    assert vocab['out of vocab'] == -1
+    # insert unk token
+    unk_token = '<unk>'
+    if unk_token not in vocab:
+        vocab.insert_token(unk_token, 0)
+        assert vocab['<unk>'] == 0
+    # make default index same as index of unk_token
+    vocab.set_default_index(vocab[unk_token])
+    assert vocab['out of vocab'] is vocab[unk_token]
+    return vocab
+
+def insert_special_symbols(vocab: Vocab) -> Vocab:
+    special_symbols = ['<unk>', '<pad>', '<sos>', '<eos>']
+    for i, special_symbol in enumerate(special_symbols):
+        vocab.insert_token(special_symbol, i)
+        if special_symbol == '<unk>':
+            vocab.set_default_index(i)
+            assert i == 0
+        # assert special_symbol not in vocab, f'Dont add the {special_symbol=} when calling this function.'
+    assert vocab['out of vocab'] is vocab['<unk>']
+    assert vocab['<pad>'] == 1
+    assert vocab['<sos>'] == 2
+    assert vocab['<eos>'] == 3
+    return vocab
+
+def padd_sequence(seq, ):
+    """
+
+    :param seq:
+    :return: [T]
+    """
 
 # def get_freq_to_log_two_or_three_times(data_loader):
 #     freq = len(data_loader) // 3  # to log approximately 2-3 times.
