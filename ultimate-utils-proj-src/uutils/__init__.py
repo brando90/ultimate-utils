@@ -520,6 +520,8 @@ def save_opts(opts):
         args_data = {key: str(value) for key, value in opts.__dict__.items()}
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
+def save_args(args):
+    save_opts(args)
 
 def load_cluster_jobids_to(args):
     import os

@@ -29,6 +29,8 @@ from pathlib import Path
 
 import copy
 
+from argparse import Namespace
+
 from pdb import set_trace as st
 
 # from sklearn.linear_model import logistic
@@ -145,6 +147,13 @@ def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embe
 # def get_freq_to_log_two_or_three_times(data_loader):
 #     freq = len(data_loader) // 3  # to log approximately 2-3 times.
 #     if fre
+
+def process_batch_simple(args: Namespace, x_batch, y_batch):
+    if isinstance(x_batch, Tensor):
+        x_batch = x_batch.to(args.device)
+    if isinstance(y_batch, Tensor):
+        y_batch = y_batch.to(args.device)
+    return x_batch, y_batch
 
 def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():

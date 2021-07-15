@@ -140,9 +140,6 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
     import torch.distributed as dist
     import os
     import torch
-    # import builtins
-    # print2 = functools.partial(print, flush=True); builtins.print = print2
-    print(f'setup_process has rank={rank}')
 
     if is_running_parallel(rank):
         print(f'----> setting up rank={rank} (with world_size={world_size})')
