@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import List
 
 import torch
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -36,12 +37,15 @@ from torch.multiprocessing import Pool
 from uutils.torch.uutils_tensorboard import log_2_tb
 
 import torchtext
+from torchtext.vocab import Vocab, vocab
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+Batch = list
 
 def hello():
     print('hello')
@@ -87,6 +91,56 @@ def padd_sequence(seq, ):
     :param seq:
     :return: [T]
     """
+    pass
+
+def diagonal_mask(size: int, device) -> Tensor:
+    """
+    Returns the additive diagonal where first entry is zero so that SOS is not removed
+    and the remaining diagonal is -inf so that the transformer decoder doesn't cheat.
+
+    e.g.
+    tensor([[0., -inf, -inf, -inf],
+        [0., 0., -inf, -inf],
+        [0., 0., 0., -inf],
+        [0., 0., 0., 0.]])
+    :param size:
+    :param device:
+    :return:
+    """
+    # returns the upper True diagonal matrix where the diagonal is True also (thats why transpose is needed)
+    mask = (torch.triu(torch.ones(size, size)) == 1).transpose(0, 1)
+    # wherever there is a 0 put a -inf
+    mask = mask.float().masked_fill(mask == 0, float('-inf'))
+    # wherever there is a 1 put a 0
+    mask = mask.masked_fill(mask == 1, float(0.0))
+    # to device
+    mask = mask.to(device)
+    return mask
+
+def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embed_dim: int) -> Tensor:
+    from torch.nn.utils.rnn import pad_sequence
+    B, T, D  = len(y_batch), max(len(seq[:-1]) for seq in y_batch) + 2, embed_dim
+    y_look_up_tensor = []
+    for seq in y_batch:
+        seq = seq[:-1]  # right shift
+        indices = [vocab['<sos>']]
+        indices.extend([vocab[str(token_idx)] for token_idx in seq])
+        indices.append(vocab['<eos>'])
+        lookup_tensor = torch.tensor(indices, dtype=torch.long).to(device)
+        y_look_up_tensor.append(lookup_tensor)
+    # padd
+    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<padd>'], batch_first=True)
+    assert y_look_up_tensor.size() == torch.Size([B, T])
+    # get embeddings
+    y_embed = vocab_embeds(y_look_up_tensor)
+    assert y_embed.size() == torch.Size([B, T, D])
+    # diagonal mask to avoid model from cheating
+    y_mask = diagonal_mask(size=T, device=device)
+    assert y_mask.size() == torch.Size([T, T])
+    # padding mask
+    y_padding_mask = (y_look_up_tensor == vocab['<padd>']).to(device)
+    assert y_padding_mask.size() == torch.Size([B, T])
+    return y_embed, y_mask, y_padding_mask
 
 # def get_freq_to_log_two_or_three_times(data_loader):
 #     freq = len(data_loader) // 3  # to log approximately 2-3 times.

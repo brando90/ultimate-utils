@@ -11634,7 +11634,6 @@ class Child(Parent):
 
 parent = Parent(field=2)
 
-
 # %%
 
 import torch
@@ -11649,3 +11648,13 @@ print(f'batch_size={len(src_batch)}')
 src_batch = pad_sequence(src_batch, padding_value=PAD_IDX, batch_first=True)
 print(src_batch.size())
 print(src_batch)
+
+#%%
+
+import torch
+
+sz = 4
+mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+# print(x)
+print(mask)
