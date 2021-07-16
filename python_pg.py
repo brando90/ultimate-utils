@@ -11658,3 +11658,30 @@ mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
 mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
 # print(x)
 print(mask)
+
+#%%
+
+# https://stackoverflow.com/questions/47863001/how-pytorch-tensor-get-the-index-of-specific-value
+
+import torch
+t = torch.Tensor([0, 2, 3, 2, 1])
+print(t.size())
+# print(t == 2)
+print((t == 2).nonzero().size())
+print((t == 2).nonzero())
+print((t == 2).nonzero()[0])
+print((t == 2).nonzero()[0][0])
+print((t == 2).nonzero()[0][0].item())
+
+print((t == 99).nonzero())
+print((t == 99).nonzero())
+
+# t = torch.Tensor([1, 0, 2, 3, 2, 2, 1])
+# print(t == 222)
+# print((t == 222).nonzero(as_tuple=True)[0])
+# print((t == 222).nonzero(as_tuple=True))
+
+# print( ((t == 2).nonzero(as_tuple=True)[0]) )
+# print( ((t == 2).nonzero(as_tuple=True)[0]).size() )
+# print( (t == 2).nonzero() )
+# print( (t == 2).nonzero().size() )

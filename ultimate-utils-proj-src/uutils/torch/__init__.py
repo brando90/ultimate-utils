@@ -8,7 +8,7 @@ utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programm
 """
 import gc
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 import torch
 from torch import Tensor
@@ -54,6 +54,28 @@ def hello():
 
 def helloworld():
     print('hello world torch_utils!')
+
+def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
+    """
+    Returns generalized index (i.e. location/coordinate) of the first occurence of value
+    in Tensor. For flat tensors (i.e. arrays/lists) it returns the indices of the occurrences
+    of the value you are looking for. Otherwise, it returns the "index" as a coordinate.
+    If there are multiple occurences then you need to choose which one you want with ith_index.
+    e.g. ith_index=0 gives first occurence.
+
+    Reference: https://stackoverflow.com/a/67175757/1601580
+    :return:
+    """
+    # bool tensor of where value occurred
+    places_where_value_occurs = (tensor == value)
+    # get matches as a "coordinate list" where occurence happened
+    matches = (tensor == value).nonzero()  # [number_of_matches, tensor_dimension]
+    if matches.size(0) == 0:  # no matches
+        return -1
+    else:
+        # get index/coordinate of the occurence you want (e.g. 1st occurence ith_match=0)
+        index = matches[ith_match]
+        return index
 
 def insert_unk(vocab: Vocab) -> Vocab:
     """
