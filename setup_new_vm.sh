@@ -5,6 +5,7 @@ sudo add-apt-repository ppa:graphics-drivers
 sudo apt install ubuntu-drivers-common
 ubuntu-drivers devices
 sudo apt-get install nvidia-driver-450
+# sudo apt-get --purge remove nvidia-driver-460
 reboot now
 
 adduser miranda9
