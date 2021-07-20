@@ -59,6 +59,8 @@ def hello():
 def helloworld():
     print('hello world torch_utils!')
 
+# -
+
 class Agent:
 
     def __init__(self, args, mdl, optimizer, dataloaders):
@@ -158,6 +160,8 @@ class Agent:
         if self.is_lead_worker():
             print_dataloaders_info(self.opts, self.dataloaders, split)
 
+# -
+
 def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
     """
     Returns generalized index (i.e. location/coordinate) of the first occurence of value
@@ -225,6 +229,7 @@ def diagonal_mask(size: int, device) -> Tensor:
     Returns the additive diagonal where first entry is zero so that SOS is not removed
     and the remaining diagonal is -inf so that the transformer decoder doesn't cheat.
 
+    ref: https://stackoverflow.com/questions/62170439/difference-between-src-mask-and-src-key-padding-mask/68396781#68396781
     e.g.
     tensor([[0., -inf, -inf, -inf],
         [0., 0., -inf, -inf],
