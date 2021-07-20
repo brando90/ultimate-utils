@@ -14,6 +14,8 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.multiprocessing import Pool
+from torch.nn.parallel import DistributedDataParallel
 
 import numpy as np
 import scipy.integrate as integrate
@@ -35,7 +37,6 @@ from pdb import set_trace as st
 
 # from sklearn.linear_model import logistic
 from scipy.stats import logistic
-from torch.multiprocessing import Pool
 from uutils.torch.uutils_tensorboard import log_2_tb
 
 import torchtext
@@ -176,6 +177,12 @@ def process_batch_simple(args: Namespace, x_batch, y_batch):
     if isinstance(y_batch, Tensor):
         y_batch = y_batch.to(args.device)
     return x_batch, y_batch
+
+def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
+    if isinstance(mdl, DistributedDataParallel):
+        return mdl.module
+    else:
+        return mdl
 
 def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
