@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import List, Union
 
 import torch
+import uutils.torch
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -42,6 +43,8 @@ from uutils.torch.uutils_tensorboard import log_2_tb
 import torchtext
 from torchtext.vocab import Vocab, vocab
 
+import gc
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
@@ -55,6 +58,105 @@ def hello():
 
 def helloworld():
     print('hello world torch_utils!')
+
+class Agent:
+
+    def __init__(self, args, mdl, optimizer, dataloaders):
+        self.args = args
+        self.mdl = mdl
+        self.optimizer = optimizer
+        self.dataloaders = dataloaders
+        if is_lead_worker(self.opts.rank):
+            from torch.utils.tensorboard import SummaryWriter
+            self.tb = SummaryWriter(log_dir=args.tb_dir)
+
+    @property
+    def mdl(self) -> torch.nn.Module:
+        return uutils.torch.get_model(self.mdl_)
+
+    def train_epoch(self, n_epoch):
+        pass
+
+    def train_loop(self, n_epoch):
+        pass
+
+    def valid(self, n_epoch):
+        pass
+
+    def accuracy(self):
+        pass
+
+    def evaluate(self):
+        pass
+
+    def prove(self, proof_env):
+        pass
+
+    def forward_one_batch(self, data_batch, training):
+        return
+
+    def train_single_batch(self):
+        train_batch = next(iter(self.dataloaders['train']))
+        val_batch = next(iter(self.dataloaders['val']))
+        uutils.torch.train_single_batch_agent(self, train_batch, val_batch)
+
+    def save(self, n_epoch, dirname):
+        pass
+
+    def save(self, n_epoch, dirname=None, ckpt_name='tactic_predictor.pt'):
+        if is_lead_worker(self.opts.rank):
+            self._save(n_epoch, dirname, ckpt_name)
+
+    def _save(self, n_epoch, dirname=None, ckpt_name='tactic_predictor.pt'):
+        """
+        Saves checkpoint for any worker.
+        Intended use is to save by worker that got a val loss that improved.
+        """
+        from torch.nn.parallel.distributed import DistributedDataParallel
+        dirname = self.opts.log_root if dirname is None else dirname
+        pickable_opts = make_args_pickable(self.opts)
+        import dill
+        mdl = self.mdl.module if type(self.mdl) is DistributedDataParallel else self.mdl
+        torch.save({'state_dict': self.mdl.state_dict(),
+                    'n_epoch': n_epoch,
+                    'optimizer': self.optimizer.state_dict(),
+                    'opts': pickable_opts,
+                    'mdl': mdl},
+                   pickle_module=dill,
+                   f=dirname / ckpt_name)  # f'mdl_{n_epoch:03}.pt'
+
+    def log_train_stats(self, it: int, train_loss: float, train_acc: float, val_ckpt=False, val_iterations=0):
+        val_loss, val_acc = self.valid(self.args.n_epoch, val_iterations=val_iterations, val_ckpt=val_ckpt)
+        self.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(train_acc))
+        self.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
+
+        self.log(f"\n{it=}: {train_loss=} {train_acc=}")
+        self.log(f"{it=}: {val_loss=} {val_acc=}")
+
+    def log(self, string, flush=True):
+        """ logs only if you are rank 0"""
+        if is_lead_worker(self.opts.rank):
+            print(string, flush=flush)
+
+    def log_tb(self, it, tag1, loss, tag2, acc):
+        if is_lead_worker(self.opts.rank):
+            uutils.torch.log_2_tb(self.tb, self.opts, it, tag1, loss, tag2, acc)
+
+    def print_process_info(self):
+        print_process_info(self.opts.rank)
+
+    def is_lead_worker(self):
+        """
+        Returns True if it's the lead worker (i.e. the slave meant to do the
+        printing, logging, tb_logging, checkpointing etc.). This is useful for debugging.
+
+        :return:
+        """
+        return is_lead_worker(self.opts.rank)
+
+    def print_dataloaders_info(self, split):
+        if self.is_lead_worker():
+            print_dataloaders_info(self.opts, self.dataloaders, split)
 
 def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
     """
@@ -679,6 +781,17 @@ def save_ckpt_meta_lstm(episode, metalearner, optim, save):
         'optim': optim.state_dict()
     }, os.path.join(save, 'ckpts', 'meta-learner-{}.pth.tar'.format(episode)))
 
+def set_system_wide_force_flush2():
+    """
+    Force flushes the entire print function everywhere.
+
+    https://stackoverflow.com/questions/230751/how-to-flush-output-of-print-function
+    :return:
+    """
+    import builtins
+    import functools
+    print2 = functools.partial(print, flush=True)
+    builtins.print = print2
 
 def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
     ckpt = torch.load(resume, map_location=device)
@@ -686,6 +799,109 @@ def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
     metalearner.load_state_dict(ckpt['metalearner'])
     optim.load_state_dict(ckpt['optim'])
     return last_episode, metalearner, optim
+
+def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, train_loss_tolerance=0.01):
+    """
+    Train untils the accuracy on the specified batch has perfect interpolation in loss and accuracy.
+    It also prints and tb logs every iteration.
+
+    :param acc_tolerance:
+    :param train_loss_tolerance:
+    :return:
+    """
+    set_system_wide_force_flush2()
+    # train_batch = next(iter(agent.dataloaders['train']))
+    # val_batch = next(iter(agent.dataloaders['val']))
+
+    def log_val_stats(it: int, train_loss: float, acc: float):
+        val_loss, val_acc = agent.forward_one_batch(val_batch, training=False)
+        agent.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(acc))
+        agent.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
+
+        agent.log(f"\n{it=}: {train_loss=} {acc=}")
+        agent.log(f"{it=}: {val_loss=} {val_acc=}")
+
+    # first batch
+    avg_loss = AverageMeter('train loss')
+    avg_acc = AverageMeter('train accuracy')
+    agent.args.it = 0
+    while True:
+        train_loss, train_acc = agent.forward_one_batch(train_batch, training=True)
+
+        agent.optimizer.zero_grad()
+        train_loss.backward()  # each process synchronizes it's gradients in the backward pass
+        agent.optimizer.step()  # the right update is done since all procs have the right synced grads
+
+        # if agent.agent.is_lead_worker() and agent.args.it % 10 == 0:
+        if agent.args.it % 10 == 0:
+            log_val_stats(agent.args.it, train_loss, train_acc)
+            agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+
+        agent.args.it += 1
+        gc.collect()
+        # if train_acc >= acc_tolerance and train_loss <= train_loss_tolerance:
+        if train_acc >= acc_tolerance:
+            log_train_stats(agent.args.it, train_loss, train_acc)
+            # agent.save(args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+            break  # halt once performance is good enough
+
+    return avg_loss.item(), avg_acc.item()
+
+def train_single_batch(args, mdl, optimizer, acc_tolerance=1.0, train_loss_tolerance=0.01):
+    """
+    Train untils the accuracy on the specified batch has perfect interpolation in loss and accuracy.
+    It also prints and tb logs every iteration.
+
+    :param acc_tolerance:
+    :param train_loss_tolerance:
+    :return:
+    """
+    print('train_single_batch')
+    set_system_wide_force_flush2()
+    avg_loss = AverageMeter('train loss')
+    avg_acc = AverageMeter('train accuracy')
+
+    def forward_one_batch(data_batch, training):
+        mdl.train() if training else mdl.eval()
+        data_batch = process_batch_ddp_tactic_prediction(args, data_batch)
+        loss, logits = mdl(data_batch)
+        acc = accuracy(output=logits, target=data_batch['tac_label'])
+        avg_loss.update(loss.item(), args.batch_size)
+        avg_acc.update(acc.item(), args.batch_size)
+        return loss, acc
+
+    def log_train_stats(it: int, train_loss: float, acc: float):
+        val_loss, val_acc = forward_one_batch(val_batch, training=False)
+        # agent.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(acc))
+        # agent.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
+
+        print(f"\n{it=}: {train_loss=} {acc=}")
+        print(f"{it=}: {val_loss=} {val_acc=}")
+
+    # train_acc = 0.0; train_loss = float('inf')
+    data_batch = next(iter(agent.dataloaders['train']))
+    val_batch = next(iter(agent.dataloaders['val']))
+    args.it = 0
+    while True:
+        train_loss, train_acc = mdl.forward_one_batch(data_batch, training=True)
+
+        optimizer.zero_grad()
+        train_loss.backward()  # each process synchronizes it's gradients in the backward pass
+        optimizer.step()  # the right update is done since all procs have the right synced grads
+
+        # if args.it % 10 == 0:
+        #     log_train_stats(args.it, train_loss, train_acc)
+        #     agent.save(args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+
+        args.it += 1
+        gc.collect()
+        # if train_acc >= acc_tolerance and train_loss <= train_loss_tolerance:
+        if train_acc >= acc_tolerance:
+            log_train_stats(args.it, train_loss, train_acc)
+            # agent.save(args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+            break  # halt once both the accuracy is high enough AND train loss is low enough
+
+    return avg_loss.item(), avg_acc.item()
 
 ##
 

@@ -9,7 +9,7 @@ conda install -y scipy
 conda install -y scikit-learn
 conda install -y lark-parser -c conda-forge
 conda install -y -c pytorch torchtext
-
+conda install -y -c conda-forge tensorboard
 
 # similar to pip -e
 #conda install conda-build
