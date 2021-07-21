@@ -162,6 +162,41 @@ class Agent:
 
 # -
 
+def to_deterministic(args: Namespace, deterministic_alg=True):
+    """
+    todo - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
+    :return:
+    """
+    import random
+    import numpy as np
+    import torch
+    # TODO IMPROVE THIS
+    if deterministic_alg:
+        # todo - what is this for? I prefer a seed...
+        torch.use_deterministic_algorithms(True)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # def seed_worker(worker_id):
+    #     worker_seed = torch.initial_seed() % 2 ** 32
+    #     numpy.random.seed(worker_seed)
+    #     random.seed(worker_seed)
+    #
+    # g = torch.Generator()
+    # g.manual_seed(0)
+    #
+    # DataLoader(
+    #     train_dataset,
+    #     batch_size=batch_size,
+    #     num_workers=num_workers,
+    #     worker_init_fn=seed_worker
+    # generator = g,
+    # )
+
 def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
     """
     Returns generalized index (i.e. location/coordinate) of the first occurence of value
@@ -216,13 +251,18 @@ def insert_special_symbols(vocab: Vocab) -> Vocab:
     assert vocab['<eos>'] == 3
     return vocab
 
-def padd_sequence(seq, ):
+def pad_sequence(batch_sequences, vocab):
     """
 
-    :param seq:
+    :param batch_sequences:
     :return: [T]
     """
-    pass
+    # todo - batch of sequences to look up tensors
+    # look through each sequence, depending on it's type and make it to look up
+    # lookup_tensor = torch.tensor(indices, dtype=torch.long).to(self.args.device)
+    # pad sequence
+    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
+    return y_look_up_tensor
 
 def diagonal_mask(size: int, device) -> Tensor:
     """
@@ -260,8 +300,8 @@ def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embe
         indices.append(vocab['<eos>'])
         lookup_tensor = torch.tensor(indices, dtype=torch.long).to(device)
         y_look_up_tensor.append(lookup_tensor)
-    # padd
-    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<padd>'], batch_first=True)
+    # pad
+    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
     assert y_look_up_tensor.size() == torch.Size([B, T])
     # get embeddings
     y_embed = vocab_embeds(y_look_up_tensor)
@@ -270,7 +310,7 @@ def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embe
     y_mask = diagonal_mask(size=T, device=device)
     assert y_mask.size() == torch.Size([T, T])
     # padding mask
-    y_padding_mask = (y_look_up_tensor == vocab['<padd>']).to(device)
+    y_padding_mask = (y_look_up_tensor == vocab['<pad>']).to(device)
     assert y_padding_mask.size() == torch.Size([B, T])
     return y_embed, y_mask, y_padding_mask
 
