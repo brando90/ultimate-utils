@@ -858,7 +858,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     # train_batch = next(iter(agent.dataloaders['train']))
     # val_batch = next(iter(agent.dataloaders['val']))
 
-    def log_val_stats(it: int, train_loss: float, acc: float):
+    def log_train_stats(it: int, train_loss: float, acc: float):
         val_loss, val_acc = agent.forward_one_batch(val_batch, training=False)
         agent.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(acc))
         agent.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
@@ -879,7 +879,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
 
         # if agent.agent.is_lead_worker() and agent.args.it % 10 == 0:
         if agent.args.it % 10 == 0:
-            log_val_stats(agent.args.it, train_loss, train_acc)
+            log_train_stats(agent.args.it, train_loss, train_acc)
             agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
 
         agent.args.it += 1
