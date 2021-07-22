@@ -42,7 +42,7 @@ Please include at least 1 self-contained test (that works) before pushing.
 
 Read the `modules_in_python.md` to have an idea of the above development/editable installation commands. 
 
-## Executing tensorboard stuff from remote
+## Executing tensorboard experiment logs from remote
 
 - visualize the remote logs using pycharm and my code (TODO: have the download be automatic...perhaps not needed)
 
