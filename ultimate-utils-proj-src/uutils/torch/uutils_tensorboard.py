@@ -2,7 +2,9 @@
 from pathlib import Path
 
 import numpy as np
-# from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
+from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
+
 
 def log_2_tb(tb, args, it, tag1: str, loss, tag2: str, acc):
     # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
@@ -80,18 +82,24 @@ def log_2_tb_metalearning_old(tb, args, it, loss, acc_err, split):
 # -- tests
 
 def test():
+    from datetime import datetime
+    print('\n---running tb test, writing ot a tb...')
     import numpy as np
     from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 
-    # path = Path('~/data/logs/tb/').expanduser()
-    path = Path('~/logs/logs_Sep29_12-38-08_jobid_-1/tb').expanduser()
-    tb = SummaryWriter(log_dir=path)
-    # tb = SummaryWriter(log_dir=args.current_logs_path)
+    current_time: str = datetime.now().strftime('%b%d_%H-%M-%S')
+    path: Path = Path(f'~/data/logs/logs_{current_time}/tb').expanduser()
+    print(f'Test path: {path=}')
+    # path.mkdir(parents=True, exist_ok=True)  # doesn't seem it's needed
+    tb: SummaryWriter = SummaryWriter(log_dir=path)
+    print(f'created {tb=}')
 
-    for i in range(3):
+    for i in range(5):
         loss = i + np.random.normal(loc=0, scale=1)
+        print(f'{i=}: {loss=}')
         tb.add_scalar('loss', loss, i)
 
 
 if __name__ == '__main__':
     test()
+    print('Done with tensorboard test!\a')
