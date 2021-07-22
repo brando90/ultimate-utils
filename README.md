@@ -52,7 +52,7 @@ Read the `modules_in_python.md` to have an idea of the above development/editabl
 
 to have `tbbb` work as the command add to your `.zshrc` (or `.bashrc`):
 ```
-alias tbb='sh /Users/brando/ultimate-utils/run_tb.sh'
+alias tbb="sh ${HOME}/ultimate-utils/run_tb.sh"
 ```
 
 then the command `tbb path2log` should work.
