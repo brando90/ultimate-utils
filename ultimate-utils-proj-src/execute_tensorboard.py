@@ -12,7 +12,7 @@ Run if alias tbbb is not in .zshrc or .bashrc in local computer
     sh /Users/brando/ultimate-utils/run_tb.sh /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
     
 else add the alias and run tbbb:
-    alias tbb='sh /Users/brando/ultimate-utils/run_tb.sh'
+    alias tbb="sh ${HOME}/ultimate-utils/run_tb.sh"
     tbb /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
 """
 
