@@ -1,9 +1,19 @@
 """
-Replaces te prefix with the home path in the cluster with the local so that running tensorboard is seammingless.
+Read the read me of ulimate utils: https://github.com/brando90/ultimate-utils/edit/master/README.md
 
-sh /Users/brando/ultimate-utils/run_tb.sh /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
-tbb /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
-alias tbb='sh /Users/brando/ultimate-utils/run_tb.sh'
+Since it's easier to just copy paste the path from the remote after downloading it to your local computer, what this script
+aims to do is replace the front of the path with a local path. Then you can copy paste remote paths and run
+tensorboard (assuming you downloaded the data from the remote) seeminglessly.
+
+Code: Replaces te prefix with the remote/cluster path with the local - so that running tensorboard is seammingless.
+
+e.g. 
+Run if alias tbbb is not in .zshrc or .bashrc in local computer
+    sh /Users/brando/ultimate-utils/run_tb.sh /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
+    
+else add the alias and run tbbb:
+    alias tbb='sh /Users/brando/ultimate-utils/run_tb.sh'
+    tbb /home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb
 """
 
 # import os
