@@ -40,6 +40,8 @@ from lark import Lark, tree, Tree, Token
 
 from collections import deque
 
+from argparse import Namespace
+
 from typing import Union
 
 def hello():
@@ -382,6 +384,14 @@ def collect_content_from_file(filepath):
 
 
 ## cluster stuff
+
+def print_args(args: Namespace):
+    """
+    todo - compare with pprint_any_dict
+    :param args:
+    :return:
+    """
+    [print(f'{k, v}') for k, v in vars(args).items()]
 
 def pprint_dict(dic):
     pprint_any_dict(dic)
