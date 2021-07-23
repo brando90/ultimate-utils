@@ -48,11 +48,13 @@ class View(nn.Module):
 class PositionalEncoding(nn.Module):
     """
     Inspired from transformer tutorial: https://pytorch.org/tutorials/beginner/translation_transformer.html
+    Note: there are no learnable parameters. The only layer inside of this is a dropout.
 
     pos = token location
     i = d = dimension of embedding of token
-    PE[pos, i] = sin(pos/10_000
-
+    PE[pos, i] =
+        sin(pos/10_000^2i/D) if i = 2k (even)
+        cos(pos/10_000^2i/D) if i = 2k+1 (odd)
     """
 
     def __init__(self,
@@ -61,7 +63,18 @@ class PositionalEncoding(nn.Module):
                  maxlen: int = 5_000,
                  batch_first:bool = False,
                  ):
+        """
+
+        :param embed_dim:
+        :param dropout:
+        :param maxlen: max length of the pos embedding. This usually seems too large but note that
+        pos encodings (usually) don't have batch dimension - so this is a single tensor
+        that we can just trim as needed according to the real max length in a batch.
+        :param batch_first:
+        """
         super().__init__()
+        if not batch_first:
+            logging.log(logging.WARN, f"Warning: Brando usually likes batch first but its not true: {batch_first=}")
         self.batch_first = batch_first
         self.embed_dim = embed_dim
         self.maxlen = maxlen
@@ -100,11 +113,15 @@ class PositionalEncoding(nn.Module):
         assert len(token_seq_embedding.size()) == 3, f'Expected a token of shape B,T,D but got: {token_seq_embedding.size()=}'
         # if its batch first then the length of the sequence the second element, last element is always embed_dim
         if self.batch_first:
+            # B, T, D = token_seq_embedding.size()
             T = token_seq_embedding.size(1)
             pos_enc = self.pos_embedding[:, :T, :]
+            assert pos_enc.size() == torch.Size([1, T, self.embed_dim])
         else:
+            # T, B, D = token_seq_embedding.size()
             T = token_seq_embedding.size(0)
             pos_enc = self.pos_embedding[:T, :, :]
+            assert pos_enc.size() == torch.Size([T, 1, self.embed_dim])
         # get the number of positional embedding relevant for this batch of sequences
         out = self.dropout(token_seq_embedding + pos_enc)
         return out

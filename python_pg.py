@@ -11685,3 +11685,33 @@ print((t == 99).nonzero())
 # print( ((t == 2).nonzero(as_tuple=True)[0]).size() )
 # print( (t == 2).nonzero() )
 # print( (t == 2).nonzero().size() )
+
+
+#%%
+
+# from lark import Lark
+import lark as l
+
+json_parser = l.Lark(r"""
+    value: dict dict "f"
+         | list
+         | ESCAPED_STRING
+         | SIGNED_NUMBER
+         | "true" | "false" | "null"
+
+    list : "[" [value ("," value)*] "]"
+
+    dict : "{" [pair ("," pair)*] "}"
+    pair : ESCAPED_STRING ":" value
+
+    %import common.ESCAPED_STRING
+    %import common.SIGNED_NUMBER
+    %import common.WS
+    %ignore WS
+
+    """, start='value')
+
+text = '{} {} f'
+ast = json_parser.parse(text)
+print(ast)
+print(ast.pretty())
