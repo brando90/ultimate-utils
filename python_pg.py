@@ -11715,3 +11715,15 @@ text = '{} {} f'
 ast = json_parser.parse(text)
 print(ast)
 print(ast.pretty())
+
+# %%
+
+import torch
+
+B, T, D = 2, 3, 4
+
+x = torch.randn(B, T, D)
+
+print(x)
+print()
+print(torch.transpose(x, 1, 2))
