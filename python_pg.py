@@ -11727,3 +11727,57 @@ x = torch.randn(B, T, D)
 print(x)
 print()
 print(torch.transpose(x, 1, 2))
+
+# %%
+
+import torch
+
+x = torch.zeros(4, 3)
+print(x)
+x[1:, :] = torch.ones(1, 3)
+print(x)
+
+#%%
+
+import time
+import progressbar
+
+with progressbar.ProgressBar(max_value=10) as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        time.sleep(1)
+        bar.update(i)
+
+#%%
+
+# import time
+# import progressbar
+# 
+# bar = progressbar.ProgressBar(max_value=10)
+# for i in range(10):
+#     time.sleep(0.1)
+#     print(f'{i=}')
+#     bar.update(i)
+
+#%%
+
+from tqdm import tqdm
+import time
+
+with tqdm(total=10) as bar:
+    for i in range(10):
+        # time.sleep(0.1)
+        time.sleep(1)
+        print(f'{i=}')
+        bar.update(i)
+
+
+#%%
+
+from tqdm import tqdm
+import time
+
+for i in tqdm(range(10)):
+    # time.sleep(0.1)
+    time.sleep(5)
+    print(f'{i=}')
