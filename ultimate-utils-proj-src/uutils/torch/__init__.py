@@ -163,40 +163,38 @@ class Agent:
 
 # -
 
-def to_deterministic(args: Namespace, deterministic_alg=True):
+def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool = True):
     """
-    todo - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
+
+    Note: use_deterministic_algorithms makes all algorithms deterministic while torch.backends.cudnn.deterministic=True
+    makes convs only determinsitic. There is also a way to choose algorithms based on hardware performance, to
+    avoid that use torch.backends.cudnn.benchmark = False (note the agorithm chosen even if determinsitic might be
+    random itself so the other two flags are useful).
+
+    todo -
+     - fix this:
+      RuntimeError: Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+     - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
+    ref:
+        - https://pytorch.org/docs/stable/notes/randomness.html
+        - https://stackoverflow.com/questions/66130547/what-does-the-difference-between-torch-backends-cudnn-deterministic-true-and
     :return:
     """
     import random
     import numpy as np
     import torch
-    # TODO IMPROVE THIS
-    if deterministic_alg:
-        # todo - what is this for? I prefer a seed...
+    # - make pytorch determinsitc
+    # makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
+    torch.manual_seed(seed)
+    if always_use_deterministic_algorithms:
         torch.use_deterministic_algorithms(True)
-    torch.manual_seed(args.seed)
+    # makes convs deterministic
     torch.backends.cudnn.deterministic = True
+    # doesn't allow benchmarking to select fastest algorithms for specific ops
     torch.backends.cudnn.benchmark = False
-    np.random.seed(args.seed)
-    random.seed(args.seed)
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    # def seed_worker(worker_id):
-    #     worker_seed = torch.initial_seed() % 2 ** 32
-    #     numpy.random.seed(worker_seed)
-    #     random.seed(worker_seed)
-    #
-    # g = torch.Generator()
-    # g.manual_seed(0)
-    #
-    # DataLoader(
-    #     train_dataset,
-    #     batch_size=batch_size,
-    #     num_workers=num_workers,
-    #     worker_init_fn=seed_worker
-    # generator = g,
-    # )
+    # - make python determinsitic
+    np.random.seed(seed)
+    random.seed(seed)
 
 def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
     """
@@ -2050,11 +2048,21 @@ def test_split_data_train_val_test():
     print(len(X_val))
     print(len(X_test))
 
+def test_simple_determinism():
+    args = Namespace(seed=0, deterministic_alg=True)
+    make_code_deterministic(args.seed, args.deterministic_alg)
+    #
+    x = torch.randn(3, 3, 3)
+    print(f'{x.sum()=}')
+    out = x @ x
+    print(f'{out.sum()}')
+
 # -- __main__
 
 if __name__ == '__main__':
     # test_ned()
     # test_tensorify()
-    test_compressed_r2_score()
-    test_topk_accuracy_and_accuracy()
+    # test_compressed_r2_score()
+    # test_topk_accuracy_and_accuracy()
+    test_simple_determinism()
     print('Done\a')
