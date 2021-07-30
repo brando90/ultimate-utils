@@ -180,10 +180,21 @@ def _make_and_check_dir(path):
     mkdir(parents=True, exist_ok=True) see: https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
     """
     path = os.path.expanduser(path)
-    path.makdir(
+    path.mkdir(
         parents=True, exit_ok=True
     )  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
 
+def create_folder(path2folder) -> None:
+    """
+    Creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+
+    :param path2folder:
+    :return:
+    """
+    if isinstance(path2folder, str):
+        path2folder = Path(path2folder).expanduser()
+    assert isinstance(path2folder, Path)
+    path2folder.mkdir(parents=True, exist_ok=True)
 
 def timeSince(start):
     """

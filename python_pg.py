@@ -11781,3 +11781,16 @@ for i in tqdm(range(10)):
     # time.sleep(0.1)
     time.sleep(5)
     print(f'{i=}')
+
+#%%
+
+# progress bar 2 with it per second: https://github.com/WoLpH/python-progressbar/issues/250
+
+import time
+import progressbar
+
+with progressbar.ProgressBar(max_value=10, unit='it') as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        time.sleep(1)
+        bar.update(i)
