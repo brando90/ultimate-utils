@@ -175,6 +175,7 @@ def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool 
      - fix this:
       RuntimeError: Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
      - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
+     - read the RNN LSTM part
     ref:
         - https://pytorch.org/docs/stable/notes/randomness.html
         - https://stackoverflow.com/questions/66130547/what-does-the-difference-between-torch-backends-cudnn-deterministic-true-and
