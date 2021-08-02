@@ -155,6 +155,59 @@ def get_torchmeta_rand_fnn_dataloaders(args):
                                                num_workers=args.num_workers)
     return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
 
+def get_dataloaders(args, rank, world_size, merge, dataset):
+    """
+
+    todo - figure out what is the number of workers for a DDP dataloader. 1) check pytorch forum for it
+    :param args:
+    :param rank:
+    :param world_size:
+    :param merge:
+    :param dataset:
+    :return:
+    """
+    # todo - might be tricky to have genereric interface like this without just putting everything in args.
+    #   - I think it's fine to have this as a "template" but hardcode for each data set, putting everything in args is ugly and error prone etc
+    train_dataset = dataset(args, split='train')
+    val_dataset = dataset(args, split='val')
+    test_dataset = dataset(args, split='test')
+    if is_running_serially(rank):
+        train_sampler, val_sampler, test_sampler  = None, None, None
+        # todo - probably if it's none then use hardcoded else use the value passed, so changed default of 0 to None or -1 or something like that
+        # args.num_workers = args.num_workers if hasattr(args, 'num_workers') else 4
+        args.num_workers = 4
+    else:
+        # get dist samplers
+        assert (args.batch_size >= world_size)
+        from torch.utils.data import DistributedSampler
+        train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+        val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
+        test_sampler = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
+        # todo - figure out what is the best for ddp. But my guess is that 0 is fine as hardcoded value & only overwrite if args.num_wokers has a none -1 or none else use my hardcoded default
+        args.num_workers = 0
+    # get dist dataloaders
+    train_dataloader = DataLoader(train_dataset,
+                                  batch_size=args.batch_size,
+                                  sampler=train_sampler,
+                                  collate_fn=merge,
+                                  num_workers=args.num_workers)
+    val_dataloader = DataLoader(val_dataset,
+                                batch_size=args.batch_size,
+                                sampler=val_sampler,
+                                collate_fn=merge,
+                                num_workers=args.num_workers)
+    test_dataloader = DataLoader(test_dataset,
+                                 batch_size=args.batch_size,
+                                 sampler=test_sampler,
+                                 collate_fn=merge,
+                                 num_workers=args.num_workers)
+    # return dataloaders
+    dataloaders = {'train': train_dataloader, 'val': val_dataloader, 'test': test_dataloader}
+    return dataloaders
+
+def get_dataset(dataloaders: dict):
+    datasets = {split:dataloader.dataset for split,dataloader in dataloaders}
+    return datasets
 
 # ---- teats ----
 

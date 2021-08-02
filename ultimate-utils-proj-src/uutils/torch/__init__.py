@@ -850,6 +850,9 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     Train untils the accuracy on the specified batch has perfect interpolation in loss and accuracy.
     It also prints and tb logs every iteration.
 
+
+    todo - compare with train one batch
+
     :param acc_tolerance:
     :param train_loss_tolerance:
     :return:
@@ -1919,6 +1922,9 @@ def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.
     of your data without using any features x). Having this sort of interpretable measure can save you
     a lot of time - especially when the loss seems to be meaninfuless.
     For that replace accuracy for your favorite interpretable "acuraccy" function.
+
+
+    todo - compare with train_single_batch
 
     :param opts:
     :param model:
