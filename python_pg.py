@@ -11822,3 +11822,73 @@ from torch_geometric.utils.convert import to_networkx
 
 g = to_networkx(data)
 nx.draw(g)
+
+#%%
+
+#%%
+
+# import time
+# import progressbar
+# 
+# with progressbar.ProgressBar(max_value=10) as bar:
+#     for i in range(10):
+#         time.sleep(0.1)
+#         time.sleep(1)
+#         bar.update(i)
+
+import time
+import progressbar
+
+bar = progressbar.ProgressBar(max_value=5)
+for i in range(5):
+    time.sleep(1)
+    bar.update(i)
+
+"""
+ 80% (4 of 5) |####################      | Elapsed Time: 0:00:04 ETA:   0:00:01
+"""
+
+#%%
+
+import time
+import progressbar
+
+widgets = [
+    progressbar.Percentage(),
+    progressbar.Bar(),
+    ' ', progressbar.SimpleProgress(),
+    ' ', progressbar.ETA(),
+    ' ', progressbar.AdaptiveTransferSpeed(unit='it'),
+]
+
+bar = progressbar.ProgressBar(widgets=widgets)
+for i in bar(range(100)):
+    time.sleep(0.2)
+    bar.update(i)
+"""
+19%|##########                                           | 19 of 100 ETA:   0:00:17   4.9 it/s
+"""
+
+#%%
+
+"""
+from default
+ 99% (9998 of 10000) |########## | Elapsed Time: 1 day, 16:35:09 ETA:   0:00:26
+"""
+
+import time
+import progressbar
+
+widgets = [
+    progressbar.Percentage(),
+    ' ', progressbar.SimpleProgress(format=f'({progressbar.SimpleProgress.DEFAULT_FORMAT})'),
+    ' ', progressbar.Bar(),
+    ' ', progressbar.Timer(), ' |',
+    ' ', progressbar.ETA(), ' |',
+    ' ', progressbar.AdaptiveTransferSpeed(unit='it'),
+]
+
+bar = progressbar.ProgressBar(widgets=widgets)
+for i in bar(range(100)):
+    time.sleep(0.1)
+    bar.update(i)

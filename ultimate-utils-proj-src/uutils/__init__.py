@@ -44,6 +44,8 @@ from argparse import Namespace
 
 from typing import Union
 
+import progressbar
+
 def hello():
     print('hello from uutitls __init__.pyt')
 
@@ -132,6 +134,28 @@ def parse_args():
 
     return parser.parse_args()
 
+def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.ProgressBar:
+    """
+    Example output:
+
+    100% (100 of 100) |#####| Elapsed Time: 0:00:10 |  Time:  0:00:10 |    9.8 it/
+
+    reference:
+        - https://progressbar-2.readthedocs.io/en/latest/
+        - https://github.com/WoLpH/python-progressbar/discussions/253
+        - https://stackoverflow.com/questions/30834730/how-to-print-iterations-per-second
+    :return:
+    """
+    widgets = [
+        progressbar.Percentage(),
+        ' ', progressbar.SimpleProgress(format=f'({progressbar.SimpleProgress.DEFAULT_FORMAT})'),
+        ' ', progressbar.Bar(),
+        ' ', progressbar.Timer(), ' |',
+        ' ', progressbar.ETA(), ' |',
+        ' ', progressbar.AdaptiveTransferSpeed(unit='it'),
+    ]
+    bar = progressbar.ProgressBar(widgets=widgets, max_value=max_value)
+    return bar
 
 def get_logger(name, log_path, log_filename, rank=0):
     """
@@ -764,9 +788,23 @@ def test_dfs():
     # the key is that 3,4 should go first than 5 because it is DFS
     dfs_recursive(ast, print)
 
+def test_good_progressbar():
+    import time
+    bar = get_good_progressbar()
+    for i in bar(range(100)):
+        time.sleep(0.1)
+        bar.update(i)
+
+    print('---- start ---')
+    max_value = 10
+    with get_good_progressbar(max_value=max_value) as bar:
+        for i in range(max_value):
+            time.sleep(1)
+            bar.update(i)
 
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
-    test_dfs()
+    # test_dfs()
+    test_good_progressbar()
     print('Done!\a')

@@ -5,7 +5,13 @@ Utils class with useful helper functions
 
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 
+todo:
+    - write a abstract/general method for training
+        1. with iteration based (with progress bars) + batches
+        2. with epoch based with progress bars + batches, nested progress bars
+        3. fitting one batch
 """
+
 import gc
 from datetime import datetime
 from typing import List, Union
