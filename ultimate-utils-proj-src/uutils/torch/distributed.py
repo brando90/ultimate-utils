@@ -62,6 +62,29 @@ def process_batch_ddp(opts, batch):
         y = y.to(opts.gpu)
     return x, y
 
+def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
+    """
+    Mutates the data batch and returns the mutated version.
+    Note that the batch is assumed to have the specific different types of data in
+    different batches according to the name of that type.
+    e.g.
+        batch = {'x': torch.randn([B, T, D]), 'y': torch.randn([B, T, V])}
+    holds two batches with names 'x' and 'y' that are tensors.
+    In general the dict format for batches is useful because any type of data can be added to help
+    with faster prototyping. The key is that they are not tuples (x,y) or anything like that
+    since you might want to return anything and batch it. e.g. for each example return the
+    adjacency matrix, or the depth embedding etc.
+
+    :param args:
+    :param batch:
+    :return:
+    """
+    for data_name, batch_data in batch.items():
+        if isinstance(batch_data, torch.Tensor):
+            batch[data_name] = batch_data.to(args.gpu)
+    return batch
+
+
 def process_batch_ddp_tactic_prediction(opts, batch):
     """
     Make sure opts has the gpu for each worker.
