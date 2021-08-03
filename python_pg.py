@@ -11892,3 +11892,34 @@ bar = progressbar.ProgressBar(widgets=widgets)
 for i in bar(range(100)):
     time.sleep(0.1)
     bar.update(i)
+
+#%%
+
+import uutils
+
+def test_good_progressbar():
+    import time
+    bar = uutils.get_good_progressbar()
+    for i in bar(range(100)):
+        time.sleep(0.1)
+        bar.update(i)
+
+    print('---- start context manager test ---')
+    max_value = 10
+    with uutils.get_good_progressbar(max_value=max_value) as bar:
+        for i in range(max_value):
+            time.sleep(1)
+            bar.update(i)
+
+test_good_progressbar()
+
+#%%
+
+import time
+import progressbar
+
+# bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+for i in range(20):
+    time.sleep(0.1)
+    bar.update(i)

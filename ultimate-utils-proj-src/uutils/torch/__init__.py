@@ -863,6 +863,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     :param train_loss_tolerance:
     :return:
     """
+    import progressbar
     set_system_wide_force_flush2()
     # train_batch = next(iter(agent.dataloaders['train']))
     # val_batch = next(iter(agent.dataloaders['val']))
@@ -879,6 +880,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     avg_loss = AverageMeter('train loss')
     avg_acc = AverageMeter('train accuracy')
     agent.args.it = 0
+    bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     while True:
         train_loss, train_acc = agent.forward_one_batch(train_batch, training=True)
 
@@ -888,6 +890,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
 
         # if agent.agent.is_lead_worker() and agent.args.it % 10 == 0:
         if agent.args.it % 10 == 0:
+            bar.update(agent.args.it)
             log_train_stats(agent.args.it, train_loss, train_acc)
             agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
 

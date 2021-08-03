@@ -140,10 +140,17 @@ def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.Prog
 
     100% (100 of 100) |#####| Elapsed Time: 0:00:10 |  Time:  0:00:10 |    9.8 it/
 
+    For unknown length e.g:
+        bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+        for i in range(20):
+            time.sleep(0.1)
+            bar.update(i)
+
     reference:
         - https://progressbar-2.readthedocs.io/en/latest/
         - https://github.com/WoLpH/python-progressbar/discussions/253
         - https://stackoverflow.com/questions/30834730/how-to-print-iterations-per-second
+        - https://github.com/tqdm/tqdm/discussions/1211
     :return:
     """
     widgets = [
@@ -156,6 +163,10 @@ def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.Prog
     ]
     bar = progressbar.ProgressBar(widgets=widgets, max_value=max_value)
     return bar
+
+def get_good_progressbar_tdqm():
+    # https://github.com/tqdm/tqdm/discussions/1211
+    pass
 
 def get_logger(name, log_path, log_filename, rank=0):
     """
@@ -795,7 +806,7 @@ def test_good_progressbar():
         time.sleep(0.1)
         bar.update(i)
 
-    print('---- start ---')
+    print('---- start context manager test ---')
     max_value = 10
     with get_good_progressbar(max_value=max_value) as bar:
         for i in range(max_value):
