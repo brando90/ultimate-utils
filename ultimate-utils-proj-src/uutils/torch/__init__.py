@@ -900,6 +900,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
         if train_acc >= acc_tolerance:
             log_train_stats(agent.args.it, train_loss, train_acc)
             agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+            bar.update(agent.args.it)
             break  # halt once performance is good enough
 
     return avg_loss.item(), avg_acc.item()
