@@ -11923,3 +11923,13 @@ bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
 for i in range(20):
     time.sleep(0.1)
     bar.update(i)
+
+#%%
+
+import torch
+import transformers
+from transformers.optimization import Adafactor, AdafactorSchedule
+
+model = torch.nn.Linear(1, 1)
+optimizer = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
+lr_scheduler = AdafactorSchedule(optimizer)
