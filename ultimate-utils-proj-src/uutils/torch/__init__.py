@@ -2004,13 +2004,25 @@ def download_dataset(url: str, path2save_filename:Union[str, None] = None,
     print(f'data set downloaded to path with filename: {path2save_filename=}')
     urllib.request.urlretrieve(url, filename)
     if do_unzip:
-        unzip(filename, './')
+        untar(filename, './')
 
 def unzip(path2zip: str, path2unzip: str):
+    """
+    todo - fix, so that it works in any os
+    :param path2zip:
+    :param path2unzip:
+    :return:
+    """
     # print(f'{path2zip=}')
     # import zipfile
     # with zipfile.ZipFile(path2zip, 'r') as zip_ref:
     #     zip_ref.extractall(path2zip)
+    path = str(Path(path2zip).expanduser())
+    path2unzip = str(Path(path2unzip).expanduser())
+    os.system(f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
+    os.remove(path2zip)
+
+def untar(path2zip: str, path2unzip: str):
     path = str(Path(path2zip).expanduser())
     path2unzip = str(Path(path2unzip).expanduser())
     os.system(f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
