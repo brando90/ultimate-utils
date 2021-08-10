@@ -16,10 +16,9 @@ setup(
                       'scipy',
                       'scikit-learn',
                       'lark-parser',
-                      'pytorch',
+                      'torchtext',
                       'tensorboard',
-                      'pandas',
-                      'torchtext']
+                      'pandas']
 )
 
 #install_requires=['numpy>=1.11.0']

@@ -11,7 +11,6 @@ conda install -y lark-parser -c conda-forge
 conda install -y -c pytorch torchtext
 conda install -y -c conda-forge tensorboard
 conda install -y -c conda-forge pandas
-conda install -y -c pytorch torchtext
 
 # similar to pip -e
 conda install conda-build
