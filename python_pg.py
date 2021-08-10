@@ -11933,3 +11933,28 @@ from transformers.optimization import Adafactor, AdafactorSchedule
 model = torch.nn.Linear(1, 1)
 optimizer = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
 lr_scheduler = AdafactorSchedule(optimizer)
+
+#%%
+
+# import requests, io
+
+URL = 'http://safelearning.ai/formalml-data/dataset10000.zip'
+
+# urlData = requests.get(URL).content
+#%%
+
+# import urllib
+from pathlib import Path
+import urllib.request
+
+url: str = 'http://safelearning.ai/formalml-data/dataset10000.zip'
+filename: str = url.split('/')[-1]
+assert filename == 'dataset10000.zip'
+# filename = f'{filename}'
+filename = f'./{filename}'
+# filename = str(Path(f'~/Desktop/{filename}').expanduser())
+
+# testfile = urllib.URLopener()
+# testfile.retrieve(url, zip_name)
+# urllib.urlretrieve("http://randomsite.com/file.gz", "file.gz")
+urllib.request.urlretrieve(url, filename)
