@@ -34,6 +34,8 @@ depending on which package manager you are using.
 I usually use conda.
 
 Note that the above code assume you have cloned this library in your home `~`.
+Note you might have to do `sudo port install graphviz` or `sudo apt install graphviz` for
+graphviz (the actual C version that python calls).
 
 ## Contributing
 
