@@ -12,13 +12,15 @@ setup(
     packages=find_packages(), # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
     install_requires=['dill',
                       'networkx>=2.5',
-                      'pygraphviz',
                       'scipy',
                       'scikit-learn',
                       'lark-parser',
                       'torchtext',
                       'tensorboard',
-                      'pandas']
+                      'pandas',
+
+
+                      'pygraphviz']
 )
 
 #install_requires=['numpy>=1.11.0']
