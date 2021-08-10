@@ -5,6 +5,7 @@
 # for graphviz
 # sudo port install graphviz
 brew install graphviz
+# sudo apt install graphviz
 
 
 conda install -y dill
