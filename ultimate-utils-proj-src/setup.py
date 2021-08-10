@@ -4,7 +4,7 @@ from setuptools import find_packages
 setup(
     name='uutils', # project name
     version='0.1.0',
-    description='Brandos ultimate utils for science',
+    description='Brandos ultimate utils for science, machine learning and AI',
     #url
     author='Brando Miranda',
     author_email='brandojazz@gmail.com',
@@ -18,7 +18,7 @@ setup(
                       'torchtext',
                       'tensorboard',
                       'pandas',
-
+                      'progressbar2'
 
                       'pygraphviz']
 )
