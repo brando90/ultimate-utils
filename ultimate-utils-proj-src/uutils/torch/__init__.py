@@ -51,7 +51,11 @@ from torchtext.vocab import Vocab, vocab
 
 import gc
 
-uutils
+import urllib.request
+
+import logging
+
+# uutils
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
@@ -1977,6 +1981,62 @@ def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.
         gc.collect()
 
     return avg_loss.item(), avg_acc.item()
+
+# - data set downloads
+
+def download_dataset(url: str, path2save_filename:Union[str, None] = None,
+                     do_unzip:bool = False) -> None:
+    """
+
+    :param url:
+    :param path2save: the path to save and the filename of the file in one string e.g. ~/data.zip.
+    :return:
+    """
+    if path2save_filename is None:
+        filename: str = url.split('/')[-1]
+        filename = Path(f'./{filename}').expanduser()
+        # todo , this doesnt actually log the right path
+        #  get file path of where code is executing and where data set will be saved
+        # dir_path = os.path.dirname(os.path.realpath(__file__))
+        # logging.warning(f'Your data set will be saved in the directory {dir_path}.')
+    else:
+        filename: str = Path(path2save_filename).expanduser()
+    print(f'data set downloaded to path with filename: {path2save_filename=}')
+    urllib.request.urlretrieve(url, filename)
+    if do_unzip:
+        unzip(filename, './')
+
+def unzip(path2zip: str, path2unzip: str):
+    # print(f'{path2zip=}')
+    # import zipfile
+    # with zipfile.ZipFile(path2zip, 'r') as zip_ref:
+    #     zip_ref.extractall(path2zip)
+    path = str(Path(path2zip).expanduser())
+    path2unzip = str(Path(path2unzip).expanduser())
+    os.system(f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
+    os.remove(path2zip)
+
+def _unzip(filename: Union[str, Path], extract_dir):
+    """
+    todo fix... perhaps not...?
+    https://stackoverflow.com/questions/3451111/unzipping-files-in-python
+    """
+    filename = str(filename)
+    print(f'unzipping {filename}...')
+    if os.path.exists(filename[:-7]):
+        # remove = input(filename[:-7] + ' already exists. Do you want to remove it? (y/N)').lower()
+        remove = 'y'
+        if remove == 'y':
+            execute('rm -r ' + filename[:-7])
+        else:
+            print('aborting..')
+            sys.exit(-1)
+
+    import shutil
+    shutil.unpack_archive(filename, extract_dir)
+
+    # execute(f'tar -xvzf {filename}')
+    print(f'done unzipping {filename}\n')
 
 # -- tests
 
