@@ -21,17 +21,19 @@ Then install it in development mode (
 google it if you don't know what it is or see the `modules_in_python.md`) with:
 
 ```
-conda develop ~/ultimate-utils/ultimate-utils-project
+conda develop ~/ultimate-utils/ultimate-utils-proj-src
 ```
 
 or (pip command not tested)
 
 ```
-pip install -e ~/ultimate-utils/ultimate-utils-project
+pip install -e ~/ultimate-utils/ultimate-utils-proj-src
 ```
 
 depending on which package manager you are using.
 I usually use conda.
+
+Note that the above code assume you have cloned this library in your home `~`.
 
 ## Contributing
 
