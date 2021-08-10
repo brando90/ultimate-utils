@@ -18,7 +18,7 @@ setup(
                       'torchtext',
                       'tensorboard',
                       'pandas',
-                      'progressbar',
+                      'progressbar2',
 
                       'pygraphviz']
 )
