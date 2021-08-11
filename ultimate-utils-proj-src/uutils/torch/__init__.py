@@ -2004,7 +2004,8 @@ def download_dataset(url: str, path2save_filename:Union[str, None] = None,
     print(f'data set downloaded to path with filename: {path2save_filename=}')
     urllib.request.urlretrieve(url, filename)
     if do_unzip:
-        untar(filename, './')
+        unzip(filename, './')
+        # untar(filename, './')
 
 def unzip(path2zip: str, path2unzip: str):
     """
