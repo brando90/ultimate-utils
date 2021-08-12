@@ -11958,3 +11958,12 @@ filename = f'./{filename}'
 # testfile.retrieve(url, zip_name)
 # urllib.urlretrieve("http://randomsite.com/file.gz", "file.gz")
 urllib.request.urlretrieve(url, filename)
+
+#%%
+
+a = {'a', 'b', 'c', 'd'}
+b = {'d', 'e', 'f'}
+c = a.union(b)
+print(c)
+print(a.intersection(b))
+print(len(a))

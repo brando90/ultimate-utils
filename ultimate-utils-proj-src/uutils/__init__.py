@@ -751,6 +751,11 @@ def dfs_recursive(ast : Tree, f) -> Tree:
     for child in ast.children:
         dfs_recursive(child, f)
 
+def save_with_dill(path2data: str, dataset_name: str, data_set) -> None:
+    path2data: str = str(Path(path2data).expanduser())
+    with open(path2data / f'{dataset_name}.pt', 'wb') as f2dataset:
+        dill.dump(data_set, f2dataset)
+
 # -- tests
 
 def test_draw():
