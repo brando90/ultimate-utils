@@ -11850,6 +11850,12 @@ for i in range(5):
 
 #%%
 
+"""
+Use this one to make sure the "end" is shown properly 100% etc
+
+https://gist.github.com/brando90/3304119120841b1ebf892fe93a2cc3c9
+"""
+
 import time
 import progressbar
 
@@ -11863,10 +11869,14 @@ widgets = [
 
 bar = progressbar.ProgressBar(widgets=widgets)
 for i in bar(range(100)):
-    time.sleep(0.2)
+    time.sleep(0.1)
     bar.update(i)
 """
 19%|##########                                           | 19 of 100 ETA:   0:00:17   4.9 it/s
+
+when done:
+
+100%|####################################| 100 of 100 Time:  0:00:20   4.9 it/s
 """
 
 #%%
