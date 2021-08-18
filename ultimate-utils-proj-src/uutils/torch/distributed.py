@@ -211,13 +211,13 @@ def is_running_parallel(rank):
     """if it's not serial then it's parallel. """
     return not is_running_serially(rank)
 
-def is_lead_worker(rank):
+def is_lead_worker(rank: int) -> bool:
     """
     -1 = means serial code so main proc = lead worker = master
     0 = first rank is the lead worker (in charge of printing, logging, checkpoiniting etc.)
     :return:
     """
-    am_I_lead_worker = rank == 0 or is_running_serially(rank)
+    am_I_lead_worker: bool = rank == 0 or is_running_serially(rank)
     return am_I_lead_worker
 
 def print_process_info(rank, flush=False):

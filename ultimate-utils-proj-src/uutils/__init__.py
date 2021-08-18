@@ -569,15 +569,15 @@ def create_logs_dir_and_load(opts):
     opts.checkpoint_dir = opts.log_experiment_dir
 
 
-def save_opts(opts):
+def save_opts(opts: Namespace, args_filename: str = 'opts.json'):
     # save opts that was used for experiment
-    with open(opts.log_root / 'opts.json', 'w') as argsfile:
+    with open(opts.log_root / args_filename, 'w') as argsfile:
         # in case some things can't be saved to json e.g. tb object, torch.Tensors, etc.
         args_data = {key: str(value) for key, value in opts.__dict__.items()}
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
-def save_args(args):
-    save_opts(args)
+def save_args(args: Namespace, args_filename: str = 'args.json'):
+    save_opts(args, args_filename)
 
 def load_cluster_jobids_to(args):
     import os
