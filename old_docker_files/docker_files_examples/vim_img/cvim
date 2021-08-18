@@ -1,0 +1,10 @@
+#!/bin/sh
+
+## PURPOSE: docker vim file. Calls vim through docker.
+
+# get current path (where file to vim resides)
+pwd=$(pwd)
+# get the string of the path+file to open in vim (relative to the docker container paths)
+path_file=$(python $PVIM_PATH/pvim.py $pwd $1)
+#echo $path_file
+docker run -it --rm -v ~/dot_files:/root -v ~/home_simulation_research:/home_simulation_research vim_img vim $path_file
