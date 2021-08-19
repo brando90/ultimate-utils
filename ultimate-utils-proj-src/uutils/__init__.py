@@ -756,6 +756,12 @@ def save_with_dill(path2data: str, dataset_name: str, data_set) -> None:
     with open(path2data / f'{dataset_name}.pt', 'wb') as f2dataset:
         dill.dump(data_set, f2dataset)
 
+def write_str_to_file(path: str, filename: str, file_content: str, mode: str = 'w'):
+    path: Path = Path(path).expanduser()
+    path.mkdir(parents=True, exist_ok=True)  # if it already exists it WONT raise an error (exists is ok!)
+    with open(path / filename, mode) as f:
+        f.write(file_content)
+
 # -- tests
 
 def test_draw():
