@@ -17,6 +17,7 @@ MAINTAINER Brando Miranda "brandojazz@gmail.com"
 RUN mkdir -p /home/miranda9/
 WORKDIR /home/miranda9
 
+# for later one that create a conda env with whatever python version I want...
 # this wont work, read this some day when I need to activate my env in docker: https://pythonspeed.com/articles/activate-conda-dockerfile/
 #RUN conda create -n docker_env python=3.9 -y
 #RUN conda init bash

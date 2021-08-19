@@ -762,6 +762,10 @@ def write_str_to_file(path: str, filename: str, file_content: str, mode: str = '
     with open(path / filename, mode) as f:
         f.write(file_content)
 
+def f(fromDirectory: str, toDirectory: str):
+    from distutils.dir_util import copy_tree
+    copy_tree(fromDirectory, toDirectory)
+
 # -- tests
 
 def test_draw():
