@@ -11977,3 +11977,15 @@ c = a.union(b)
 print(c)
 print(a.intersection(b))
 print(len(a))
+
+#%%
+
+import asyncio
+
+async def main():
+    print('Hello ...')
+    await asyncio.sleep(5)
+    print('... World!')
+
+# Python 3.7+
+asyncio.run(main())

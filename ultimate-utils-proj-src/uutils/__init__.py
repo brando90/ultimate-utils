@@ -42,7 +42,7 @@ from collections import deque
 
 from argparse import Namespace
 
-from typing import Union
+from typing import Union, Any
 
 import progressbar
 
@@ -751,10 +751,23 @@ def dfs_recursive(ast : Tree, f) -> Tree:
     for child in ast.children:
         dfs_recursive(child, f)
 
-def save_with_dill(path2data: str, dataset_name: str, data_set) -> None:
+def save_dataset_with_dill(path2data: str, dataset_name: str, data_set) -> None:
     path2data: str = str(Path(path2data).expanduser())
     with open(path2data / f'{dataset_name}.pt', 'wb') as f2dataset:
         dill.dump(data_set, f2dataset)
+
+def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> None:
+    path: Path = Path(path).expanduser()
+    path.mkdir(parents=True, exist_ok=True)
+    filename: str = f'{filename}.pt' if filename[-3:] != '.pt' else filename
+    with open(path / filename, mode) as f:
+        dill.dump(python_obj, f)
+
+def load_with_dill(path: str, filename: str, mode='rb') -> Any:
+    path: Path = Path(path).expanduser()
+    with open(path / filename, mode) as f:
+        python_obj = dill.load(f)
+    return python_obj
 
 def write_str_to_file(path: str, filename: str, file_content: str, mode: str = 'w'):
     path: Path = Path(path).expanduser()
@@ -762,9 +775,9 @@ def write_str_to_file(path: str, filename: str, file_content: str, mode: str = '
     with open(path / filename, mode) as f:
         f.write(file_content)
 
-def f(fromDirectory: str, toDirectory: str):
-    from distutils.dir_util import copy_tree
-    copy_tree(fromDirectory, toDirectory)
+# def f(fromDirectory: str, toDirectory: str):
+#     from distutils.dir_util import copy_tree
+#     copy_tree(fromDirectory, toDirectory)
 
 # -- tests
 
