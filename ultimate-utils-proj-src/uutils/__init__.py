@@ -47,7 +47,7 @@ from typing import Union, Any
 import progressbar
 
 def hello():
-    print('hello from uutitls __init__.pyt')
+    print('\nhello from uutitls __init__.py\n')
 
 def helloworld(arg1="arg1", arg2="arg2"):
     print("helloworld from uutils __init__.py")
