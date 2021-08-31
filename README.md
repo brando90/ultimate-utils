@@ -1,34 +1,46 @@
 # Ultimate-utils
 
+Ulitmate-utils (or uutils) is collection of useful code that Brando has collected through the years that has been useful accross his projects.
+Mainly for machine learning and programming languages tasks.
+
 ## Installing Ultimate-utils
 
-I am a collection of useful code that Brando has collected through the years that has been useful accross his projects.
+To use uutils first get the code this repo (e.g. fork it on github):
 
-To use me get a copy of this repo (I recommend to fork it on github) clone it as usual in your workspace. 
-Then install it in development mode if your python environment - have python 3.9
-(google it if you don't know what it is or see the `modules_in_python.md`).
-To get a python env do:
+```
+git clone git@github.com:brando90/ultimate-utils.git
+```
+
+Then install it in development mode in your python env with python >=3.9
+(read `modules_in_python.md` to learn about python envs).
+E.g. create your env with conda:
+
 ```
 conda create -n uutils_env python=3.9
 conda activate uutils_env
 ```
-to install in development/editable mode do:
-```
-conda develop ~/ultimate-utils/ultimate-utils-proj-src
-```
 
-or (pip command not tested)
+Due to a depedency on `pygraphviz` you will likely need to install `graphviz` first. Next, install `graphviz`. 
+On mac, `brew install graphviz`. 
+On Ubuntu, `sudo apt install graphviz`.
+After graphviz is install, install uutils in edibable mode and all it's depedencies with pip:
 
 ```
 pip install -e ~/ultimate-utils/ultimate-utils-proj-src
 ```
 
-depending on which package manager you are using.
-I usually use conda.
+you can also do `conda develop ~/ultimate-utils/ultimate-utils-proj-src` but it won't install the depedencies.
+Now you should be able to use uutils! To test it do:
 
-Note that the above code assume you have cloned this library in your home `~`.
-Note you might have to do `sudo port install graphviz` or `sudo apt install graphviz` for
-graphviz (the actual C version that python calls).  
+```
+python -c "import uutils; uutils.hello()"
+```
+
+should print:
+
+```
+hello from uutitls __init__.pyt
+```
 
 ## Contributing
 
