@@ -5,6 +5,16 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
+## Automatic installation for mac
+
+If you are on mac do:
+
+```
+bash ./install.sh
+```
+
+## Manual installation
+
 To use uutils first get the code this repo (e.g. fork it on github):
 
 ```
