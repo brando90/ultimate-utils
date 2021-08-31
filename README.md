@@ -5,6 +5,8 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
+## Manual installation
+
 To use uutils first get the code this repo (e.g. fork it on github):
 
 ```
