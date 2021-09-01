@@ -20,6 +20,8 @@ setup(
                       'pandas',
                       'progressbar2',
                       'transformers',
+                      'requests',
+                      'aiohttp',
 
                       'pygraphviz']
 )
