@@ -4,6 +4,15 @@ Best example is from count [1].
 1. https://realpython.com/async-io-python/#the-asyncawait-syntax-and-native-coroutines
 
 todo - async with, async for.
+
+async = defines a coroutine. This doesn't define a real io, it only defines a function that can give up and give the
+    execution power to other coroutines or the (asyncio) event loop.
+
+await = the key word that does (mainly) two things 1) gives control back to the event loop to see if there is something
+    else to run if we called it on a real expensive io operation (e.g. calling network, printer, etc) 2) gives control to
+    the new coroutine that it is awaiting. If this is your own code with async then it means it will go into this new async
+    function (coroutine) you defined.
+    No real async benefits are being experienced until you call a real io.
 """
 
 import asyncio

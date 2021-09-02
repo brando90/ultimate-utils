@@ -37,8 +37,15 @@ Asyncio syntax:
 i) await = this is where the code you wrote calls an expensive function (e.g. an io) and thus hands back control to the
     event loop. Then the event loop will likely put it in the waiting loop and runs some other task. Likely eventually
     the event loop comes back to this function and runs the remaining code given that we have the value from the io now.
+    await = the key word that does (mainly) two things 1) gives control back to the event loop to see if there is something
+    else to run if we called it on a real expensive io operation (e.g. calling network, printer, etc) 2) gives control to
+    the new coroutine that it is awaiting. If this is your own code with async then it means it will go into this new async
+    function (coroutine) you defined.
+    No real async benefits are being experienced until you call a real io.
 iii) async = approximately a flag that tells python the defined function might use await. This is not strictly true but
     it gives you a simple model while your getting started. todo - clarify async.
+    async = defines a coroutine. This doesn't define a real io, it only defines a function that can give up and give the
+    execution power to other coroutines or the (asyncio) event loop.
     todo - context manager with async
 
 ii) awaiting = when you call something (e.g. a function) that requires waiting for the io response/return/value.
