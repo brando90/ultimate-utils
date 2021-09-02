@@ -50,6 +50,7 @@ iv) async with = this creates a context manager from an object you would normall
 Note: - any function that calls await needs to be marked with async or you’ll get a syntax error otherwise.
       - a task never gives up control without intentionally doing so e.g. never in the middle of an op.
 
+
 Cons: - note how this also requires more thinking carefully (but feels less dangerous than threading due to no pre-emptive
     switching) due to the concurrency. Another disadvantage is again the idisocyncracies of using this in python + learning
     new syntax and details for it to actually work.
@@ -57,6 +58,7 @@ Cons: - note how this also requires more thinking carefully (but feels less dang
       - we needed a special asycio compatible lib for requests, since the normal requests is not designed to inform
     the event loop that it's block (or done blocking)
       - if one of the tasks doesn't cooperate properly then the whole code can be a mess and slow it down.
+      - not all libraries support the async IO paradigm in python (e.g. asyncio, trio, etc).
 
 Pro: + despite learning where to put await and async might be annoying it forces your to think carefully about your code
     which on itself can be an advantage (e.g. better, faster, less bugs due to thinking carefully)

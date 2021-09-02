@@ -27,11 +27,13 @@ definitions:
 
 - asynchronous = 1) dictionary def: not happening at the same time e.g. happening indepedently
     2) computing def: happening independently of the main program flow.
-    3) asynchronous routies are able to "pause" whle waiting on their ultimate results and allow other programs to run
-    in the meantime.
-- coroutines = a coroutine is a function that can suspend its execution before reaching return and it can indirectly pass
+    3) asynchronous routies are able to "pause" while waiting on their ultimate results and allow
+    other indepedent programs to run in the meantime.
+- coroutines = a coroutine is a function that can suspend its execution before reaching return & it can indirectly pass
     control to another coroutine for some time.
     In python coroutines are specialized versions of (python) generators.
+    Coroutines are computer program components that generalize subroutines for non-preemptive multitasking, by allowing
+    execution to be suspended and resumed.
 - asynchronous IO (async IO) = language agnostic paradigm that implements the computational idea of async IO.
 - async/await = python keywords ued to manage coroutines (check if it's true python keywords that implement async IO).
 - asyncio = python pkg that provides the api for running and managing coroutines
@@ -39,48 +41,26 @@ definitions:
 
 async IO is a single-threaded, single-process design: it uses cooperative multitasking.
 
+cons: - not all libraries support the async IO paradigm in python (e.g. asyncio, trio, etc).
+
 """
 
 import asyncio
-from asyncio import Task
-from asyncio.events import AbstractEventLoop
 
-import aiohttp
-from aiohttp.client import ClientSession
+async def count(coroutine_name: str = ''):
+    print(f'coroutine name: {coroutine_name=}')
+    print("One")
+    await asyncio.sleep(1)
+    print("Two")
 
-import time
-
-
-async def download_site(session: ClientSession, url: str) -> str:
-    async with session.get(url) as response:
-        print(f"Read {response.content_length} from {url}")
-        return response.text()
-
-
-async def download_all_sites(sites: list[str]):
-    async with aiohttp.ClientSession() as session:
-        tasks: list[Task] = []
-        for url in sites:
-            task: Task = asyncio.ensure_future(download_site(session, url))
-            tasks.append(task)
-        content_from_url: list[str] = await asyncio.gather(*tasks, return_exceptions=True)
-        print(content_from_url)
-        return content_from_url
-
+async def main():
+    # await asyncio.gather(count(), count(), count())
+    await asyncio.gather(count('cor1'), count('cor2'), count('cor3'))
 
 if __name__ == "__main__":
-    # - args
-    num_sites: int = 80
-    sites: list[str] = ["https://www.jython.org", "http://olympus.realpython.org/dice"] * num_sites
-    start_time: float = time.time()
-
-    # - run event loop manager and run all tasks with cooperative concurrency
-    # asyncio.get_event_loop().run_until_complete(download_all_sites(sites))
-    event_loop: AbstractEventLoop = asyncio.get_event_loop()
-    asyncio.run(download_all_sites(sites))
-
-    # - print stats about the content download and duration
-    duration = time.time() - start_time
-    print(f"Downloaded {len(sites)} sites in {duration} seconds")
-    print('Success.\a')
+    import time
+    s = time.perf_counter()
+    asyncio.run(main())
+    elapsed = time.perf_counter() - s
+    print(f"{__file__} executed in {elapsed:0.2f} seconds.")
 

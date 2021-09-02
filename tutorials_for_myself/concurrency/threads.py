@@ -19,7 +19,7 @@ Usually this means that your cpu (program) is working with external resources th
     - todo: how to speed up? Right now I think the way to spped it up is by overlapping io calls so all the io calls
         happen simultaneously. I'd guess that both mp and asyncio/threading would speed it up.
 
-b) CPU-bound = what bounds the speed of your program is the speed of your program/cpu e.g. calling an external resources is
+b) CPU-bound = what bounds the speed of your program is the speed of your code/cpu e.g. calling an external resources is
 faster than your code/cpu so your program/cpu is the bottleneck.
     - speed up: fitting more computation somehow on the same time.
     - todo: how to speed up? Right now my guess is that the only way to speed up is with mp. This is the only way I can
