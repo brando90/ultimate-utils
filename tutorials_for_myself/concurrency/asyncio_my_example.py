@@ -5,6 +5,8 @@ Best example is from count [1].
 
 todo - async with, async for.
 
+
+
 async = defines a coroutine. This doesn't define a real io, it only defines a function that can give up and give the
     execution power to other coroutines or the (asyncio) event loop.
 
