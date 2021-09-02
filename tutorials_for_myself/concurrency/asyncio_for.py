@@ -1,5 +1,7 @@
 """
 1. https://realpython.com/async-io-python/#the-asyncawait-syntax-and-native-coroutines
+2. https://stackoverflow.com/questions/56161595/how-to-use-async-for-in-python
+3. https://stackoverflow.com/questions/67092070/why-do-we-need-async-for-and-async-with
 
 todo - async with, async for.
 """
