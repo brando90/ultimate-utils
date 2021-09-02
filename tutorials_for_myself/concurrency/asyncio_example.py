@@ -1,4 +1,6 @@
 """
+-- Notes from [1]
+
 Threading and asyncio both run on a single processor and therefore only run one at a time [1].
 
 Note: threads.py has a very good block with good defintions for io-bound, cpu-bound if you need to recall it.
@@ -45,11 +47,20 @@ iv) async with = this creates a context manager from an object you would normall
     todo - e.g.
 
 
-Note: any function that calls await needs to be marked with async or you’ll get a syntax error otherwise.
+Note: - any function that calls await needs to be marked with async or you’ll get a syntax error otherwise.
+      - a task never gives up control without intentionally doing so e.g. never in the middle of an op.
 
-Cons: note how this also requires more thinking carefully (but feels less dangerous than threading due to no pre-emptive
-switching) due to the concurrency. Another disadvantage is again the idisocyncracies of using this in python + learning
-new syntax and details for it to actually work.
+Cons: - note how this also requires more thinking carefully (but feels less dangerous than threading due to no pre-emptive
+    switching) due to the concurrency. Another disadvantage is again the idisocyncracies of using this in python + learning
+    new syntax and details for it to actually work.
+      - understanding the semanics of new syntax + learning where to really put the syntax to avoid semantic errors.
+      - we needed a special asycio compatible lib for requests, since the normal requests is not designed to inform
+    the event loop that it's block (or done blocking)
+      - if one of the tasks doesn't cooperate properly then the whole code can be a mess and slow it down.
+
+Pro: + despite learning where to put await and async might be annoying it forces your to think carefully about your code
+    which on itself can be an advantage (e.g. better, faster, less bugs due to thinking carefully)
+     + often faster...? (skeptical)
 
 1. https://realpython.com/python-concurrency/
 2. https://realpython.com/async-io-python/
@@ -58,6 +69,18 @@ new syntax and details for it to actually work.
 todo - read [2] later (or [3] but thats not a tutorial and its more details so perhaps not a priority).
 
 asynchronous = 1) dictionary def: not happening at the same time e.g. happening indepedently 2) computing def: happening independently of the main program flow
+
+Appendix:
+
+For I/O-bound problems, there’s a general rule of thumb in the Python community:
+    “Use asyncio when you can, threading when you must.”
+asyncio can provide the best speed up for this type of program, but sometimes you will require critical libraries that
+have not been ported to take advantage of asyncio.
+Remember that any task that doesn’t give up control to the event loop will block all of the other tasks
+
+-- Notes from [2]
+
+see asyncio_example2.py file.
 
 """
 

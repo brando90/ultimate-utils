@@ -1,4 +1,8 @@
 """
+Mulitprocessing really shines for cpu-bound code (i.e. when the code you wrote yourself and not external io is the
+bottleneck). Then mp can be ran in true paralelism and (most?) times gain some speed.
+
+
 Only multiprocessing runs things in parallel [1].
 
 
@@ -8,6 +12,28 @@ Only multiprocessing runs things in parallel [1].
 
 # TODO - sort out the code bellow with functions + doc string saying what each example shows
 
+# %%
+
+import multiprocessing
+import time
+
+
+def cpu_bound(number):
+    return sum(i * i for i in range(number))
+
+
+def find_sums(numbers):
+    with multiprocessing.Pool() as pool:
+        pool.map(cpu_bound, numbers)
+
+
+if __name__ == "__main__":
+    numbers = [5_000_000 + x for x in range(20)]
+
+    start_time = time.time()
+    find_sums(numbers)
+    duration = time.time() - start_time
+    print(f"Duration {duration} seconds")
 
 
 # %%
