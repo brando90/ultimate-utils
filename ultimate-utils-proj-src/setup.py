@@ -22,6 +22,7 @@ setup(
                       'transformers',
                       'requests',
                       'aiohttp',
+                      'numpy',
 
                       'pygraphviz']
 )
