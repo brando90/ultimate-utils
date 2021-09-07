@@ -12,6 +12,24 @@ from matplotlib import pyplot as plt
 
 import json
 
+from datetime import datetime
+
+from pathlib import Path
+
+def setup_and_get_logger(args):
+    args.logging = True
+    # set up specific path for logs
+    args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    current_logs_dir = Path(f'logs_{args.current_time}_jobid_{args.jobid}')
+    args.current_logs_path = args.log_root / current_logs_dir
+    # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    args.current_logs_path.mkdir(parents=True, exist_ok=True)
+    # set up path + log filename
+    my_stdout_filename = Path('my_stdout.log')
+    args.my_stdout_filepath = args.current_logs_path / my_stdout_filename
+    # make logger
+    logger = Logger(args)  # logs to file & console
+    return logger
 
 class Logger:
 

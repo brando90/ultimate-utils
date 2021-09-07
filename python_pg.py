@@ -12091,3 +12091,44 @@ if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(download_all_sites(sites))
     duration = time.time() - start_time
     print(f"Downloaded {len(sites)} sites in {duration} seconds")
+
+
+#%%
+
+# https://realpython.com/python-data-classes/
+
+from dataclasses import dataclass
+
+@dataclass
+class DataClassCard:
+    rank: str
+    suit: str
+    default_test: str = 'default'
+
+card = DataClassCard('Q', 'Hearts')
+
+print(card)
+
+print(card == DataClassCard('Q', 'Hearts'))
+
+#%%
+
+from dataclasses import dataclass, field
+
+def get_str():
+    return 'default'
+
+def get_lst():
+    return [1, 2]
+
+@dataclass
+class DataClassCard:
+    rank: str
+    suit: str
+    # default_test: str = field(default_factory=get_str)
+    # default_test: str = [1, 2]
+    default_test: str = field(default_factory=get_lst)
+
+card = DataClassCard('Q', 'Hearts')
+print(card)
+print(card.default_test)
