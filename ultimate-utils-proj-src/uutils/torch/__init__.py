@@ -44,6 +44,8 @@ from pdb import set_trace as st
 
 # from sklearn.linear_model import logistic
 from scipy.stats import logistic
+
+from uutils import load_cluster_jobids_to
 from uutils.torch.tensorboard import log_2_tb
 
 import torchtext

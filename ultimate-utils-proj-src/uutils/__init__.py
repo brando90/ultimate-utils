@@ -8,6 +8,7 @@ import subprocess
 import time
 
 import math
+from datetime import datetime
 
 import dill
 import networkx as nx
@@ -46,6 +47,10 @@ from typing import Union, Any
 
 import progressbar
 
+import uutils.logger
+from uutils.torch.distributed import find_free_port
+
+
 def hello():
     print('\nhello from uutitls __init__.py\n')
 
@@ -66,6 +71,74 @@ def print_pids():
     print('running main()')
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
+
+# - getting args for expts
+
+def setup_args_for_experiment(args: Namespace) -> Namespace:
+    """
+    :return:
+    """
+    import torch
+    import uutils.logger.Logger as uuLogger
+    # - to make sure epochs or iterations is explicit
+    assert args.training_mode in ['epochs', 'iterations']
+
+    # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
+    args.validation = not args.no_validation
+
+    # - distributed params
+    args.rank = -1  # should be written by each worker with their rank, if not we are running serially
+    args.master_port = find_free_port()
+
+    # - determinism
+    # uutils.torch.make_code_deterministic(args.seed)
+
+    # - get device name
+    print(f'{args.seed=}')
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'device: {args.device}')
+    # - get cluster info (including hostname)
+    load_cluster_jobids_to(args)
+
+    # - get log_root and related folders e.g. tb, etc
+    # create log root
+    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+    args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
+    args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
+    args.log_root.mkdir(parents=True, exist_ok=True)
+    # create tb in log_root
+    args.tb_dir = args.log_root / 'tb'
+    args.tb_dir.mkdir(parents=True, exist_ok=True)
+
+    # - annealing learning rate...
+    # if (not args.no_validation) and (args.lr_reduce_steps is not None):
+    #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')
+
+    # - get device name if possible
+    try:
+        args.gpu_name = torch.cuda.get_device_name(0)
+        print(f'\nargs.gpu_name = {args.gpu_name}\n')
+    except:
+        args.gpu_name = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # - save PID
+    args.PID = str(os.getpid())
+    if torch.cuda.is_available():
+        args.nccl = torch.cuda.nccl.version()
+
+    # - email option
+    # args.mail_user = 'brando.science@gmail.com'
+    # args.pw_path = Path('~/pw_app.config.json').expanduser()
+
+    # - try to get githash, might fail and return error string in field but whatever\
+    args.githash: str = try_to_get_git_revision_hash_short()
+    args.githash_short: str = try_to_get_git_revision_hash_short()
+    args.githash_long: str = try_to_get_git_revision_hash_long()
+
+    # - get my logger is set at the agent level
+    args.logger: uuLogger = uutils.logger.Logger(args)
+    return args
 
 def parse_args():
     """
@@ -133,6 +206,94 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+def parse_args_synth_agent():
+    import argparse
+    import torch.nn as nn
+
+    parser = argparse.ArgumentParser()
+
+    # experimental setup
+    parser.add_argument('--reproduce_10K', action='store_true', default=False,
+                        help='Unset this if you want to run'
+                             'your own data set. This is not really meant'
+                             'to be used if you are trying to reproduce '
+                             'the simply type lambda cal experiments on the '
+                             '10K dataset.')
+    parser.add_argument('--debug', action='store_true', help='if debug')
+    parser.add_argument('--serial', action='store_true', help='if running serially')
+
+    parser.add_argument('--split', type=str, default='train', help=' train, val, test')
+    parser.add_argument('--data_set_path', type=str, default='~/data/simply_type_lambda_calc/dataset10000/',
+                        help='path to data set splits')
+
+    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+
+    parser.add_argument('--num_epochs', type=int, default=-1)
+    parser.add_argument('--num_its', type=int, default=-1)
+    parser.add_argument('--training_mode', type=str, default='iterations')
+    parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
+    parser.add_argument('--save_model_epochs', type=int, default=10,
+                        help='the number of epochs between model savings')
+    parser.add_argument('--num_workers', type=int, default=-1,
+                        help='the number of data_lib-loading threads (when running serially')
+
+    # term encoder
+    parser.add_argument('--embed_dim', type=int, default=256)
+    parser.add_argument('--nhead', type=int, default=8)
+    parser.add_argument('--num_layers', type=int, default=1)
+
+    # tactic label classifier
+    parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
+
+    # optimization
+    parser.add_argument('--optimizer', type=str, default='Adam')
+    parser.add_argument('--learning_rate', type=float, default=1e-5)
+    parser.add_argument('--num_warmup_steps', type=int, default=-1)
+    # parser.add_argument('--momentum', type=float, default=0.9)
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--l2', type=float, default=0.0)
+    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
+    #                     help='the number of steps before reducing the learning rate \
+    #                     (only applicable when no_validation == True)')
+
+    parser.add_argument('--lr_reduce_patience', type=int, default=10)
+
+    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
+                        help='tries to make pytorch fully determinsitic')
+
+    args = parser.parse_args()
+    return args
+
+# --
+
+def try_to_get_git_revision_hash_short():
+    """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
+    try:
+        git_hash: str = str(_get_git_revision_short_hash())
+        return git_hash
+    except Exception as e:
+        print(f'(Not critical), unable to retrieve githash for reason: {e}')
+        return f'{e}'
+
+def try_to_get_git_revision_hash_long():
+    """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
+    try:
+        git_hash: str = str(_get_git_revision_hash())
+        return git_hash
+    except Exception as e:
+        print(f'(Not critical), unable to retrieve githash for reason: {e}')
+        return f'{e}'
+
+def _get_git_revision_hash():
+    """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+
+def _get_git_revision_short_hash():
+    """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
+    return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.ProgressBar:
     """
@@ -585,6 +746,7 @@ def create_logs_dir_and_load(opts):
 
 
 def save_opts(opts: Namespace, args_filename: str = 'opts.json'):
+    """ Saves opts, crucially in sorted order. """
     # save opts that was used for experiment
     with open(opts.log_root / args_filename, 'w') as argsfile:
         # in case some things can't be saved to json e.g. tb object, torch.Tensors, etc.
@@ -592,6 +754,7 @@ def save_opts(opts: Namespace, args_filename: str = 'opts.json'):
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
 def save_args(args: Namespace, args_filename: str = 'args.json'):
+    """ Saves args, crucially in sorted order. """
     save_opts(args, args_filename)
 
 def load_cluster_jobids_to(args):

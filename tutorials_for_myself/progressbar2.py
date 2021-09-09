@@ -18,7 +18,8 @@ DOES NOT COMPLETE PROPERLY
 
 """
 
-USE THIS ONE!
+USE THIS ONE! (but it's also fine if it doesn't end perfectly, not worth the effort or adding the extra ugly update
+at the end of the loop - let it go!).
 
 Use this one to make sure the "end" is shown properly 100% etc
 

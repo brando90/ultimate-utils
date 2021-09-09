@@ -9806,7 +9806,7 @@ print(x.size())
 
 # %%
 
-# nhttps://pytorch.org/tutorials/beginner/transformer_tutorial.html
+# nhttps://pytorch.org/transformers_pytorch/beginner/transformer_tutorial.html
 # positional encoder pytorch
 
 # transformer docs
@@ -11079,7 +11079,7 @@ print(parser.rules[0])
 
 #%%
 
-from __future__ import annotations
+# from __future__ import annotations
 
 from collections import defaultdict
 from random import choice
@@ -12134,3 +12134,17 @@ class DataClassCard:
 card = DataClassCard('Q', 'Hearts')
 print(card)
 print(card.default_test)
+
+#%%
+
+import subprocess
+
+def get_git_revision_hash():
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+
+def get_git_revision_short_hash():
+    return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+
+print(get_git_revision_hash())
+print(get_git_revision_short_hash())
+
