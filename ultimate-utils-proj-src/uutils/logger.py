@@ -87,7 +87,7 @@ class Logger:
     def reset_eval_stats(self):
         self.stats['eval'] = {'loss': [], 'acc': []}
 
-    def log_batch_train_info(self, loss, acc):
+    def record_batch_train_info_in_logger_field(self, loss, acc):
         """
 
         Note: self.stats[train][loss/acc][it] is the loss/acc for the train phase at iteration it.
@@ -100,7 +100,7 @@ class Logger:
         self.stats[phase]['loss'].append(float(loss))
         self.stats[phase]['acc'].append(float(acc))
 
-    def log_batch_eval_info(self, loss, acc):
+    def record_batch_train_info_in_logger_field(self, loss, acc):
         """
         Intended usage is to collect a bunch of evaluations on different batches and use this
         function to collect them. Then at the end (once you have all the evals values you want), you
@@ -247,3 +247,40 @@ class Logger:
         fig.savefig(current_logs_path / 'meta_train_eval.pdf')
         fig.savefig(current_logs_path / 'meta_train_eval.png')
         plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+
+
+    def save_current_plots_and_stats_for_meta_learning(
+            self,
+            title='Meta-Learnig & Evaluation Curves',
+            x_axis='(meta) iterations',
+            y_axis_loss='Meta-Loss',
+            y_axis_acc='Meta-Accuracy',
+
+            grid=True,
+            show=False):
+        # Initialize where to save and what the split of the experiment is
+        pass
+
+    def save_current_plots_and_stats_for_supervised_learning(
+            self,
+            title='Meta-Learnig & Evaluation Curves',
+            x_axis='(meta) iterations',
+            y_axis_loss='Meta-Loss',
+            y_axis_acc='Meta-Accuracy',
+
+            grid=True,
+            show=False):
+        # Initialize where to save and what the split of the experiment is
+        pass
+
+    def save_current_plots_and_stats_for_reinforcement_learning(
+            self,
+            title='Meta-Learnig & Evaluation Curves',
+            x_axis='(meta) iterations',
+            y_axis_loss='Meta-Loss',
+            y_axis_acc='Meta-Accuracy',
+
+            grid=True,
+            show=False):
+        # Initialize where to save and what the split of the experiment is
+        pass

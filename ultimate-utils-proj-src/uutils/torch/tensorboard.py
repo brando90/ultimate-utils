@@ -6,12 +6,12 @@ from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 
 
-def log_2_tb(tb, args, it, tag1: str, loss, tag2: str, acc):
+def log_2_tb(tb, args, it, tag1: str, loss: float, tag2: str, acc: float):
     # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
     # tag1 = tag1.replace(' ', '_')
     # tag2 = tag2.replace(' ', '_')
-    tb.add_scalar(tag1, loss, it)
-    tb.add_scalar(tag2, acc, it)
+    tb.add_scalar(tag1, float(loss), it)
+    tb.add_scalar(tag2, float(acc), it)
 
 def log_2_tb_supervisedlearning(tb, args, it, loss, acc, split):
     """

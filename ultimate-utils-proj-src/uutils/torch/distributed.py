@@ -5,7 +5,7 @@ For code used in distributed training.
 import time
 from argparse import Namespace
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Union
 
 import torch
 import torch.distributed as dist
@@ -213,6 +213,8 @@ def is_running_parallel(rank):
 
 def is_lead_worker(rank: int) -> bool:
     """
+    Returns true if the current process is the lead worker.
+
     -1 = means serial code so main proc = lead worker = master
     0 = first rank is the lead worker (in charge of printing, logging, checkpoiniting etc.)
     :return:
@@ -288,6 +290,18 @@ def clean_end_with_sigsegv_hack(rank):
         torch.distributed.barrier()
         if rank != 0:
             time.sleep(1)
+
+def dist_log(msg: str, rank: int = -1, flush: bool = False):
+    """Prints only if the current process is the leader (e.g. rank = -1)."""
+    if is_lead_worker(rank):
+        print(msg, flush=flush)
+
+def get_model_from_ddp(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
+    """Gets model from a ddp pytorch class without errors."""
+    if isinstance(mdl, DistributedDataParallel):
+        return mdl.module
+    else:
+        return mdl
 
 # -- tests
 

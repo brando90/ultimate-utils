@@ -44,7 +44,7 @@ from pdb import set_trace as st
 
 # from sklearn.linear_model import logistic
 from scipy.stats import logistic
-from uutils.torch.uutils_tensorboard import log_2_tb
+from uutils.torch.tensorboard import log_2_tb
 
 import torchtext
 from torchtext.vocab import Vocab, vocab
@@ -335,11 +335,11 @@ def process_batch_simple(args: Namespace, x_batch, y_batch):
         y_batch = y_batch.to(args.device)
     return x_batch, y_batch
 
-def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
-    if isinstance(mdl, DistributedDataParallel):
-        return mdl.module
-    else:
-        return mdl
+# def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
+#     if isinstance(mdl, DistributedDataParallel):
+#         return mdl.module
+#     else:
+#         return mdl
 
 def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():

@@ -1,19 +1,46 @@
-from argparse import Namespace
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
 
-import progressbar
-from torch import nn, Tensor
 from torch.utils.tensorboard import SummaryWriter
 
+from torchtext.vocab import vocab
+
+import math
+
+from lark import Lark
+
+from progressbar import ProgressBar
+
+import parsers
+
+from uutils import make_args_pickable, set_system_wide_force_flush
+from uutils.torch import AverageMeter, accuracy, print_dataloaders_info
+from uutils.torch.distributed import is_running_serially, is_lead_worker, print_process_info, process_batch_ddp
+from uutils.torch.distributed import move_to_ddp_gpu_via_dict_mutation
+
+import gc
+
 import uutils
-from uutils import torch
-from uutils.torch import AverageMeter
-from uutils.torch.distributed import is_lead_worker, move_to_ddp_gpu_via_dict_mutation, print_process_info
 
+from argparse import Namespace
 
-class SLAgent:
-    """
-    General Supervised Learning agent.
-    """
+from typing import Tuple
+
+from pprint import pprint
+
+import progressbar
+
+from pdb import set_trace as st
+
+Batch = list
+Seq = list
+
+def process_batch(args, x_batch, y_batch):
+    return x_batch, y_batch
+
+class SynthAgent:
 
     def __init__(self, args: Namespace, mdl: nn.Module, optimizer, dataloaders, scheduler):
         self.args = args
@@ -26,13 +53,26 @@ class SLAgent:
             self.tb = SummaryWriter(log_dir=args.tb_dir)
 
     @property
+    def target_parser(self):
+        return self.dataloaders['train'].dataset.extended_ty_parser
+
+    @property
     def mdl(self) -> torch.nn.Module:
         return uutils.torch.get_model(self.mdl_)
 
-    def forward_one_batch(self, batch: dict, training: bool) -> tuple[Tensor, float]:
+    def forward_one_batch(self, batch: dict, training: bool) -> Tuple[Tensor, float]:
         """
         Forward pass for one batch.
 
+        Note that the batch is assumed to have the specific different types of data in
+        different batches according to the name of that type.
+        e.g.
+            batch = {'x': torch.randn([B, T, D]), 'y': torch.randn([B, T, V])}
+        holds two batches with names 'x' and 'y' that are tensors.
+        In general the dict format for batches is useful because any type of data can be added to help
+        with faster prototyping. The key is that they are not tuples (x,y) or anything like that
+        since you might want to return anything and batch it. e.g. for each example return the
+        adjacency matrix, or the depth embedding etc.
         :param batch:
         :param training:
         :return:
@@ -85,9 +125,7 @@ class SLAgent:
         # return avg_loss.item(), avg_acc.item()
         pass
 
-    def main_train_loop_until_convergence(self, args: Namespace,
-                                          start_it: int,
-                                          acc_tolerance: float = 1.0,
+    def main_train_loop_until_convergence(self, args: Namespace, start_it: int, acc_tolerance: float = 1.0,
                                           train_loss_tolerance: float = 0.001):
         """
         Trains model based on iterations not epochs.
@@ -250,17 +288,92 @@ class SLAgent:
     def evaluate(self):
         pass
 
-    def accuracy(self, y_logits: Tensor, y_batch: Tensor) -> int:
+    def accuracy(self, y_logits: Tensor, ty_batch: Batch[Type], y_batch: Batch[Seq[Token]]) -> int:
         """
+        Calculate the accuracy of a batch of predicted types vs the real types.
+        [B, R] -> [B, types]
+
+        Algorithm:
+            1. given a y_pred [B, T, R] -> rule_seq_pred [B, T]
+                - do greddy, choose most likely rule
+            2. rule_seq_pred [B, T] -> ty/term_pred [B]
+                - cst -> term, if any term fails to reconstruct an "empty term"
+            3. compare for each term in batch acc = y_pred[b].typeof(ctx) == y_pred.type(ctx) / B
         :return:
         """
-        pass
+        y = self.mdl.batch_target2index_tensor(y_batch)
+        assert y_batch[0][0] == '<sos>' and y_batch[0][-1] == '<eos>'
+        tys_pred, ys_pred = self.synthesize_terms_greedy(y_logits, y)
+        assert len(tys_pred) == len(ty_batch)
+        # print(f"{tys_pred=}")
+        # print(f"{ty_batch=}")
+        # print(f'{y=}\n{ys_pred}')
+        correct = 0.0
+        for i, (ty_pred, ty_truth) in enumerate(zip(tys_pred, ty_batch)):
+            # todo - probably need to fix how terms are generated
+            # if str(ty_pred) == str(ty_truth) or ty_pred == ty_truth:
+            # if str(ty_pred) == str(ty_truth) or ty_pred == ty_truth or all(ys_pred[i] == y[i]):
+            if str(ty_pred) == str(ty_truth) or ty_pred == ty_truth or self.equal(ys_pred[i], y[i]):
+                correct += 1
+        acc = correct / len(ty_batch)
+        return acc
+
+    def synthesize_terms_greedy(self, y_logits: Tensor, y: Tensor = None, maxk: int = 1) -> Batch[Type]:
+        """
+        Algorithm details:
+        - if no prediction of eos let's see if we can reconstruct the a type anyway.
+
+        :param y_logits:
+        :param maxk:
+        :return:
+        """
+        _, y_pred = y_logits.topk(k=maxk, dim=2)  # [B, T, V] -> [B, T, 1]
+        y_pred = y_pred.squeeze()
+        ys_pred = [rule_seq_pred for rule_seq_pred in y_pred]
+        # - trim the predictions up to EOS
+        trimmed_rules: list[Seq[RuleIdx]] = []
+        for i in range(len(y_pred)):
+            rule_seq_pred: Tensor = ys_pred[i]  # Tensor[RuleIdx]
+            # - preprocess prediction
+            # get the index of the first occurence of the eos, if 0 then return an error term immediately
+            eos_idx = uutils.torch.index(rule_seq_pred, self.mdl.vocab_ty['<eos>'])
+            eos_idx = len(rule_seq_pred) if eos_idx == -1 else eos_idx
+            rule_seq_pred_trimmed: Seq[RuleIdx] = rule_seq_pred[
+                                                  :eos_idx].tolist()  # trim the tensor to that length and reconstruct term if success
+            trimmed_rules.append(rule_seq_pred_trimmed)
+        # - do reconstruction for trimmed rule sequences
+        tys_pred: list[Type] = []
+        for i in range(len(trimmed_rules)):
+            rule_seq_pred_trimmed: Seq[RuleIdx] = trimmed_rules[i]
+            rule_seq_pred_corrected_trimmed = [rule_idx - 4 for rule_idx in rule_seq_pred_trimmed]
+            # - try to make a term
+            try:
+                cst = rule_seq2lark_cst(rule_seq_pred_corrected_trimmed, self.target_parser)
+                ty = lark_cst2ty(cst)
+            except Exception as e:
+                ty = ErrorType(str(e))
+            # append predicted term
+            tys_pred.append(ty)
+        return tys_pred, ys_pred
+
+    def eq_accuracy_via_seq(self, seq_pred: Tensor, seq_truth: Tensor) -> bool:
+        # return all(ys_pred[i] == y[i])
+        return all(seq_pred == seq_truth)
+
+    def equal(self, y_pred: Tensor, y: Tensor) -> bool:
+        eos_idx = uutils.torch.index(y_pred, self.mdl.vocab_ty['<eos>'])
+        y_pred_trimmed: Seq[RuleIdx] = y_pred[:eos_idx]
+        eos_idx = uutils.torch.index(y, self.mdl.vocab_ty['<eos>'])
+        y_trimmed: Seq[RuleIdx] = y[:eos_idx]
+        if len(y_pred_trimmed) != len(y_trimmed):
+            return False
+        equal = all(y_trimmed == y_pred_trimmed)
+        return equal
 
     def log_train_stats(self, it: int, train_loss: float, train_acc: float,
                         save_val_ckpt: bool = False, val_iterations: int = 0,
                         epoch_print: bool = False):
         """
-
         :param it:
         :param train_loss:
         :param train_acc:
@@ -294,7 +407,7 @@ class SLAgent:
         """
         from torch.nn.parallel.distributed import DistributedDataParallel
         dirname = self.args.log_root if dirname is None else dirname
-        pickable_args = uutils.make_args_pickable(self.args)
+        pickable_args = make_args_pickable(self.args)
         import dill
         mdl = self.mdl.module if type(self.mdl) is DistributedDataParallel else self.mdl
         # self.remove_term_encoder_cache()
@@ -328,19 +441,11 @@ class SLAgent:
         """
         return is_lead_worker(self.args.rank)
 
-class SLAgent4MetaLearning(SLAgent):
-
-    def __init__(self, args: Namespace, mdl: nn.Module, optimizer, dataloaders, scheduler):
-        super().__init__()
-
-
-# - tests
-
 # - tests
 
 # def get_args():
-#     ctx = {Var("x"): [BaseType("T")]}
-#     args = Namespace(rank=-1, world_size=1, merge=merge_x_termpath_y_ruleseq_one_term_per_type, ctx=ctx, batch_size=4)
+#     merge = get_merge()
+#     args = Namespace(rank=-1, world_size=1, merge=, ctx=ctx, batch_size=4)
 #     args.device = 'cpu'
 #     args.max_term_len = 1024
 #     args.max_rule_seq_len = 2024
@@ -350,7 +455,9 @@ class SLAgent4MetaLearning(SLAgent):
 #     args = get_args()
 #     # -- pass data through the model
 #     dataloaders = get_dataloaders(args, args.rank, args.world_size, args.merge)
+#     parser = dataloaders['train'].dataset.extended_term_parser
 #     # -- model
+#     mdl = get_mdl()
 #     # -- agent
 #     agent = Agent(args, mdl)
 #     for batch_idx, batch in enumerate(dataloaders['train']):
@@ -362,10 +469,5 @@ class SLAgent4MetaLearning(SLAgent):
 #         if batch_idx > 5:
 #             break
 #
-# def test2():
-#     tensor([[6, 8, 6, 8, 6, 8, 8, 3],
-#             [8, 3, 8, 8, 8, 8, 8, 8]])
-#
 # if __name__ == "__main__":
 #     test1()
-#     test2()

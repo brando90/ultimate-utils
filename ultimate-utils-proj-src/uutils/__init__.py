@@ -262,21 +262,36 @@ def is_NaN(value):
     """
     return not np.isfinite(value) or np.isinf(value) or np.isnan(value)
 
-def make_args_pickable(args):
-    """ Makes a namespace pickable """
+def make_args_pickable(args: Namespace) -> Namespace:
+    """
+    Returns a copy of the args namespace but with unpickable objects as strings.
+
+    note: implementation not tested against deep copying.
+
+    """
     pickable_args = argparse.Namespace()
     # - go through fields in args, if they are not pickable make it a string else leave as it
     # The vars() function returns the __dict__ attribute of the given object.
     for field in vars(args):
-        field_val = getattr(args, field)
+        field_val: Any = getattr(args, field)
         if not dill.pickles(field_val):
-            field_val = str(field_val)
+            field_val: str = str(field_val)
         setattr(pickable_args, field, field_val)
     return pickable_args
 
 def make_opts_pickable(opts):
     """ Makes a namespace pickable """
     return make_args_pickable(opts)
+
+def xor(a: Any, b: Any) -> bool:
+    """
+    Returns xor of a and b. Only one can be true but not both.
+
+    ref: https://stackoverflow.com/a/432948/1601580
+    """
+    assert (True + True + True + False) == 3, 'Semantics of python changed'  # guard against change semantics of python.
+    xor_bool: bool = (bool(a) + bool(b) == 1)
+    return xor_bool
 
 ##
 
@@ -841,9 +856,17 @@ def test_good_progressbar():
             time.sleep(1)
             bar.update(i)
 
+def test_xor():
+    assert xor(0, 0) == False
+    assert xor(0, 1) == True
+    assert xor(1, 0) == True
+    assert xor(1, 1) == False
+    print('passed xor test')
+
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
     # test_dfs()
-    test_good_progressbar()
+    # test_good_progressbar()
+    test_xor()
     print('Done!\a')
