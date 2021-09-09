@@ -374,6 +374,7 @@ class SynthAgent:
                         save_val_ckpt: bool = False, val_iterations: int = 0,
                         epoch_print: bool = False):
         """
+
         :param it:
         :param train_loss:
         :param train_acc:
@@ -382,16 +383,13 @@ class SynthAgent:
         :param epoch_print:
         :return:
         """
+        it_or_epoch = 'epoch_num' if epoch_print else 'it'
         val_loss, val_acc = self.valid(self.args.it, val_iterations=val_iterations, val_ckpt=save_val_ckpt)
         self.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(train_acc))
         self.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
 
-        if not epoch_print:
-            self.log(f"\n{it=}: {train_loss=} {train_acc=}")
-            self.log(f"{it=}: {val_loss=} {val_acc=}")
-        else:
-            self.log(f"\nepoch_n={it}: {train_loss=} {train_acc=}")
-            self.log(f"epoch_n={it}: {val_loss=} {val_acc=}")
+        self.log(f"\n{it_or_epoch}={it}: {train_loss=} {train_acc=}")
+        self.log(f"{it_or_epoch}={it}: {val_loss=} {val_acc=}")
 
     def save(self, epoch_num: int, dirname=None, ckpt_name='mdl.pt'):
         if is_lead_worker(self.args.rank):
