@@ -154,8 +154,8 @@ class GetMetaBatch_NK_WayClassTask:
                 spt_x_n, qry_x_n = data_x_n[:self.k_shot], data_x_n[self.k_shot:] # [K, CHW], [K_eval, CHW]
                 # get labels
                 if self.original:
-                    #spt_y_n = torch.tensor([n]).repeat(self.k_shot)
-                    #qry_y_n = torch.tensor([n]).repeat(self.k_eval)
+                    #spt_y_n = torch_uu.tensor([n]).repeat(self.k_shot)
+                    #qry_y_n = torch_uu.tensor([n]).repeat(self.k_eval)
                     spt_y_n, qry_y_n = data_y_n[:self.k_shot], data_y_n[self.k_shot:]
                 else:
                     spt_y_n = torch.tensor([i]).repeat(self.k_shot)

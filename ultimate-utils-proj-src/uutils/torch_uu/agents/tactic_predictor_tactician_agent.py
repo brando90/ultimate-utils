@@ -17,10 +17,10 @@ from progressbar import ProgressBar
 import gc
 
 from uutils import make_args_pickable, set_system_wide_force_flush
-from uutils.torch import AverageMeter, accuracy, print_dataloaders_info
-from uutils.torch.distributed import is_running_serially, is_lead_worker, print_process_info, process_batch_ddp_tactic_prediction
+from uutils.torch_uu import AverageMeter, accuracy, print_dataloaders_info
+from uutils.torch_uu.distributed import is_running_serially, is_lead_worker, print_process_info, process_batch_ddp_tactic_prediction
 
-from uutils.torch.tensorboard import log_2_tb
+from uutils.torch_uu.tensorboard import log_2_tb
 
 from pdb import set_trace as st
 

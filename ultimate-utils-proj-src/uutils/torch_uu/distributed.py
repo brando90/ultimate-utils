@@ -68,7 +68,7 @@ def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
     Note that the batch is assumed to have the specific different types of data in
     different batches according to the name of that type.
     e.g.
-        batch = {'x': torch.randn([B, T, D]), 'y': torch.randn([B, T, V])}
+        batch = {'x': torch_uu.randn([B, T, D]), 'y': torch_uu.randn([B, T, V])}
     holds two batches with names 'x' and 'y' that are tensors.
     In general the dict format for batches is useful because any type of data can be added to help
     with faster prototyping. The key is that they are not tuples (x,y) or anything like that
@@ -177,7 +177,7 @@ def setup_process(opts, rank, world_size, master_port, backend='gloo'):
 
         # - use NCCL if you are using gpus: https://pytorch.org/tutorials/intermediate/dist_tuto.html#communication-backends
         if torch.cuda.is_available():
-            # https://github.com/pytorch/pytorch/issues/54550 You need to call torch.cuda.set_device(rank) before init_process_group is called.
+            # https://github.com/pytorch/pytorch/issues/54550 You need to call torch_uu.cuda.set_device(rank) before init_process_group is called.
             backend = 'nccl'
             torch.cuda.set_device(opts.device)  # is this right if we do parallel cpu?
         print(f'---> {backend=}')
@@ -351,7 +351,7 @@ def run_parallel_training_loop(rank, opts):
     print_process_info(rank)
     print_gpu_info()
     opts.gpu = rank
-    # You need to call torch.cuda.set_device(rank) before init_process_group is called.
+    # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called.
     torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
     setup_process(opts, rank, opts.world_size, opts.master_port)
 
@@ -445,7 +445,7 @@ def run_parallel_training_loop_with_tb(rank, opts):
     print_gpu_info()
     opts.rank = rank
     opts.gpu = rank
-    # You need to call torch.cuda.set_device(rank) before init_process_group is called.
+    # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called.
     torch.cuda.set_device(opts.gpu)  # https://github.com/pytorch/pytorch/issues/54550
     setup_process(opts, rank, opts.world_size, opts.master_port)
 

@@ -1,4 +1,4 @@
-# from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
+# from torch_uu.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +24,10 @@ def log_2_tb_supervisedlearning(tb, args, it, loss, acc, split):
     :param split: train, val, test
     :return:
     """
-    if args.target_type == 'regression':
+    if not hasattr(args, 'target_type'):
+        tag1 = f'{split}_loss'
+        tag2 = f'{split}_accuracy_R2'
+    elif args.target_type == 'regression':
         tag1 = f'{split}_loss'
         tag2 = f'{split}_R2'
     elif args.target_type == 'classification':
@@ -46,7 +49,10 @@ def log_2_tb_metalearning(tb, args, it, loss, acc, split):
     :param split: train, val, test
     :return:
     """
-    if args.target_type == 'regression':
+    if not hasattr(args, 'target_type'):
+        tag1 = f'{split}_loss'
+        tag2 = f'{split}_accuracy_R2'
+    elif args.target_type == 'regression':
         tag1 = f'meta-{split}_loss'
         tag2 = f'meta-{split}_R2'
     elif args.target_type == 'classification':

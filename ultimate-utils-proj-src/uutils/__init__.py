@@ -48,7 +48,7 @@ from typing import Union, Any
 import progressbar
 
 import uutils.logger
-from uutils.torch.distributed import find_free_port
+from uutils.torch_uu.distributed import find_free_port
 
 
 def hello():
@@ -79,8 +79,10 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     :return:
     """
     import torch
-    import uutils.logger.Logger as uuLogger
-    # - to make sure epochs or iterations is explicit
+    from uutils.logger import Logger as uuLogger
+    from torch.utils.tensorboard import SummaryWriter
+
+    # - to make sure epochs or iterations is explicit, set it up in the argparse arguments
     assert args.training_mode in ['epochs', 'iterations']
 
     # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
@@ -91,7 +93,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     args.master_port = find_free_port()
 
     # - determinism
-    # uutils.torch.make_code_deterministic(args.seed)
+    # uutils.torch_uu.make_code_deterministic(args.seed)
 
     # - get device name
     print(f'{args.seed=}')
@@ -110,6 +112,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     # create tb in log_root
     args.tb_dir = args.log_root / 'tb'
     args.tb_dir.mkdir(parents=True, exist_ok=True)
+    args.tb = SummaryWriter(log_dir=args.tb_dir)
 
     # - annealing learning rate...
     # if (not args.no_validation) and (args.lr_reduce_steps is not None):
@@ -138,6 +141,81 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
 
     # - get my logger is set at the agent level
     args.logger: uuLogger = uutils.logger.Logger(args)
+
+    # - best val loss
+    args.best_val_loss: float = float('inf')
+
+    # - set up step/it/epoch_num field, if you are running from checkpoint do this seperately outside
+    args.it = -1 if not hasattr(args, 'it') else args.it
+    args.epoch_num = -1 if not hasattr(args, 'epoch_num') else args.epoch_num
+    if args.num_epochs != -1:
+        args.epoch_num = 0
+    else:
+        # use the its variable for fit until convergence or when doing num_its
+        args.it = 0
+    # todo - or give path here so it does it here...
+    # if resume_from_ckpt:
+    #     pass
+    return args
+
+def parse_args_synth_agent():
+    import argparse
+    import torch.nn as nn
+
+    parser = argparse.ArgumentParser()
+
+    # experimental setup
+    parser.add_argument('--reproduce_10K', action='store_true', default=False,
+                        help='Unset this if you want to run'
+                             'your own data set. This is not really meant'
+                             'to be used if you are trying to reproduce '
+                             'the simply type lambda cal experiments on the '
+                             '10K dataset.')
+    parser.add_argument('--debug', action='store_true', help='if debug')
+    parser.add_argument('--serial', action='store_true', help='if running serially')
+
+    parser.add_argument('--split', type=str, default='train', help=' train, val, test')
+    parser.add_argument('--data_set_path', type=str, default='~/data/simply_type_lambda_calc/dataset10000/',
+                        help='path to data set splits')
+
+    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+
+    parser.add_argument('--num_epochs', type=int, default=-1)
+    parser.add_argument('--num_its', type=int, default=-1)
+    parser.add_argument('--training_mode', type=str, default='iterations')
+    parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
+    parser.add_argument('--save_model_epochs', type=int, default=10,
+                        help='the number of epochs between model savings')
+    parser.add_argument('--num_workers', type=int, default=-1,
+                        help='the number of data_lib-loading threads (when running serially')
+
+    # term encoder
+    parser.add_argument('--embed_dim', type=int, default=256)
+    parser.add_argument('--nhead', type=int, default=8)
+    parser.add_argument('--num_layers', type=int, default=1)
+
+    # tactic label classifier
+    parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
+
+    # optimization
+    parser.add_argument('--optimizer', type=str, default='Adam')
+    parser.add_argument('--learning_rate', type=float, default=1e-5)
+    parser.add_argument('--num_warmup_steps', type=int, default=-1)
+    # parser.add_argument('--momentum', type=float, default=0.9)
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--l2', type=float, default=0.0)
+    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
+    #                     help='the number of steps before reducing the learning rate \
+    #                     (only applicable when no_validation == True)')
+
+    parser.add_argument('--lr_reduce_patience', type=int, default=10)
+
+    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
+                        help='tries to make pytorch fully determinsitic')
+
+    args = parser.parse_args()
     return args
 
 def parse_args():
@@ -206,66 +284,6 @@ def parse_args():
     )
 
     return parser.parse_args()
-
-def parse_args_synth_agent():
-    import argparse
-    import torch.nn as nn
-
-    parser = argparse.ArgumentParser()
-
-    # experimental setup
-    parser.add_argument('--reproduce_10K', action='store_true', default=False,
-                        help='Unset this if you want to run'
-                             'your own data set. This is not really meant'
-                             'to be used if you are trying to reproduce '
-                             'the simply type lambda cal experiments on the '
-                             '10K dataset.')
-    parser.add_argument('--debug', action='store_true', help='if debug')
-    parser.add_argument('--serial', action='store_true', help='if running serially')
-
-    parser.add_argument('--split', type=str, default='train', help=' train, val, test')
-    parser.add_argument('--data_set_path', type=str, default='~/data/simply_type_lambda_calc/dataset10000/',
-                        help='path to data set splits')
-
-    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-
-    parser.add_argument('--num_epochs', type=int, default=-1)
-    parser.add_argument('--num_its', type=int, default=-1)
-    parser.add_argument('--training_mode', type=str, default='iterations')
-    parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
-    parser.add_argument('--save_model_epochs', type=int, default=10,
-                        help='the number of epochs between model savings')
-    parser.add_argument('--num_workers', type=int, default=-1,
-                        help='the number of data_lib-loading threads (when running serially')
-
-    # term encoder
-    parser.add_argument('--embed_dim', type=int, default=256)
-    parser.add_argument('--nhead', type=int, default=8)
-    parser.add_argument('--num_layers', type=int, default=1)
-
-    # tactic label classifier
-    parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
-
-    # optimization
-    parser.add_argument('--optimizer', type=str, default='Adam')
-    parser.add_argument('--learning_rate', type=float, default=1e-5)
-    parser.add_argument('--num_warmup_steps', type=int, default=-1)
-    # parser.add_argument('--momentum', type=float, default=0.9)
-    parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--l2', type=float, default=0.0)
-    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
-    #                     help='the number of steps before reducing the learning rate \
-    #                     (only applicable when no_validation == True)')
-
-    parser.add_argument('--lr_reduce_patience', type=int, default=10)
-
-    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
-                        help='tries to make pytorch fully determinsitic')
-
-    args = parser.parse_args()
-    return args
 
 # --
 
@@ -682,7 +700,7 @@ def save_args_to_sorted_json(args, dirpath):
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
 def save_opts_to_sorted_json(opts, dirpath):
-    save_args_to_sorted_json(args, dirpath)
+    save_args_to_sorted_json(opts, dirpath)
 
 def save_git_hash_if_possible_in_args(args, path_to_repo_root):
     """
@@ -749,7 +767,7 @@ def save_opts(opts: Namespace, args_filename: str = 'opts.json'):
     """ Saves opts, crucially in sorted order. """
     # save opts that was used for experiment
     with open(opts.log_root / args_filename, 'w') as argsfile:
-        # in case some things can't be saved to json e.g. tb object, torch.Tensors, etc.
+        # in case some things can't be saved to json e.g. tb object, torch_uu.Tensors, etc.
         args_data = {key: str(value) for key, value in opts.__dict__.items()}
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 

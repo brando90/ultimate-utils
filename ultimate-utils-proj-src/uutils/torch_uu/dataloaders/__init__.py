@@ -119,7 +119,7 @@ def get_transforms_mini_imagenet(args):
     return train_transform, val_transform, test_transform
 
 def get_torchmeta_sinusoid_dataloaders(args):
-    # tran = transforms.Compose([torch.tensor])
+    # tran = transforms.Compose([torch_uu.tensor])
     # dataset = sinusoid(shots=args.k_eval, test_shots=args.k_shots, transform=tran)
     dataset = sinusoid(shots=args.k_eval, test_shots=args.k_eval)
     meta_train_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_train,

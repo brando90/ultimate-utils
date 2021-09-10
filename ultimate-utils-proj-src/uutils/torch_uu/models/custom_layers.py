@@ -288,8 +288,8 @@ class ResNetBatchCons(nn.Module):
 
             out = (x_cons W^(l1) * e_word ) ] (x_cons W^(l2) * x_prev_layer
 
-        - where x_cons is torch.Tensor([batch, D_cons])
-        - where e_word is torch.Tensor([batch, D_emb])
+        - where x_cons is torch_uu.Tensor([batch, D_cons])
+        - where e_word is torch_uu.Tensor([batch, D_emb])
         - where ] indicates a ReLU/activation
         - where * is a convolution
         - l1, l2 are layers

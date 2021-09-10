@@ -23,8 +23,8 @@ from data_lib.dag.dag_dataloader import get_dataloader_from_dag_files, get_datal
 from data_lib.dataloader_hash_dataset import get_distributed_dataloader_from_feat_file
 from progressbar import ProgressBar
 from uutils import save_opts, load_cluster_jobids_to, set_system_wide_force_flush
-from uutils.torch import print_dict_of_dataloaders_dataset_types
-from uutils.torch.distributed import setup_process, cleanup, set_sharing_strategy, move_to_ddp, find_free_port, \
+from uutils.torch_uu import print_dict_of_dataloaders_dataset_types
+from uutils.torch_uu.distributed import setup_process, cleanup, set_sharing_strategy, move_to_ddp, find_free_port, \
     clean_end_with_sigsegv_hack, is_lead_worker, is_running_serially, \
     print_process_info, set_devices, is_running_parallel
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -226,7 +226,7 @@ def train(rank, opts):
     start_epoch = 0
 
     # create the optimizer
-    # optimizer = torch.optim.SGD(tactic_predictor.parameters(), lr=opts.learning_rate, momentum=opts.momentum, weight_decay=opts.l2)
+    # optimizer = torch_uu.optim.SGD(tactic_predictor.parameters(), lr=opts.learning_rate, momentum=opts.momentum, weight_decay=opts.l2)
     optimizer = torch.optim.Adam(tactic_predictor.parameters(), lr=opts.learning_rate, weight_decay=opts.l2)
 
     # Agent does everything, proving, training, evaluate etc.

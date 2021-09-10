@@ -68,7 +68,7 @@ def test1():
     import torch
     from torch_geometric.data import Data
 
-    # [2, number_edges], edge = (node_idx1, node_idx2), e.g. e = (0,1) = (n0, n1) (note this is reflected on the type torch long)
+    # [2, number_edges], edge = (node_idx1, node_idx2), e.g. e = (0,1) = (n0, n1) (note this is reflected on the type torch_uu long)
 
     edge_index = torch.tensor([[0, 1, 1, 2],
                                [1, 0, 2, 1]], dtype=torch.long)

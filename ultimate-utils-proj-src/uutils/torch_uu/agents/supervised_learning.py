@@ -5,8 +5,8 @@ from torch import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
 import uutils
-from uutils.torch import AverageMeter
-from uutils.torch.distributed import is_lead_worker, move_to_ddp_gpu_via_dict_mutation, print_process_info
+from uutils.torch_uu import AverageMeter
+from uutils.torch_uu.distributed import is_lead_worker, move_to_ddp_gpu_via_dict_mutation, print_process_info
 
 from argparse import Namespace
 
@@ -54,7 +54,7 @@ class SLAgent:
 #     """
 #     train_batch = next(iter(agent.dataloaders['train']))
 #     val_batch = next(iter(agent.dataloaders['val']))
-#     uutils.torch.train_single_batch_agent(agent, train_batch, val_batch)
+#     uutils.torch_uu.train_single_batch_agent(agent, train_batch, val_batch)
 #
 
 # - tests

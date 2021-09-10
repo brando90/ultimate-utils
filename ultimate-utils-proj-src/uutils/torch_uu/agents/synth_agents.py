@@ -16,9 +16,9 @@ from progressbar import ProgressBar
 import parsers
 
 from uutils import make_args_pickable, set_system_wide_force_flush
-from uutils.torch import AverageMeter, accuracy, print_dataloaders_info
-from uutils.torch.distributed import is_running_serially, is_lead_worker, print_process_info, process_batch_ddp
-from uutils.torch.distributed import move_to_ddp_gpu_via_dict_mutation
+from uutils.torch_uu import AverageMeter, accuracy, print_dataloaders_info
+from uutils.torch_uu.distributed import is_running_serially, is_lead_worker, print_process_info, process_batch_ddp
+from uutils.torch_uu.distributed import move_to_ddp_gpu_via_dict_mutation
 
 import gc
 
@@ -67,7 +67,7 @@ class SynthAgent:
         Note that the batch is assumed to have the specific different types of data in
         different batches according to the name of that type.
         e.g.
-            batch = {'x': torch.randn([B, T, D]), 'y': torch.randn([B, T, V])}
+            batch = {'x': torch_uu.randn([B, T, D]), 'y': torch_uu.randn([B, T, V])}
         holds two batches with names 'x' and 'y' that are tensors.
         In general the dict format for batches is useful because any type of data can be added to help
         with faster prototyping. The key is that they are not tuples (x,y) or anything like that

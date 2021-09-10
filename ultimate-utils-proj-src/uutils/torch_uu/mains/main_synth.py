@@ -11,7 +11,7 @@ from datetime import datetime
 import torch
 import torch.nn as nn
 import torch.multiprocessing as mp
-import uutils.torch
+import uutils.torch_uu
 
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -25,8 +25,8 @@ from numpy import random
 from pathlib import Path
 
 from uutils import save_args, load_cluster_jobids_to, set_system_wide_force_flush
-from uutils.torch import print_dict_of_dataloaders_dataset_types, print_dataloaders_info
-from uutils.torch.distributed import setup_process, cleanup, set_sharing_strategy, move_to_ddp, find_free_port, \
+from uutils.torch_uu import print_dict_of_dataloaders_dataset_types, print_dataloaders_info
+from uutils.torch_uu.distributed import setup_process, cleanup, set_sharing_strategy, move_to_ddp, find_free_port, \
     clean_end_with_sigsegv_hack, is_lead_worker, is_running_serially, \
     print_process_info, set_devices
 
@@ -102,7 +102,7 @@ def parse_args():
 
     # determinism
     print('----- TRYING TO MAKE CODE DETERMINISTIC')
-    # uutils.torch.make_code_deterministic(args.seed)
+    # uutils.torch_uu.make_code_deterministic(args.seed)
 
     print(f'{args.seed=}')
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -198,14 +198,14 @@ def train(rank, args):
 
     # create the optimizer
     optimizer = Adafactor(mdl.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
-    # optimizer = torch.optim.Adam(mdl.parameters(), lr=args.learning_rate, weight_decay=args.l2)
+    # optimizer = torch_uu.optim.Adam(mdl.parameters(), lr=args.learning_rate, weight_decay=args.l2)
     # optimizer = radam.RAdam(mdl.parameters(), lr=args.learning_rate)
     print(f'{optimizer=}')
 
     # decay/anneal learning rate wrt epochs
     scheduler = None
     # scheduler = ReduceLROnPlateau(optimizer, patience=args.lr_reduce_patience, verbose=True)  # temporary
-    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, verbose=False)
+    # scheduler = torch_uu.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, verbose=False)
     scheduler = AdafactorSchedule(optimizer)
     # scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=args.num_warmup_steps)
     print(f'{scheduler=}')

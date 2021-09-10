@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import List, Union
 
 import torch
-import uutils.torch
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -42,11 +41,8 @@ from argparse import Namespace
 
 from pdb import set_trace as st
 
-# from sklearn.linear_model import logistic
-from scipy.stats import logistic
 
-from uutils import load_cluster_jobids_to
-from uutils.torch.tensorboard import log_2_tb
+from uutils.torch_uu.tensorboard import log_2_tb
 
 import torchtext
 from torchtext.vocab import Vocab, vocab
@@ -54,8 +50,6 @@ from torchtext.vocab import Vocab, vocab
 import gc
 
 import urllib.request
-
-import logging
 
 # uutils
 pd.set_option('display.max_rows', 500)
@@ -74,118 +68,17 @@ def helloworld():
 
 # -
 
-class Agent:
-
-    def __init__(self, args, mdl, optimizer, dataloaders):
-        self.args = args
-        self.mdl = mdl
-        self.optimizer = optimizer
-        self.dataloaders = dataloaders
-        if is_lead_worker(self.opts.rank):
-            from torch.utils.tensorboard import SummaryWriter
-            self.tb = SummaryWriter(log_dir=args.tb_dir)
-
-    @property
-    def mdl(self) -> torch.nn.Module:
-        return uutils.torch.get_model(self.mdl_)
-
-    def train_epoch(self, n_epoch):
-        pass
-
-    def train_loop(self, n_epoch):
-        pass
-
-    def valid(self, n_epoch):
-        pass
-
-    def accuracy(self):
-        pass
-
-    def evaluate(self):
-        pass
-
-    def prove(self, proof_env):
-        pass
-
-    def forward_one_batch(self, data_batch, training):
-        return
-
-    def train_single_batch(self):
-        train_batch = next(iter(self.dataloaders['train']))
-        val_batch = next(iter(self.dataloaders['val']))
-        uutils.torch.train_single_batch_agent(self, train_batch, val_batch)
-
-    def save(self, n_epoch, dirname):
-        pass
-
-    def save(self, n_epoch, dirname=None, ckpt_name='tactic_predictor.pt'):
-        if is_lead_worker(self.opts.rank):
-            self._save(n_epoch, dirname, ckpt_name)
-
-    def _save(self, n_epoch, dirname=None, ckpt_name='tactic_predictor.pt'):
-        """
-        Saves checkpoint for any worker.
-        Intended use is to save by worker that got a val loss that improved.
-        """
-        from torch.nn.parallel.distributed import DistributedDataParallel
-        dirname = self.opts.log_root if dirname is None else dirname
-        pickable_opts = make_args_pickable(self.opts)
-        import dill
-        mdl = self.mdl.module if type(self.mdl) is DistributedDataParallel else self.mdl
-        torch.save({'state_dict': self.mdl.state_dict(),
-                    'n_epoch': n_epoch,
-                    'optimizer': self.optimizer.state_dict(),
-                    'opts': pickable_opts,
-                    'mdl': mdl},
-                   pickle_module=dill,
-                   f=dirname / ckpt_name)  # f'mdl_{n_epoch:03}.pt'
-
-    def log_train_stats(self, it: int, train_loss: float, train_acc: float, val_ckpt=False, val_iterations=0):
-        val_loss, val_acc = self.valid(self.args.n_epoch, val_iterations=val_iterations, val_ckpt=val_ckpt)
-        self.log_tb(it=it, tag1='train loss', loss=float(train_loss), tag2='train acc', acc=float(train_acc))
-        self.log_tb(it=it, tag1='val loss', loss=float(val_loss), tag2='val acc', acc=float(val_acc))
-
-        self.log(f"\n{it=}: {train_loss=} {train_acc=}")
-        self.log(f"{it=}: {val_loss=} {val_acc=}")
-
-    def log(self, string, flush=True):
-        """ logs only if you are rank 0"""
-        if is_lead_worker(self.opts.rank):
-            print(string, flush=flush)
-
-    def log_tb(self, it, tag1, loss, tag2, acc):
-        if is_lead_worker(self.opts.rank):
-            uutils.torch.log_2_tb(self.tb, self.opts, it, tag1, loss, tag2, acc)
-
-    def print_process_info(self):
-        print_process_info(self.opts.rank)
-
-    def is_lead_worker(self):
-        """
-        Returns True if it's the lead worker (i.e. the slave meant to do the
-        printing, logging, tb_logging, checkpointing etc.). This is useful for debugging.
-
-        :return:
-        """
-        return is_lead_worker(self.opts.rank)
-
-    def print_dataloaders_info(self, split):
-        if self.is_lead_worker():
-            print_dataloaders_info(self.opts, self.dataloaders, split)
-
-# -
-
 def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool = True):
     """
 
-    Note: use_deterministic_algorithms makes all algorithms deterministic while torch.backends.cudnn.deterministic=True
+    Note: use_deterministic_algorithms makes all algorithms deterministic while torch_uu.backends.cudnn.deterministic=True
     makes convs only determinsitic. There is also a way to choose algorithms based on hardware performance, to
-    avoid that use torch.backends.cudnn.benchmark = False (note the agorithm chosen even if determinsitic might be
+    avoid that use torch_uu.backends.cudnn.benchmark = False (note the agorithm chosen even if determinsitic might be
     random itself so the other two flags are useful).
 
     todo -
      - fix this:
-      RuntimeError: Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+      RuntimeError: Deterministic behavior was enabled with either `torch_uu.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
      - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
      - read the RNN LSTM part
     ref:
@@ -263,18 +156,18 @@ def insert_special_symbols(vocab: Vocab) -> Vocab:
     assert vocab['<eos>'] == 3
     return vocab
 
-def pad_sequence(batch_sequences, vocab):
-    """
-
-    :param batch_sequences:
-    :return: [T]
-    """
-    # todo - batch of sequences to look up tensors
-    # look through each sequence, depending on it's type and make it to look up
-    # lookup_tensor = torch.tensor(indices, dtype=torch.long).to(self.args.device)
-    # pad sequence
-    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
-    return y_look_up_tensor
+# def pad_sequence(batch_sequences, vocab):
+#     """
+#
+#     :param batch_sequences:
+#     :return: [T]
+#     """
+#     # todo - batch of sequences to look up tensors
+#     # look through each sequence, depending on it's type and make it to look up
+#     # lookup_tensor = torch_uu.tensor(indices, dtype=torch_uu.long).to(self.args.device)
+#     # pad sequence
+#     y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
+#     return y_look_up_tensor
 
 def diagonal_mask(size: int, device) -> Tensor:
     """
@@ -301,30 +194,30 @@ def diagonal_mask(size: int, device) -> Tensor:
     mask = mask.to(device)
     return mask
 
-def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embed_dim: int) -> Tensor:
-    from torch.nn.utils.rnn import pad_sequence
-    B, T, D  = len(y_batch), max(len(seq[:-1]) for seq in y_batch) + 2, embed_dim
-    y_look_up_tensor = []
-    for seq in y_batch:
-        seq = seq[:-1]  # right shift
-        indices = [vocab['<sos>']]
-        indices.extend([vocab[str(token_idx)] for token_idx in seq])
-        indices.append(vocab['<eos>'])
-        lookup_tensor = torch.tensor(indices, dtype=torch.long).to(device)
-        y_look_up_tensor.append(lookup_tensor)
-    # pad
-    y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
-    assert y_look_up_tensor.size() == torch.Size([B, T])
-    # get embeddings
-    y_embed = vocab_embeds(y_look_up_tensor)
-    assert y_embed.size() == torch.Size([B, T, D])
-    # diagonal mask to avoid model from cheating
-    y_mask = diagonal_mask(size=T, device=device)
-    assert y_mask.size() == torch.Size([T, T])
-    # padding mask
-    y_padding_mask = (y_look_up_tensor == vocab['<pad>']).to(device)
-    assert y_padding_mask.size() == torch.Size([B, T])
-    return y_embed, y_mask, y_padding_mask
+# def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embed_dim: int) -> Tensor:
+#     from torch_uu.nn.utils.rnn import pad_sequence
+#     B, T, D  = len(y_batch), max(len(seq[:-1]) for seq in y_batch) + 2, embed_dim
+#     y_look_up_tensor = []
+#     for seq in y_batch:
+#         seq = seq[:-1]  # right shift
+#         indices = [vocab['<sos>']]
+#         indices.extend([vocab[str(token_idx)] for token_idx in seq])
+#         indices.append(vocab['<eos>'])
+#         lookup_tensor = torch_uu.tensor(indices, dtype=torch_uu.long).to(device)
+#         y_look_up_tensor.append(lookup_tensor)
+#     # pad
+#     y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
+#     assert y_look_up_tensor.size() == torch_uu.Size([B, T])
+#     # get embeddings
+#     y_embed = vocab_embeds(y_look_up_tensor)
+#     assert y_embed.size() == torch_uu.Size([B, T, D])
+#     # diagonal mask to avoid model from cheating
+#     y_mask = diagonal_mask(size=T, device=device)
+#     assert y_mask.size() == torch_uu.Size([T, T])
+#     # padding mask
+#     y_padding_mask = (y_look_up_tensor == vocab['<pad>']).to(device)
+#     assert y_padding_mask.size() == torch_uu.Size([B, T])
+#     return y_embed, y_mask, y_padding_mask
 
 # def get_freq_to_log_two_or_three_times(data_loader):
 #     freq = len(data_loader) // 3  # to log approximately 2-3 times.
@@ -457,7 +350,7 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
         batch_size: (int) size of batch
         hidden_size:
         n_layers:
-        bidirectional: (torch.Tensor) initial hidden state (n_layers*nb_directions, batch_size, hidden_size)
+        bidirectional: (torch_uu.Tensor) initial hidden state (n_layers*nb_directions, batch_size, hidden_size)
 
     Returns:
         hidden:
@@ -474,7 +367,7 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     state is only needed to start the computation
 
     :param int batch_size: size of batch
-    :return torch.Tensor hidden: initial hidden state (n_layers*nb_directions, batch_size, hidden_size)
+    :return torch_uu.Tensor hidden: initial hidden state (n_layers*nb_directions, batch_size, hidden_size)
     """
     # get gpu
     use_cuda = torch.cuda.is_available()
@@ -689,10 +582,10 @@ def get_stats(flatten_tensor):
     """Get some stats from tensor.
     
     Arguments:
-        flatten_tensor {torchTensor} -- torch tensor to get stats
+        flatten_tensor {torchTensor} -- torch_uu tensor to get stats
     
     Returns:
-        [list torch.Tensor] -- [mu, std, min_v, max_v, med]
+        [list torch_uu.Tensor] -- [mu, std, min_v, max_v, med]
     """
     mu, std = flatten_tensor.mean(), flatten_tensor.std()
     min_v, max_v, med = flatten_tensor.min(), flatten_tensor.max(), flatten_tensor.median()
@@ -870,6 +763,8 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     :return:
     """
     import progressbar
+    import uutils
+
     set_system_wide_force_flush2()
     # train_batch = next(iter(agent.dataloaders['train']))
     # val_batch = next(iter(agent.dataloaders['val']))
@@ -911,7 +806,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
 
     return avg_loss.item(), avg_acc.item()
 
-def train_single_batch(args, mdl, optimizer, acc_tolerance=1.0, train_loss_tolerance=0.01):
+def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_loss_tolerance=0.01):
     """
     Train untils the accuracy on the specified batch has perfect interpolation in loss and accuracy.
     It also prints and tb logs every iteration.
@@ -920,6 +815,8 @@ def train_single_batch(args, mdl, optimizer, acc_tolerance=1.0, train_loss_toler
     :param train_loss_tolerance:
     :return:
     """
+    from uutils.torch_uu.distributed import process_batch_ddp_tactic_prediction
+
     print('train_single_batch')
     set_system_wide_force_flush2()
     avg_loss = AverageMeter('train loss')
@@ -1056,14 +953,14 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     usually applied to loss and grads.
 
     Arguments:
-        x {[torch.Tensor]} -- input to preprocess
+        x {[torch_uu.Tensor]} -- input to preprocess
     
     Keyword Arguments:
         p {int} -- number that indicates the scaling (default: {10})
         eps {float} - numerical stability param (default: {1e-8})
     
     Returns:
-        [torch.Tensor] -- preprocessed numbers
+        [torch_uu.Tensor] -- preprocessed numbers
     """
     if len(x.size()) == 0:
         x = x.unsqueeze(0)
@@ -1096,7 +993,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     https://stackoverflow.com/questions/63237199/how-does-one-compute-the-norm-of-a-function-in-python
     """
     # index is there since it also returns acc/err
-    if 'torch' in str(type(f1)) or 'torch' in str(type(f2)):
+    if 'torch_uu' in str(type(f1)) or 'torch_uu' in str(type(f2)):
         pointwise_diff = lambda x: abs(f1(torch.tensor([x])) - f2(torch.tensor([x]))) ** p
     else:
         pointwise_diff = lambda x: abs(f1(x) - f2(x)) ** p
@@ -1113,9 +1010,9 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_dis
     mdl1.eval()
     mdl2.eval()
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
-        # x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
-        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
-        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((500, 1))
+        # x = torch_uu.torch_uu.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((15, 1))
+        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((500, 1))
         x = meta_batch
         mdl1(x)
         mdl2(x)
@@ -1140,8 +1037,8 @@ def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din
     mdl2.eval()
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
-        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((15, 1))
-        # x = torch.torch.distributions.Uniform(low=-1, high=1).sample((num_samples_per_task, 1))
+        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((15, 1))
+        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((num_samples_per_task, 1))
         mdl1(x)
         mdl2(x)
     dist = hook1.distance(hook2, size=cca_size)
@@ -1163,7 +1060,7 @@ def ned(f, y):
     return ned
 
 def r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor):
-    """ returns the accuracy from torch tensors """
+    """ returns the accuracy from torch_uu tensors """
     from sklearn.metrics import r2_score
     acc = r2_score(y_true=y_true.detach().numpy(), y_pred=y_pred.detach().numpy())
     return acc
@@ -1200,7 +1097,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
         r2_f = r2_score(y_true=f, y_pred=y)
         r2_y = r2_score(y_true=y, y_pred=f)
         r2 = 0.5 * r2_f + 0.5 * r2_y
-        # sig = torch.nn.Sigmoid()
+        # sig = torch_uu.nn.Sigmoid()
         # r2 = sig(r2).item()
         raise ValueError(f'Not implemented {r2_type}')
     elif r2_type == 'mohalanobis':
@@ -1284,7 +1181,7 @@ def compressed_r2_score(y_true, y_pred, compressor='tanh'):
 
 def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, compressor='tanh'):
     """
-    Though it seems this function is not needed, surprisingly! It processes torch tensors just fine...
+    Though it seems this function is not needed, surprisingly! It processes torch_uu tensors just fine...
     :param y_true:
     :param y_pred:
     :param compressor:
@@ -1304,7 +1201,7 @@ def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, c
 #     from scipy.stats import logistic
 #
 #     # y_true=qry_y_t.detach().numpy(), y_pred=qry_logits_t.detach().numpy()
-#     sig = torch.nn.Sigmoid() if normalizer == 'Sigmoid' else torch.nn.Tanh()
+#     sig = torch_uu.nn.Sigmoid() if normalizer == 'Sigmoid' else torch_uu.nn.Tanh()
 #     r2_score = ignite.contrib.metrics.regression.R2Score()
 #     # r2 = r2_score(y_true=y_true, y_pred=y_pred)
 #     norm_r2 = logistic(r2).item()
@@ -1317,14 +1214,14 @@ def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, c
 #     hook1 = SimilarityHook(mdl1, layer_name)
 #     hook2 = SimilarityHook(mdl2, layer_name)
 #     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
-#         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
+#         x = torch_uu.torch_uu.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
 #         mdl1(x)
 #         mdl2(x)
 #     dist = hook1.distance(hook2, size=cca_size)
 #     return dist
 
 # def cca(mdl1, mdl2, dataloader, cca_size=None, iters=10):
-#     # with torch.no_grad()
+#     # with torch_uu.no_grad()
 #     for _ in range(iters):
 #         next()
 #         mdl1(x)
@@ -1403,7 +1300,7 @@ def tensorify(lst):
             return torch.stack(lst, dim=0)
         else:  # if the elements of lst are floats or something like that
             return torch.tensor(lst)
-    # recursive case, for every sub list get it into tensor (recursively) form and then combine with torch.stack
+    # recursive case, for every sub list get it into tensor (recursively) form and then combine with torch_uu.stack
     current_dimension_i = len(lst)
     for d_i in range(current_dimension_i):
         tensor = tensorify(lst[d_i])
@@ -1611,9 +1508,9 @@ def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_nam
         }
 
     Important note:
-    -When a Tensor is sent to another process, the Tensor data is shared. If torch.Tensor.grad is not None,
+    -When a Tensor is sent to another process, the Tensor data is shared. If torch_uu.Tensor.grad is not None,
         it is also shared.
-    - After a Tensor without a torch.Tensor.grad field is sent to the other process,
+    - After a Tensor without a torch_uu.Tensor.grad field is sent to the other process,
         it creates a standard process-specific .grad Tensor that is not automatically shared across all processes,
         unlike how the Tensor’s data has been shared.
         - this is good! that way when different tasks are being adapted with MAML, their gradients don't "crash"
@@ -1653,7 +1550,7 @@ def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_nam
         for metric, s in similiarities_single_dict.items():
             sims[metric].append(s)
 
-    # convert everything to torch tensors
+    # convert everything to torch_uu tensors
     # sims = {k: tensorify(v) for k, v in sims.items()}
     similarities = {}
     for k, v in sims.items():
@@ -1663,7 +1560,7 @@ def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_nam
 
 def compute_sim_for_current_task(self, task):
     import higher
-    # print(f'start: {torch.multiprocessing.current_process()}')
+    # print(f'start: {torch_uu.multiprocessing.current_process()}')
     # unpack args pased via checking global variables, oh no!
     layer_names = self.layer_names
     inner_opt = self.inner_opt
@@ -1703,13 +1600,13 @@ def compute_sim_for_current_task(self, task):
         # (T by 1)
         y = self.base_model(qry_x_t)
         y_adapt = fmodel(qry_x_t)
-        # if not torch.cuda.is_available():
+        # if not torch_uu.cuda.is_available():
         #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
         # dim=0 because we have single numbers and we are taking the NES in the batch direction
         nes_output = torch.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
 
         query_loss = self.args.criterion(y, y_adapt).item()
-    # print(f'done: {torch.multiprocessing.current_process()}')
+    # print(f'done: {torch_uu.multiprocessing.current_process()}')
     # sims = [cca, cka, nes, cosine, nes_output, query_loss]
     sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
     # sims = [sim.detach() for sim in sims]
@@ -1718,38 +1615,38 @@ def compute_sim_for_current_task(self, task):
 
 # -- distance comparisons for SL
 
-def get_distance_of_inits(args, batch, f1, f2):
-    layer_names = args.layer_names
-    batch_x, batch_y = batch
-    # get CCA & CKA per layer (T by 1 by L)
-    cca = get_cxa_distances_per_layer(f1, f2, batch_x, layer_names, dist_type='pwcca')  # 1 by T
-    cka = get_cxa_distances_per_layer(f1, f1, batch_x, layer_names, dist_type='lincka')  # 1 by T
+# def get_distance_of_inits(args, batch, f1, f2):
+#     layer_names = args.layer_names
+#     batch_x, batch_y = batch
+#     # get CCA & CKA per layer (T by 1 by L)
+#     cca = get_cxa_distances_per_layer(f1, f2, batch_x, layer_names, dist_type='pwcca')  # 1 by T
+#     cka = get_cxa_distances_per_layer(f1, f1, batch_x, layer_names, dist_type='lincka')  # 1 by T
+#
+#     # get l2 sims per layer (T by L by k_eval)
+#     # nes = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
+#     #                                          sim_type='nes_torch')
+#     # cosine = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
+#     #                                             sim_type='cosine_torch')
+#     #
+#     # # (T by 1)
+#     # y = f1(qry_x_t)
+#     # y_adapt = fmodel(qry_x_t)
+#     # # if not torch_uu.cuda.is_available():
+#     # #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
+#     # # dim=0 because we have single numbers and we are taking the NES in the batch direction
+#     # nes_output = torch_uu.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+#     #
+#     # query_loss = self.args.criterion(y, y_adapt).item()
+#     # print(f'done: {torch_uu.multiprocessing.current_process()}')
+#     # sims = [cca, cka, nes, cosine, nes_output, query_loss]
+#     sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
+#     # sims = [sim.detach() for sim in sims]
+#     sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
+#     return sims
 
-    # get l2 sims per layer (T by L by k_eval)
-    # nes = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
-    #                                          sim_type='nes_torch')
-    # cosine = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
-    #                                             sim_type='cosine_torch')
-    #
-    # # (T by 1)
-    # y = f1(qry_x_t)
-    # y_adapt = fmodel(qry_x_t)
-    # # if not torch.cuda.is_available():
-    # #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
-    # # dim=0 because we have single numbers and we are taking the NES in the batch direction
-    # nes_output = torch.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
-    #
-    # query_loss = self.args.criterion(y, y_adapt).item()
-    # print(f'done: {torch.multiprocessing.current_process()}')
-    # sims = [cca, cka, nes, cosine, nes_output, query_loss]
-    sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
-    # sims = [sim.detach() for sim in sims]
-    sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
-    return sims
-
-def get_cxa_distances_per_layer(mdl1, mdl2, X, layer_names, dist_type='pwcca'):
+def get_cxa_distances_per_layer(mdl1, mdl2, X, layer_names, sim_type, dist_type='pwcca'):
     # get [..., s_l, ...] cca sim per layer (for this data set)
-    from uutils.torch import cxa_sim
+    from uutils.torch_uu import cxa_sim
 
     sims_per_layer = []
     for layer_name in layer_names:
@@ -1803,7 +1700,7 @@ def flatten2float_list(t: torch.Tensor) -> List[float]:
     :return:
     """
     t = t.view(-1).detach().numpy().tolist()
-    # t = torch.flatten(t).numpy().tolist()
+    # t = torch_uu.flatten(t).numpy().tolist()
     return t
 
 # -- not using for now
@@ -1851,19 +1748,20 @@ class AverageStdMeter(object):
         return fmtstr.format(self.name, self.avg, self.std)
 
 def split_train_val_test(X, y, random_state=1, ratio=[0.80, 0.10, 0.10]):
-
-    # shuffle = False  # shufflebool, default=True, Whether or not to shuffle the data_lib before splitting. If shuffle=False then stratify must be None.
-    X_train, X_val_test, y_train, y_val_test = train_test_split(X, y,
-                                                                test_size=test_size,
-                                                                random_state=random_state)
-    print(len(X_train))
-    print(len(X_val_test))
-
-    # then 2/3 for val, 1/3 for test to get 10:5 split
-    test_size = 1.0 / 3.0
-    X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size,
-                                                     random_state=random_state)
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    #
+    # # shuffle = False  # shufflebool, default=True, Whether or not to shuffle the data_lib before splitting. If shuffle=False then stratify must be None.
+    # X_train, X_val_test, y_train, y_val_test = train_test_split(X, y,
+    #                                                             test_size=test_size,
+    #                                                             random_state=random_state)
+    # print(len(X_train))
+    # print(len(X_val_test))
+    #
+    # # then 2/3 for val, 1/3 for test to get 10:5 split
+    # test_size = 1.0 / 3.0
+    # X_val, X_test, y_val, y_test = train_test_split(X_val_test, y_val_test, test_size=test_size,
+    #                                                  random_state=random_state)
+    # return X_train, X_val, X_test, y_train, y_val, y_test
+    pass
 
 
 def split_two(lst, ratio=[0.5, 0.5]):
@@ -2036,22 +1934,47 @@ def _unzip(filename: Union[str, Path], extract_dir):
     todo fix... perhaps not...?
     https://stackoverflow.com/questions/3451111/unzipping-files-in-python
     """
-    filename = str(filename)
-    print(f'unzipping {filename}...')
-    if os.path.exists(filename[:-7]):
-        # remove = input(filename[:-7] + ' already exists. Do you want to remove it? (y/N)').lower()
-        remove = 'y'
-        if remove == 'y':
-            execute('rm -r ' + filename[:-7])
-        else:
-            print('aborting..')
-            sys.exit(-1)
-
-    import shutil
-    shutil.unpack_archive(filename, extract_dir)
-
+    # filename = str(filename)
+    # print(f'unzipping {filename}...')
+    # if os.path.exists(filename[:-7]):
+    #     # remove = input(filename[:-7] + ' already exists. Do you want to remove it? (y/N)').lower()
+    #     remove = 'y'
+    #     if remove == 'y':
+    #         execute('rm -r ' + filename[:-7])
+    #     else:
+    #         print('aborting..')
+    #         sys.exit(-1)
+    #
+    # import shutil
+    # shutil.unpack_archive(filename, extract_dir)
+    #
     # execute(f'tar -xvzf {filename}')
-    print(f'done unzipping {filename}\n')
+    # print(f'done unzipping {filename}\n')
+    pass
+
+def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
+              dirname: Union[None, Path] = None, ckpt_name: str = 'ckpt.pt'):
+    """
+    Saves checkpoint for any worker.
+    Intended use is to save by worker that got a val loss that improved.
+
+
+    """
+    import dill
+    import uutils
+
+    dirname = args.log_root if (dirname is None) else dirname
+    # - pickle ckpt
+    assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
+    pickable_args = uutils.make_args_pickable(args)
+    torch.save({'state_dict': mdl.state_dict(),
+                'epoch_num': args.epoch_num,
+                'it': args.it,
+                'optimizer': optimizer.state_dict(),
+                'args': pickable_args,
+                'mdl': mdl},
+               pickle_module=dill,
+               f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
 
 # -- tests
 
