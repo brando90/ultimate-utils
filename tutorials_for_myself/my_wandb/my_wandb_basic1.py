@@ -115,6 +115,7 @@ def log_train_val_stats(args: Namespace,
             wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it)
             wandb.log(data={'it': it}, step=it)
             if it == total_its - 1:
+                print(f'logging fig at {it=}')
                 wandb.log(data={'fig': fig}, step=it)
         plt.close('all')
 
@@ -178,7 +179,7 @@ def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False)
 
 
 def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler=None):
-    wandb.watch(args.mdl)
+    # wandb.watch(args.mdl)
     for it in range(args.num_its):
         x = torch.randn(args.batch_size, 5)
         y = (x ** 2 + x + 1).sum(dim=1)
@@ -216,6 +217,10 @@ def debug_test():
 
     print(f'{val_loss=}, {val_acc=}')
 
+    # - make sure wandb closes properly
+    if args.log_to_wandb:
+        wandb.finish()
+
 
 if __name__ == '__main__':
     import os
@@ -225,5 +230,6 @@ if __name__ == '__main__':
     start = time.time()
     debug_test()
     duration_secs = time.time() - start
-    print(f"Success, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
+    print(f"\nSuccess, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
     print('Done!\a')
+
