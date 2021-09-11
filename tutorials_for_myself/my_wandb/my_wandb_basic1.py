@@ -64,6 +64,10 @@ def log_train_val_stats(args: Namespace,
 
                         valid,
 
+                        log_freq: int = 10,
+                        ckpt_freq: int = 50,
+                        force_log: bool = False,  # e.g. at the final it/epoch
+
                         save_val_ckpt: bool = False,
                         log_to_tb: bool = False,
                         log_to_wandb: bool = False
@@ -75,38 +79,55 @@ def log_train_val_stats(args: Namespace,
     Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
     """
     from uutils.torch_uu.tensorboard import log_2_tb
+    from matplotlib import pyplot as plt
 
     # - is it epoch or iteration
-    it_or_epoch = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    # if its
+    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
 
-    # - get eval stats
-    val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
+    print(f'-- {it == total_its - 1}')
+    print(f'-- {it}')
+    print(f'-- {total_its}')
+    if (it % log_freq == 0 or is_lead_worker(args.rank) or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        print('inside log')
+        # - get eval stats
+        val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
 
-    # - print
-    args.logger.log('\n')
-    args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
-    args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
+        # - print
+        args.logger.log('\n')
+        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
 
-    # - record into stats collector
-    args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
-    args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
-    args.logger.save_experiment_stats_to_json_file()
-    args.logger.save_current_plots_and_stats()
+        # - record into stats collector
+        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
+        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
+        args.logger.save_experiment_stats_to_json_file()
+        fig = args.logger.save_current_plots_and_stats()
 
-    # - log to wandb
-    if log_to_wandb:
-        if it == 0:
-            wandb.watch(args.mdl)
-            print('watching model')
-        # log_2_wandb(train_loss=train_loss, train_acc=train_acc)
-        wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it)
+        # - log to wandb
+        if log_to_wandb:
+            if it == 0:
+                wandb.watch(args.mdl)
+                print('watching model')
+            # log_2_wandb(train_loss=train_loss, train_acc=train_acc)
+            print('inside wandb log')
+            wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it)
+            wandb.log(data={'it': it}, step=it)
+            if it == total_its - 1:
+                wandb.log(data={'fig': fig}, step=it)
+        plt.close('all')
 
-    # - log to tensorboard
-    if log_to_tb:
-        log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
-        log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
-        # log_2_tb(args, it, val_loss, val_acc, 'train')
-        # log_2_tb(args, it, val_loss, val_acc, 'val')
+        # - log to tensorboard
+        if log_to_tb:
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
+            # log_2_tb(args, it, val_loss, val_acc, 'train')
+            # log_2_tb(args, it, val_loss, val_acc, 'val')
+
+    # - log ckpt
+    if (it % ckpt_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        save_ckpt(args, args.mdl, args.optimizer)
 
 
 def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
@@ -157,6 +178,7 @@ def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False)
 
 
 def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler=None):
+    wandb.watch(args.mdl)
     for it in range(args.num_its):
         x = torch.randn(args.batch_size, 5)
         y = (x ** 2 + x + 1).sum(dim=1)
@@ -169,18 +191,16 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
         optimizer.step()  # the right update is done since all procs have the right synced grads
         scheduler.step()
 
-        if it % 2 == 0 and is_lead_worker(args.rank):
-            log_train_val_stats(args, it, train_loss, train_acc, valid_for_test,
-                                save_val_ckpt=True, log_to_tb=True, log_to_wandb=True)
-            if it % 10 == 0:
-                save_ckpt(args, args.mdl, args.optimizer)
+        log_train_val_stats(args, it, train_loss, train_acc, valid_for_test,
+                            log_freq=2, ckpt_freq=10,
+                            save_val_ckpt=True, log_to_tb=True, log_to_wandb=True)
 
     return train_loss, train_acc
 
 
 def debug_test():
     args: Namespace = get_args()
-    args.num_its = 200
+    args.num_its = 12
 
     # - get mdl, opt, scheduler, etc
     args.mdl = get_simple_model(in_features=5, hidden_features=20, out_features=1, num_layer=2)

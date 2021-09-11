@@ -1,3 +1,4 @@
+import logging
 from argparse import Namespace
 from typing import Any, Union
 
@@ -177,7 +178,10 @@ class Logger:
             title='Learnig & Evaluation Curves',
 
             grid: bool = True,
-            show: bool = False):
+            show: bool = False,
+
+            return_fig: bool = False
+        ):
         if is_lead_worker(self.args.rank):
             # plt.style.use('default')
             # self.save_experiment_stats_to_json_file()
@@ -237,7 +241,11 @@ class Logger:
             fig.savefig(self.args.log_root / 'train_eval.svg')
             fig.savefig(self.args.log_root / 'train_eval.pdf')
             fig.savefig(self.args.log_root / 'train_eval.png')
-            plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+            if return_fig:
+                logging.warning("make sure you call plt.close('all') on figure, https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures")
+                return fig
+            else:
+                plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
 
 def log_train_val_stats(args: Namespace,

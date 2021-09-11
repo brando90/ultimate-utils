@@ -23,6 +23,8 @@ setup(
                       'requests',
                       'aiohttp',
                       'numpy',
+                      'plotly',
+                      'wandb',
 
                       'pygraphviz']
 )

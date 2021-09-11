@@ -17,8 +17,11 @@ conda install -y -c pytorch torchtext
 conda install -y -c conda-forge tensorboard
 conda install -y -c conda-forge pandas
 conda install -y -c conda-forge progressbar2
+conda install -y -c conda-forge plotly
 
 conda install -y pygraphviz -c conda-forge
+
+pip install wandb
 
 # similar to pip -e
 conda install conda-build
