@@ -156,6 +156,24 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     # todo - or give path here so it does it here...
     # if resume_from_ckpt:
     #     pass
+
+    # - wandb
+    if hasattr(args, 'log_to_wandb'):
+        if args.log_to_wandb:
+            # os.environ['WANDB_MODE'] = 'offline'
+            import wandb
+
+            wandb.init(project=args.wandb_project, entity=args.wandb_entity)
+            # config = wandb.config
+            # wandb.config = namespace2dict(args)
+            wandb.config.update(args)
+            # wandb.config.update({"dataset": "ab131"})
+
+
+            # wandb.watch(args.mdl)
+    else:
+        pass
+    # - return
     return args
 
 def parse_args_synth_agent():
@@ -215,6 +233,12 @@ def parse_args_synth_agent():
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully determinsitic')
 
+    # - wandb
+    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
+    parser.add_argument('--wandb_project', type=str, default='playground')
+    parser.add_argument('--wandb_entity', type=str, default='brando')
+
+    # - parse arguments
     args = parser.parse_args()
     return args
 
@@ -974,6 +998,17 @@ def write_str_to_file(path: str, filename: str, file_content: str, mode: str = '
 # def f(fromDirectory: str, toDirectory: str):
 #     from distutils.dir_util import copy_tree
 #     copy_tree(fromDirectory, toDirectory)
+
+def namespace2dict(args: Namespace) -> dict:
+    """
+
+    ref: - https://docs.python.org/3/library/functions.html#vars
+         - https://stackoverflow.com/questions/16878315/what-is-the-right-way-to-treat-argparse-namespace-as-a-dictionary
+    :param args:
+    :return:
+    """
+    # vars = Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
+    return vars(args)
 
 # -- tests
 

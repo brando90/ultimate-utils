@@ -239,9 +239,8 @@ class Logger:
             fig.savefig(self.args.log_root / 'train_eval.png')
             plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
-# - tests
 
-def log_train_val_stats_example(args: Namespace,
+def log_train_val_stats(args: Namespace,
                     it: int,
 
                     train_loss: float,
@@ -262,7 +261,7 @@ def log_train_val_stats_example(args: Namespace,
     from uutils.torch_uu.tensorboard import log_2_tb
 
     # - is it epoch or iteration
-    it_or_epoch = 'epoch_num' if args.training_mode == 'epochs' else args.training_mode == 'iteration'
+    it_or_epoch = 'epoch_num' if args.training_mode == 'epochs' else 'it'
 
     # - get eval stats
     val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
@@ -277,6 +276,7 @@ def log_train_val_stats_example(args: Namespace,
     args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
     args.logger.save_experiment_stats_to_json_file()
     args.logger.save_current_plots_and_stats()
+    save_model_as_string(args, args.mdl)
 
     # - log to wandb
     if log_to_wandb:
@@ -312,6 +312,8 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
 
+# - tests
+
 def get_args() -> Namespace:
     args = uutils.parse_args_synth_agent()
     args = uutils.setup_args_for_experiment(args)
@@ -346,7 +348,7 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
         scheduler.step()
 
         if it % 2 == 0 and is_lead_worker(args.rank):
-            log_train_val_stats_example(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
+            log_train_val_stats(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
             if it % 10 == 0:
                 save_ckpt(args, args.mdl, args.optimizer)
 
@@ -371,5 +373,9 @@ def debug_test():
 
 
 if __name__ == '__main__':
+    import time
+    start = time.time()
     debug_test()
+    duration_secs = time.time() - start
+    print(f"Success, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
     print('Done!\a')
