@@ -66,6 +66,7 @@ def log_train_val_stats(args: Namespace,
 
                         log_freq: int = 10,
                         ckpt_freq: int = 50,
+                        mdl_watch_log_freq:int = 50,
                         force_log: bool = False,  # e.g. at the final it/epoch
 
                         save_val_ckpt: bool = False,
@@ -103,21 +104,20 @@ def log_train_val_stats(args: Namespace,
         args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
         args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
         args.logger.save_experiment_stats_to_json_file()
-        fig = args.logger.save_current_plots_and_stats()
+        args.logger.save_current_plots_and_stats()
 
         # - log to wandb
         if log_to_wandb:
             if it == 0:
-                wandb.watch(args.mdl)
-                print('watching model')
-            # log_2_wandb(train_loss=train_loss, train_acc=train_acc)
-            print('inside wandb log')
-            wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it)
-            wandb.log(data={'it': it}, step=it)
+                wandb.watch(args.mdl, args.criterion, log="all", log_freq=mdl_watch_log_freq)
+            wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it, commit=True)
+            # wandb.log(data={'it': it}, step=it, commit=True)
             if it == total_its - 1:
-                print(f'logging fig at {it=}')
-                wandb.log(data={'fig': fig}, step=it)
-        plt.close('all')
+                pass
+                # print(f'logging fig at {it=}, {fig}')
+                # wandb.log(data={'fig': fig}, step=it, commit=True)
+        # plt.close(fig)
+        # plt.close('all')
 
         # - log to tensorboard
         if log_to_tb:
@@ -179,7 +179,6 @@ def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False)
 
 
 def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler=None):
-    # wandb.watch(args.mdl)
     for it in range(args.num_its):
         x = torch.randn(args.batch_size, 5)
         y = (x ** 2 + x + 1).sum(dim=1)
@@ -193,7 +192,7 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
         scheduler.step()
 
         log_train_val_stats(args, it, train_loss, train_acc, valid_for_test,
-                            log_freq=2, ckpt_freq=10,
+                            log_freq=2, ckpt_freq=10, mdl_watch_log_freq=10,
                             save_val_ckpt=True, log_to_tb=True, log_to_wandb=True)
 
     return train_loss, train_acc
@@ -204,9 +203,14 @@ def debug_test():
     args.num_its = 12
 
     # - get mdl, opt, scheduler, etc
+    args.criterion = mse_loss
     args.mdl = get_simple_model(in_features=5, hidden_features=20, out_features=1, num_layer=2)
     args.optimizer = torch.optim.Adam(args.mdl.parameters(), lr=1e-1)
     args.scheduler = torch.optim.lr_scheduler.ExponentialLR(args.optimizer, gamma=0.999, verbose=False)
+
+    # - print
+    print(f'{args.mdl=}')
+    uutils.print_args(args=args)
 
     # - train
     train_loss, train_acc = train_for_test(args, args.mdl, args.optimizer, args.scheduler)

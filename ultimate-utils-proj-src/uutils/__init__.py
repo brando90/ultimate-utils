@@ -163,14 +163,12 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
             # os.environ['WANDB_MODE'] = 'offline'
             import wandb
 
-            wandb.init(project=args.wandb_project, entity=args.wandb_entity)
+            wandb.init(project=args.wandb_project,
+                       entity=args.wandb_entity,
+                       job_type="job_type",
+                       group=args.wandb_group)
             # config = wandb.config
-            # wandb.config = namespace2dict(args)
             wandb.config.update(args)
-            # wandb.config.update({"dataset": "ab131"})
-
-
-            # wandb.watch(args.mdl)
     else:
         pass
     # - return
@@ -237,6 +235,10 @@ def parse_args_synth_agent():
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
     parser.add_argument('--wandb_project', type=str, default='playground')
     parser.add_argument('--wandb_entity', type=str, default='brando')
+    parser.add_argument('--wandb_group', type=str, default='experiment1', help='helps grouping experiment runs')
+    # parser.add_argument('--log_freq', type=int, default=10)
+    # parser.add_argument('--ckpt_freq', type=int, default=100)
+    # parser.add_argument('--mdl_watch_log_freq', type=int, default=100)
 
     # - parse arguments
     args = parser.parse_args()
@@ -655,6 +657,7 @@ def print_args(args: Namespace):
     :param args:
     :return:
     """
+    assert isinstance(args, Namespace), f'Error: args has to be of type Namespace but got {type(args)}'
     [print(f'{k, v}') for k, v in vars(args).items()]
 
 def pprint_dict(dic):

@@ -180,7 +180,7 @@ class Logger:
             grid: bool = True,
             show: bool = False,
 
-            return_fig: bool = False
+            wandb_log_fig = False
         ):
         if is_lead_worker(self.args.rank):
             # plt.style.use('default')
@@ -241,12 +241,17 @@ class Logger:
             fig.savefig(self.args.log_root / 'train_eval.svg')
             fig.savefig(self.args.log_root / 'train_eval.pdf')
             fig.savefig(self.args.log_root / 'train_eval.png')
-            if return_fig:
-                logging.warning("make sure you call plt.close('all') on figure, https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures")
-                return fig
-            else:
-                plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
+            if wandb_log_fig:
+                assert False, 'Not tested'
+                import wandb
+
+                wandb.log(data={'fig': fig}, step=args.it, commit=True)
+            # careful: even if you return the figure it seems it needs to be closed inside here anyway...so if you close it
+            # but return it who knows what might happen.
+            plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+
+# - logging function
 
 def log_train_val_stats(args: Namespace,
                     it: int,
@@ -296,6 +301,8 @@ def log_train_val_stats(args: Namespace,
         log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
         # log_2_tb(args, it, val_loss, val_acc, 'train')
         # log_2_tb(args, it, val_loss, val_acc, 'val')
+
+# - checkpointing function
 
 def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
               dirname: Union[None, Path] = None, ckpt_name: str = 'ckpt.pt'):
