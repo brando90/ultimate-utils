@@ -282,7 +282,7 @@ class SynthAgent:
 
         if avg_loss.item() < self.best_val_loss and val_ckpt:
             self.best_val_loss = avg_loss.item()
-            self._save(epoch_num, ckpt_name='mdl_best_val.pt')
+            self._save(epoch_num, ckpt_filename='mdl_best_val.pt')
         return avg_loss.item(), avg_acc.item()
 
     def evaluate(self):
@@ -391,11 +391,11 @@ class SynthAgent:
         self.log(f"\n{it_or_epoch}={it}: {train_loss=} {train_acc=}")
         self.log(f"{it_or_epoch}={it}: {val_loss=} {val_acc=}")
 
-    def save(self, epoch_num: int, dirname=None, ckpt_name='mdl.pt'):
+    def save(self, epoch_num: int, dirname=None, ckpt_filename='mdl.pt'):
         if is_lead_worker(self.args.rank):
-            self._save(epoch_num, dirname, ckpt_name)
+            self._save(epoch_num, dirname, ckpt_filename)
 
-    def _save(self, epoch_num: int, dirname=None, ckpt_name='mdl.pt'):
+    def _save(self, epoch_num: int, dirname=None, ckpt_filename='mdl.pt'):
         """
         Saves checkpoint for any worker.
         Intended use is to save by worker that got a val loss that improved.
@@ -416,7 +416,7 @@ class SynthAgent:
                     'args': pickable_args,
                     'mdl': mdl},
                    pickle_module=dill,
-                   f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
+                   f=dirname / ckpt_filename)  # f'mdl_{epoch_num:03}.pt'
 
     def log(self, string, flush=True):
         """ logs only if you are rank 0"""

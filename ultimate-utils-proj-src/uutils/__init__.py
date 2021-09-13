@@ -87,7 +87,8 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     assert args.training_mode in ['epochs', 'iterations']
 
     # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
-    args.validation = not args.no_validation
+    if hasattr(args, 'no_validation'):
+        args.validation = not args.no_validation
 
     # - distributed params
     args.rank = -1  # should be written by each worker with their rank, if not we are running serially
@@ -176,6 +177,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     else:
         pass
     # - return
+    uutils.print_args(args)
     return args
 
 def parse_args_synth_agent():
@@ -301,7 +303,7 @@ def parse_basic_meta_learning_args() -> Namespace:
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
     parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
     parser.add_argument('--wandb_entity', type=str, default='brando')
-    parser.add_argument('--wandb_group', type=str, default='experiment1', help='helps grouping experiment runs')
+    parser.add_argument('--wandb_group', type=str, default='experiment_debug', help='helps grouping experiment runs')
     # parser.add_argument('--wandb_log_freq', type=int, default=10)
     # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
     # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=100)
