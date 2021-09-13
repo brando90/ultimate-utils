@@ -79,6 +79,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     :return:
     """
     import torch
+    import logging
     from uutils.logger import Logger as uuLogger
     from torch.utils.tensorboard import SummaryWriter
 
@@ -93,7 +94,10 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     args.master_port = find_free_port()
 
     # - determinism
-    # uutils.torch_uu.make_code_deterministic(args.seed)
+    if hasattr(args, 'always_use_deterministic_algorithms'):
+        if args.always_use_deterministic_algorithms:
+            uutils.torch_uu.make_code_deterministic(args.seed)
+            logging.warning(f'Seed being ignored, seed value: {args.seed=}')
 
     # - get device name
     print(f'{args.seed=}')
@@ -102,8 +106,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     # - get cluster info (including hostname)
     load_cluster_jobids_to(args)
 
-    # - get log_root and related folders e.g. tb, etc
-    # create log root
+    # - get log_root
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
@@ -121,9 +124,10 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     # - get device name if possible
     try:
         args.gpu_name = torch.cuda.get_device_name(0)
-        print(f'\nargs.gpu_name = {args.gpu_name}\n')
     except:
-        args.gpu_name = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        args.gpu_name = device
+    print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
 
     # - save PID
     args.PID = str(os.getpid())
@@ -200,8 +204,8 @@ def parse_args_synth_agent():
     parser.add_argument('--num_its', type=int, default=-1)
     parser.add_argument('--training_mode', type=str, default='iterations')
     parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
-    parser.add_argument('--save_model_epochs', type=int, default=10,
-                        help='the number of epochs between model savings')
+    # parser.add_argument('--save_model_epochs', type=int, default=10,
+    #                     help='the number of epochs between model savings')
     parser.add_argument('--num_workers', type=int, default=-1,
                         help='the number of data_lib-loading threads (when running serially')
 
@@ -236,15 +240,78 @@ def parse_args_synth_agent():
     parser.add_argument('--wandb_project', type=str, default='playground')
     parser.add_argument('--wandb_entity', type=str, default='brando')
     parser.add_argument('--wandb_group', type=str, default='experiment1', help='helps grouping experiment runs')
-    # parser.add_argument('--log_freq', type=int, default=10)
-    # parser.add_argument('--ckpt_freq', type=int, default=100)
-    # parser.add_argument('--mdl_watch_log_freq', type=int, default=100)
+    # parser.add_argument('--wandb_log_freq', type=int, default=10)
+    # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
+    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=100)
 
     # - parse arguments
     args = parser.parse_args()
     return args
 
-def parse_args():
+def parse_basic_meta_learning_args() -> Namespace:
+    import argparse
+    import torch.nn as nn
+
+    parser = argparse.ArgumentParser()
+
+    # experimental setup
+    parser.add_argument('--debug', action='store_true', help='if debug')
+    parser.add_argument('--serial', action='store_true', help='if running serially')
+
+    parser.add_argument('--split', type=str, default='train', help=' train, val, test')
+    # this is the name used in synth agent, parser.add_argument('--data_set_path', type=str, default='', help='path to data set splits')
+    parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT', help='path to data set splits')
+
+    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+
+    parser.add_argument('--num_epochs', type=int, default=-1)
+    parser.add_argument('--num_its', type=int, default=-1)
+    parser.add_argument('--training_mode', type=str, default='iterations')
+    # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
+
+    # - for now default is 4 since meta-learning code is not parallizable right now.
+    parser.add_argument('--num_workers', type=int, default=4,
+                        help='the number of data_lib-loading threads (when running serially')
+
+    # parser.add_argument('--embed_dim', type=int, default=256)
+    # parser.add_argument('--nhead', type=int, default=8)
+    # parser.add_argument('--num_layers', type=int, default=1)
+    #
+    # # tactic label classifier
+    # parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
+
+    # optimization
+    # parser.add_argument('--optimizer', type=str, default='Adam')
+    # parser.add_argument('--learning_rate', type=float, default=1e-5)
+    # parser.add_argument('--num_warmup_steps', type=int, default=-1)
+    # parser.add_argument('--momentum', type=float, default=0.9)
+    # parser.add_argument('--batch_size', type=int, default=128)
+    # parser.add_argument('--l2', type=float, default=0.0)
+    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
+    #                     help='the number of steps before reducing the learning rate \
+    #                     (only applicable when no_validation == True)')
+    # parser.add_argument('--lr_reduce_patience', type=int, default=10)
+
+    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
+                        help='tries to make pytorch fully determinsitic')
+
+    # - wandb
+    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
+    parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
+    parser.add_argument('--wandb_entity', type=str, default='brando')
+    parser.add_argument('--wandb_group', type=str, default='experiment1', help='helps grouping experiment runs')
+    # parser.add_argument('--wandb_log_freq', type=int, default=10)
+    # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
+    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=100)
+
+    # - parse arguments
+    args = parser.parse_args()
+    return args
+
+
+def parse_args() -> Namespace:
     """
         Parses command line arguments
     """

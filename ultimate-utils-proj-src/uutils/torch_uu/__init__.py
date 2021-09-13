@@ -230,6 +230,15 @@ def process_batch_simple(args: Namespace, x_batch, y_batch):
         y_batch = y_batch.to(args.device)
     return x_batch, y_batch
 
+def process_meta_batch(args, batch):
+    if type(batch) == dict:
+        (spt_x, spt_y), (qry_x, qry_y) = batch["train"], batch["test"]
+    elif type(batch) == tuple or type(batch) == list:
+        spt_x, spt_y, qry_x, qry_y = batch
+    else:
+        raise ValueError(f'Not implemented how to process this batch of type {type(batch)}')
+    return spt_x.to(args.device), spt_y.to(args.device), qry_x.to(args.device), qry_y.to(args.device)
+
 # def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
 #     if isinstance(mdl, DistributedDataParallel):
 #         return mdl.module
@@ -1692,6 +1701,26 @@ class AverageMeter(object):
     def __str__(self):
         fmtstr = '{name} val:{val} avg:{avg}'
         return fmtstr.format(**self.__dict__)
+
+class StatsCollector(object):
+    """Computes stores the average and the std. """
+    def __init__(self):
+        pass
+
+    def __init__(self):
+        pass
+
+    def append(self, val: int):
+        pass
+
+    def compute_stats(self):
+        """Retrun avg and std """
+        pass
+
+    def __str__(self):
+        pass
+        # fmtstr = f'{name} val:{val} avg:{avg}'
+        # return fmtstr.format(**self.__dict__)
 
 def flatten2float_list(t: torch.Tensor) -> List[float]:
     """

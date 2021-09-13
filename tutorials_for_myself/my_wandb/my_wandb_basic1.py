@@ -81,19 +81,19 @@ def log_train_val_stats(args: Namespace,
     """
     from uutils.torch_uu.tensorboard import log_2_tb
     from matplotlib import pyplot as plt
+    import wandb
 
     # - is it epoch or iteration
     it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
     # if its
     total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
 
-    print(f'-- {it == total_its - 1}')
-    print(f'-- {it}')
-    print(f'-- {total_its}')
     if (it % log_freq == 0 or is_lead_worker(args.rank) or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        print('inside log')
         # - get eval stats
         val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
+
+        # - save args
+        uutils.save_args(args, args_filename='args.json')
 
         # - print
         args.logger.log('\n')
@@ -227,12 +227,11 @@ def debug_test():
 
 
 if __name__ == '__main__':
-    import os
-
-    # print(os.environ['WANDB_API_KEY'])
     import time
     start = time.time()
+    # - run experiment
     debug_test()
+    # - print success
     duration_secs = time.time() - start
     print(f"\nSuccess, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
     print('Done!\a')

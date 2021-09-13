@@ -254,17 +254,22 @@ class Logger:
 # - logging function
 
 def log_train_val_stats(args: Namespace,
-                    it: int,
+                        it: int,
 
-                    train_loss: float,
-                    train_acc: float,
+                        train_loss: float,
+                        train_acc: float,
 
-                    valid,
+                        valid,
 
-                    save_val_ckpt: bool = False,
-                    log_to_tb: bool = False,
-                    log_to_wandb: bool = False
-                    ):
+                        log_freq: int = 10,
+                        ckpt_freq: int = 50,
+                        mdl_watch_log_freq:int = 50,
+                        force_log: bool = False,  # e.g. at the final it/epoch
+
+                        save_val_ckpt: bool = False,
+                        log_to_tb: bool = False,
+                        log_to_wandb: bool = False
+                        ):
     """
 
     log train and val stats.
@@ -272,35 +277,49 @@ def log_train_val_stats(args: Namespace,
     Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
     """
     from uutils.torch_uu.tensorboard import log_2_tb
+    from matplotlib import pyplot as plt
+    import wandb
 
     # - is it epoch or iteration
-    it_or_epoch = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    # if its
+    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
 
-    # - get eval stats
-    val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
+    if (it % log_freq == 0 or is_lead_worker(args.rank) or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        # - get eval stats
+        val_loss, val_acc = valid(args, args.mdl, save_val_ckpt=save_val_ckpt)
 
-    # - print
-    args.logger.log('\n')
-    args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
-    args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
+        # - save args
+        uutils.save_args(args, args_filename='args.json')
 
-    # - record into stats collector
-    args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
-    args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
-    args.logger.save_experiment_stats_to_json_file()
-    args.logger.save_current_plots_and_stats()
-    save_model_as_string(args, args.mdl)
+        # - print
+        args.logger.log('\n')
+        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
 
-    # - log to wandb
-    if log_to_wandb:
-        pass
+        # - record into stats collector
+        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
+        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
+        args.logger.save_experiment_stats_to_json_file()
+        args.logger.save_current_plots_and_stats()
 
-    # - log to tensorboard
-    if log_to_tb:
-        log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
-        log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
-        # log_2_tb(args, it, val_loss, val_acc, 'train')
-        # log_2_tb(args, it, val_loss, val_acc, 'val')
+        # - log to wandb
+        if log_to_wandb:
+            if it == 0:
+                wandb.watch(args.mdl, args.criterion, log="all", log_freq=mdl_watch_log_freq)
+            wandb.log(data={'train loss': train_loss, 'train acc': train_acc, 'val loss': val_loss, 'val acc': val_acc}, step=it, commit=True)
+            # wandb.log(data={'it': it}, step=it, commit=True)
+            if it == total_its - 1:
+                pass
+
+        # - log to tensorboard
+        if log_to_tb:
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
+
+    # - log ckpt
+    if (it % ckpt_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        save_ckpt(args, args.mdl, args.optimizer)
 
 # - checkpointing function
 
