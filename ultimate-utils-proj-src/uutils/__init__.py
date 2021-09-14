@@ -542,6 +542,7 @@ def make_args_pickable(args: Namespace) -> Namespace:
 
     note: implementation not tested against deep copying.
 
+    todo - fix for meta learning, why does it say it's not pickable?
     """
     pickable_args = argparse.Namespace()
     # - go through fields in args, if they are not pickable make it a string else leave as it
