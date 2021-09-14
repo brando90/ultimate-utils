@@ -47,7 +47,6 @@ from typing import Union, Any
 
 import progressbar
 
-import uutils.logger
 from uutils.torch_uu.distributed import find_free_port
 
 
@@ -1085,7 +1084,7 @@ def namespace2dict(args: Namespace) -> dict:
 
 # -- tests
 
-def test_draw():
+def draw_test():
     # import pylab
     # import matplotlib.pyplot as plt
     import networkx as n
@@ -1105,14 +1104,14 @@ def test_draw():
     draw_nx_with_pygraphviz(g)
     draw_nx(g)
 
-def test_bfs():
+def bfs_test():
     # token requires two values due to how Lark works, ignore it
     ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
     print()
     # the key is that 5 should go first than 3,4 because it is BFS
     bfs(ast, print)
 
-def test_dfs():
+def dfs_test():
     print()
     # token requires two values due to how Lark works, ignore it
     ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
@@ -1131,7 +1130,7 @@ def test_dfs():
     # the key is that 3,4 should go first than 5 because it is DFS
     dfs_recursive(ast, print)
 
-def test_good_progressbar():
+def good_progressbar_test():
     import time
     bar = get_good_progressbar()
     for i in bar(range(100)):
@@ -1145,7 +1144,7 @@ def test_good_progressbar():
             time.sleep(1)
             bar.update(i)
 
-def test_xor():
+def xor_test():
     assert xor(0, 0) == False
     assert xor(0, 1) == True
     assert xor(1, 0) == True
@@ -1157,5 +1156,5 @@ if __name__ == '__main__':
     # test_draw()
     # test_dfs()
     # test_good_progressbar()
-    test_xor()
+    xor_test()
     print('Done!\a')

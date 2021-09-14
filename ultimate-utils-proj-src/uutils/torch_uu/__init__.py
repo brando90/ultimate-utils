@@ -51,6 +51,8 @@ import gc
 
 import urllib.request
 
+from pprint import pprint
+
 # uutils
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -665,7 +667,7 @@ def resume_ckpt_meta_learning(args):
         args = args_recovered
         return args, meta_learner
 
-def test_ckpt_meta_learning(args, meta_learner, verbose=False):
+def ckpt_meta_learning_test(args, meta_learner, verbose=False):
     path_to_ckpt = args.logger.current_logs_path
     path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
@@ -690,7 +692,7 @@ def test_ckpt_meta_learning(args, meta_learner, verbose=False):
     return
 
 
-def test_ckpt(args, verbose=False):
+def ckpt_test(args, verbose=False):
     path_to_ckpt = args.logger.current_logs_path
     path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
@@ -1243,7 +1245,7 @@ def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch'):
         cos = nn.CosineSimilarity(dim=dim)
         sim = cos(x1, x2)
     elif sim_type == 'op_torch':
-        sim = orthogonal_procrustes(x1, x2)
+        sim = orthogonal_procrustes_similairty(x1, x2)
     else:
         raise ValueError(f'Not implemented sim_type={sim_type}')
     return sim
@@ -1297,11 +1299,17 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     Computes the orthoginal procrustes distance.
     If normalized then the answer is divided by 2 so that it's in the interval [0, 1].
 
+    Expected input:
+        - two matrices e.g.
+            - two weight matrices of size [num_weights1, num_weights2]
+            - or two matrices of activations [batch_size, dim_of_layer] (used by paper [1])
+
     d_proc(A*, B) = ||A||^2_F + ||B||^2_F - 2||A^T B||_*
     || . ||_* = nuclear norm = sum of singular values sum_i sig(A)_i = ||A||_*
 
     Note: - this only works for matrices. So it's works as a metric for FC and transformers (or at least previous work
     only used it for transformer [1] which have FC and no convolutions.
+    - note,
 
     ref:
     - [1] https://arxiv.org/abs/2108.01661
@@ -1313,7 +1321,8 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     :return:
     """
     from torch.linalg import norm
-    x1x2 = torch.bmm(x1, x2)
+    # x1x2 = torch.bmm(x1, x2)
+    x1x2 = x1.t() @ x2
     d: Tensor = norm(x1, 'fro') + norm(x2, 'fro') - 2 * norm(x1x2, 'nuc')
     d: Tensor = d / 2.0 if normalize else d
     return d
@@ -1329,8 +1338,8 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize: bool = F
     :return:
     """
     d = orthogonal_procrustes_distance(x1, x2, normalize)
-    d: Tensor = 1.0 - d if normalize else 2.0 - d
-    return d
+    sim: Tensor = 1.0 - d if normalize else 2.0 - d
+    return sim
 
 def tensorify(lst):
     """
@@ -2048,7 +2057,7 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
 
 # -- tests
 
-def test_ned():
+def ned():
     import torch.nn as nn
 
     # dim = 1  # apply cosine accross the second dimension/feature dimension
@@ -2064,7 +2073,7 @@ def test_ned():
         print(ned_tensor.size())
         #print(ned_torch(x1, x2, dim=dim))
 
-def test_tensorify():
+def tensorify():
     t = [1, 2, 3]
     print(tensorify(t).size())
     tt = [t, t, t]
@@ -2072,14 +2081,14 @@ def test_tensorify():
     ttt = [tt, tt, tt]
     print(tensorify(ttt))
 
-def test_compressed_r2_score():
+def compressed_r2_score():
     y = torch.randn(10, 1)
     y_pred = 2 * y
     c_r2 = compressed_r2_score(y, y_pred)
     c_r2_torch = compressed_r2_score_from_torch(y, y_pred)
     assert(c_r2_torch == c_r2)
 
-def test_topk_accuracy_and_accuracy():
+def topk_accuracy_and_accuracy():
     import torch
     import torch.nn as nn
 
@@ -2102,14 +2111,14 @@ def test_topk_accuracy_and_accuracy():
     assert(acc1 == acc1_)
     assert(acc1_ == acc_top1)
 
-def test_split_test():
+def split_test():
     files = list(range(10))
     train, test = split_two(files)
     print(train, test)
     train, val, test = split_three(files)
     print(train, val, test)
 
-def test_split_data_train_val_test():
+def split_data_train_val_test():
     from sklearn.model_selection import train_test_split
 
     # overall split 85:10:5
@@ -2133,7 +2142,7 @@ def test_split_data_train_val_test():
     print(len(X_val))
     print(len(X_test))
 
-def test_simple_determinism():
+def simple_determinism():
     args = Namespace(seed=0, deterministic_alg=True)
     make_code_deterministic(args.seed, args.deterministic_alg)
     #
@@ -2142,13 +2151,32 @@ def test_simple_determinism():
     out = x @ x
     print(f'{out.sum()}')
 
-def test_op():
+def op_test():
     from uutils.torch_uu.models import hardcoded_3_layer_model
 
-    mdl = hardcoded_3_layer_model(5, 1)
-
-
-
+    force = True
+    # force = False
+    mdl1 = hardcoded_3_layer_model(5, 1)
+    mdl2 = hardcoded_3_layer_model(5, 1)
+    batch_size = 4
+    X = torch.randn(batch_size, 5)
+    import copy
+    from uutils.torch_uu import l2_sim_torch
+    # get [..., s_l, ...] sim per layer (for this data set)
+    modules = zip(mdl1.named_children(), mdl2.named_children())
+    sims_per_layer = []
+    out1 = X
+    out2 = X
+    for (name1, m1), (name2, m2) in modules:
+        # if name1 in layer_names:
+        if 'ReLU' in name1 or force:  # only compute on activation
+            out1 = m1(out1)
+            m2_callable = copy.deepcopy(m1)
+            m2_callable.load_state_dict(m2.state_dict())
+            out2 = m2_callable(out2)
+            sim = l2_sim_torch(out1, out2, sim_type='op_torch')
+            sims_per_layer.append((name1,sim))
+    pprint(sims_per_layer)
 
 # -- __main__
 
@@ -2157,5 +2185,6 @@ if __name__ == '__main__':
     # test_tensorify()
     # test_compressed_r2_score()
     # test_topk_accuracy_and_accuracy()
-    test_simple_determinism()
+    # test_simple_determinism()
+    op_test()
     print('Done\a')
