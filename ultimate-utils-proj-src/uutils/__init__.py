@@ -79,6 +79,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     """
     import torch
     import logging
+    import uutils
     from uutils.logger import Logger as uuLogger
     from torch.utils.tensorboard import SummaryWriter
 

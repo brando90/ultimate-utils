@@ -1011,7 +1011,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
     return norm**(1/p), abs_err
 
-def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_dist_type='pwcca'):
+def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dist_type='pwcca'):
     # print(cca_size)
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
@@ -1027,14 +1027,11 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_dis
         x = meta_batch
         mdl1(x)
         mdl2(x)
-    # dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
-    dist = hook1.distance(hook2, size=cca_size)
-    # if cxa_dist_type == 'lincka':
-    #     sim = dist  # only true for cka for this library
-    #     dist = 1 - sim  # since dist = 1 - sim but cka is outputing in this library the sim
+    dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
+    # dist = hook1.distance(hook2, size=cca_size)
     return dist
 
-def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=2, cxa_sim_type='pwcca'):
+def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_sim_type='pwcca'):
     dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
     return 1 - dist
 
@@ -1238,7 +1235,7 @@ def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, c
 #         mdl1(x)
 #         mdl2(x)
 
-def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch'):
+def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch') -> Tensor:
     if sim_type == 'nes_torch':
         sim = nes_torch(x1, x2, dim)
     elif sim_type == 'cosine_torch':
@@ -1298,6 +1295,7 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     """
     Computes the orthoginal procrustes distance.
     If normalized then the answer is divided by 2 so that it's in the interval [0, 1].
+    Outputs a single number with no dimensionality.
 
     Expected input:
         - two matrices e.g.
@@ -1315,6 +1313,13 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     - [1] https://arxiv.org/abs/2108.01661
     - [2] https://discuss.pytorch.org/t/is-there-an-orthogonal-procrustes-for-pytorch/131365
     - [3] https://ee227c.github.io/code/lecture5.html#nuclear-norm
+
+    sample output (see test) - so it outputs a number inside a tensor obj:
+    [('fc0', tensor(5.7326, grad_fn=<RsubBackward1>)),
+     ('ReLU0', tensor(2.6101, grad_fn=<RsubBackward1>)),
+     ('fc1', tensor(3.8898, grad_fn=<RsubBackward1>)),
+     ('ReLU2', tensor(1.3644, grad_fn=<RsubBackward1>)),
+     ('fc3', tensor(1.5007, grad_fn=<RsubBackward1>))]
 
     :param x1:
     :param x2:
@@ -1616,103 +1621,6 @@ def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_nam
         print(f'{k}')
         similarities[k] = tensorify(v)
     return similarities
-
-def compute_sim_for_current_task(self, task):
-    import higher
-    # print(f'start: {torch_uu.multiprocessing.current_process()}')
-    # unpack args pased via checking global variables, oh no!
-    layer_names = self.layer_names
-    inner_opt = self.inner_opt
-    # unpack args
-    spt_x_t, spt_y_t, qry_x_t, qry_y_t = task
-    # compute sims
-    with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
-                              track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
-        diffopt.fo = self.fo
-        for i_inner in range(self.args.nb_inner_train_steps):
-            fmodel.train()
-            # base/child model forward pass
-            spt_logits_t = fmodel(spt_x_t)
-            inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
-            # inner-opt update
-            diffopt.step(inner_loss)
-
-        # get similarities cca, cka, nes, cosine and nes_output
-        fmodel.eval()
-        self.base_model.eval()
-
-        # get CCA & CKA per layer (T by 1 by L)
-        x = qry_x_t
-        if torch.cuda.is_available():
-            x = x.cuda()
-        cca = self.get_cxa_similarities_per_layer(self.base_model, fmodel, x, layer_names,
-                                                  sim_type='pwcca')  # 1 by T
-        cka = self.get_cxa_similarities_per_layer(self.base_model, fmodel, x, layer_names,
-                                                  sim_type='lincka')  # 1 by T
-
-        # get l2 sims per layer (T by L by k_eval)
-        nes = self.get_l2_similarities_per_layer(self.base_model, fmodel, qry_x_t, layer_names,
-                                                 sim_type='nes_torch')
-        cosine = self.get_l2_similarities_per_layer(self.base_model, fmodel, qry_x_t, layer_names,
-                                                    sim_type='cosine_torch')
-
-        # (T by 1)
-        y = self.base_model(qry_x_t)
-        y_adapt = fmodel(qry_x_t)
-        # if not torch_uu.cuda.is_available():
-        #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
-        # dim=0 because we have single numbers and we are taking the NES in the batch direction
-        nes_output = torch.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
-
-        query_loss = self.args.criterion(y, y_adapt).item()
-    # print(f'done: {torch_uu.multiprocessing.current_process()}')
-    # sims = [cca, cka, nes, cosine, nes_output, query_loss]
-    sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
-    # sims = [sim.detach() for sim in sims]
-    sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
-    return sims
-
-# -- distance comparisons for SL
-
-# def get_distance_of_inits(args, batch, f1, f2):
-#     layer_names = args.layer_names
-#     batch_x, batch_y = batch
-#     # get CCA & CKA per layer (T by 1 by L)
-#     cca = get_cxa_distances_per_layer(f1, f2, batch_x, layer_names, dist_type='pwcca')  # 1 by T
-#     cka = get_cxa_distances_per_layer(f1, f1, batch_x, layer_names, dist_type='lincka')  # 1 by T
-#
-#     # get l2 sims per layer (T by L by k_eval)
-#     # nes = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
-#     #                                          sim_type='nes_torch')
-#     # cosine = self.get_l2_similarities_per_layer(f1, fmodel, qry_x_t, layer_names,
-#     #                                             sim_type='cosine_torch')
-#     #
-#     # # (T by 1)
-#     # y = f1(qry_x_t)
-#     # y_adapt = fmodel(qry_x_t)
-#     # # if not torch_uu.cuda.is_available():
-#     # #     y, y_adapt = y.cpu().detach().numpy(), y_adapt.cpu().detach().numpy()
-#     # # dim=0 because we have single numbers and we are taking the NES in the batch direction
-#     # nes_output = torch_uu.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
-#     #
-#     # query_loss = self.args.criterion(y, y_adapt).item()
-#     # print(f'done: {torch_uu.multiprocessing.current_process()}')
-#     # sims = [cca, cka, nes, cosine, nes_output, query_loss]
-#     sims = {'cca': cca, 'cka': cka, 'nes': nes, 'cosine': cosine, 'nes_output': nes_output, 'query_loss': query_loss}
-#     # sims = [sim.detach() for sim in sims]
-#     sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
-#     return sims
-
-def get_cxa_distances_per_layer(mdl1, mdl2, X, layer_names, sim_type, dist_type='pwcca'):
-    # get [..., s_l, ...] cca sim per layer (for this data set)
-    from uutils.torch_uu import cxa_sim
-
-    sims_per_layer = []
-    for layer_name in layer_names:
-        # sim = cxa_sim(mdl1, mdl2, X, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
-        sim = cxa_dist(mdl1, mdl2, X, layer_name, iters=1, cxa_sim_type=sim_type)
-        sims_per_layer.append(sim)
-    return sims_per_layer  # [..., s_l, ...]_l
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
