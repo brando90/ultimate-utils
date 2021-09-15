@@ -4426,7 +4426,7 @@ with open('data.txt', 'w') as outfile:
 #         - https://www.youtube.com/watch?v=UO98lJQ3QGI
 #         - https://github.com/CoreyMSchafer/code_snippets/blob/master/Python/Matplotlib/01-Introduction/finished_code.py
 #     """
-#     from matplotlib import pyplot as plt
+#     from matplotlib import my_pyplot as plt
 #
 #     plt.xkcd()
 #
@@ -4469,7 +4469,7 @@ with open('data.txt', 'w') as outfile:
 #     """
 #
 #     import pandas as pd
-#     from matplotlib import pyplot as plt
+#     from matplotlib import my_pyplot as plt
 #
 #     plt.style.use('seaborn')
 #
@@ -4767,7 +4767,7 @@ with open('data.txt', 'w') as outfile:
 # Demo of the errorbar function, including upper and lower limits
 # """
 # import numpy as np
-# import matplotlib.pyplot as plt
+# import matplotlib.my_pyplot as plt
 #
 # import matplotlib as mpl
 #
@@ -6161,7 +6161,7 @@ with open('data.txt', 'w') as outfile:
 # # f_avg: PLinReg vs MAML
 #
 # import numpy as np
-# from matplotlib import pyplot as plt
+# from matplotlib import my_pyplot as plt
 # from pathlib import Path
 #
 # datas_std = [0.1, 0.125, 0.1875, 0.2]
@@ -6481,7 +6481,7 @@ with open('data.txt', 'w') as outfile:
 # # %%
 #
 # from pathlib import Path
-# from matplotlib import pyplot as plt
+# from matplotlib import my_pyplot as plt
 #
 # import numpy as np
 #

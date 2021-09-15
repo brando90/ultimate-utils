@@ -35,8 +35,6 @@ from pandas import DataFrame
 
 from socket import gethostname
 
-import pygraphviz as pgv
-
 from lark import Lark, tree, Tree, Token
 
 from collections import deque
@@ -938,6 +936,7 @@ def draw_nx_with_pygraphviz(g, path2file=None, save_file=False):
     draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file, save_file)
 
 def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=None, save_file=False):
+    import pygraphviz as pgv
     import matplotlib.pyplot as plt
     import matplotlib.image as mpimg
 
@@ -1087,7 +1086,7 @@ def namespace2dict(args: Namespace) -> dict:
 
 def draw_test():
     # import pylab
-    # import matplotlib.pyplot as plt
+    # import matplotlib.my_pyplot as plt
     import networkx as n
     # https://stackoverflow.com/questions/20133479/how-to-draw-directed-graphs-using-networkx-in-python
     g = nx.DiGraph()
