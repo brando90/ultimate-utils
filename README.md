@@ -22,27 +22,50 @@ conda create -n uutils_env python=3.9
 conda activate uutils_env
 ```
 
-Due to a depedency on `pygraphviz` you will likely need to install `graphviz` first. Next, install `graphviz`. 
-On mac, `brew install graphviz`. 
-On Ubuntu, `sudo apt install graphviz`.
-After graphviz is install, install uutils in edibable mode and all it's depedencies with pip:
+Then install uutils in edibable mode and all it's depedencies with pip in the currently activated conda environment:
 
 ```
 pip install -e ~/ultimate-utils/ultimate-utils-proj-src
 ```
 
-you can also do `conda develop ~/ultimate-utils/ultimate-utils-proj-src` but it won't install the depedencies.
-Now you should be able to use uutils! To test it do:
+No error should show up from pip.
+To test the installation uutils do:
 
 ```
 python -c "import uutils; uutils.hello()"
 ```
 
-should print:
+it should print:
 
 ```
 hello from uutitls __init__.pyt
 ```
+
+### [Adavanced] If using pygraphviz functions 
+
+If you plan to use the functions that depend on `pygraphviz` you will likely need to install `graphviz` first. 
+On mac, `brew install graphviz`. 
+On Ubuntu, `sudo apt install graphviz`. 
+
+Then install `pygraphviz` with 
+```
+pip install pygraphviz
+```
+
+If the previous steps didn't work you can also try installing using conda
+(which seems to install both `pygraphviz and `graphviz`):
+```
+conda install -y -c conda-forge pygraphviz
+```
+to see details on that approach see the following stack overflow link question: 
+https://stackoverflow.com/questions/67509980/how-does-one-install-pygraphviz-on-a-hpc-cluster-without-errors-even-when-graphv
+
+To test if pygraphviz works do:
+```
+python -c "import pygraphviz"
+```
+
+Nothing should return if successful.
 
 ## Contributing
 
