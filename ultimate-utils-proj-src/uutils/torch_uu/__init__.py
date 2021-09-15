@@ -991,7 +991,7 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
 
-#
+# - distances
 
 def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     """
@@ -1011,7 +1011,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
     return norm**(1/p), abs_err
 
-def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dist_type='pwcca'):
+def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dist_type='pwcca') -> float:
     # print(cca_size)
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
@@ -1027,9 +1027,8 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dis
         x = meta_batch
         mdl1(x)
         mdl2(x)
-    dist = hook1.distance(hook2, size=cca_size, cca_distance='pwcca')
-    # dist = hook1.distance(hook2, size=cca_size)
-    return dist
+    dist = hook1.distance(hook2, size=cca_size)
+    return float(dist)
 
 def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_sim_type='pwcca'):
     dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
@@ -1247,7 +1246,7 @@ def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch') -> Tensor:
         raise ValueError(f'Not implemented sim_type={sim_type}')
     return sim
 
-def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> torch.Tensor:
+def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
     """
     Normalized eucledian distance in pytorch.
 
@@ -1288,7 +1287,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> torch.Tens
         ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
-def nes_torch(x1, x2, dim=1, eps=1e-8):
+def nes_torch(x1, x2, dim: int =1, eps: float =1e-8) -> Tensor:
     return 1 - ned_torch(x1, x2, dim, eps)
 
 def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = False) -> Tensor:
@@ -1345,6 +1344,24 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize: bool = F
     d = orthogonal_procrustes_distance(x1, x2, normalize)
     sim: Tensor = 1.0 - d if normalize else 2.0 - d
     return sim
+
+def normalize_matrix_for_similarity(X: Tensor, dim: int =1) -> Tensor:
+    """
+    Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
+    Assumption is that X is of size [n, p].
+    Otherwise, specify which simension to normalize with dim.
+
+    ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
+
+    :param X:
+    :return:
+    """
+    from torch.linalg import norm
+    X_star: Tensor = X - X.mean(dim=dim) / norm(X, "fro")
+    return X_star
+
+def normalize_matrix_for_distance(X: Tensor) -> Tensor:
+    return normalize_matrix_for_similarity(X)
 
 def tensorify(lst):
     """
@@ -1561,66 +1578,6 @@ def get_mean_std_pairs(metric: dict):
     return values_in_columns
 
 # -- similarity comparisons for MAML
-
-def parallel_functional_similarities(self, spt_x, spt_y, qry_x, qry_y, layer_names, iter_tasks=None):
-    """
-    :return: sims = dictionary of metrics of tensors
-    sims = {
-        (cxa) cca, cka = tensor([I, L]),
-        (l2) nes, cosine = tensor([I, L, K_eval])
-        nes_output = tensor([I])
-        }
-
-    Important note:
-    -When a Tensor is sent to another process, the Tensor data is shared. If torch_uu.Tensor.grad is not None,
-        it is also shared.
-    - After a Tensor without a torch_uu.Tensor.grad field is sent to the other process,
-        it creates a standard process-specific .grad Tensor that is not automatically shared across all processes,
-        unlike how the Tensor’s data has been shared.
-        - this is good! that way when different tasks are being adapted with MAML, their gradients don't "crash"
-    - above from docs on note box: https://pytorch.org/docs/stable/notes/multiprocessing.html
-
-    Note:
-        - you probably do not have to call share_memory() but it's probably safe to do so. Since docs say the following:
-            Moves the underlying storage to shared memory. This is a no-op if the underlying storage is already in
-            shared memory and for CUDA tensors. Tensors in shared memory cannot be resized.
-            https://pytorch.org/docs/stable/tensors.html#torch.Tensor.share_memory_
-
-    To increase file descriptors
-        ulimit -Sn unlimited
-    """
-    # to have shared memory tensors
-    self.base_model.share_memory()
-    # this is needed so that each process has access to the layer names needed to compute sims, a bit ugly oh well.
-    self.layer_names = layer_names
-
-    # compute similarities in parallel
-    # spt_x.share_memory_(), spt_y.share_memory_(), qry_x.share_memory_(), qry_y.share_memory_()
-    meta_batch_size = spt_x.size(0)
-    iter_tasks = meta_batch_size if iter_tasks is None else min(iter_tasks, meta_batch_size)
-    batch_of_tasks = [(spt_x[t], spt_y[t], qry_x[t], qry_y[t]) for t in range(iter_tasks)]
-
-    # num_procs = iter_tasks
-    torch.multiprocessing.set_sharing_strategy('file_system')
-    # num_procs = 8
-    num_procs = torch.multiprocessing.cpu_count() - 2
-    print(f'num_procs in pool: {num_procs}')
-    with Pool(num_procs) as pool:
-        sims_from_pool = pool.map(self.compute_sim_for_current_task, batch_of_tasks)
-
-    # sims is an T by L lists of lists, i.e. each row corresponds to similarities for a specific task for all layers
-    sims = {'cca': [], 'cka': [], 'nes': [], 'cosine': [], 'nes_output': [], 'query_loss': []}
-    for similiarities_single_dict in sims_from_pool:  # for each result from the multiprocessing result, place in the right sims place
-        for metric, s in similiarities_single_dict.items():
-            sims[metric].append(s)
-
-    # convert everything to torch_uu tensors
-    # sims = {k: tensorify(v) for k, v in sims.items()}
-    similarities = {}
-    for k, v in sims.items():
-        print(f'{k}')
-        similarities[k] = tensorify(v)
-    return similarities
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -1962,6 +1919,30 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                 'mdl': mdl},
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
+
+def get_layer_names_to_do_sim_analysis(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
+    """
+    Get the layers to do the similarity analysis.
+    By default always include the last layer because it's the users job to either exclude it when doing a layer-wise
+    average or removing it or otherwise.
+
+    :param args:
+    :param include_final_layer_in_lst:
+    :return:
+    """
+    from uutils.torch_uu.distributed import is_lead_worker
+    layer_names: list = []
+    for name, m in args.meta_learner.base_model.named_modules():
+        # - to do analysis on (non-linear) activations
+        if 'relu' in name:
+            layer_names.append(name)
+        # - to do analysis on final layer
+        if include_final_layer_in_lst:
+            if 'fc4_final_l2' in name:
+                layer_names.append(name)
+    if is_lead_worker(args.rank):
+        print(layer_names)
+    return layer_names
 
 # -- tests
 
