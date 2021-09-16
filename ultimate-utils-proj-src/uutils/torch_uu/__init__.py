@@ -1918,7 +1918,7 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
 
-def get_layer_names_to_do_sim_analysis(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
+def get_layer_names_to_do_sim_analysis_relu(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
     Get the layers to do the similarity analysis.
     By default always include the last layer because it's the users job to either exclude it when doing a layer-wise
@@ -1941,6 +1941,216 @@ def get_layer_names_to_do_sim_analysis(args: Namespace, include_final_layer_in_l
     if is_lead_worker(args.rank):
         print(layer_names)
     return layer_names
+
+def get_layer_names_to_do_sim_analysis_bn(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
+    """
+    Get the layers to do the similarity analysis.
+    By default always include the last layer because it's the users job to either exclude it when doing a layer-wise
+    average or removing it or otherwise.
+
+    :param args:
+    :param include_final_layer_in_lst:
+    :return:
+    """
+    from uutils.torch_uu.distributed import is_lead_worker
+    layer_names: list = []
+    for name, m in args.meta_learner.base_model.named_modules():
+        # - to do analysis on (non-linear) activations
+        if 'bn' in name:
+            layer_names.append(name)
+        # - to do analysis on final layer
+        if include_final_layer_in_lst:
+            if 'fc4_final_l2' in name:
+                layer_names.append(name)
+    if is_lead_worker(args.rank):
+        print(layer_names)
+    return layer_names
+
+def get_layer_names_to_do_sim_analysis_fc(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
+    """
+    Get the layers to do the similarity analysis.
+    By default always include the last layer because it's the users job to either exclude it when doing a layer-wise
+    average or removing it or otherwise.
+
+    :param args:
+    :param include_final_layer_in_lst:
+    :return:
+    """
+    from uutils.torch_uu.distributed import is_lead_worker
+    layer_names: list = []
+    for name, m in args.meta_learner.base_model.named_modules():
+        # - to do analysis on (non-linear) activations
+        if 'fc' in name:
+            layer_names.append(name)
+    # - remove final element if user specified it
+    L = len(layer_names)
+    if not include_final_layer_in_lst:
+        for i, name in enumerate(layer_names):
+            if 'fc4_final_l2' in name:
+                layer_names.pop(i)
+        assert len(layer_names) == L - 1
+    if is_lead_worker(args.rank):
+        print(layer_names)
+    return layer_names
+
+def summarize_similarities(args: Namespace, sims: dict) -> dict:
+    """
+    Summarize similarity stats by computing the true expecations we care about.
+    In particular wrt to tasks (and query examples).
+
+    Note: returns a new dict with only the metrics we care about.
+    """
+    summarized_sim: dict = {}
+    T, L = sims['cca'].size()
+    # -- all layer stats
+    # - compute means
+    mean_summarized_sim: dict = {}
+    assert T == args.meta_batch_size_eval
+    # [T, L] -> [L], compute expectation per task for each layer
+    mean_summarized_sim['cca'] = sims['cca'].mean(dim=0)
+    mean_summarized_sim['cka'] = sims['cka'].mean(dim=0)
+    mean_summarized_sim['op'] = sims['op'].mean(dim=0)
+    assert mean_summarized_sim['cca'].size() == torch.Size([L])
+    # [T] -> [1], compute expectation per task
+    mean_summarized_sim['nes'] = sims['nes'].mean(dim=[0, 2])
+    mean_summarized_sim['nes_output'] = sims['nes_output'].mean()
+    mean_summarized_sim['query_loss'] = sims['query_loss'].mean()
+    assert mean_summarized_sim['nes_output'].size() == torch.Size([])
+    # - compute stds
+    std_summarized_sim: dict = {}
+    assert T == args.meta_batch_size_eval
+    # [T, L] -> [L], compute expectation per task for each layer
+    std_summarized_sim['cca'] = sims['cca'].std(dim=0)
+    std_summarized_sim['cka'] = sims['cka'].std(dim=0)
+    std_summarized_sim['op'] = sims['op'].std(dim=0)
+    assert std_summarized_sim['cca'].size() == torch.Size([L])
+    # [T] -> [1], compute expectation per task
+    std_summarized_sim['nes'] = sims['nes'].std(dim=[0, 2])
+    std_summarized_sim['nes_output'] = sims['nes_output'].std()
+    std_summarized_sim['query_loss'] = sims['query_loss'].std()
+    assert std_summarized_sim['nes_output'].size() == torch.Size([])
+
+    # -- rep stats
+    mean_summarized_rep_sim: dict = {}
+    std_summarized_rep_sim: dict = {}
+    mean_summarized_rep_sim['cca'] = sims['cca'][:, :-1].mean()
+    mean_summarized_rep_sim['cka'] = sims['cka'][:, :-1].mean()
+    mean_summarized_rep_sim['op'] = sims['op'][:, :-1].mean()
+    mean_summarized_rep_sim['nes'] = sims['nes'][:, :-1].mean()
+    assert mean_summarized_rep_sim['cca'].size() == torch.Size([])
+    std_summarized_rep_sim['cca'] = sims['cca'][:, :-1].std()
+    std_summarized_rep_sim['cka'] = sims['cka'][:, :-1].std()
+    std_summarized_rep_sim['op'] = sims['op'][:, :-1].std()
+    std_summarized_rep_sim['nes'] = sims['nes'][:, :-1].std()
+    assert std_summarized_rep_sim['cca'].size() == torch.Size([])
+    return mean_summarized_sim, std_summarized_sim, mean_summarized_rep_sim, std_summarized_rep_sim
+
+# def layered_
+
+def log_train_val_stats_no_custom_step(args: Namespace,
+                        it: int,
+
+                        train_loss: float,
+                        train_acc: float,
+
+                        valid,
+
+                        bar,
+
+                        log_freq: int = 10,
+                        ckpt_freq: int = 50,
+                        mdl_watch_log_freq: int = 50,
+                        force_log: bool = False,  # e.g. at the final it/epoch
+
+                        save_val_ckpt: bool = False,
+                        log_to_tb: bool = False,
+                        log_to_wandb: bool = False
+                        ):
+    """
+    Log train and val stats where it is iteration or epoch step.
+
+    Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
+    """
+    import wandb
+    import uutils
+    from uutils.torch_uu.tensorboard import log_2_tb, log_2_tb_metalearning, log_2_tb_supervisedlearning
+    from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
+
+    # - is it epoch or iteration
+    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+
+    # if its
+    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
+
+    if (it % log_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        # - get eval stats
+        val_loss, val_acc = valid(args, save_val_ckpt=save_val_ckpt)
+
+        # - save args
+        uutils.save_args(args, args_filename='args.json')
+
+        # - print
+        args.logger.log('\n')
+        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
+
+        # - record into stats collector
+        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
+        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
+        args.logger.save_experiment_stats_to_json_file()
+        args.logger.save_current_plots_and_stats()
+
+        # - log to wandb
+        if log_to_wandb:
+            if it == 0:
+                wandb.watch(args.base_model, args.criterion, log="all", log_freq=mdl_watch_log_freq)
+            wandb.log(data={'train loss': train_loss,
+                            'train acc': train_acc,
+                            'val loss': val_loss,
+                            'val acc': val_acc},
+                      step=it, commit=True)
+            # wandb.log(data={'it': it}, step=it, commit=True)
+            if it == total_its - 1:
+                pass
+
+        # - log to tensorboard
+        if log_to_tb:
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'val')
+
+        # - update progress bar at the end
+        bar.update(it)
+
+    # - log ckpt
+    if (it % ckpt_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        _save_for_meta_learning(args)
+
+def _save_for_meta_learning(args, ckpt_filename='ckpt.pt'):
+    import uutils
+    from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
+    if is_lead_worker(args.rank):
+        args.logger.save_current_plots_and_stats()
+        # - ckpt
+        assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
+        args_pickable = uutils.make_args_pickable(args)
+        args.meta_learner.args = args_pickable
+        f: nn.Module = get_model_from_ddp(args.base_model)
+        # pickle vs torch_uu.save https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
+        torch.save({'training_mode': args.training_mode,  # its or epochs
+                    'it': args.it,
+                    'epoch_num': args.epoch_num,
+                    # 'args': args_pickable,
+                    # 'meta_learner': args.meta_learner,
+                    'meta_learner_str': str(args.meta_learner),
+                    # 'f': f,
+                    'f_state_dict': f.state_dict(),
+                    'f_str': str(f),
+                    # 'f_modules': f._modules,
+                    # 'f_modules_str': str(f._modules),
+                    'outer_opt_state_dict': args.outer_opt.state_dict()
+                    }, args.log_root / ckpt_filename)
+
+
 
 # -- tests
 

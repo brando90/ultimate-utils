@@ -84,11 +84,28 @@ class Logger:
         """
         if is_lead_worker(self.args.rank):
             # - guarantees it prints to console
+            # from pprint import pprint
+            # pprint(msg)
             print(msg, flush=flush)
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console
             if log_file_name is not None:
                 print(msg, file=self.args.log_root / log_file_name, flush=flush)
+
+    # def pretty_log(self, obj: Any):
+    #     """
+    # better to use
+    #     Good for printing dictionaries.
+    #     :param obj:
+    #     :return:
+    #     """
+    #     from pprint import pprint
+    #     if is_lead_worker(self.args.rank):
+    #         pprint(obj)
+    #         # # - to make sure it prints to the logger file too not just to console
+    #         # if log_file_name is not None:
+    #         #     print(msg, file=self.args.log_root / log_file_name, flush=True)
+
 
     def record_train_stats_stats_collector(self, it: int, loss: float, acc: float):
         """
