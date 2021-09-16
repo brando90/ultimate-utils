@@ -171,7 +171,7 @@ class SynthAgent:
                         self.save(self.args.it)
 
                 # -- compute halting condition (if not training for total its then check if converged, else continue training until number its has been met)
-                halt: bool = avg_acc.item() >= acc_tolerance or avg_loss.item() <= train_loss_tolerance if args.num_its == -1 else self.args.it >= args.num_its
+                halt: bool = avg_acc.item() >= acc_tolerance or avg_loss.item() <= train_loss_tolerance if args.num_its == -1 else self.args.it >= args.num_its - 1
                 # -- halt if halting condition met
                 if halt or args.debug:
                     if self.is_lead_worker():

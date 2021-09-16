@@ -105,3 +105,58 @@ bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
 for i in range(20):
     time.sleep(0.1)
     bar.update(i)
+
+#%%
+
+
+import time
+import progressbar
+
+bar = progressbar.ProgressBar(max_value=5)
+for i in range(5):
+    time.sleep(1)
+    bar.update(i)
+    print(f'\n{i=}')
+
+"""
+N/A% (0 of 5) |                          | Elapsed Time: 0:00:00 ETA:  --:--:--
+i=0
+ 20% (1 of 5) |#####                     | Elapsed Time: 0:00:01 ETA:   0:00:04
+i=1
+ 40% (2 of 5) |##########                | Elapsed Time: 0:00:02 ETA:   0:00:03
+i=2
+ 60% (3 of 5) |###############           | Elapsed Time: 0:00:03 ETA:   0:00:02
+i=3
+ 80% (4 of 5) |####################      | Elapsed Time: 0:00:04 ETA:   0:00:01
+i=4
+"""
+
+#%%
+
+"""
+do update
+do new line \n
+the do print
+"""
+
+import uutils
+import time
+
+bar = uutils.get_good_progressbar(max_value=5)
+for i in range(5):
+    time.sleep(1)
+    bar.update(i)
+    print(f'\n{i=}')
+
+"""
+N/A% (0 of 5) |           | Elapsed Time: 0:00:00 | ETA:  --:--:-- |   0.0 s/it
+i=0
+ 20% (1 of 5) |##         | Elapsed Time: 0:00:01 | ETA:   0:00:04 |   1.0 it/s
+i=1
+ 40% (2 of 5) |####       | Elapsed Time: 0:00:02 | ETA:   0:00:03 |   1.0 it/s
+i=2
+ 60% (3 of 5) |######     | Elapsed Time: 0:00:03 | ETA:   0:00:02 |   1.0 it/s
+i=3
+ 80% (4 of 5) |########   | Elapsed Time: 0:00:04 | ETA:   0:00:01 |   1.0 it/s
+i=4
+"""
