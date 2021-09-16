@@ -1345,23 +1345,21 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize: bool = F
     sim: Tensor = 1.0 - d if normalize else 2.0 - d
     return sim
 
-def normalize_matrix_for_similarity(X: Tensor, dim: int =1) -> Tensor:
+def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     """
     Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
-    Assumption is that X is of size [n, p].
+    Assumption is that X is of size [n, d].
     Otherwise, specify which simension to normalize with dim.
 
     ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
-
-    :param X:
-    :return:
     """
     from torch.linalg import norm
-    X_star: Tensor = X - X.mean(dim=dim) / norm(X, "fro")
+    X_star: Tensor = X - X.mean(dim=dim, keepdim=True) / norm(X, "fro")
     return X_star
 
-def normalize_matrix_for_distance(X: Tensor) -> Tensor:
-    return normalize_matrix_for_similarity(X)
+def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
+    """ Center according to columns and divide by frobenius norm. Matrix is assumed to be [n, d] else sepcify dim. """
+    return normalize_matrix_for_similarity(X, dim)
 
 def tensorify(lst):
     """
@@ -1946,7 +1944,7 @@ def get_layer_names_to_do_sim_analysis(args: Namespace, include_final_layer_in_l
 
 # -- tests
 
-def ned():
+def ned_test():
     import torch.nn as nn
 
     # dim = 1  # apply cosine accross the second dimension/feature dimension
@@ -1962,7 +1960,7 @@ def ned():
         print(ned_tensor.size())
         #print(ned_torch(x1, x2, dim=dim))
 
-def tensorify():
+def tensorify_test():
     t = [1, 2, 3]
     print(tensorify(t).size())
     tt = [t, t, t]
@@ -1977,7 +1975,7 @@ def compressed_r2_score():
     c_r2_torch = compressed_r2_score_from_torch(y, y_pred)
     assert(c_r2_torch == c_r2)
 
-def topk_accuracy_and_accuracy():
+def topk_accuracy_and_accuracy_test():
     import torch
     import torch.nn as nn
 
@@ -2031,7 +2029,7 @@ def split_data_train_val_test():
     print(len(X_val))
     print(len(X_test))
 
-def simple_determinism():
+def simple_determinism_test():
     args = Namespace(seed=0, deterministic_alg=True)
     make_code_deterministic(args.seed, args.deterministic_alg)
     #
