@@ -14,7 +14,7 @@ todo:
 
 import gc
 from datetime import datetime
-from typing import List, Union
+from typing import List, Union, Any
 
 import torch
 from torch import Tensor
@@ -38,8 +38,6 @@ import copy
 from argparse import Namespace
 
 from uutils.torch_uu.tensorboard import log_2_tb
-
-from torchtext.vocab import Vocab
 
 import gc
 
@@ -146,10 +144,12 @@ def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
         index = matches[ith_match]
         return index
 
-def insert_unk(vocab: Vocab) -> Vocab:
+def insert_unk(vocab):
     """
     Inserts unknown token into torchtext vocab.
     """
+    from torchtext.vocab import Vocab
+
     # undos throwing erros when out of vocab is attempted
     default_index = -1
     vocab.set_default_index(default_index)
@@ -162,9 +162,12 @@ def insert_unk(vocab: Vocab) -> Vocab:
     # make default index same as index of unk_token
     vocab.set_default_index(vocab[unk_token])
     assert vocab['out of vocab'] is vocab[unk_token]
+    assert isinstance(vocab, Vocab)
     return vocab
 
-def insert_special_symbols(vocab: Vocab) -> Vocab:
+def insert_special_symbols(vocab):
+    from torchtext.vocab import Vocab
+
     special_symbols = ['<unk>', '<pad>', '<sos>', '<eos>']
     for i, special_symbol in enumerate(special_symbols):
         vocab.insert_token(special_symbol, i)
@@ -176,20 +179,8 @@ def insert_special_symbols(vocab: Vocab) -> Vocab:
     assert vocab['<pad>'] == 1
     assert vocab['<sos>'] == 2
     assert vocab['<eos>'] == 3
+    assert isinstance(vocab, Vocab)
     return vocab
-
-# def pad_sequence(batch_sequences, vocab):
-#     """
-#
-#     :param batch_sequences:
-#     :return: [T]
-#     """
-#     # todo - batch of sequences to look up tensors
-#     # look through each sequence, depending on it's type and make it to look up
-#     # lookup_tensor = torch_uu.tensor(indices, dtype=torch_uu.long).to(self.args.device)
-#     # pad sequence
-#     y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
-#     return y_look_up_tensor
 
 def diagonal_mask(size: int, device) -> Tensor:
     """
@@ -215,35 +206,6 @@ def diagonal_mask(size: int, device) -> Tensor:
     # to device
     mask = mask.to(device)
     return mask
-
-# def get_y_embeddings(self, vocab: Vocab, y_batch: Batch[list[int]], device, embed_dim: int) -> Tensor:
-#     from torch_uu.nn.utils.rnn import pad_sequence
-#     B, T, D  = len(y_batch), max(len(seq[:-1]) for seq in y_batch) + 2, embed_dim
-#     y_look_up_tensor = []
-#     for seq in y_batch:
-#         seq = seq[:-1]  # right shift
-#         indices = [vocab['<sos>']]
-#         indices.extend([vocab[str(token_idx)] for token_idx in seq])
-#         indices.append(vocab['<eos>'])
-#         lookup_tensor = torch_uu.tensor(indices, dtype=torch_uu.long).to(device)
-#         y_look_up_tensor.append(lookup_tensor)
-#     # pad
-#     y_look_up_tensor = pad_sequence(y_look_up_tensor, padding_value=vocab['<pad>'], batch_first=True)
-#     assert y_look_up_tensor.size() == torch_uu.Size([B, T])
-#     # get embeddings
-#     y_embed = vocab_embeds(y_look_up_tensor)
-#     assert y_embed.size() == torch_uu.Size([B, T, D])
-#     # diagonal mask to avoid model from cheating
-#     y_mask = diagonal_mask(size=T, device=device)
-#     assert y_mask.size() == torch_uu.Size([T, T])
-#     # padding mask
-#     y_padding_mask = (y_look_up_tensor == vocab['<pad>']).to(device)
-#     assert y_padding_mask.size() == torch_uu.Size([B, T])
-#     return y_embed, y_mask, y_padding_mask
-
-# def get_freq_to_log_two_or_three_times(data_loader):
-#     freq = len(data_loader) // 3  # to log approximately 2-3 times.
-#     if fre
 
 def process_batch_simple(args: Namespace, x_batch, y_batch):
     if isinstance(x_batch, Tensor):
