@@ -52,6 +52,48 @@ View at:
 https://pypi.org/project/ultimate-utils/0.1.0/
 ```
 
+## Test by pip installing it
+
+create fresh conda env:
+```angular2html
+conda create -n test_env python=3.9
+conda activate test_env
+```
+
+Test by pip installing it to your env:
+```angular2html
+pip install ultimate-utils
+```
+
+To test the installation uutils do:
+
+```
+python -c "import uutils; uutils.hello()"
+python -c "import uutils; uutils.torch_uu.hello()"
+```
+
+it should print something like the following:
+
+```
+
+hello from uutils __init__.py in:
+<module 'uutils' from '/Users/brando/ultimate-utils/ultimate-utils-proj-src/uutils/__init__.py'>
+
+
+hello from torch_uu __init__.py in:
+<module 'uutils.torch_uu' from '/Users/brando/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/__init__.py'>
+
+```
+
+To test pytorch do:
+```
+python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+```
+To test if pytorch works with gpu do (it should fail if no gpus are available):
+```
+python -c "import uutils; uutils.torch_uu.gpu_test()"
+```
+
 # Reference
 
 https://realpython.com/pypi-publish-python-package/#publishing-to-pypi
