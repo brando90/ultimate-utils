@@ -20,8 +20,6 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.multiprocessing import Pool
-from torch.nn.parallel import DistributedDataParallel
 
 import numpy as np
 import scipy.integrate as integrate
@@ -39,19 +37,17 @@ import copy
 
 from argparse import Namespace
 
-from pdb import set_trace as st
-
-
 from uutils.torch_uu.tensorboard import log_2_tb
 
-import torchtext
-from torchtext.vocab import Vocab, vocab
+from torchtext.vocab import Vocab
 
 import gc
 
 import urllib.request
 
 from pprint import pprint
+
+from pdb import set_trace as st
 
 # uutils
 pd.set_option('display.max_rows', 500)
@@ -1325,6 +1321,7 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     :return:
     """
     from torch.linalg import norm
+    # out1, out2 = normalize_matrix_for_similarity(x1 , dim=1), normalize_matrix_for_similarity(out2, dim=1)
     # x1x2 = torch.bmm(x1, x2)
     x1x2 = x1.t() @ x2
     d: Tensor = norm(x1, 'fro') + norm(x2, 'fro') - 2 * norm(x1x2, 'nuc')
