@@ -49,18 +49,8 @@ from uutils.torch_uu.distributed import find_free_port
 
 
 def hello():
-    print('\nhello from uutitls __init__.py\n')
-
-def helloworld(arg1="arg1", arg2="arg2"):
-    print("helloworld from uutils __init__.py")
-
-
-def helloworld2(name="Brando", msg="try to see the params of this function!"):
-    print(f"helloworld2: your name is <{name}> and your message <{msg}>")
-
-
-def HelloWorld():
-    return "HelloWorld in Utils!"
+    import uutils
+    print(f'\nhello from uutils __init__.py in:\n{uutils}\n')
 
 def print_pids():
     import torch.multiprocessing as mp

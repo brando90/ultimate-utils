@@ -33,12 +33,29 @@ To test the installation uutils do:
 
 ```
 python -c "import uutils; uutils.hello()"
+python -c "import uutils; uutils.torch_uu.hello()"
 ```
 
-it should print:
+it should print something like the following:
 
 ```
-hello from uutitls __init__.pyt
+
+hello from uutils __init__.py in:
+<module 'uutils' from '/Users/brando/ultimate-utils/ultimate-utils-proj-src/uutils/__init__.py'>
+
+
+hello from torch_uu __init__.py in:
+<module 'uutils.torch_uu' from '/Users/brando/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/__init__.py'>
+
+```
+
+To test pytorch do:
+```
+python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+```
+To test if pytorch works with gpu do (it should fail if no gpus are available):
+```
+python -c "import uutils; uutils.torch_uu.gpu_test()"
 ```
 
 ### [Adavanced] If using pygraphviz functions 

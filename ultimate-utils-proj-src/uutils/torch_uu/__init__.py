@@ -59,10 +59,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 Batch = list
 
 def hello():
-    print('hello')
+    """
 
-def helloworld():
-    print('hello world torch_utils!')
+    On the terminal do:
+    python -c "import uutils; uutils.torch_uu.hello()"
+    """
+    import uutils.torch_uu as torch_uu
+    print(f'\nhello from torch_uu __init__.py in:\n{torch_uu}\n')
+
+def gpu_test_torch_any_device():
+    """
+    python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+    """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    x: Tensor = torch.randn(2, 4).to(device)
+    y: Tensor = torch.randn(4, 1).to(device)
+    out: Tensor = (x @ y)
+    assert out.size() == torch.Size([2, 1])
+    print(f'Success, torch works with whatever device is shown in the output tensor:\n{out=}')
+
+def gpu_test():
+    """
+    python -c "import uutils; uutils.torch_uu.gpu_test()"
+    """
+    x: Tensor = torch.randn(2, 4).cuda()
+    y: Tensor = torch.randn(4, 1).cuda()
+    out: Tensor = (x @ y)
+    assert out.size() == torch.Size([2, 1])
+    print(f'Success, no Cuda errors means it worked see:\n{out=}')
 
 # -
 
