@@ -69,6 +69,9 @@ def gpu_test_torch_any_device():
     """
     python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
     """
+    from torch import Tensor
+
+    print(f'device name: {device_name()}')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     x: Tensor = torch.randn(2, 4).to(device)
     y: Tensor = torch.randn(4, 1).to(device)
@@ -80,6 +83,9 @@ def gpu_test():
     """
     python -c "import uutils; uutils.torch_uu.gpu_test()"
     """
+    from torch import Tensor
+
+    print(f'device name: {device_name()}')
     x: Tensor = torch.randn(2, 4).cuda()
     y: Tensor = torch.randn(4, 1).cuda()
     out: Tensor = (x @ y)
@@ -87,6 +93,18 @@ def gpu_test():
     print(f'Success, no Cuda errors means it worked see:\n{out=}')
 
 # -
+
+def device_name():
+    return gpu_name_otherwise_cpu()
+
+def gpu_name_otherwise_cpu():
+    gpu_name_or_cpu = None
+    try:
+        gpu_name_or_cpu = torch.cuda.get_device_name(0)
+    except:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        gpu_name_or_cpu = device
+    return gpu_name_or_cpu
 
 def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool = True):
     """
@@ -606,28 +624,28 @@ def add_inner_train_stats(diffopt, *args, **kwargs):
 
 ####
 
-def save_ckpt_meta_learning(args, meta_learner, debug=False):
-    # https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
-    # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
-    path_to_ckpt = args.logger.current_logs_path
-    path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
-    ckpt_path_plus_path = path_to_ckpt / Path('db')
-
-    # Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
-    db = {} # database dict
-    tb = args.tb
-    args.tb = None
-    args.base_model = "no child mdl in args see meta_learner" # so that we don't save the child model so many times since it's part of the meta-learner
-    db['args'] = args # note this obj has the last episode/outer_i we ran
-    db['meta_learner'] = meta_learner
-    torch.save(db, ckpt_path_plus_path)
-    # with open(ckpt_path_plus_path , 'wb+') as db_file:
-    #     pickle.dump(db, db_file)
-    if debug:
-        test_ckpt_meta_learning(args, meta_learner, debug)
-    args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
-    args.tb = tb
-    return
+# def save_ckpt_meta_learning(args, meta_learner, debug=False):
+#     # https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
+#     # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
+#     path_to_ckpt = args.logger.current_logs_path
+#     path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+#     ckpt_path_plus_path = path_to_ckpt / Path('db')
+#
+#     # Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
+#     db = {} # database dict
+#     tb = args.tb
+#     args.tb = None
+#     args.base_model = "no child mdl in args see meta_learner" # so that we don't save the child model so many times since it's part of the meta-learner
+#     db['args'] = args # note this obj has the last episode/outer_i we ran
+#     db['meta_learner'] = meta_learner
+#     torch.save(db, ckpt_path_plus_path)
+#     # with open(ckpt_path_plus_path , 'wb+') as db_file:
+#     #     pickle.dump(db, db_file)
+#     if debug:
+#         test_ckpt_meta_learning(args, meta_learner, debug)
+#     args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
+#     args.tb = tb
+#     return
 
 def save_checkpoint_simple(args, meta_learner):
     # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
