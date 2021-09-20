@@ -92,6 +92,7 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     print(f'{args.seed=}')
     args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device: {args.device}')
+
     # - get cluster info (including hostname)
     load_cluster_jobids_to(args)
 
@@ -164,8 +165,13 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
             wandb.config.update(args)
     else:
         pass
+
+    # - for debugging
+    args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
+
     # - return
     uutils.print_args(args)
+    uutils.save_args(args)
     return args
 
 def parse_args_synth_agent():
@@ -707,7 +713,7 @@ def collect_content_from_file(filepath):
     return contents
 
 
-## cluster stuff
+# - cluster stuff
 
 def print_args(args: Namespace):
     """
@@ -874,6 +880,7 @@ def load_cluster_jobids_to(args):
     if "SLURM_ARRAY_TASK_ID" in os.environ:
         args.slurm_array_task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 
+    # - note this is set manually in the .sub file so you might have a different name e.g. MY_CONDOR_JOB_ID
     if "CONDOR_JOB_ID" in os.environ:
         args.condor_jobid = int(os.environ["CONDOR_JOB_ID"])
         args.jobid = args.condor_jobid
