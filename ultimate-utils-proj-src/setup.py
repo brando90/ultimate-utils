@@ -16,7 +16,7 @@ setup(
     description='Brandos ultimate utils for science, machine learning and AI',
     long_description=README,
     long_description_content_type="text/markdown",
-    url='https://pypi.org/project/ultimate-utils',
+    url='https://github.com/brando90/ultimate-utils',
     author='Brando Miranda',
     author_email='brandojazz@gmail.com',
     python_requires='>=3.9.0',
