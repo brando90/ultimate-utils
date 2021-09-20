@@ -1063,13 +1063,13 @@ def ned(f, y):
     @param y:
     @return:
     """
-    ned = ( 0.5*np.var(f - y) / (np.var(f) + np.var(y)) )**0.5
+    ned = (0.5*np.var(f - y) / (np.var(f) + np.var(y)) )**0.5
     return ned
 
 def r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor):
     """ returns the accuracy from torch_uu tensors """
     from sklearn.metrics import r2_score
-    acc = r2_score(y_true=y_true.detach().numpy(), y_pred=y_pred.detach().numpy())
+    acc = r2_score(y_true=y_true.detach().cpu().numpy(), y_pred=y_pred.detach().cpu().numpy())
     return acc
 
 def r2_symmetric(f, y, r2_type='explained_variance'):

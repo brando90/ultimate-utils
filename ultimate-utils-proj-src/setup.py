@@ -12,16 +12,19 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.1.0',
+    version='0.2.0',
     description='Brandos ultimate utils for science, machine learning and AI',
     long_description=README,
     long_description_content_type="text/markdown",
     url='https://pypi.org/project/ultimate-utils',
     author='Brando Miranda',
     author_email='brandojazz@gmail.com',
+    python_requires='>=3.9.0',
     license='MIT',
     packages=find_packages(),  # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
-    install_requires=['dill',
+    install_requires=['torch',
+                      'torchvision',
+                      'dill',
                       'networkx>=2.5',
                       'scipy',
                       'scikit-learn',
@@ -37,7 +40,6 @@ setup(
                       'plotly',
                       'wandb',
                       'matplotlib',
-                      # 'torch'  # todo - try later
 
                       # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues, e.g. if the user does not want to do graph stuff then uutils shouldn't need to force the user to install uutils
                       ]

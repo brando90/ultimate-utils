@@ -5,7 +5,20 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
-## Manual installation
+## Standard pip instal [Recommended]
+
+```
+pip install ultimate-utils
+```
+
+then you should be able to import is as follows:
+```
+import uutils
+```
+
+note the import statement is shorter than the library name (`ultimate-utils` vs `uutils`).
+
+## Manual installation [Development of uutils]
 
 To use uutils first get the code this repo (e.g. fork it on github):
 
