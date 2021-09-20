@@ -1241,7 +1241,7 @@ def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch') -> Tensor:
         cos = nn.CosineSimilarity(dim=dim)
         sim = cos(x1, x2)
     elif sim_type == 'op_torch':
-        sim = orthogonal_procrustes_similairty(x1, x2)
+        sim = orthogonal_procrustes_similairty(x1, x2, normalize_for_range_0_to_1=True)
     else:
         raise ValueError(f'Not implemented sim_type={sim_type}')
     return sim
@@ -1290,7 +1290,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
 def nes_torch(x1, x2, dim: int =1, eps: float =1e-8) -> Tensor:
     return 1 - ned_torch(x1, x2, dim, eps)
 
-def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = False) -> Tensor:
+def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = False) -> Tensor:
     """
     Computes the orthoginal procrustes distance.
     If normalized then the answer is divided by 2 so that it's in the interval [0, 1].
@@ -1325,14 +1325,13 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize: bool = Fal
     :return:
     """
     from torch.linalg import norm
-    # out1, out2 = normalize_matrix_for_similarity(x1 , dim=1), normalize_matrix_for_similarity(out2, dim=1)
-    # x1x2 = torch.bmm(x1, x2)
+    x1, x2 = normalize_matrix_for_similarity(x1, dim=1), normalize_matrix_for_similarity(x2, dim=1)
     x1x2 = x1.t() @ x2
     d: Tensor = norm(x1, 'fro') + norm(x2, 'fro') - 2 * norm(x1x2, 'nuc')
-    d: Tensor = d / 2.0 if normalize else d
+    d: Tensor = d / 2.0 if normalize_for_range_0_to_1 else d
     return d
 
-def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize: bool = False) -> Tensor:
+def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = False) -> Tensor:
     """
     Returns orthogonal procurstes similarity. If normalized then output is in invertval [0, 1] and if not then output
     is in interval [0, 1]. See orthogonal_procrustes_distance for details and references.
@@ -1342,8 +1341,8 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize: bool = F
     :param normalize:
     :return:
     """
-    d = orthogonal_procrustes_distance(x1, x2, normalize)
-    sim: Tensor = 1.0 - d if normalize else 2.0 - d
+    d = orthogonal_procrustes_distance(x1, x2, normalize_for_range_0_to_1)
+    sim: Tensor = 1.0 - d if normalize_for_range_0_to_1 else 2.0 - d
     return sim
 
 def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
@@ -1355,7 +1354,7 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
     """
     from torch.linalg import norm
-    X_star: Tensor = X - X.mean(dim=dim, keepdim=True) / norm(X, "fro")
+    X_star: Tensor = (X - X.mean(dim=dim, keepdim=True)) / norm(X, "fro")
     return X_star
 
 def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
@@ -2005,31 +2004,31 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     T, L = sims['cca'].size()
     # -- all layer stats
     # - compute means
-    mean_summarized_sim: dict = {}
+    mean_layer_wise_sim: dict = {}
     assert T == args.meta_batch_size_eval
     # [T, L] -> [L], compute expectation per task for each layer
-    mean_summarized_sim['cca'] = sims['cca'].mean(dim=0)
-    mean_summarized_sim['cka'] = sims['cka'].mean(dim=0)
-    mean_summarized_sim['op'] = sims['op'].mean(dim=0)
-    assert mean_summarized_sim['cca'].size() == torch.Size([L])
+    mean_layer_wise_sim['cca'] = sims['cca'].mean(dim=0)
+    mean_layer_wise_sim['cka'] = sims['cka'].mean(dim=0)
+    mean_layer_wise_sim['op'] = sims['op'].mean(dim=0)
+    assert mean_layer_wise_sim['cca'].size() == torch.Size([L])
     # [T] -> [1], compute expectation per task
-    mean_summarized_sim['nes'] = sims['nes'].mean(dim=[0, 2])
-    mean_summarized_sim['nes_output'] = sims['nes_output'].mean()
-    mean_summarized_sim['query_loss'] = sims['query_loss'].mean()
-    assert mean_summarized_sim['nes_output'].size() == torch.Size([])
+    mean_layer_wise_sim['nes'] = sims['nes'].mean(dim=[0, 2])
+    mean_layer_wise_sim['nes_output'] = sims['nes_output'].mean()
+    mean_layer_wise_sim['query_loss'] = sims['query_loss'].mean()
+    assert mean_layer_wise_sim['nes_output'].size() == torch.Size([])
     # - compute stds
-    std_summarized_sim: dict = {}
+    std_layer_wise_sim: dict = {}
     assert T == args.meta_batch_size_eval
     # [T, L] -> [L], compute expectation per task for each layer
-    std_summarized_sim['cca'] = sims['cca'].std(dim=0)
-    std_summarized_sim['cka'] = sims['cka'].std(dim=0)
-    std_summarized_sim['op'] = sims['op'].std(dim=0)
-    assert std_summarized_sim['cca'].size() == torch.Size([L])
+    std_layer_wise_sim['cca'] = sims['cca'].std(dim=0)
+    std_layer_wise_sim['cka'] = sims['cka'].std(dim=0)
+    std_layer_wise_sim['op'] = sims['op'].std(dim=0)
+    assert std_layer_wise_sim['cca'].size() == torch.Size([L])
     # [T] -> [1], compute expectation per task
-    std_summarized_sim['nes'] = sims['nes'].std(dim=[0, 2])
-    std_summarized_sim['nes_output'] = sims['nes_output'].std()
-    std_summarized_sim['query_loss'] = sims['query_loss'].std()
-    assert std_summarized_sim['nes_output'].size() == torch.Size([])
+    std_layer_wise_sim['nes'] = sims['nes'].std(dim=[0, 2])
+    std_layer_wise_sim['nes_output'] = sims['nes_output'].std()
+    std_layer_wise_sim['query_loss'] = sims['query_loss'].std()
+    assert std_layer_wise_sim['nes_output'].size() == torch.Size([])
 
     # -- rep stats
     mean_summarized_rep_sim: dict = {}
@@ -2044,7 +2043,7 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     std_summarized_rep_sim['op'] = sims['op'][:, :-1].std()
     std_summarized_rep_sim['nes'] = sims['nes'][:, :-1].std()
     assert std_summarized_rep_sim['cca'].size() == torch.Size([])
-    return mean_summarized_sim, std_summarized_sim, mean_summarized_rep_sim, std_summarized_rep_sim
+    return mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim
 
 # -- tests
 
