@@ -19,6 +19,7 @@ setup(
     url='https://pypi.org/project/ultimate-utils',
     author='Brando Miranda',
     author_email='brandojazz@gmail.com',
+    # python_requires='>=3.9.0',
     license='MIT',
     packages=find_packages(),  # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
     install_requires=['dill',
