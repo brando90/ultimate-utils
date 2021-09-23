@@ -52,6 +52,13 @@ View at:
 https://pypi.org/project/ultimate-utils/0.1.0/
 ```
 
+then make sure you delete the build and dist:
+```angular2html
+rm -rf build dist
+```
+this avoids you accidentally trying to upload the same version of your package twice to pypi 
+(which pypi won't let you do anyone but it will throw errors and perhaps confuse you).
+
 ## Test by pip installing it
 
 create fresh conda env:
