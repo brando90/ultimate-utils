@@ -3,6 +3,13 @@ conda create -n uutils_env python=3.9
 conda activate uutils_env
 conda remove --all --name uutils_env
 
+To test it:
+python -c "import uutils; uutils.hello()"
+python -c "import uutils; uutils.torch_uu.hello()"
+
+python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+python -c "import uutils; uutils.torch_uu.gpu_test()"
+
 """
 from setuptools import setup
 from setuptools import find_packages
