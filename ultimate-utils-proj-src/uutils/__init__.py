@@ -156,18 +156,29 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
         if args.log_to_wandb:
             # os.environ['WANDB_MODE'] = 'offline'
             import wandb
+            print(f'{wandb=}')
 
+            # - experiment name
+            experiment_name = args.wandb_group
+            # - set run name
+            run_name = None
+            if hasattr(args, 'jobid'):
+                # if jobid is actually set to something, use that as the run name in ui
+                if args.jobid is not None and args.jobid != -1 and str(args.jobid) != '-1':
+                    run_name: str = f'jobid={str(args.jobid)}'
+            # - initialize wandb
             wandb.init(project=args.wandb_project,
                        entity=args.wandb_entity,
-                       job_type="job_type",
-                       group=args.wandb_group)
-            # config = wandb.config
+                       # job_type="job_type",
+                       name=run_name,
+                       group=experiment_name
+                       )
             wandb.config.update(args)
     else:
         pass
 
     # - for debugging
-    args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
+    # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
 
     # - return
     uutils.print_args(args)
@@ -300,7 +311,7 @@ def parse_basic_meta_learning_args() -> Namespace:
     parser.add_argument('--wandb_group', type=str, default='experiment_debug', help='helps grouping experiment runs')
     # parser.add_argument('--wandb_log_freq', type=int, default=10)
     # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
-    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=100)
+    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=-1)
 
     # - parse arguments
     args = parser.parse_args()
