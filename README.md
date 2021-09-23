@@ -7,11 +7,15 @@ Mainly for machine learning and programming languages tasks.
 
 ## Standard pip instal [Recommended]
 
+If you are going to use a gpu the do this first before continuing:
+```angular2html
+pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+```
+Otherwise just doing the follwoing should work.
 ```
 pip install ultimate-utils
 ```
-
-then you should be able to import is as follows:
+If that worked, then you should be able to import is as follows:
 ```
 import uutils
 ```
