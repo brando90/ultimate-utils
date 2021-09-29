@@ -21,5 +21,5 @@ local_dir2current_logs=$(python $path2cmd_that_puts_right_prefix $1)
 
 # -- run tb using the remote data but locally
 echo HOME=$HOME
-echo $local_dir2current_logs
+echo Path being used for tensorboard: $local_dir2current_logs
 tensorboard --logdir $local_dir2current_logs

@@ -1069,6 +1069,15 @@ def load_with_dill(path: str, filename: str, mode='rb') -> Any:
         python_obj = dill.load(f)
     return python_obj
 
+def load_json_list(path: str, filename: str, mode='r') -> list:
+    from pathlib import Path
+    import json
+
+    path = Path(path).expanduser()
+    with open(path / filename, mode) as f:
+        d: list = json.load(f)
+    return d
+
 def write_str_to_file(path: str, filename: str, file_content: str, mode: str = 'w'):
     path: Path = Path(path).expanduser()
     path.mkdir(parents=True, exist_ok=True)  # if it already exists it WONT raise an error (exists is ok!)
@@ -1089,6 +1098,7 @@ def namespace2dict(args: Namespace) -> dict:
     """
     # vars = Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
     return vars(args)
+
 
 # -- tests
 

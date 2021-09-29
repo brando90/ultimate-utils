@@ -24,6 +24,7 @@ from pathlib import Path
 
 import sys
 
+
 # print(sys.argv)
 
 def get_path_if_always_same_prefix():
@@ -34,7 +35,8 @@ def get_path_if_always_same_prefix():
     """
     print(Path(sys.argv[1].replace('/home/miranda9/', '~/')))
 
-def cluster_path_2_local_path(path_cluster, target_dir='data'):
+
+def cluster_path_2_local_path(path_cluster: str, target_dir: str = 'data', test_mode: bool = False) -> Path:
     """
     Path from cluster to any cluster
 
@@ -46,10 +48,10 @@ def cluster_path_2_local_path(path_cluster, target_dir='data'):
     @param target_dir:
     @return:
     """
-    dirs = path_cluster.split('/')
+    dirs: list[str] = path_cluster.split('/')
     # pop everything on the front until we get to out target directory
     for dir_name in deepcopy(dirs):
-        if dir_name == target_dir:  # usually 'data'
+        if target_dir in dir_name:  # usually 'data'
             break
         else:
             dirs.pop(0)
@@ -57,7 +59,10 @@ def cluster_path_2_local_path(path_cluster, target_dir='data'):
     dirs = ['~'] + dirs
     dirs = '/'.join(dirs)
     local_dir = Path(dirs).expanduser()
+    if test_mode:
+        print(f'{local_dir=}')
     return local_dir
+
 
 def execute_tensorboard():
     """
@@ -88,20 +93,33 @@ def give_path_to_local_to_bash():
     # remove the home path by detecting "data" and then get the path to tb locally
     local_dir = cluster_path_2_local_path(path_cluster)
     local_dir = str(local_dir)
+    # -- debugging print
+    # print(f'--[local dir path python made]--> {local_dir=}', flush=True)
+    # -- output to bash
     print(local_dir)
+
 
 # --  test
 
-def test():
+def my_test():
+    """
+    Need to comment out since print of script is what bash will use.
+
+    :return:
+    """
     path_cluster_dgx = '/home/miranda9/data/logs/logs_Mar06_11-15-02_jobid_0_pid_3657/tb'
     path_cluster_intel = '/homes/miranda9/data/logs/logs_Dec04_15-49-00_jobid_446010.iam-pbs/tb'
     path_vision = '/home/miranda9/data/logs/logs_Dec04_18-39-14_jobid_1528/tb'
-    cluster_path_2_local_path(path_cluster_dgx)
-    cluster_path_2_local_path(path_cluster_intel)
-    cluster_path_2_local_path(path_vision)
+    path_vision2 = '/home/miranda9/data_fall2020_spring2021/logs/logs_Nov13_20-29-28_jobid_851/tb'
+    cluster_path_2_local_path(path_cluster_dgx, test_mode=True)
+    cluster_path_2_local_path(path_cluster_intel, test_mode=True)
+    cluster_path_2_local_path(path_vision, test_mode=True)
+    cluster_path_2_local_path(path_vision2, test_mode=True)
     # execute_tensorboard()
 
+
 if __name__ == '__main__':
-    # test()
+    # my_test()
     # execute_tensorboard()
+    # -- when this file is ran, the terminal/bash gets this as the output string
     give_path_to_local_to_bash()

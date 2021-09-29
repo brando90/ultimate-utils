@@ -80,6 +80,37 @@ def log_2_tb_metalearning_old(tb, args, it, loss, acc_err, split):
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc_err, it)
 
+def tensorboard_run_list_2_matplotlib_list(data: list[tuple], smoothing_weight: float) -> tuple[list, list]:
+    """
+    :param data: data in format [..., [time, it, value], ...]
+        e.g [[1603380383.1535034, 200, 1.5554816722869873], [1603381593.4793968, 900, 1.235633373260498]
+    :return:
+    """
+    its: list[int] = []
+    values: list[float] = []
+    for _, it, value in data:
+        its.append(it)
+        values.append(value)
+    values = my_tb_smooth(scalars=values, weight=smoothing_weight)
+    return its, values
+
+def my_tb_smooth(scalars: list[float], weight: float) -> list[float]:  # Weight between 0 and 1
+    """
+
+    ref: https://stackoverflow.com/questions/42011419/is-it-possible-to-call-tensorboard-smooth-function-manually
+
+    :param scalars:
+    :param weight:
+    :return:
+    """
+    last = scalars[0]  # First value in the plot (first timestep)
+    smoothed: list = []
+    for point in scalars:
+        smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+        smoothed.append(smoothed_val)                        # Save it
+        last = smoothed_val                                  # Anchor the last smoothed value
+    return smoothed
+
 # -- tests
 
 def test():

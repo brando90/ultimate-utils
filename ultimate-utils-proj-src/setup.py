@@ -2,6 +2,11 @@
 conda create -n uutils_env python=3.9
 conda activate uutils_env
 conda remove --all --name uutils_env
+rm -rf /Users/brando/anaconda3/envs/uutils_env
+
+pip install -e ~/ultimate-utils/ultimate-utils-proj-src/
+
+pip install ultimate-utils
 
 To test it:
 python -c "import uutils; uutils.hello()"
@@ -56,6 +61,7 @@ setup(
                       'plotly',
                       'wandb',
                       'matplotlib',
+                      # 'seaborn'
 
                       # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues, e.g. if the user does not want to do graph stuff then uutils shouldn't need to force the user to install uutils
                       ]
