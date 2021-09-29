@@ -61,6 +61,9 @@ def print_pids():
 
 # - getting args for expts
 
+def set_up_args_for_experiment(args: Namespace) -> Namespace:
+    return setup_args_for_experiment(args)
+
 def setup_args_for_experiment(args: Namespace) -> Namespace:
     """
     :return:
@@ -1099,6 +1102,50 @@ def namespace2dict(args: Namespace) -> dict:
     # vars = Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
     return vars(args)
 
+def merge_two_dicts(starting_dict: dict, updater_dict: dict) -> dict:
+    """
+    Starts from base starting dict and then adds the remaining key values from updater replacing the values from
+    the first starting/base dict with the second updater dict.
+
+    For later: how does d = {**d1, **d2} replace collision?
+
+    ref: https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression-taking-union-of-dictiona
+    :param starting_dict:
+    :param updater_dict:
+    :return:
+    """
+    new_dict: dict = starting_dict.copy()   # start with keys and values of starting_dict
+    new_dict.update(updater_dict)    # modifies starting_dict with keys and values of updater_dict
+    return new_dict
+
+def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
+    """
+    Merges two namespaces but throws an error if there are keys that collide.
+
+    ref: https://stackoverflow.com/questions/56136549/how-can-i-merge-two-argparse-namespaces-in-python-2-x
+    :param args1:
+    :param args2:
+    :return:
+    """
+    # - the merged args
+    # The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
+    args = Namespace(**vars(args1), **vars(args2))
+    return args
+
+def merge_args(args1: Namespace, args2: Namespace) -> Namespace:
+    """
+
+    ref: https://stackoverflow.com/questions/56136549/how-can-i-merge-two-argparse-namespaces-in-python-2-x
+    :param args1:
+    :param args2:
+    :return:
+    """
+    # - the merged args
+    # The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
+    merged_key_values_for_namespace: dict = merge_two_dicts(vars(args1), vars(args2))
+    args = Namespace(**merged_key_values_for_namespace)
+    # args = Namespace(**{**vars(args1), **vars(args2)})
+    return args
 
 # -- tests
 
@@ -1169,10 +1216,21 @@ def xor_test():
     assert xor(1, 1) == False
     print('passed xor test')
 
+def merge_args_test():
+    args1 = Namespace(foo="foo", collided_key='from_args1')
+    args2 = Namespace(bar="bar", collided_key='from_args2')
+
+    args = merge_args(args1, args2)
+    print('-- merged args')
+    print(f'{args=}')
+    assert args.collided_key == 'from_args2', 'Error in merge dict, expected the second argument to be the one used' \
+                                                 'to resolve collision'
+
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
     # test_dfs()
     # test_good_progressbar()
     xor_test()
+    merge_args_test()
     print('Done!\a')
