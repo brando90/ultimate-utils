@@ -165,10 +165,15 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
             experiment_name = args.wandb_group
             # - set run name
             run_name = None
+            # if in cluster use the cluster jobid
             if hasattr(args, 'jobid'):
                 # if jobid is actually set to something, use that as the run name in ui
                 if args.jobid is not None and args.jobid != -1 and str(args.jobid) != '-1':
                     run_name: str = f'jobid={str(args.jobid)}'
+            # if user gives run_name overwrite that always
+            # if hasattr(args, 'run_name'):
+            #     run_name = args.run_name if args.run_name is not None else run_name
+            args.run_name = run_name
             # - initialize wandb
             wandb.init(project=args.wandb_project,
                        entity=args.wandb_entity,
@@ -306,6 +311,10 @@ def parse_basic_meta_learning_args() -> Namespace:
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully determinsitic')
+    # - sims/dists computations
+    parser.add_argument('--sim_compute_parallel', action='store_true', help='compute sim or dist in parallel.')
+    parser.add_argument('--metrics_as_dist', action='store_true', help='')
+    parser.add_argument('--show_layerwise_sims', action='store_true', help='show sim/dist values per layer too')
 
     # - wandb
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
@@ -531,7 +540,7 @@ def timeSince(start):
     return msg, h
 
 
-def report_times(start):
+def report_times(start: float) -> str:
     import time
     duration_secs = time.time() - start
     msg = f"time passed: hours:{duration_secs/(60**2)}, minutes={duration_secs/60}, seconds={duration_secs}"
@@ -1132,7 +1141,7 @@ def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
     args = Namespace(**vars(args1), **vars(args2))
     return args
 
-def merge_args(args1: Namespace, args2: Namespace) -> Namespace:
+def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     """
 
     ref: https://stackoverflow.com/questions/56136549/how-can-i-merge-two-argparse-namespaces-in-python-2-x
@@ -1142,7 +1151,7 @@ def merge_args(args1: Namespace, args2: Namespace) -> Namespace:
     """
     # - the merged args
     # The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
-    merged_key_values_for_namespace: dict = merge_two_dicts(vars(args1), vars(args2))
+    merged_key_values_for_namespace: dict = merge_two_dicts(vars(starting_args), vars(updater_args))
     args = Namespace(**merged_key_values_for_namespace)
     # args = Namespace(**{**vars(args1), **vars(args2)})
     return args

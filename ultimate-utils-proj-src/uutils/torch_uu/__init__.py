@@ -1033,7 +1033,7 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dis
 
 def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_sim_type='pwcca'):
     dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
-    return 1 - dist
+    return 1.0 - dist
 
 def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2):
     # meta_batch [T, N*K, CHW], [T, K, D]
@@ -1289,7 +1289,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
     return ned_2 ** 0.5
 
 def nes_torch(x1, x2, dim: int =1, eps: float =1e-8) -> Tensor:
-    return 1 - ned_torch(x1, x2, dim, eps)
+    return 1.0 - ned_torch(x1, x2, dim, eps)
 
 def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = False) -> Tensor:
     """
@@ -2045,6 +2045,8 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     std_summarized_rep_sim['nes'] = sims['nes'][:, :-1].std()
     assert std_summarized_rep_sim['cca'].size() == torch.Size([])
     return mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim
+
+# -- misc
 
 # -- tests
 
