@@ -12158,9 +12158,12 @@ sns.set_theme(style="darkgrid")
 
 # Load an example dataset with long-form data
 fmri = sns.load_dataset("fmri")
+print(fmri)
 
 # Plot the responses for different events and regions
 sns.lineplot(x="timepoint", y="signal",
              hue="region", style="event",
              data=fmri)
-plt.show()
+# plt.show()
+
+https://stackoverflow.com/questions/56203420/how-to-use-custom-error-bar-in-seaborn-lineplot
