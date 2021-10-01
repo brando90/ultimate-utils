@@ -1079,6 +1079,15 @@ def load_with_dill(path: str, filename: str, mode='rb') -> Any:
         python_obj = dill.load(f)
     return python_obj
 
+def load_json(path: str, filename: str, mode='r') -> list:
+    from pathlib import Path
+    import json
+
+    path = Path(path).expanduser()
+    with open(path / filename, mode) as f:
+        data: dict = json.load(f)
+    return data
+
 def load_json_list(path: str, filename: str, mode='r') -> list:
     from pathlib import Path
     import json

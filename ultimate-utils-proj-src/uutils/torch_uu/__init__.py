@@ -11,7 +11,7 @@ todo:
         2. with epoch based with progress bars + batches, nested progress bars
         3. fitting one batch
 """
-
+import dill
 import gc
 from datetime import datetime
 from typing import List, Union, Any
@@ -232,13 +232,18 @@ def process_batch_simple(args: Namespace, x_batch, y_batch):
         y_batch = y_batch.to(args.device)
     return x_batch, y_batch
 
-def process_meta_batch(args, batch):
+def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    # - upack the data
     if type(batch) == dict:
         (spt_x, spt_y), (qry_x, qry_y) = batch["train"], batch["test"]
     elif type(batch) == tuple or type(batch) == list:
         spt_x, spt_y, qry_x, qry_y = batch
     else:
         raise ValueError(f'Not implemented how to process this batch of type {type(batch)}')
+    # - convert to float32 single float, somehow the ckpts seem to need this for sinusoid
+    if hasattr(args, 'to_single_float_float32'):
+        if args.to_single_float_float32:
+            spt_x, spt_y, qry_x, qry_y = spt_x.to(torch.float32), spt_y.to(torch.float32), qry_x.to(torch.float32), qry_y.to(torch.float32)
     return spt_x.to(args.device), spt_y.to(args.device), qry_x.to(args.device), qry_y.to(args.device)
 
 # def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
@@ -646,6 +651,14 @@ def add_inner_train_stats(diffopt, *args, **kwargs):
 #     args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
 #     args.tb = tb
 #     return
+
+def load(path: Union[Path, str], filename: str, pickle_module=dill):
+    if isinstance(path, str):
+        path = Path(path).expanduser()
+    else:
+        path = path.expanduser()
+    data = torch.load(path / filename, pickle_module=pickle_module)
+    return data
 
 def save_checkpoint_simple(args, meta_learner):
     # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists

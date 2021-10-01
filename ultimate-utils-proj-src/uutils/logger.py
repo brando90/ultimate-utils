@@ -230,9 +230,9 @@ class Logger:
 
             # - plot stuff into loss axis
             loss_ax1.plot(self.experiment_stats['train']['its'], self.experiment_stats['train']['loss'],
-                          label=tag1, linestyle='-', marker='o', color='r', linewidth=1)
+                          label=tag1, linestyle='-', marker='x', color='r', linewidth=1)
             loss_ax1.plot(self.experiment_stats['val']['its'], self.experiment_stats['val']['loss'],
-                          label=tag3, linestyle='-', marker='o', color='m', linewidth=1)
+                          label=tag3, linestyle='-', marker='x', color='m', linewidth=1)
 
             loss_ax1.legend()
             loss_ax1.set_title(title)
@@ -241,9 +241,9 @@ class Logger:
 
             # - plot stuff into acc axis
             acc_ax2.plot(self.experiment_stats['train']['its'], self.experiment_stats['train']['acc'],
-                          label=tag2, linestyle='-', marker='o', color='b', linewidth=1)
+                          label=tag2, linestyle='-', marker='x', color='b', linewidth=1)
             acc_ax2.plot(self.experiment_stats['val']['its'], self.experiment_stats['val']['acc'],
-                          label=tag4, linestyle='-', marker='o', color='c', linewidth=1)
+                          label=tag4, linestyle='-', marker='x', color='c', linewidth=1)
 
             acc_ax2.legend()
             x_axis_label: str = self.args.training_mode  # epochs or iterations
@@ -362,6 +362,98 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                 'mdl': mdl},
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
+
+#
+
+def save_current_plots_and_stats(
+        title='Learnig & Evaluation Curves',
+
+        grid: bool = True,
+        show: bool = False,
+
+        wandb_log_fig = False
+    ):
+    """
+    TODO - adapt so that logger doesn't have this function as a method attached to the object
+
+    :param title:
+    :param grid:
+    :param show:
+    :param wandb_log_fig:
+    :return:
+    """
+    # plt.style.use('default')
+    # self.save_experiment_stats_to_json_file()
+
+    tag1 = f'Train loss'
+    # tag2 = f'Train accuracy/R2'
+    tag3 = f'Val loss'
+    # if not hasattr(self.args, 'target_type'):
+    #     tag1 = f'Train loss'
+    #     # tag2 = f'Train accuracy/R2'
+    #     tag3 = f'Val loss'
+    #     # tag4 = f'Val accuracy/R2'
+    #     # ylabel_acc = 'Accuracy/R2'
+    #     # raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
+    # elif self.args.target_type == 'regression':
+    #     tag1 = f'Train loss'
+    #     # tag2 = f'Train R2'
+    #     tag3 = f'Val loss'
+    #     # tag4 = f'Val R2'
+    #     # ylabel_acc = 'R2'
+    # elif self.args.target_type == 'classification':
+    #     tag1 = f'Train loss'
+    #     # tag2 = f'Train accuracy'
+    #     tag3 = f'Val loss'
+    #     # tag4 = f'Val accuracy'
+    #     # ylabel_acc = 'Accuracy'
+    # else:
+    #     raise ValueError(f'Not implemented {self.args.target_type}')
+    experiment_stats = uutils.load_json('~/Desktop/paper_figs/logs_Nov23_11-39-21_jobid_438713.iam-pbs/experiment_stats.json')
+
+    # - get figure with two axis, loss above and accuracy bellow
+    fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
+
+    # - plot stuff into loss axis
+    loss_ax1.plot(experiment_stats['train']['its'], experiment_stats['train']['loss'],
+                  label=tag1, linestyle='-', marker='x', color='r', linewidth=1)
+    loss_ax1.plot(experiment_stats['val']['its'], experiment_stats['val']['loss'],
+                  label=tag3, linestyle='-', marker='x', color='m', linewidth=1)
+
+    loss_ax1.legend()
+    loss_ax1.set_title(title)
+    loss_ax1.set_ylabel('Loss')
+    loss_ax1.grid(grid)
+
+    # - plot stuff into acc axis
+    # acc_ax2.plot(self.experiment_stats['train']['its'], self.experiment_stats['train']['acc'],
+    #               label=tag2, linestyle='-', marker='x', color='b', linewidth=1)
+    # acc_ax2.plot(self.experiment_stats['val']['its'], self.experiment_stats['val']['acc'],
+    #               label=tag4, linestyle='-', marker='x', color='c', linewidth=1)
+
+    # acc_ax2.legend()
+    # x_axis_label: str = self.args.training_mode  # epochs or iterations
+    # acc_ax2.set_xlabel(x_axis_label)
+    # acc_ax2.set_ylabel(ylabel_acc)
+    # acc_ax2.grid(grid)
+
+    plt.tight_layout()
+
+    plt.show() if show else None
+
+    log_root = Path('~/Desktop').expanduser()
+    fig.savefig(log_root / 'train_eval.svg')
+    fig.savefig(log_root / 'train_eval.pdf')
+    fig.savefig(log_root / 'train_eval.png')
+
+    # if wandb_log_fig:
+    #     assert False, 'Not tested'
+    #     import wandb
+    #
+    #     wandb.log(data={'fig': fig}, step=args.it, commit=True)
+    # careful: even if you return the figure it seems it needs to be closed inside here anyway...so if you close it
+    # but return it who knows what might happen.
+    # plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
 # - tests
 
