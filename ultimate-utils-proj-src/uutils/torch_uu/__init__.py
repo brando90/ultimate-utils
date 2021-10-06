@@ -1980,6 +1980,9 @@ def get_layer_names_to_do_sim_analysis_bn(args: Namespace, include_final_layer_i
         print(layer_names)
     return layer_names
 
+def get_layer_names_todo_sim_analysis_5cnn():
+    return
+
 def get_layer_names_to_do_sim_analysis_fc(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
     Get the layers to do the similarity analysis.
@@ -2059,7 +2062,166 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     assert std_summarized_rep_sim['cca'].size() == torch.Size([])
     return mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim
 
+def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
+                                               it: int,
+                                               f1: nn.Module, f2: nn.Module,
+                                               batch_x: torch.Tensor, batch_y: torch.Tensor,
+
+                                               # spt_x, spt_y, qry_x, qry_y,  # these are multiple tasks
+
+                                               log_freq_for_detection_of_feature_reuse: int = 3,
+
+                                               force_log: bool = False,
+                                               parallel: bool = False,
+                                               iter_tasks=None,
+                                               log_to_wandb: bool = False,
+                                               show_layerwise_sims: bool = False
+                                               ):
+    """
+    Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that
+    """
+    import wandb
+    import uutils.torch_uu as torch_uu
+    from pprint import pprint
+    from uutils.torch_uu import summarize_similarities
+    from uutils.torch_uu.distributed import is_lead_worker
+    # - is it epoch or iteration
+    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    sim_or_dist: str = 'sim'
+    if hasattr(args, 'metrics_as_dist'):
+        sim_or_dist: str = 'dist' if args.metrics_as_dist else sim_or_dist
+    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
+
+    if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+    # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+    #     if hasattr(args, 'metrics_as_dist'):
+    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
+    #     else:
+    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
+        sims = distance_btw_models(f1, f2)
+        # mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(args, sims)
+
+        # -- log (print)
+        args.logger.log(f' \n------ {sim_or_dist} stats: {it_or_epoch}={it} ------')
+        # - per layer
+        # if show_layerwise_sims:
+        print(f'---- Layer-Wise metrics ----')
+        print(f'mean_layer_wise_{sim_or_dist} (per layer)')
+        pprint(mean_layer_wise_sim)
+        print(f'std_layer_wise_{sim_or_dist} (per layer)')
+        pprint(std_layer_wise_sim)
+
+        # - rep sim
+        print(f'---- Representation metrics ----')
+        print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
+        pprint(mean_summarized_rep_sim)
+        print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
+        pprint(std_summarized_rep_sim)
+        args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
+
+        # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
+        # - log to wandb
+        # if log_to_wandb:
+        #     if it == 0:
+        #         # have all metrics be tracked with it or epoch (custom step)
+        #         #     wandb.define_metric(f'layer average {metric}', step_metric=it_or_epoch)
+        #         for metric in mean_summarized_rep_sim.keys():
+        #             wandb.define_metric(f'rep mean {metric}', step_metric=it_or_epoch)
+        #     # wandb.log per layer
+        #     rep_summary_log = {f'rep mean {metric}': sim for metric, sim in mean_summarized_rep_sim.items()}
+        #     rep_summary_log[it_or_epoch] = it
+        #     wandb.log(rep_summary_log, commit=True)
+
+def distance_btw_models(args: Namespace,
+                        mdl1: nn.Module, mdl2: nn.Module,
+                        batch_x: torch.Tensor, batch_y: torch.Tensor,
+                        layer_names: list[str],
+                        metric_as_dist: bool = True) -> dict:
+    """
+    Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
+    two batch of any type of examples).
+    """
+    L = len(layer_names)
+    # make into eval
+    mdl1.eval()
+    mdl2.eval()
+    # -- compute sims
+    x: torch.Tensor = batch_x
+    if torch.cuda.is_available():
+        x = x.cuda()
+    # - compute cca sims
+    cca: list[float] = get_cxa_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='pwcca')
+    cka: list[float] = get_cxa_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='lincka')
+    assert len(cca) == L
+    # -- get l2 sims per layer
+    # op = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='op_torch')
+    # nes = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='nes_torch')
+    # cosine = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='cosine_torch')
+
+    # y = self.base_model(qry_x_t)
+    # y_adapt = fmodel(qry_x_t)
+    # # dim=0 because we have single numbers and we are taking the NES in the batch direction
+    # nes_output = uutils.torch_uu.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+    #
+    # query_loss = self.args.criterion(y, y_adapt).item()
+    # # sims = [cca, cka, nes, cosine, nes_output, query_loss]
+    # -- from [Tasks, Sims] -> [Sims, Tasks]
+    # sims = {'cca': [], 'cka': [], 'op': [],  # [L]
+    #         'nes': [], 'cosine': [],  # [L, K]
+    #         'nes_output': [], 'query_loss': []  # [1]
+    #         }
+    # sims = {'cca': cca, 'cka': cka, 'op': op,  # [L]
+    #         'nes': nes, 'cosine': cosine,  # [L, K]
+    #         'nes_output': nes_output, 'query_loss': query_loss  # [1]
+    #         }
+    # sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
+    out_metrics: dict = {}
+    for metric, sim in sims.items():
+        out_metrics[metric] = tensorify(sim).detach()
+        if metric_as_dist and metric != 'query_loss':
+            out_metrics[metric] = 1.0 - out_metrics[metric]
+            if metric != 'cosine':
+                error_tolerance: float = -0.0001
+                assert (out_metrics[metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
+    return out_metrics
+
+def get_cxa_similarities_per_layer(mdl1: nn.Module, mdl2: nn.Module,
+                                   x: torch.Tensor, layer_names: list[str],
+                                   sim_type: str = 'pwcca'):
+    # get [..., s_l, ...] cca sim per layer (for this data set)
+    from uutils.torch_uu import cxa_sim
+    sims_per_layer = []
+    for layer_name in layer_names:
+        # sim = cxa_sim(mdl1, mdl2, x, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
+        sim = cxa_sim(mdl1, mdl2, x, layer_name, iters=1, cxa_sim_type=sim_type)
+        sims_per_layer.append(sim)
+    return sims_per_layer  # [..., s_l, ...]_l
+
+# def get_l2_similarities_per_layer(self, mdl1, mdl2, X, layer_names, sim_type='nes_torch'):
+#     import copy
+#     from uutils.torch_uu import l2_sim_torch
+#     # get [..., s_l, ...] sim per layer (for this data set)
+#     modules = zip(mdl1.named_children(), mdl2.named_children())
+#     sims_per_layer = []
+#     out1 = X
+#     out2 = X
+#     for (name1, m1), (name2, m2) in modules:
+#         # print(f'{(name1, m1), (name2, m2)}')
+#         # - always do the forward pass of the net for all layers
+#         out1 = m1(out1)
+#         m2_callable = copy.deepcopy(m1)
+#         m2_callable.load_state_dict(m2.state_dict())
+#         out2 = m2_callable(out2)
+#         # - only collect values for chosen layers
+#         if name1 in layer_names:
+#             # out1, out2 = normalize_matrix_for_similarity(out1, dim=1), normalize_matrix_for_similarity(out2, dim=1)
+#             sim = l2_sim_torch(out1, out2, sim_type=sim_type)
+#             sims_per_layer.append(sim)
+#     return sims_per_layer  # [[s_k,l]_k]_l = [..., [...,s_k,l, ...]_k, ...]_l
+
 # -- misc
+
+# --
 
 # -- tests
 
