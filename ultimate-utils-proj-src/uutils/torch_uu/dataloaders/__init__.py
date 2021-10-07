@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 import time
 from pathlib import Path
 
@@ -58,7 +60,7 @@ def get_rfs_sl_dataloader(args):
     return train_sl_loader, val_sl_loader, meta_valloader
 
 
-def get_miniimagenet_dataloaders_torchmeta(args):
+def get_miniimagenet_dataloaders_torchmeta(args: Namespace):
     args.trainin_with_epochs = False
     args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
     args.criterion = nn.CrossEntropyLoss()

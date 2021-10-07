@@ -1932,6 +1932,61 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
 
+def equal_two_few_shot_cnn_models(model1: nn.Module, model2: nn.Module) -> bool:
+    """
+    Checks the two models have the same arch by comparing the string value of the module of each layer.
+    Skips the cls layer since in sl vs ml, the final layer are of different sizes e.g. for maml its 5
+    and for sl its 64 since sl trains with union of all layers.
+    """
+    # simple compare the feature layers, see file /Users/brando/automl-meta-learning/automl-proj-src/meta_learning/base_models/learner_from_opt_as_few_shot_paper.py
+    # to see the deatails of what the model arch is and why we do it this way
+    return str(model1.model.features) == str(model2.model.features)
+    # return str(list(args.model1.modules())[:-1]) == str(list(args.model2.modules())[:-1])
+    # return str(list(args.model1.modules())[:-1]) == str(list(args.model2.modules())[:-1])
+    # - to get the feature leayers
+    # model1 = model1.model.features
+    # model2 = model2.model.features
+    # # - check names and module
+    # eq_archs: bool = True
+    # for (name1, module1), (name2, module2) in zip(model1.named_modules(), model2.named_modules()):
+    #     # eq_archs = eq_archs and name1 == name2
+    #     if name1 != 'cls' or name2 != 'cls':
+    #         assert str(module1) == str(module2), f'Modules at layer are not the same {str(module1)}, {str(module2)}'
+    #         eq_archs = eq_archs and str(module1) == str(module2)
+    #     assert name1 != 'spp'
+    #     assert name2 != 'spp'
+    # # - check same length
+    # eq_archs = eq_archs and len(list(model1.modules())) == len(list(model2.modules()))
+    # return eq_archs
+
+def get_layer_names_for_sim_analysis_5cnn(args: Namespace,
+                                          model: nn.Module,
+                                          layer_for_analysis: str,
+                                          include_final_layer_in_lst: bool = True) -> list[str]:
+    """
+    Do rep analysis on pool layer.
+
+    Thoughts:
+    This might be good since a layer for 5CNN looks as follows C,N,ReLU,P so the translational invariance has
+    been done, the non-linearity has been applied but due to pooling it's not going to be higher than expected
+    due to lots of zeros. It seems that makes sense, at least if we want the first layer to be more than just
+    a linear transform.
+    But worth trying all the layers.
+    """
+    layer_names: list = []
+    for name, m in model.named_modules():
+        # - to do analysis on inner activations
+        if layer_for_analysis in name:
+            layer_names.append(name)
+        assert name != 'spp', f'Get an spp layer, we are currently not training any model to handle spp.'
+        if include_final_layer_in_lst and name == 'cls':
+            layer_names.append(name)
+    # - print layers & return
+    from uutils.torch_uu.distributed import is_lead_worker
+    if is_lead_worker(args.rank):
+        print(layer_names)
+    return layer_names
+
 def get_layer_names_to_do_sim_analysis_relu(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
     Get the layers to do the similarity analysis.
@@ -1979,9 +2034,6 @@ def get_layer_names_to_do_sim_analysis_bn(args: Namespace, include_final_layer_i
     if is_lead_worker(args.rank):
         print(layer_names)
     return layer_names
-
-def get_layer_names_todo_sim_analysis_5cnn():
-    return
 
 def get_layer_names_to_do_sim_analysis_fc(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
@@ -2133,7 +2185,7 @@ def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
         #     wandb.log(rep_summary_log, commit=True)
 
 def distance_btw_models(args: Namespace,
-                        mdl1: nn.Module, mdl2: nn.Module,
+                        model1: nn.Module, model2: nn.Module,
                         batch_x: torch.Tensor, batch_y: torch.Tensor,
                         layer_names: list[str],
                         metric_as_dist: bool = True) -> dict:
@@ -2141,22 +2193,22 @@ def distance_btw_models(args: Namespace,
     Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
     two batch of any type of examples).
     """
-    L = len(layer_names)
+    L: int = len(layer_names)
     # make into eval
-    mdl1.eval()
-    mdl2.eval()
+    model1.eval()
+    model2.eval()
     # -- compute sims
     x: torch.Tensor = batch_x
     if torch.cuda.is_available():
         x = x.cuda()
     # - compute cca sims
-    cca: list[float] = get_cxa_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='pwcca')
-    cka: list[float] = get_cxa_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='lincka')
+    cca: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='pwcca')
+    cka: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='lincka')
     assert len(cca) == L
     # -- get l2 sims per layer
-    # op = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='op_torch')
-    # nes = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='nes_torch')
-    # cosine = get_l2_similarities_per_layer(mdl1, mdl2, x, layer_names, sim_type='cosine_torch')
+    # op = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='op_torch')
+    # nes = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='nes_torch')
+    # cosine = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='cosine_torch')
 
     # y = self.base_model(qry_x_t)
     # y_adapt = fmodel(qry_x_t)
@@ -2185,23 +2237,25 @@ def distance_btw_models(args: Namespace,
                 assert (out_metrics[metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
     return out_metrics
 
-def get_cxa_similarities_per_layer(mdl1: nn.Module, mdl2: nn.Module,
+def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
                                    x: torch.Tensor, layer_names: list[str],
                                    sim_type: str = 'pwcca'):
-    # get [..., s_l, ...] cca sim per layer (for this data set)
+    """
+    Get [..., s_l, ...] cca sim per layer (for this data set)
+    """
     from uutils.torch_uu import cxa_sim
     sims_per_layer = []
     for layer_name in layer_names:
-        # sim = cxa_sim(mdl1, mdl2, x, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
-        sim = cxa_sim(mdl1, mdl2, x, layer_name, iters=1, cxa_sim_type=sim_type)
+        # sim = cxa_sim(model1, model2, x, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
+        sim = cxa_sim(model1, model2, x, layer_name, iters=1, cxa_sim_type=sim_type)
         sims_per_layer.append(sim)
     return sims_per_layer  # [..., s_l, ...]_l
 
-# def get_l2_similarities_per_layer(self, mdl1, mdl2, X, layer_names, sim_type='nes_torch'):
+# def get_l2_similarities_per_layer(self, model1, model2, X, layer_names, sim_type='nes_torch'):
 #     import copy
 #     from uutils.torch_uu import l2_sim_torch
 #     # get [..., s_l, ...] sim per layer (for this data set)
-#     modules = zip(mdl1.named_children(), mdl2.named_children())
+#     modules = zip(model1.named_children(), model2.named_children())
 #     sims_per_layer = []
 #     out1 = X
 #     out2 = X
