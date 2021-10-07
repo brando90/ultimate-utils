@@ -214,6 +214,16 @@ def get_dataset(dataloaders: dict):
     datasets = {split:dataloader.dataset for split,dataloader in dataloaders}
     return datasets
 
+def get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namespace:
+    # note this is hardcoded in get_miniimagenet_dataloaders_torchmeta
+    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
+    args.n_classes = 5
+    args.k_shots = 5
+    args.k_eval = 15
+    args.meta_batch_size_train = 2
+    args.meta_batch_size_eval = 2
+    args.num_workers = 0
+    return args
 
 # ---- teats ----
 
