@@ -2114,9 +2114,9 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     assert std_summarized_rep_sim['cca'].size() == torch.Size([])
     return mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim
 
-def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
+def log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args: Namespace,
                                                it: int,
-                                               f1: nn.Module, f2: nn.Module,
+                                               mdl1: nn.Module, mdl2: nn.Module,
                                                batch_x: torch.Tensor, batch_y: torch.Tensor,
 
                                                # spt_x, spt_y, qry_x, qry_y,  # these are multiple tasks
@@ -2127,7 +2127,7 @@ def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
                                                parallel: bool = False,
                                                iter_tasks=None,
                                                log_to_wandb: bool = False,
-                                               show_layerwise_sims: bool = False
+                                               show_layerwise_sims: bool = True
                                                ):
     """
     Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that
@@ -2150,7 +2150,8 @@ def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
     #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
     #     else:
     #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
-        sims = distance_btw_models(f1, f2)
+        sims = distances_btw_models(args, mdl1, mdl2, batch_x, batch_y, args.layer_names, args.metrics_as_dist)
+        print(sims)
         # mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(args, sims)
 
         # -- log (print)
@@ -2158,18 +2159,18 @@ def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
         # - per layer
         # if show_layerwise_sims:
         print(f'---- Layer-Wise metrics ----')
-        print(f'mean_layer_wise_{sim_or_dist} (per layer)')
-        pprint(mean_layer_wise_sim)
-        print(f'std_layer_wise_{sim_or_dist} (per layer)')
-        pprint(std_layer_wise_sim)
-
-        # - rep sim
-        print(f'---- Representation metrics ----')
-        print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        pprint(mean_summarized_rep_sim)
-        print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        pprint(std_summarized_rep_sim)
-        args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
+        # print(f'mean_layer_wise_{sim_or_dist} (per layer)')
+        # pprint(mean_layer_wise_sim)
+        # print(f'std_layer_wise_{sim_or_dist} (per layer)')
+        # pprint(std_layer_wise_sim)
+        #
+        # # - rep sim
+        # print(f'---- Representation metrics ----')
+        # print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
+        # pprint(mean_summarized_rep_sim)
+        # print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
+        # pprint(std_summarized_rep_sim)
+        # args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
 
         # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
         # - log to wandb
@@ -2184,11 +2185,11 @@ def log_sim_to_check_presence_of_feature_reuse_f1_vs_f2(args: Namespace,
         #     rep_summary_log[it_or_epoch] = it
         #     wandb.log(rep_summary_log, commit=True)
 
-def distance_btw_models(args: Namespace,
+def distances_btw_models(args: Namespace,
                         model1: nn.Module, model2: nn.Module,
                         batch_x: torch.Tensor, batch_y: torch.Tensor,
                         layer_names: list[str],
-                        metric_as_dist: bool = True) -> dict:
+                        metrics_as_dist: bool = True) -> dict:
     """
     Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
     two batch of any type of examples).
@@ -2205,6 +2206,7 @@ def distance_btw_models(args: Namespace,
     cca: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='pwcca')
     cka: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='lincka')
     assert len(cca) == L
+    assert len(cka) == L
     # -- get l2 sims per layer
     # op = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='op_torch')
     # nes = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='nes_torch')
@@ -2230,7 +2232,7 @@ def distance_btw_models(args: Namespace,
     out_metrics: dict = {}
     for metric, sim in sims.items():
         out_metrics[metric] = tensorify(sim).detach()
-        if metric_as_dist and metric != 'query_loss':
+        if metrics_as_dist and metric != 'query_loss':
             out_metrics[metric] = 1.0 - out_metrics[metric]
             if metric != 'cosine':
                 error_tolerance: float = -0.0001
@@ -2272,6 +2274,67 @@ def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
 #             sim = l2_sim_torch(out1, out2, sim_type=sim_type)
 #             sims_per_layer.append(sim)
 #     return sims_per_layer  # [[s_k,l]_k]_l = [..., [...,s_k,l, ...]_k, ...]_l
+
+def compare_based_on_mdl1_vs_mdl2(args: Namespace, meta_dataloader):
+    print(f'{args.num_workers=}')
+    # print(f'-->{args.meta_batch_size_eval=}')
+    print(f'-->{args.num_its=}')
+    # print(f'-->{args.nb_inner_train_steps=}')
+    print(f'-->{args.metrics_as_dist=}')
+    #
+    # bar_it = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+    args.it = 1
+    halt: bool = False
+    while not halt:
+        # spt_x, spt_y, qry_x, qry_y = next(meta_dataloader)
+        for batch_idx, batch in enumerate(meta_dataloader):
+            print(f'it = {args.it}')
+            spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+            batch_x, batch_y = qry_x[0], qry_y[0]
+
+            # args.model1(batch_x)
+            # args.model2(batch_x)
+
+            # meta_eval_loss, meta_eval_acc = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
+            # - todo, get the loss, accuracies of both models first
+            # args.model1
+
+            # -- log it stats
+            log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args, args.it, args.model1, args.model2, batch_x, batch_y, force_log=True, parallel=args.sim_compute_parallel)
+
+            # - break
+            halt: bool = args.it >= args.num_its - 1
+            if halt:
+                break
+            args.it += 1
+
+def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
+    print(f'{args.num_workers=}')
+    print(f'-->{args.meta_batch_size_eval=}')
+    print(f'-->{args.num_its=}')
+    print(f'-->{args.nb_inner_train_steps=}')
+    print(f'-->{args.metrics_as_dist=}')
+    # bar_it = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+    args.it = 1
+    halt: bool = False
+    while not halt:
+        for batch_idx, batch in enumerate(meta_dataloader):
+            print(f'it = {args.it}')
+            spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+            batch_x, batch_y = qry_x[0], qry_y[0]
+
+            meta_eval_loss, meta_eval_acc = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
+
+            # -- log it stats
+            # log_sim_to_check_presence_of_feature_reuse(args, args.it, spt_x, spt_y, qry_x, qry_y, force_log=True, parallel=args.sim_compute_parallel, show_layerwise_sims=args.show_layerwise_sims)
+            log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2()
+
+            # - break
+            halt: bool = args.it >= args.num_its - 1
+            if halt:
+                break
+            args.it += 1
+    return meta_eval_loss, meta_eval_acc
 
 # -- misc
 

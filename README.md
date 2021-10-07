@@ -25,7 +25,7 @@ note the import statement is shorter than the library name (`ultimate-utils` vs 
 
 ## Manual installation [Development of uutils]
 
-To use uutils first get the code this repo (e.g. fork it on github):
+To use uutils first get the code from this repo (e.g. fork it on github):
 
 ```
 git clone git@github.com:brando90/ultimate-utils.git
