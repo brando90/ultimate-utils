@@ -3,6 +3,7 @@ from argparse import Namespace
 import time
 from pathlib import Path
 
+import uutils.torch_uu
 from meta_learning.datasets.mini_imagenet import MetaImageNet, ImageNet
 
 import torch
@@ -224,6 +225,25 @@ def get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namesp
     args.meta_batch_size_eval = 2
     args.num_workers = 0
     return args
+
+def get_set_of_examples_from_mini_imagenet(k_eval: int = 15) -> torch.Tensor:
+    from uutils.torch_uu import process_meta_batch
+    args: Namespace = Namespace()
+    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
+    args.n_classes = 5
+    args.k_shots = 5
+    args.k_eval = k_eval
+    args.meta_batch_size_train = 2
+    args.meta_batch_size_eval = 2
+    args.num_workers = 0
+    args.device = uutils.torch_uu.get_device()
+    # args = get_minimum_args_for_mini_imagenet_from_torchmeta(args)
+    meta_train_dataloader, meta_val_dataloader, meta_test_dataloader = get_miniimagenet_dataloaders_torchmeta(args)
+    meta_batch: dict = next(iter(meta_val_dataloader))
+    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, meta_batch)
+    # - to get the first task (since it will retrun a batch of tasks)
+    X: torch.Tensor = qry_x[0].squeeze()  # [1, num_classes * k_eval, C, H, W] -> [num_classes * k_eval, C, H, W]
+    return X
 
 # ---- teats ----
 

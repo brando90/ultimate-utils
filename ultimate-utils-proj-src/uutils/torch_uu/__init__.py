@@ -14,7 +14,7 @@ todo:
 import dill
 import gc
 from datetime import datetime
-from typing import List, Union, Any
+from typing import List, Union, Any, Optional
 
 import torch
 from torch import Tensor
@@ -283,14 +283,18 @@ def check_mdl_in_single_gpu(mdl):
     device = next(mdl.parameters()).device
     return device
 
-def get_device(mdl):
+def get_device_from(mdl) -> torch.device:
     """
     Checks the device of the first set of params.
 
     https://discuss.pytorch.org/t/how-to-check-if-model-is-on-cuda/180
     :return:
     """
-    device = next(mdl.parameters()).device
+    device: torch.device = next(mdl.parameters()).device
+    return device
+
+def get_device() -> torch.device:
+    device: torch.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     return device
 
 def create_detached_deep_copy_old(mdl):
@@ -1025,7 +1029,8 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
     return norm**(1/p), abs_err
 
-def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dist_type='pwcca') -> float:
+def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
+             downsample_size: Optional[str] = None, iters: int =1, cxa_dist_type: str = 'pwcca') -> float:
     # print(cca_size)
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
@@ -1038,15 +1043,24 @@ def cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_dis
         # x = torch_uu.torch_uu.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
         # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((15, 1))
         # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((500, 1))
-        x = meta_batch
-        mdl1(x)
-        mdl2(x)
-    dist = hook1.distance(hook2, size=cca_size)
+        mdl1(X)
+        mdl2(X)
+    # - size: size of the feature map after downsampling
+    dist = hook1.distance(hook2, size=downsample_size)
     return float(dist)
 
-def cxa_sim(mdl1, mdl2, meta_batch, layer_name, cca_size=None, iters=1, cxa_sim_type='pwcca'):
-    dist = cxa_dist(mdl1, mdl2, meta_batch, layer_name, cca_size, iters, cxa_sim_type)
+def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    dist = cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
     return 1.0 - dist
+
+def dCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
+             downsample_size: Optional[str] = None, iters: int =1, cxa_dist_type: str = 'pwcca') -> float:
+    return cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
+
+def sCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    return cxa_sim(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
 
 def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2):
     # meta_batch [T, N*K, CHW], [T, K, D]
@@ -2463,6 +2477,76 @@ def op_test():
             sims_per_layer.append((name1,sim))
     pprint(sims_per_layer)
 
+def anatome_test_are_same_nets_very_similar():
+    """
+    Same model with same data even if down sampled, should show similar nets.
+    """
+    from uutils.torch_uu.models import hardcoded_3_layer_model
+    B = 1024
+    Din = 524
+    downsample_size = 4
+    Dout = Din
+    mdl1 = hardcoded_3_layer_model(Din, Dout)
+    mdl2 = mdl1
+    # - layer name
+    # layer_name = 'fc0'
+    # layer_name = 'fc1'
+    layer_name = 'fc2'
+    # - data
+    X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, Din))
+    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+    assert(abs(scca_full - 1.0) < 1e-5)
+    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+    assert(abs(scca_downsampled - 1.0) < 1e-5)
+
+def anatome_test_are_random_vs_pretrain_resnets_different():
+    """
+    random vs pre-trained nets should show different nets
+    - no downsample
+    - still true if downsample (but perhaps similarity increases, due to collapsing nets makes r.v.s
+    interact more btw each other, so correlation is expected to increase).
+    """
+    from torchvision.models import resnet18
+    B = 512
+    C, H, W = 3, 64, 64
+    print(f'Din ~ {(C*H*W)=}')
+    downsample_size = 4
+    mdl1 = resnet18()
+    mdl2 = resnet18(pretrained=True)
+    # - layer name
+    # layer_name = 'bn1'
+    layer_name = 'layer2.1.bn2'
+    # layer_name = 'layer4.1.bn2'
+    # layer_name = 'fc'
+
+    # # -- we expect low CCA/sim since random nets vs pre-trained nets are different (especially on real data)
+    # # - random data test
+    X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, C, H, W))
+    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_full=}')
+    # assert(abs(scca_full - 1.0) < 1e-5)
+    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
+    # assert(abs(scca_downsampled - 1.0) < 1e-5)
+
+    # - mini-imagenet test (the difference should be accentuated btw random net & pre-trained on real img data)
+    from uutils.torch_uu.dataloaders import get_set_of_examples_from_mini_imagenet
+    k_eval: int = B  # num examples is about M = k_eval*(num_classes) = B*(num_classes)
+    X: torch.Tensor = get_set_of_examples_from_mini_imagenet(k_eval)
+    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_full=}')
+    # assert(abs(scca_full - 1.0) < 1e-5)
+    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
+    # assert(abs(scca_downsampled - 1.0) < 1e-5)
+
+def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_similar_or_different():
+    """
+    - real, fake data
+    - focus on pre-trained net since that is what I am comparing stuff during my research, not random nets.
+    """
+    pass
+
 # -- __main__
 
 if __name__ == '__main__':
@@ -2471,5 +2555,7 @@ if __name__ == '__main__':
     # test_compressed_r2_score()
     # test_topk_accuracy_and_accuracy()
     # test_simple_determinism()
-    op_test()
+    # op_test()
+    anatome_test_are_same_nets_very_similar()
+    anatome_test_are_random_vs_pretrain_resnets_different()
     print('Done\a')

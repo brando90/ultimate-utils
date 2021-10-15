@@ -11,13 +11,14 @@ def hardcoded_3_layer_model(in_features: int, out_features: int) -> nn.Module:
     ReLU activation. Final layer are the raw scores (so final layer is a linear layer).
 
     """
+    from collections import OrderedDict
     hidden_features = in_features
     params = OrderedDict([
         ('fc0', nn.Linear(in_features=in_features, out_features=hidden_features)),
         ('ReLU0', nn.ReLU()),
         ('fc1', nn.Linear(in_features=hidden_features, out_features=hidden_features)),
         ('ReLU2', nn.ReLU()),
-        ('fc3', nn.Linear(in_features=hidden_features, out_features=out_features))
+        ('fc2', nn.Linear(in_features=hidden_features, out_features=out_features))
     ])
     mdl = nn.Sequential(params)
     return mdl
