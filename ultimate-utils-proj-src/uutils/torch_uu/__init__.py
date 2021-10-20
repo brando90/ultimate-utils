@@ -1030,8 +1030,10 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     return norm**(1/p), abs_err
 
 def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int =1, cxa_dist_type: str = 'pwcca') -> float:
-    # print(cca_size)
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    # import copy
+    # mdl1 = copy.deepcopy(mdl1)
+    # mdl2 = copy.deepcopy(mdl2)
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
@@ -1047,6 +1049,9 @@ def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
         mdl2(X)
     # - size: size of the feature map after downsampling
     dist = hook1.distance(hook2, size=downsample_size)
+    # - remove hook, to make sure code stops being stateful (I hope)
+    remove_hook(mdl1, hook1)
+    remove_hook(mdl2, hook2)
     return float(dist)
 
 def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
@@ -1055,7 +1060,7 @@ def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
     return 1.0 - dist
 
 def dCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int =1, cxa_dist_type: str = 'pwcca') -> float:
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
     return cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
 
 def sCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
@@ -1077,6 +1082,8 @@ def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din
         mdl1(x)
         mdl2(x)
     dist = hook1.distance(hook2, size=cca_size)
+    remove_hook(mdl1, hook1)
+    remove_hook(mdl2, hook2)
     return dist
 
 def ned(f, y):
@@ -2350,7 +2357,49 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
             args.it += 1
     return meta_eval_loss, meta_eval_acc
 
+# def get_svcca_based_on_original_svccca():
+#     pass
+#
+# def get_pwcca_based_on_original_pwccca_for_cnn(cnn1: nn.Module, cnn2: nn.Module):
+#     """
+#     Computes pwcca for CNNs
+#     """
+#     pass
+
 # -- misc
+
+def remove_hook(mdl: nn.Module, hook):
+    """
+    ref: https://github.com/pytorch/pytorch/issues/5037
+    """
+    handle = mdl.register_forward_hook(hook)
+    handle.remove()
+
+def approx_equal(val1: float, val2: float, tolerance: float = 1.0e-4) -> bool:
+    """
+    Returns wether two values are approximately equal e.g. if they are less than 4 orders of magnitude apart.
+    """
+    eq: bool = abs(val1 - val2) <= tolerance
+    return eq
+
+def get_identity_data(B: int) -> torch.Tensor:
+    """
+    Returns an identity data of size [B, D] = [B, B] so that the data doesn't affect the forward propagation (or at
+    least as little as possible).
+
+    Note: the dim/num neurons/features D is equal to the batch size B.
+    """
+    data: torch.Tensor = torch.diag(torch.ones(B))
+    return data
+
+def get_normal_data(B: int, Din: int, loc: float = 0.0, scale: float = 1.0) -> torch.Tensor:
+    """
+    Returns normally distributed data of size [B, Din].
+
+    Note: torch.randn(B, D) does something similar.
+    """
+    data: torch.Tensor = torch.distributions.Normal(loc=loc, scale=scale).sample((B, Din))
+    return data
 
 # --
 
@@ -2507,7 +2556,7 @@ def anatome_test_are_random_vs_pretrain_resnets_different():
     interact more btw each other, so correlation is expected to increase).
     """
     from torchvision.models import resnet18
-    B = 512
+    B = 1024
     C, H, W = 3, 64, 64
     print(f'Din ~ {(C*H*W)=}')
     downsample_size = 4
@@ -2515,30 +2564,46 @@ def anatome_test_are_random_vs_pretrain_resnets_different():
     mdl2 = resnet18(pretrained=True)
     # - layer name
     # layer_name = 'bn1'
-    layer_name = 'layer2.1.bn2'
-    # layer_name = 'layer4.1.bn2'
+    # layer_name = 'layer1.0.bn2'
+    # layer_name = 'layer2.1.bn2'
+    layer_name = 'layer4.1.bn2'
     # layer_name = 'fc'
+    print(f'{layer_name=}')
 
     # # -- we expect low CCA/sim since random nets vs pre-trained nets are different (especially on real data)
     # # - random data test
     X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, C, H, W))
-    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_full=}')
-    # assert(abs(scca_full - 1.0) < 1e-5)
-    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
-    # assert(abs(scca_downsampled - 1.0) < 1e-5)
+    scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
+    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
+    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
+          f'-> {scca_full_random_data=} (but might be more similar than expected on random data)')
+    # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+    # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
 
+    #
+    mdl1 = resnet18()
+    mdl2 = resnet18(pretrained=True)
     # - mini-imagenet test (the difference should be accentuated btw random net & pre-trained on real img data)
     from uutils.torch_uu.dataloaders import get_set_of_examples_from_mini_imagenet
+    B = 512
     k_eval: int = B  # num examples is about M = k_eval*(num_classes) = B*(num_classes)
     X: torch.Tensor = get_set_of_examples_from_mini_imagenet(k_eval)
-    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_full=}')
-    # assert(abs(scca_full - 1.0) < 1e-5)
-    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
-    # assert(abs(scca_downsampled - 1.0) < 1e-5)
+    scca_full_mini_imagenet_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+    scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
+    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
+    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
+    print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
+          f'{scca_full_mini_imagenet_data=} (the difference should be accentuated with real data, so lowest sim)')
+    print()
+    # assert(scca_full_mini_imagenet_data < scca_full_random_data), f'Sim should decrease, because the pre-trained net' \
+    #                                                               f'was trained on real images, so the weights are' \
+    #                                                               f'tuned for it but random weights are not, which' \
+    #                                                               f'should increase the difference so the sim' \
+    #                                                               f'should be lowest here. i.e. we want ' \
+    #                                                               f'{scca_full_mini_imagenet_data}<{scca_full_random_data}'
+    # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+    # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
 
 def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_similar_or_different():
     """
