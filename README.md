@@ -5,7 +5,7 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
-## Standard pip instal [Recommended]
+## Standard pip install [Recommended]
 
 If you are going to use a gpu the do this first before continuing 
 (or check the offical website: https://pytorch.org/get-started/locally/):
