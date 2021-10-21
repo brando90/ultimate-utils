@@ -8,7 +8,7 @@ from meta_learning.datasets.mini_imagenet import MetaImageNet, ImageNet
 
 import torch
 from meta_learning.datasets.rand_fnn import RandFNN
-from torch import nn, nn as nn
+from torch import nn, nn as nn, Tensor
 from torch.utils.data import DataLoader
 from torchmeta.toy.helpers import sinusoid
 from torchmeta.transforms import ClassSplitter
@@ -27,6 +27,32 @@ def process_batch_sl(args, batch):
         else:
             batch_x, batch_y = batch_x.cuda(), batch_y.cuda()
     return batch_x, batch_y
+
+def get_torchmeta_meta_data_batch(args: Namespace) -> tuple[Tensor, Tensor]:
+    """
+    Conceptually, return [B, n_c*k, C, H, W] tensor with B classification tasks, with n_c classes and
+    k examples for each class. C, H, W are the usual image dims values for images.
+
+    return: qry_x [B, n_c*k, C, H, W], qry_y [B, ...]
+    """
+    from uutils.torch_uu import process_meta_batch
+    meta_train_dataloader, meta_val_dataloader, meta_test_dataloader = get_miniimagenet_dataloaders_torchmeta(args)
+    batch: dict = next(meta_val_dataloader)
+    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+    return qry_x, qry_y
+
+def get_torchmeta_meta_data_images(args: Namespace, torchmeta_dataloader) -> Tensor:
+    """
+    Conceptually, return [B, n_c*k, C, H, W] tensor with B classification tasks, with n_c classes and
+    k examples for each class. C, H, W are the usual image dims values for images.
+
+    :param torchmeta_dataloader:
+    :return: qry_x [B, n_c*k, C, H, W]
+    """
+    from uutils.torch_uu import process_meta_batch
+    batch: dict = next(torchmeta_dataloader)
+    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+    return qry_x
 
 def get_rfs_sl_dataloader(args):
     args.num_workers = 2 if args.num_workers is None else args.num_workers

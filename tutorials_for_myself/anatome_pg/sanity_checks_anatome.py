@@ -52,7 +52,7 @@ import uutils
 from uutils.torch_uu import cxa_sim, approx_equal
 from uutils.torch_uu.models import get_named_one_layer_random_linear_model
 
-from uutils.plot import plot, save_to_desktop
+import uutils.plot as uulot
 
 B: int = 10  # [101, 200, 500, 1000, 2000, 5000, 10000]
 Din: int = B
@@ -81,7 +81,7 @@ for b in data_sizes:
     sims.append(sim)
 
 print(f'{sims=}')
-plot(x=data_sizes, y=sims, xlabel='number of data points (n)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='ndata_vs_svcca_sim', title='Features (D) vs Sim (SVCCA)', x_hline=Dout, x_hline_label=f'B=D={Dout}')
+uulot.plot(x=data_sizes, y=sims, xlabel='number of data points (n)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='ndata_vs_svcca_sim', title='Features (D) vs Sim (SVCCA)', x_hline=Dout, x_hline_label=f'B=D={Dout}')
 
 #%%
 
@@ -127,3 +127,4 @@ for d in D_feature_sizes:
 print(f'{sims=}')
 uuplot.plot(x=D_feature_sizes, y=sims, xlabel='number of features/size of dimension (D)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='D_vs_sim_svcca', title='Features (D) vs Sim (SVCCA)', x_hline=B, x_hline_label=f'B=D={B}')
 # uuplot.plot(x=D_feature_sizes, y=sims, xlabel='number of features/size of dimension (D)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='D_vs_sim', title='Features (D) vs Sim (SVCCA)')
+

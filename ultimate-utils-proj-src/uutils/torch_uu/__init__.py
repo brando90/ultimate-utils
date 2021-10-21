@@ -1029,29 +1029,49 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
     return norm**(1/p), abs_err
 
-def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
+                     X1: Tensor, X2: Tensor, layer_name: str,
+                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    """
+    Computes distance between layer matrices for a specific layer:
+        d: float = dist(mdl1(X1), mdl2(X2))  # d = 1 - sim
+
+    Note:
+        - size: size of the feature map after downsampling
+    """
     # import copy
     # mdl1 = copy.deepcopy(mdl1)
     # mdl2 = copy.deepcopy(mdl2)
-    # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
-    # get sim/dis functions
+    # - get distance hooks (to intercept the features)
     hook1 = SimilarityHook(mdl1, layer_name, cxa_dist_type)
     hook2 = SimilarityHook(mdl2, layer_name, cxa_dist_type)
     mdl1.eval()
     mdl2.eval()
+    # - populate hook tensors in the data dimension (1st dimension):
+    # self._hooked_tensors = torch.cat([self._hooked_tensors, output], dim=0).contiguous()
+    # so it populates the self._hooked_tensors in the hook objects.
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
-        # x = torch_uu.torch_uu.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
-        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((15, 1))
-        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((500, 1))
-        mdl1(X)
-        mdl2(X)
-    # - size: size of the feature map after downsampling
-    dist = hook1.distance(hook2, size=downsample_size)
+        mdl1(X1)
+        mdl2(X2)
+    # - compute distiance with hooks
+    dist: float = hook1.distance(hook2, size=downsample_size)  # size: size of the feature map after downsampling
     # - remove hook, to make sure code stops being stateful (I hope)
+    hook1.clear()
+    hook2.clear()
     remove_hook(mdl1, hook1)
     remove_hook(mdl2, hook2)
+    return float(dist)
+
+def cxa_sim_general(mdl1: nn.Module, mdl2: nn.Module,
+                     X1: Tensor, X2: Tensor, layer_name: str,
+                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    dist: float = cxa_dist_general(mdl1, mdl2, X1, X2, layer_name, downsample_size, iters, cxa_dist_type)
+    return 1.0 - dist
+
+def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
+    dist: float = cxa_dist_general(mdl1, mdl2, X, X, layer_name, downsample_size, iters, cxa_dist_type)
     return float(dist)
 
 def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
@@ -1077,11 +1097,12 @@ def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din
     mdl2.eval()
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
         x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
-        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((15, 1))
-        # x = torch_uu.torch_uu.distributions.Uniform(low=-1, high=1).sample((num_samples_per_task, 1))
         mdl1(x)
         mdl2(x)
     dist = hook1.distance(hook2, size=cca_size)
+    # -
+    hook1.clear()
+    hook2.clear()
     remove_hook(mdl1, hook1)
     remove_hook(mdl2, hook2)
     return dist
@@ -2357,14 +2378,26 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
             args.it += 1
     return meta_eval_loss, meta_eval_acc
 
-# def get_svcca_based_on_original_svccca():
-#     pass
-#
-# def get_pwcca_based_on_original_pwccca_for_cnn(cnn1: nn.Module, cnn2: nn.Module):
-#     """
-#     Computes pwcca for CNNs
-#     """
-#     pass
+def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Modue,
+                        X1: Tensor, X2: Tensor,
+                        layer_name: str, cxa_dist_type: str) -> tuple[list[int], list[float]]:
+    """
+    Plots sim vs N given a fixed D.
+
+    X1: [n_c*k_eval*H*W, F]
+    """
+    assert(X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA like analysis to work.' \
+                                      f'but got: {X1.size(0)=}, {X2.size(0)=}'
+
+    # data_sizes: list[int] = [X1.size(0)]
+    data_sizes: list[int] = [10]
+    # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
+    sims: list[float] = []
+    for b in data_sizes:
+        x1, x2 = X1[:b], X2[:b]
+        sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+        sims.append(sim)
+    return data_sizes, sims
 
 # -- pytorch hooks
 # ref: https://medium.com/the-dl/how-to-use-pytorch-hooks-5041d777f904
@@ -2424,9 +2457,48 @@ class FeatureExtractorHook(nn.Module):
             layer.register_forward_hook(self.save_outputs_hook(layer_id))
 
     def save_outputs_hook(self, layer_id: str) -> callable:
+        # the trick is that the fn has the self (which is the hook self) hardcoded in the passable function,
+        # so even though it only takes module, input, output, you can collect the features.
         def fn(_, __, output):
+            # append output features of current layer to hook_self obj.
             self._features[layer_id] = output
         return fn
+
+    def forward(self, x: Tensor) -> dict[str, Tensor]:
+        """
+        Returns the features for each layer for this model in a dict with the format:
+            features = {layer: str -> tesnor_for_layer: torchTensor}
+        i.e. each string for the layer maps to the feature tensor for that layer.
+        """
+        _ = self.model(x)
+        return self._features
+
+def gradient_clipper_hook(model: nn.Module, val: float) -> nn.Module:
+    for parameter in model.parameters():
+        parameter.register_hook(lambda grad: grad.clamp_(-val, val))
+
+    return model
+
+class GetMaxFiltersExtractorHook(nn.Module):
+    def __init__(self, model: nn.Module, layers: Iterable[str]):
+        super().__init__()
+        self.model: nn.Module = model
+        self.layers: Iterable[str] = layers
+        self._features: dict[str, Tensor] = {layer: torch.empty(0) for layer in layers}
+
+        for layer_id in layers:
+            layer = dict([*self.model.named_modules()])[layer_id]
+            # add hook that saves the features to the current hook obj for the model
+            hook_for_collecting_features: callable = self.get_save_outputs_hook(layer_id)
+            layer.register_forward_hook(hook_for_collecting_features)
+
+    def get_save_outputs_hook(self, layer_id: str) -> callable:
+        # the trick is that the fn has the self (which is the hook self) hardcoded in the passable function,
+        # so even though it only takes module, input, output, you can collect the features.
+        def hook(_, __, output):
+            # append output features of current layer to hook_self obj.
+            self._features[layer_id] = output
+        return hook
 
     def forward(self, x: Tensor) -> dict[str, Tensor]:
         """
@@ -2712,6 +2784,18 @@ def feature_extractor_hook_test():
 
     print({name: output.shape for name, output in features.items()})
     # {'layer4': torch.Size([10, 2048, 7, 7]), 'avgpool': torch.Size([10, 2048, 1, 1])}
+
+def grad_clipper_hook_test():
+    import torch
+    from torchvision.models import resnet50
+
+    dummy_input = torch.ones(10, 3, 224, 224)
+    clipped_resnet = gradient_clipper_hook(resnet50(), 0.01)
+    pred = clipped_resnet(dummy_input)
+    loss = pred.log().mean()
+    loss.backward()
+
+    print(clipped_resnet.fc.bias.grad[:25])
 
 # -- __main__
 
