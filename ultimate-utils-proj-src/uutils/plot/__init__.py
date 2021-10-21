@@ -13,7 +13,7 @@ MY_DEFAULT_BLUE: str = '#1f77b4'  # I like this blue but it might change whats d
 MDB: str = MY_DEFAULT_BLUE
 
 def plot_quick(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show: bool = False, save_plot: bool = False,
-                plot_name: str = 'plot'):
+               plot_name: str = 'plot'):
     """
     Plots y against it's indices
     """
@@ -30,7 +30,7 @@ def plot_quick(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show:
 
 def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
          linewidth: float = 2.0, show: bool = False,
-         save_plot: bool = False, plot_name: str = 'plot', title: Optional[str] = None):
+         save_plot: bool = False, plot_filename: str = 'plot', title: Optional[str] = None):
     """
     Plots y against x.
     """
@@ -43,13 +43,13 @@ def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
     plt.title(title)
     # note: needs to be done in this order or it will clear the plot.
     if save_plot:
-        save_to_desktop(plot_name)
+        save_to_desktop(plot_filename)
     if show:
         plt.show()
 
 def plot(x: Array, y: Array, xlabel: str, ylabel: str,
          linewidth: float = 2.0, show: bool = False,
-         save_plot: bool = False, plot_name: str = 'plot', title: Optional[str] = None, label: Optional[str] = None,
+         save_plot: bool = False, plot_filename: str = 'plot', title: Optional[str] = None, label: Optional[str] = None,
          y_hline: Optional[float] = None, y_hline_label: Optional[str] = None,
          x_hline: Optional[float] = None, x_hline_label: Optional[str] = None):
     """
@@ -57,6 +57,10 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
 
     Nice optional args, like plotting straight (horizontal or vertical lines), saving plots, showing the plot, adding
     optional legends etc.
+    Saves png, svg, pdf, to Desktop automatically if save_plot=True.
+
+    Easiest use: plot(x, y, xlabel, ylabel)
+    Easy recommended use: plost(x, y, xlabel, ylabel, save_plot=True, title=title)
     """
     fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
     axs.plot(x, y, marker='x', label=label, lw=linewidth, color=MDB)
@@ -66,14 +70,14 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
     axs.grid()  # adds nice grids instead of plot being white
     plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area.
     # - optionals
-    if x_hline:
+    if x_hline:  # horizontal sets a constant x value
         axs.axvline(x=x_hline, color='g', linestyle='--', label=x_hline_label)
-    if y_hline:
+    if y_hline:  # vertical sets a constant y value
         axs.axhline(y=y_hline, color='r', linestyle='--', label=y_hline_label)
     if label or y_hline_label or x_hline_label:
         axs.legend()  # LABEL = LEGEND. A legend is an area describing the elements of the graph.
     if save_plot:
-        save_to_desktop(plot_name)
+        save_to_desktop(plot_filename)
     if show:
         plt.show()
 

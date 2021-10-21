@@ -14,7 +14,7 @@ todo:
 import dill
 import gc
 from datetime import datetime
-from typing import List, Union, Any, Optional
+from typing import List, Union, Any, Optional, Iterable
 
 import torch
 from torch import Tensor
@@ -2366,6 +2366,77 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
 #     """
 #     pass
 
+# -- pytorch hooks
+# ref: https://medium.com/the-dl/how-to-use-pytorch-hooks-5041d777f904
+
+def module_hook(module: nn.Module, input: Tensor, output: Tensor):
+    """
+    For nn.Module objects only.
+    """
+    pass
+
+def tensor_hook(grad: Tensor):
+    """
+    For Tensor objects only.
+    Only executed during the *backward* pass!
+    """
+    pass
+
+# For Tensor objects only.
+# Only executed during the *backward* pass!
+
+def hook_for_printing_output_shape(layer: nn.Module, input: Tensor, output: Tensor):
+    """
+    PyTorch hook for printing the output shape.
+
+    The idea is to register this hook for each module, wrap your model so that it registers this hook to each
+    of it's modules then use this automatically when calling the forward pass of your model.
+    """
+    print(f"{layer.__name__}: {output.shape}")
+
+class VerboseExecutionHook(nn.Module):
+    """
+    Registers a hook that when the model is ran, it prints the output share for each layer
+    """
+
+    def __init__(self, model: nn.Module):
+        super().__init__()
+        self.model = model
+
+        # Register a hook for each layer
+        for name, layer in self.model.named_children():
+            layer.__name__ = name
+            layer.register_forward_hook(hook_for_printing_output_shape)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.model(x)
+
+class FeatureExtractorHook(nn.Module):
+    def __init__(self, model: nn.Module, layers: Iterable[str]):
+        super().__init__()
+        self.model: nn.Module = model
+        self.layers: Iterable[str] = layers
+        self._features: dict[str, Tensor] = {layer: torch.empty(0) for layer in layers}
+
+        for layer_id in layers:
+            layer = dict([*self.model.named_modules()])[layer_id]
+            # add hook that saves the features to the current hook obj for the model
+            layer.register_forward_hook(self.save_outputs_hook(layer_id))
+
+    def save_outputs_hook(self, layer_id: str) -> callable:
+        def fn(_, __, output):
+            self._features[layer_id] = output
+        return fn
+
+    def forward(self, x: Tensor) -> dict[str, Tensor]:
+        """
+        Returns the features for each layer for this model in a dict with the format:
+            features = {layer: str -> tesnor_for_layer: torchTensor}
+        i.e. each string for the layer maps to the feature tensor for that layer.
+        """
+        _ = self.model(x)
+        return self._features
+
 # -- misc
 
 def remove_hook(mdl: nn.Module, hook):
@@ -2612,6 +2683,36 @@ def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_simil
     """
     pass
 
+def verbose_exec_test():
+    import torch
+    from torchvision.models import resnet50
+
+    verbose_resnet = VerboseExecutionHook(resnet50())
+    dummy_input = torch.ones(10, 3, 224, 224)
+
+    _ = verbose_resnet(dummy_input)
+    # conv1: torch.Size([10, 64, 112, 112])
+    # bn1: torch.Size([10, 64, 112, 112])
+    # relu: torch.Size([10, 64, 112, 112])
+    # maxpool: torch.Size([10, 64, 56, 56])
+    # layer1: torch.Size([10, 256, 56, 56])
+    # layer2: torch.Size([10, 512, 28, 28])
+    # layer3: torch.Size([10, 1024, 14, 14])
+    # layer4: torch.Size([10, 2048, 7, 7])
+    # avgpool: torch.Size([10, 2048, 1, 1])
+    # fc: torch.Size([10, 1000])
+
+def feature_extractor_hook_test():
+    import torch
+    from torchvision.models import resnet50
+
+    resnet_features = FeatureExtractorHook(resnet50(), layers=["layer4", "avgpool"])
+    dummy_input = torch.ones(10, 3, 224, 224)
+    features = resnet_features(dummy_input)
+
+    print({name: output.shape for name, output in features.items()})
+    # {'layer4': torch.Size([10, 2048, 7, 7]), 'avgpool': torch.Size([10, 2048, 1, 1])}
+
 # -- __main__
 
 if __name__ == '__main__':
@@ -2621,6 +2722,8 @@ if __name__ == '__main__':
     # test_topk_accuracy_and_accuracy()
     # test_simple_determinism()
     # op_test()
-    anatome_test_are_same_nets_very_similar()
-    anatome_test_are_random_vs_pretrain_resnets_different()
+    # anatome_test_are_same_nets_very_similar()
+    # anatome_test_are_random_vs_pretrain_resnets_different()
+    # verbose_exec_test()
+    feature_extractor_hook_test()
     print('Done\a')
