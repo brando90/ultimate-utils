@@ -4,11 +4,15 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 
-from typing import Union
+from typing import Union, Optional
 
 Array = Union[list, np.ndarray]
 
-def plot_simple(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show: bool = False, save_plot: bool = False,
+# ref: https://stackoverflow.com/questions/47074423/how-to-get-default-blue-colour-of-matplotlib-pyplot-scatter/47074742
+MY_DEFAULT_BLUE: str = '#1f77b4'  # I like this blue but it might change whats default,
+MDB: str = MY_DEFAULT_BLUE
+
+def plot_quick(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show: bool = False, save_plot: bool = False,
                 plot_name: str = 'plot'):
     """
     Plots y against it's indices
@@ -24,8 +28,9 @@ def plot_simple(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show
     if show:
         plt.show()
 
-def plot(x: Array, y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show: bool = False,
-         save_plot: bool = False, plot_name: str = 'plot'):
+def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
+         linewidth: float = 2.0, show: bool = False,
+         save_plot: bool = False, plot_name: str = 'plot', title: Optional[str] = None):
     """
     Plots y against x.
     """
@@ -34,7 +39,39 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, s
     plt.ylabel(ylabel)
     plt.grid()
     plt.tight_layout()
+    # - optionals
+    plt.title(title)
     # note: needs to be done in this order or it will clear the plot.
+    if save_plot:
+        save_to_desktop(plot_name)
+    if show:
+        plt.show()
+
+def plot(x: Array, y: Array, xlabel: str, ylabel: str,
+         linewidth: float = 2.0, show: bool = False,
+         save_plot: bool = False, plot_name: str = 'plot', title: Optional[str] = None, label: Optional[str] = None,
+         y_hline: Optional[float] = None, y_hline_label: Optional[str] = None,
+         x_hline: Optional[float] = None, x_hline_label: Optional[str] = None):
+    """
+    Nice easy plot function to quickly plot x vs y and labeling the x and y.
+
+    Nice optional args, like plotting straight (horizontal or vertical lines), saving plots, showing the plot, adding
+    optional legends etc.
+    """
+    fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
+    axs.plot(x, y, marker='x', label=label, lw=linewidth, color=MDB)
+    axs.set_xlabel(xlabel)
+    axs.set_ylabel(ylabel)
+    axs.set_title(title)
+    axs.grid()  # adds nice grids instead of plot being white
+    plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area.
+    # - optionals
+    if x_hline:
+        axs.axvline(x=x_hline, color='g', linestyle='--', label=x_hline_label)
+    if y_hline:
+        axs.axhline(y=y_hline, color='r', linestyle='--', label=y_hline_label)
+    if label or y_hline_label or x_hline_label:
+        axs.legend()  # LABEL = LEGEND. A legend is an area describing the elements of the graph.
     if save_plot:
         save_to_desktop(plot_name)
     if show:
