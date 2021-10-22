@@ -70,7 +70,7 @@ print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
 
 # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
-data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
+data_sizes: list[int] = [2, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for b in data_sizes:

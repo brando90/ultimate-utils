@@ -1042,10 +1042,10 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
     # import copy
     # mdl1 = copy.deepcopy(mdl1)
     # mdl2 = copy.deepcopy(mdl2)
-    from anatome import SimilarityHook
+    from anatome import DistanceHook
     # - get distance hooks (to intercept the features)
-    hook1 = SimilarityHook(mdl1, layer_name, cxa_dist_type)
-    hook2 = SimilarityHook(mdl2, layer_name, cxa_dist_type)
+    hook1 = DistanceHook(mdl1, layer_name, cxa_dist_type)
+    hook2 = DistanceHook(mdl2, layer_name, cxa_dist_type)
     mdl1.eval()
     mdl2.eval()
     # - populate hook tensors in the data dimension (1st dimension):
@@ -2378,7 +2378,7 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
             args.it += 1
     return meta_eval_loss, meta_eval_acc
 
-def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Modue,
+def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
                         X1: Tensor, X2: Tensor,
                         layer_name: str, cxa_dist_type: str) -> tuple[list[int], list[float]]:
     """
@@ -2386,16 +2386,19 @@ def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Modue,
 
     X1: [n_c*k_eval*H*W, F]
     """
-    assert(X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA like analysis to work.' \
+    assert(X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA type analysis to work.' \
                                       f'but got: {X1.size(0)=}, {X2.size(0)=}'
-
+    # - get the sims vs data_set sizes
     # data_sizes: list[int] = [X1.size(0)]
-    data_sizes: list[int] = [10]
+    # data_sizes: list[int] = [10]
+    data_sizes: list[int] = [args.k_eval*args.n_classes]
+    print(f'# examples = {args.k_eval*args.n_classes}')
     # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
     sims: list[float] = []
     for b in data_sizes:
-        x1, x2 = X1[:b], X2[:b]
+        x1, x2 = X1[:b], X2[:b]  # get first b images
         sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+        # sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=2, iters=1, cxa_dist_type=cxa_dist_type)
         sims.append(sim)
     return data_sizes, sims
 

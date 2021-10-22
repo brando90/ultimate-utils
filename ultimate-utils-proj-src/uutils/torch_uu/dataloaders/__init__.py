@@ -37,7 +37,7 @@ def get_torchmeta_meta_data_batch(args: Namespace) -> tuple[Tensor, Tensor]:
     """
     from uutils.torch_uu import process_meta_batch
     meta_train_dataloader, meta_val_dataloader, meta_test_dataloader = get_miniimagenet_dataloaders_torchmeta(args)
-    batch: dict = next(meta_val_dataloader)
+    batch: dict = next(iter(meta_val_dataloader))
     spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
     return qry_x, qry_y
 
@@ -50,7 +50,7 @@ def get_torchmeta_meta_data_images(args: Namespace, torchmeta_dataloader) -> Ten
     :return: qry_x [B, n_c*k, C, H, W]
     """
     from uutils.torch_uu import process_meta_batch
-    batch: dict = next(torchmeta_dataloader)
+    batch: dict = next(iter(torchmeta_dataloader))
     spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
     return qry_x
 
@@ -241,7 +241,7 @@ def get_dataset(dataloaders: dict):
     datasets = {split:dataloader.dataset for split,dataloader in dataloaders}
     return datasets
 
-def get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namespace:
+def _get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namespace:
     # note this is hardcoded in get_miniimagenet_dataloaders_torchmeta
     args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
     args.n_classes = 5
@@ -250,6 +250,41 @@ def get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namesp
     args.meta_batch_size_train = 2
     args.meta_batch_size_eval = 2
     args.num_workers = 0
+    return args
+
+def load_all_parmas_for_torchmeta_mini_imagenet_dataloader_into_args(args: Namespace, k_eval: int = 15,
+                                              k_shots: int = 5, n_classes: int = 5, meta_batch_size: int = 2,
+                                              num_workers: int = 0) -> Namespace:
+    """
+    """
+    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
+    args.n_classes = n_classes
+    args.k_shots = k_shots
+    args.k_eval = k_eval
+    args.meta_batch_size_train = meta_batch_size
+    args.meta_batch_size_eval = meta_batch_size
+    args.num_workers = num_workers
+    return args
+
+def get_minimum_args_for_torchmeta_mini_imagenet_dataloader(data_path: Path = Path('~/data/'),
+                                                            k_eval: int = 15, k_shots: int = 5,
+                                                            n_classes: int = 5,
+                                                            meta_batch_size_train: int = 2,
+                                                            meta_batch_size_eval: int = 2,
+                                                            num_workers: int = 0) -> Namespace:
+    """
+    Gets the minimum args for torchmeta mini imagenet dataloader to work.
+
+    Note, you can update default values if you want.
+    """
+    args: Namespace = Namespace()
+    args.data_path = data_path.expanduser()  # for some datasets this is enough
+    args.n_classes = n_classes
+    args.k_shots = k_shots
+    args.k_eval = k_eval
+    args.meta_batch_size_train = meta_batch_size_train
+    args.meta_batch_size_eval = meta_batch_size_eval
+    args.num_workers = num_workers
     return args
 
 def get_set_of_examples_from_mini_imagenet(k_eval: int = 15) -> torch.Tensor:
@@ -277,7 +312,7 @@ def get_args_for_mini_imagenet():
     from types import SimpleNamespace
 
     args = SimpleNamespace()
-    ## Config for
+    # Config for
     args.mode = "meta-train"
     #args.mode = "meta-test"
     args.k_shot = 5
@@ -285,7 +320,7 @@ def get_args_for_mini_imagenet():
     args.n_classes = 5
     args.grad_clip = None # does no gradient clipping if None
     args.grad_clip_mode = None # more specific setting of the crad clipping mode
-    ## Episodes params
+    # Episodes params
     args.episodes = 60000
     args.episodes_val = 100
     args.episodes_test = 100
@@ -294,19 +329,19 @@ def get_args_for_mini_imagenet():
     # careful to have these larger than the size of the meta-set
     args.meta_batch_size_train = 25
     args.meta_batch_size_eval = 4
-    ## Inner loop adaptation params
+    # Inner loop adaptation params
     args.nb_inner_train_steps = 10
     args.track_higher_grads = True # set to false only during meta-testing, but code sets it automatically only for meta-test
     args.copy_initial_weights = False # set to false only if you do not want to train base model's initialization
-    ## MAML
+    # MAML
     # args.fo = False
     # args.inner_lr = 1e-1
     # args.meta_learner = 'maml_fixed_inner_lr'
-    ## Learner/base model options
+    # Learner/base model options
     args.bn_momentum = 0.95
     args.bn_eps = 1e-3
     args.base_model_mode = 'child_mdl_from_opt_as_a_mdl_for_few_shot_learning_paper'
-    ## miniImagenet options
+    # miniImagenet options
     args.data_root = Path("~/automl-meta-learning/data/miniImagenet").expanduser()
     args.n_workers = 4
     args.pin_memory = False # it is generally not recommended to return CUDA tensors in multi-process loading because of many subtleties in using CUDA and sharing CUDA tensors in multiprocessing (see CUDA in multiprocessing). Instead, we recommend using automatic memory pinning (i.e., setting pin_memory=True), which enables fast data transfer to CUDA-enabled GPUs. https://pytorch.org/docs/stable/data.html
@@ -315,63 +350,8 @@ def get_args_for_mini_imagenet():
     return args
 
 
-def test_torchmeta_good_accumulator():
-    import torch
-    import torch.optim as optim
-    from automl.child_models.learner_from_opt_as_few_shot_paper import Learner
-    import higher
-
-    ## get args for test
-    args = get_args_for_mini_imagenet()
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    ## get base model that meta-lstm/maml use
-    base_model = Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum, n_classes=args.n_classes).to(args.device)
-
-    ## get meta-set
-    meta_train_loader, _, _ = get_meta_set_loaders_miniImagenet(args)
-
-    ## start episodic training
-    meta_params = base_model.parameters()
-    outer_opt = optim.Adam(meta_params, lr=1e-2)
-    base_model.train()
-    for episode, (spt_x, spt_y, qry_x, qry_y) in enumerate(meta_train_loader):
-        assert(spt_x.size(1) == args.k_shot*args.n_classes)
-        assert(qry_x.size(1) == args.k_eval*args.n_classes)
-        ## Get Inner Optimizer (for maml)
-        inner_opt = torch.optim.SGD(base_model.parameters(), lr=1e-1)
-        ## Accumulate gradient of meta-loss wrt fmodel.param(t=0)
-        nb_tasks = spt_x.size(0)
-        meta_losses, meta_accs = [], []
-        assert(nb_tasks == args.meta_batch_size_train)
-        for t in range(nb_tasks):
-            ## Get supprt & query set for the current task
-            spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
-            ## Inner Loop Adaptation
-            with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=args.copy_initial_weights, track_higher_grads=args.track_higher_grads) as (fmodel, diffopt):
-                for i_inner in range(args.nb_inner_train_steps):
-                    fmodel.train()
-                    # base/child model forward pass
-                    spt_logits_t = fmodel(spt_x_t)
-                    inner_loss = args.criterion(spt_logits_t, spt_y_t)
-                    # inner-opt update
-                    diffopt.step(inner_loss)
-                    inner_loss = args.criterion(spt_logits_t, spt_y_t)
-            ## Evaluate on query set for current task
-            qry_logits_t = fmodel(qry_x_t)
-            qry_loss_t = args.criterion(qry_logits_t,  qry_y_t)
-            ## Accumulate gradients wrt meta-params for each task
-            qry_loss_t.backward() # note this is memory efficient
-            ## collect losses & accs for logging/debugging
-            meta_losses.append(qry_loss_t.detach()) # remove history so it be memory efficient and able to print stats
-        ## do outer step
-        outer_opt.step()
-        outer_opt.zero_grad()
-        print(f'[episode={episode}] meta_loss = {sum(meta_losses)/len(meta_losses)}')
-
 if __name__ == '__main__':
     from uutils import report_times
     start = time.time()
-    test_torchmeta_good_accumulator()
     time_passed_msg, _, _, _ = report_times(start)
     print(time_passed_msg)

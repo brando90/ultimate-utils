@@ -1,5 +1,7 @@
 # Steps to upload to pypi
 
+If you have any dist or wheels things, remove them first.
+
 ```angular2html
 pip install twine
 ```

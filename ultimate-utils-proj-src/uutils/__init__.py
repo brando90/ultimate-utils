@@ -1103,29 +1103,27 @@ def write_str_to_file(path: str, filename: str, file_content: str, mode: str = '
     with open(path / filename, mode) as f:
         f.write(file_content)
 
-# def f(fromDirectory: str, toDirectory: str):
-#     from distutils.dir_util import copy_tree
-#     copy_tree(fromDirectory, toDirectory)
-
 def namespace2dict(args: Namespace) -> dict:
     """
+    Retunrs a dictionary version of the namespace.
 
     ref: - https://docs.python.org/3/library/functions.html#vars
          - https://stackoverflow.com/questions/16878315/what-is-the-right-way-to-treat-argparse-namespace-as-a-dictionary
+    Note: Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
     :param args:
     :return:
     """
-    # vars = Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
+    # Note: Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
     return vars(args)
 
 def merge_two_dicts(starting_dict: dict, updater_dict: dict) -> dict:
     """
     Starts from base starting dict and then adds the remaining key values from updater replacing the values from
-    the first starting/base dict with the second updater dict.
-
-    For later: how does d = {**d1, **d2} replace collision?
+    the first starting dict with the second updater dict.
+    Thus, the update_dict has precedence as it updates and replaces the values from the first if there is a collision.
 
     ref: https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression-taking-union-of-dictiona
+    For later: how does d = {**d1, **d2} replace collision?
     :param starting_dict:
     :param updater_dict:
     :return:
@@ -1137,6 +1135,8 @@ def merge_two_dicts(starting_dict: dict, updater_dict: dict) -> dict:
 def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
     """
     Merges two namespaces but throws an error if there are keys that collide.
+    Thus, args1 nor args2 will have precedence when returning the args if there is a collions.
+    This does not take the union.
 
     ref: https://stackoverflow.com/questions/56136549/how-can-i-merge-two-argparse-namespaces-in-python-2-x
     :param args1:
@@ -1150,17 +1150,16 @@ def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
 
 def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     """
+    Starts from base starting args and then adds the remaining key/fields values from updater replacing the values from
+    the first starting args with the second updater args.
+    Thus, the update_args has precedence as it updates and replaces the values from the first if there is a collision.
 
     ref: https://stackoverflow.com/questions/56136549/how-can-i-merge-two-argparse-namespaces-in-python-2-x
-    :param args1:
-    :param args2:
-    :return:
     """
     # - the merged args
-    # The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
+    # node: The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
     merged_key_values_for_namespace: dict = merge_two_dicts(vars(starting_args), vars(updater_args))
     args = Namespace(**merged_key_values_for_namespace)
-    # args = Namespace(**{**vars(args1), **vars(args2)})
     return args
 
 # -- tests
@@ -1233,10 +1232,14 @@ def xor_test():
     print('passed xor test')
 
 def merge_args_test():
+    """
+    After the merge the starting dict will be updated with values on the second. The second has precedence.
+    """
     args1 = Namespace(foo="foo", collided_key='from_args1')
     args2 = Namespace(bar="bar", collided_key='from_args2')
 
-    args = merge_args(args1, args2)
+    # - after the merge the starting dict will be updated with values on the second. The second has precedence.
+    args = merge_args(starting_args=args1, updater_args=args2)
     print('-- merged args')
     print(f'{args=}')
     assert args.collided_key == 'from_args2', 'Error in merge dict, expected the second argument to be the one used' \
