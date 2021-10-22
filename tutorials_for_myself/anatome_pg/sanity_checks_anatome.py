@@ -18,6 +18,7 @@ layer_name = 'fc0'
 # cxa_dist_type = 'pwcca'
 cxa_dist_type = 'svcca'
 
+# - ends up comparing two matrices of size [B, Dout], on same data, on same model
 X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
 
@@ -54,18 +55,20 @@ from uutils.torch_uu.models import get_named_one_layer_random_linear_model
 
 import uutils.plot as uulot
 
-B: int = 10  # [101, 200, 500, 1000, 2000, 5000, 10000]
-Din: int = B
-Dout: int = 300
-mdl1: nn.Module = get_named_one_layer_random_linear_model(Din, Dout)
-mdl2: nn.Module = get_named_one_layer_random_linear_model(Din, Dout)
+# -- sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0
+# even if matrices are different
+B: int = 10
+Dout: int = 10000
+mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
+mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 layer_name = 'fc0'
 # cxa_dist_type = 'pwcca'
 cxa_dist_type = 'svcca'
 
+# - get sim for B << D e.g. [B=10, D=300] easy to "fit", to many degrees of freedom
 X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
+# mdl1(X) : [B, Dout] = [B, B] [B, Dout]
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
-
 print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
 
