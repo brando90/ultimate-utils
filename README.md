@@ -23,7 +23,7 @@ import uutils
 
 note the import statement is shorter than the library name (`ultimate-utils` vs `uutils`).
 
-## Manual installation [Development of uutils]
+## Manual installation [for Development]
 
 To use uutils first get the code from this repo (e.g. fork it on github):
 
