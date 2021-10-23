@@ -24,6 +24,7 @@ sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, c
 
 print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0))
 
 #%%
 """
@@ -58,7 +59,7 @@ import uutils.plot as uulot
 # -- sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0
 # even if matrices are different
 B: int = 10
-Dout: int = 10000
+Dout: int = 10_000
 mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 layer_name = 'fc0'
@@ -69,11 +70,13 @@ cxa_dist_type = 'svcca'
 X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
 # mdl1(X) : [B, Dout] = [B, B] [B, Dout]
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
-print(f'Should be very very close to 1.0: {sim=}')
+print(f'Should be very very close to 1.0: {sim=} (since we have many features to match the two Xw1, Yw2).')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+# assert(approx_equal(sim, 1.0))
 
-# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
-data_sizes: list[int] = [2, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
+# -- santity: just makes sure that when low data is present sim is high and converges to the "true" cca eventually
+data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
+# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for b in data_sizes:

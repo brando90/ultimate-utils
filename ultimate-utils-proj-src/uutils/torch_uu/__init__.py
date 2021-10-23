@@ -1042,7 +1042,9 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
     # import copy
     # mdl1 = copy.deepcopy(mdl1)
     # mdl2 = copy.deepcopy(mdl2)
-    from anatome import DistanceHook
+    # from anatome import DistanceHook
+    # from anatome import SimilarityHook
+    from anatome import SimilarityHook as DistanceHook
     # - get distance hooks (to intercept the features)
     hook1 = DistanceHook(mdl1, layer_name, cxa_dist_type)
     hook2 = DistanceHook(mdl2, layer_name, cxa_dist_type)
