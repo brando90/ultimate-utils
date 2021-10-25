@@ -1,6 +1,6 @@
 #%%
 """
-The similarity of the same network should always be 1.0 no matter what.
+The similarity of the same network should always be 1.0 on same input.
 """
 import torch
 import torch.nn as nn
@@ -8,6 +8,8 @@ import torch.nn as nn
 import uutils.torch_uu
 from uutils.torch_uu import cxa_sim, approx_equal
 from uutils.torch_uu.models import get_named_identity_one_layer_linear_model
+
+print('--- Sanity check: sCCA = 1.0 when using same net twice with same input. --')
 
 Din: int = 10
 Dout: int = Din
@@ -25,13 +27,6 @@ sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, c
 print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
 assert(approx_equal(sim, 1.0))
-
-#%%
-"""
-Make sure it returns sim 1.0 for linearly invertible linear net.
-"""
-
-# todo
 
 #%%
 """
@@ -56,10 +51,10 @@ from uutils.torch_uu.models import get_named_one_layer_random_linear_model
 
 import uutils.plot as uulot
 
-# -- sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0
-# even if matrices are different
+print('\n--- Sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0 '
+      '(even if nets/matrices are different)')
 B: int = 10
-Dout: int = 10_000
+Dout: int = 300
 mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 layer_name = 'fc0'
@@ -74,7 +69,9 @@ print(f'Should be very very close to 1.0: {sim=} (since we have many features to
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
 # assert(approx_equal(sim, 1.0))
 
-# -- santity: just makes sure that when low data is present sim is high and converges to the "true" cca eventually
+print('\n-- Santity: just makes sure that when low data is present sim is high and afterwards (as n->infty) sim (CCA) '
+      'converges to the "true" cca value (eventually)')
+# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000]
 data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
@@ -83,7 +80,9 @@ for b in data_sizes:
     X: torch.Tensor = uutils.torch_uu.get_identity_data(b)
     mdl1: nn.Module = get_named_one_layer_random_linear_model(b, Dout)
     mdl2: nn.Module = get_named_one_layer_random_linear_model(b, Dout)
+    # print(f'{b=}')
     sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+    # print(f'{sim=}')
     sims.append(sim)
 
 print(f'{sims=}')
@@ -128,6 +127,7 @@ for d in D_feature_sizes:
     mdl1: nn.Module = get_named_one_layer_random_linear_model(B, d)
     mdl2: nn.Module = get_named_one_layer_random_linear_model(B, d)
     sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+    # print(f'{d=}, {sim=}')
     sims.append(sim)
 
 print(f'{sims=}')
