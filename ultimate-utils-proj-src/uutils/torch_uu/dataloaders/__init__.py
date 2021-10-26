@@ -19,7 +19,6 @@ import urllib.request
 
 from pathlib import Path
 
-from uutils.torch_uu.distributed import is_running_serially
 
 
 def process_batch_sl(args, batch):
@@ -103,10 +102,12 @@ def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
             hue=0.2),
         transforms.ToTensor(),
         normalize])
+    print('here')
     dataset_train = miniimagenet(args.data_path,
                                  transform=data_augmentation_transforms,
                                  ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
                                  meta_split='train', download=True)
+    print('got train')
     dataset_val = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
                                meta_split='val', download=True)
     dataset_test = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
@@ -147,11 +148,14 @@ def get_distributed_dataloader_miniimagenet_torchmeta(args: Namespace) -> dict:
     :return:
     """
     from uutils.torch_uu.distributed import create_distributed_dataloaders_from_torchmeta_datasets
+    print('about to get datasets')
     datasets: dict[str, Dataset] = get_miniimagenet_datasets_torchmeta(args)
+    print('got datasets')
     dataloaders: dict[str, DataLoader] = create_distributed_dataloaders_from_torchmeta_datasets(args,
                                                                                                 args.rank,
                                                                                                 args.world_size,
                                                                                                 datasets)
+    print('created distributed dataloaders')
     # -- return
     return dataloaders
 
@@ -236,6 +240,8 @@ def get_dataloaders(args, rank, world_size, merge, dataset):
     :param dataset:
     :return:
     """
+    from uutils.torch_uu.distributed import is_running_serially
+
     train_dataset = dataset(args, split='train')
     val_dataset = dataset(args, split='val')
     test_dataset = dataset(args, split='test')

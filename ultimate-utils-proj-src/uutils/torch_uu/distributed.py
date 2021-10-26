@@ -185,7 +185,7 @@ def setup_process(args, rank, world_size, master_port, backend='gloo'):
 
         # - use NCCL if you are using gpus: https://pytorch.org/tutorials/intermediate/dist_tuto.html#communication-backends
         if torch.cuda.is_available():
-            # https://github.com/pytorch/pytorch/issues/54550 You need to call torch_uu.cuda.set_device(rank) before init_process_group is called.
+            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
             backend = 'nccl'
             torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
         print(f'---> {backend=}')
@@ -573,7 +573,6 @@ def run_parallel_training_loop_with_tb(rank, args):
     args.rank = rank
     args.gpu = rank
     # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called.
-    torch.cuda.set_device(args.gpu)  # https://github.com/pytorch/pytorch/issues/54550
     setup_process(args, rank, args.world_size, args.master_port)
 
     # get ddp model
