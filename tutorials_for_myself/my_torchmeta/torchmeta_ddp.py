@@ -10,7 +10,8 @@ from torch import nn
 import torch.multiprocessing as mp
 from torch.utils.data import DataLoader
 
-from meta_learning.base_models.learner_from_opt_as_few_shot_paper import get_learner_from_args
+# from meta_learning.base_models.learner_from_opt_as_few_shot_paper import get_learner_from_args
+from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_learner_from_args
 from uutils.torch_uu import process_meta_batch
 from uutils.torch_uu.dataloaders import get_distributed_dataloader_miniimagenet_torchmeta, get_args_for_mini_imagenet
 from uutils.torch_uu.distributed import print_process_info, print_gpu_info, setup_process, move_model_to_ddp, \
