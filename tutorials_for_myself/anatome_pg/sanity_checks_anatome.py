@@ -73,7 +73,7 @@ import uutils.plot as uulot
 print('\n--- Sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0 '
       '(even if nets/matrices are different)')
 B: int = 10
-Dout: int = 100
+Dout: int = 300
 mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 layer_name = 'fc0'
@@ -90,6 +90,7 @@ assert(approx_equal(sim, 1.0))
 
 print('\n-- Santity: just makes sure that when low data is present sim is high and afterwards (as n->infty) sim (CCA) '
       'converges to the "true" cca value (eventually)')
+Dout: int = 64
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000]
 data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
@@ -138,7 +139,7 @@ print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
 assert(approx_equal(sim, 1.0))
 
 # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
-B: int = 100
+B: int = 64
 D_feature_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for d in D_feature_sizes:

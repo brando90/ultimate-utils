@@ -239,7 +239,7 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
     elif type(batch) == tuple or type(batch) == list:
         spt_x, spt_y, qry_x, qry_y = batch
     else:
-        raise ValueError(f'Not implemented how to process this batch of type {type(batch)}')
+        raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
     # - convert to float32 single float, somehow the ckpts seem to need this for sinusoid
     if hasattr(args, 'to_single_float_float32'):
         if args.to_single_float_float32:
@@ -1038,6 +1038,8 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
 
     Note:
         - size: size of the feature map after downsampling
+
+    :argument: cxa_dist_type 'svcca', 'pwcca', 'lincka', 'opd'.
     """
     # import copy
     # mdl1 = copy.deepcopy(mdl1)
@@ -1424,19 +1426,19 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     X_star: Tensor = X_centered / norm(X_centered, "fro")
     return X_star
 
-def _normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
-    """
-    WARNING: gives less accurate results for OPD.
-    Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
-    Assumption is that X is of size [n, d].
-    Otherwise, specify which simension to normalize with dim.
-
-    ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
-    """
-    from torch.linalg import norm
-    X_star: Tensor = (X - X.mean(dim=dim, keepdim=True)) / norm(X, "fro")
-    assert False, 'normalize_matrix_for_similarity which uses centered data for normalization.'
-    return X_star
+# def _normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
+#     """
+#     WARNING: gives less accurate results for OPD.
+#     Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
+#     Assumption is that X is of size [n, d].
+#     Otherwise, specify which simension to normalize with dim.
+#
+#     ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
+#     """
+#     from torch.linalg import norm
+#     X_star: Tensor = (X - X.mean(dim=dim, keepdim=True)) / norm(X, "fro")
+#     assert False, 'normalize_matrix_for_similarity which uses centered data for normalization.'
+#     return X_star
 
 def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
     """ Center according to columns and divide by frobenius norm. Matrix is assumed to be [n, d] else sepcify dim. """

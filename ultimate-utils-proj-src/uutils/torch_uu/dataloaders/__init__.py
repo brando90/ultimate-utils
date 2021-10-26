@@ -9,7 +9,7 @@ from meta_learning.datasets.mini_imagenet import MetaImageNet, ImageNet
 import torch
 from meta_learning.datasets.rand_fnn import RandFNN
 from torch import nn, nn as nn, Tensor
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchmeta.toy.helpers import sinusoid
 from torchmeta.transforms import ClassSplitter
 from torchmeta.utils.data import BatchMetaDataLoader
@@ -18,6 +18,9 @@ from torchvision import transforms as transforms
 import urllib.request
 
 from pathlib import Path
+
+from uutils.torch_uu.distributed import is_running_serially
+
 
 def process_batch_sl(args, batch):
     batch_x, batch_y = batch
@@ -84,14 +87,10 @@ def get_rfs_sl_dataloader(args):
     #     n_cls = 80
     # else:
     #     n_cls = 64
+    # - note: does not return dict because it's code borrowed from rfs paper
     return train_sl_loader, val_sl_loader, meta_valloader
 
-
-def get_miniimagenet_dataloaders_torchmeta(args: Namespace):
-    args.trainin_with_epochs = False
-    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
-    args.criterion = nn.CrossEntropyLoss()
-    # args.image_size = 84  # do we need this?
+def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
     from torchmeta.datasets.helpers import miniimagenet
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     data_augmentation_transforms = transforms.Compose([
@@ -112,14 +111,50 @@ def get_miniimagenet_dataloaders_torchmeta(args: Namespace):
                                meta_split='val', download=True)
     dataset_test = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
                                 meta_split='test', download=True)
+    # - return data sets
+    datasets = {'train': dataset_train, 'val': dataset_val, 'test': dataset_test}
+    return datasets
 
-    meta_train_dataloader = BatchMetaDataLoader(dataset_train, batch_size=args.meta_batch_size_train,
+def get_miniimagenet_dataloaders_torchmeta(args: Namespace) -> dict:
+    args.trainin_with_epochs = False
+    args.data_path = Path('~/data/').expanduser()  # for some datasets this is enough
+    args.criterion = nn.CrossEntropyLoss()
+    # args.image_size = 84  # do we need this?
+    # - get data sets
+    datasets = get_miniimagenet_datasets_torchmeta(args)
+    # - get dataloaders
+    meta_train_dataloader = BatchMetaDataLoader(datasets['train'],
+                                                batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
-    meta_val_dataloader = BatchMetaDataLoader(dataset_val, batch_size=args.meta_batch_size_eval,
+    meta_val_dataloader = BatchMetaDataLoader(datasets['val'],
+                                              batch_size=args.meta_batch_size_eval,
                                               num_workers=args.num_workers)
-    meta_test_dataloader = BatchMetaDataLoader(dataset_test, batch_size=args.meta_batch_size_eval,
+    meta_test_dataloader = BatchMetaDataLoader(datasets['val'],
+                                               batch_size=args.meta_batch_size_eval,
                                                num_workers=args.num_workers)
-    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+    #- return data laoders
+    dataloaders = {'train': meta_train_dataloader, 'val': meta_val_dataloader, 'test': meta_test_dataloader}
+    return dataloaders
+
+def get_distributed_dataloader_miniimagenet_torchmeta(args: Namespace) -> dict:
+    """
+    Get a distributed data laoder for mini-imagenet from torch meta.
+
+    Note:
+        - in pytorch dataloaders get distributed samplers and thats how they become distributed.
+        - DDP is for models not for data loaders (confusing but accept it :) ).
+    :param args:
+    :return:
+    """
+    from uutils.torch_uu.distributed import create_distributed_dataloaders_from_torchmeta_datasets
+    datasets: dict[str, Dataset] = get_miniimagenet_datasets_torchmeta(args)
+    dataloaders: dict[str, DataLoader] = create_distributed_dataloaders_from_torchmeta_datasets(args,
+                                                                                                args.rank,
+                                                                                                args.world_size,
+                                                                                                datasets)
+    # -- return
+    return dataloaders
+
 
 def get_transforms_mini_imagenet(args):
     # get transforms for images
@@ -144,20 +179,21 @@ def get_transforms_mini_imagenet(args):
             transforms.CenterCrop(args.image_size),
             transforms.ToTensor(),
             normalize])
-
     return train_transform, val_transform, test_transform
 
 def get_torchmeta_sinusoid_dataloaders(args):
     # tran = transforms.Compose([torch_uu.tensor])
     # dataset = sinusoid(shots=args.k_eval, test_shots=args.k_shots, transform=tran)
     dataset = sinusoid(shots=args.k_eval, test_shots=args.k_eval)
-    meta_train_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_train,
+    train_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
-    meta_val_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
+    val_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
                                               num_workers=args.num_workers)
-    meta_test_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
+    test_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_eval,
                                                num_workers=args.num_workers)
-    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+    # - return dataloaders
+    dataloaders = {'train': train_dataloader, 'val': val_dataloader, 'test': test_dataloader}
+    return dataloaders
 
 def get_torchmeta_rand_fnn_dataloaders(args):
     # get data
@@ -176,16 +212,18 @@ def get_torchmeta_rand_fnn_dataloaders(args):
                                  num_test_per_class=args.k_eval,
                                  shuffle=True)
     # get meta-dataloader
-    meta_train_dataloader = BatchMetaDataLoader(metaset_train,
+    train_dataloader = BatchMetaDataLoader(metaset_train,
                                                 batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
-    meta_val_dataloader = BatchMetaDataLoader(metaset_val,
+    val_dataloader = BatchMetaDataLoader(metaset_val,
                                               batch_size=args.meta_batch_size_eval,
                                               num_workers=args.num_workers)
-    meta_test_dataloader = BatchMetaDataLoader(metaset_test,
+    test_dataloader = BatchMetaDataLoader(metaset_test,
                                                batch_size=args.meta_batch_size_eval,
                                                num_workers=args.num_workers)
-    return meta_train_dataloader, meta_val_dataloader, meta_test_dataloader
+    # - return dataloaders
+    dataloaders = {'train': train_dataloader, 'val': val_dataloader, 'test': test_dataloader}
+    return dataloaders
 
 def get_dataloaders(args, rank, world_size, merge, dataset):
     """
@@ -198,14 +236,11 @@ def get_dataloaders(args, rank, world_size, merge, dataset):
     :param dataset:
     :return:
     """
-    # todo - might be tricky to have genereric interface like this without just putting everything in args.
-    #   - I think it's fine to have this as a "template" but hardcode for each data set, putting everything in args is ugly and error prone etc
     train_dataset = dataset(args, split='train')
     val_dataset = dataset(args, split='val')
     test_dataset = dataset(args, split='test')
     if is_running_serially(rank):
         train_sampler, val_sampler, test_sampler  = None, None, None
-        # todo - probably if it's none then use hardcoded else use the value passed, so changed default of 0 to None or -1 or something like that
         # args.num_workers = args.num_workers if hasattr(args, 'num_workers') else 4
         args.num_workers = 4
     else:
@@ -233,12 +268,15 @@ def get_dataloaders(args, rank, world_size, merge, dataset):
                                  sampler=test_sampler,
                                  collate_fn=merge,
                                  num_workers=args.num_workers)
-    # return dataloaders
+    # - return dataloaders
     dataloaders = {'train': train_dataloader, 'val': val_dataloader, 'test': test_dataloader}
     return dataloaders
 
-def get_dataset(dataloaders: dict):
-    datasets = {split:dataloader.dataset for split,dataloader in dataloaders}
+def get_dataset(dataloaders: dict) -> dict:
+    """
+    From dictionary of dataloaders to dictionary of datasets
+    """
+    datasets = {split: dataloader.dataset for split,dataloader in dataloaders}
     return datasets
 
 def _get_minimum_args_for_mini_imagenet_from_torchmeta(args: Namespace) -> Namespace:
@@ -285,6 +323,7 @@ def get_minimum_args_for_torchmeta_mini_imagenet_dataloader(data_path: Path = Pa
     args.meta_batch_size_train = meta_batch_size_train
     args.meta_batch_size_eval = meta_batch_size_eval
     args.num_workers = num_workers
+    args.device = uutils.torch_uu.get_device()
     return args
 
 def get_set_of_examples_from_mini_imagenet(k_eval: int = 15) -> torch.Tensor:
@@ -305,6 +344,13 @@ def get_set_of_examples_from_mini_imagenet(k_eval: int = 15) -> torch.Tensor:
     # - to get the first task (since it will retrun a batch of tasks)
     X: torch.Tensor = qry_x[0].squeeze()  # [1, num_classes * k_eval, C, H, W] -> [num_classes * k_eval, C, H, W]
     return X
+
+def get_default_mini_imagenet():
+    from torchmeta.datasets.helpers import miniimagenet
+    from torchmeta.utils.data import BatchMetaDataLoader
+    dataset = miniimagenet("data", ways=5, shots=5, test_shots=15, meta_train=True, download=True)
+    dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
+    return dataloader
 
 # ---- teats ----
 
@@ -349,9 +395,26 @@ def get_args_for_mini_imagenet():
     args.image_size = 84
     return args
 
+def mini_imagenet_loop():
+    from uutils.torch_uu import process_meta_batch
+
+    args = get_minimum_args_for_torchmeta_mini_imagenet_dataloader()
+    dataloader = get_miniimagenet_dataloaders_torchmeta(args)
+
+    print(f'{len(dataloader)}')
+    for batch_idx, batch in enumerate(dataloader['train']):
+        print(f'{batch_idx=}')
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+        print(f'Train inputs shape: {spt_x.size()}')  # (2, 25, 3, 28, 28)
+        print(f'Train targets shape: {spt_y.size()}'.format(spt_y.shape))  # (2, 25)
+
+        print(f'Test inputs shape: {qry_x.size()}')  # (2, 75, 3, 28, 28)
+        print(f'Test targets shape: {qry_y.size()}')  # (2, 75)
+        break
+
 
 if __name__ == '__main__':
     from uutils import report_times
     start = time.time()
-    time_passed_msg, _, _, _ = report_times(start)
-    print(time_passed_msg)
+    mini_imagenet_loop()
+    print(f'Time passed: {report_times(start)}')
