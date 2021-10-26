@@ -17,16 +17,35 @@ B: int = 2000
 mdl1: nn.Module = get_named_identity_one_layer_linear_model(D=Din)
 mdl2: nn.Module = mdl1
 layer_name = 'fc0'
-# cxa_dist_type = 'pwcca'
-cxa_dist_type = 'svcca'
 
 # - ends up comparing two matrices of size [B, Dout], on same data, on same model
+cxa_dist_type = 'svcca'
 X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
-
-print(f'Should be very very close to 1.0: {sim=}')
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
-assert(approx_equal(sim, 1.0))
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
+
+cxa_dist_type = 'pwcca'
+X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
+print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
+
+cxa_dist_type = 'lincka'
+X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
+print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
+
+cxa_dist_type = 'opd'
+X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
+print(f'Is it close to 1.0? {approx_equal(sim, 1.0, tolerance=1e-2)}')
+assert(approx_equal(sim, 1.0, tolerance=1e-2)), f'Sim should be close to 1.0 but got {sim=}'
 
 #%%
 """
@@ -54,7 +73,7 @@ import uutils.plot as uulot
 print('\n--- Sanity check: when number of data points B is smaller than D, then it should be trivial to make similiarty 1.0 '
       '(even if nets/matrices are different)')
 B: int = 10
-Dout: int = 300
+Dout: int = 100
 mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
 layer_name = 'fc0'
@@ -67,13 +86,13 @@ X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=} (since we have many features to match the two Xw1, Yw2).')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
-# assert(approx_equal(sim, 1.0))
+assert(approx_equal(sim, 1.0))
 
 print('\n-- Santity: just makes sure that when low data is present sim is high and afterwards (as n->infty) sim (CCA) '
       'converges to the "true" cca value (eventually)')
-# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000]
-data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
-# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
+# data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000]
+data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
+# data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for b in data_sizes:
@@ -114,12 +133,12 @@ cxa_dist_type = 'svcca'
 
 X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
-
 print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0))
 
 # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
-B: int = 300
+B: int = 100
 D_feature_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for d in D_feature_sizes:

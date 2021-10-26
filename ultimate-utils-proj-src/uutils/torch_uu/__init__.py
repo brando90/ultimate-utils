@@ -1348,7 +1348,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
 def nes_torch(x1, x2, dim: int =1, eps: float =1e-8) -> Tensor:
     return 1.0 - ned_torch(x1, x2, dim, eps)
 
-def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = False) -> Tensor:
+def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = True) -> Tensor:
     """
     Computes the orthoginal procrustes distance.
     If normalized then the answer is divided by 2 so that it's in the interval [0, 1].
@@ -1362,9 +1362,12 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0
     d_proc(A*, B) = ||A||^2_F + ||B||^2_F - 2||A^T B||_*
     || . ||_* = nuclear norm = sum of singular values sum_i sig(A)_i = ||A||_*
 
-    Note: - this only works for matrices. So it's works as a metric for FC and transformers (or at least previous work
+    Note:
+    - this only works for matrices. So it's works as a metric for FC and transformers (or at least previous work
     only used it for transformer [1] which have FC and no convolutions.
-    - note,
+    - note Ding et. al. say: for a raw representation A we first subtract the mean value from each column, then divide
+    by the Frobenius norm, to produce the normalized representation A* , used in all our dissimilarity computation.
+        - which is different from dividing by the variance, which is what I would have expected.
 
     ref:
     - [1] https://arxiv.org/abs/2108.01661
@@ -1389,7 +1392,7 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0
     d: Tensor = d / 2.0 if normalize_for_range_0_to_1 else d
     return d
 
-def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = False) -> Tensor:
+def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = True) -> Tensor:
     """
     Returns orthogonal procurstes similarity. If normalized then output is in invertval [0, 1] and if not then output
     is in interval [0, 1]. See orthogonal_procrustes_distance for details and references.
