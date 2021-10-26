@@ -1408,6 +1408,25 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range
 
 def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     """
+    Normalize matrix of size wrt to the data dimension according to Ding et. al.
+        X_normalized = X_centered / ||X_centered||_F
+    Assumption is that X is of size [n, d].
+    Otherwise, specify which dimension to normalize with dim.
+    This gives more accurate results for OPD when normalizing by the centered data.
+
+    Note:
+        - this does not normalize by the std of the data.
+        - not centering produces less accurate results for OPD.
+    ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
+    """
+    from torch.linalg import norm
+    X_centered: Tensor = (X - X.mean(dim=dim, keepdim=True))
+    X_star: Tensor = X_centered / norm(X_centered, "fro")
+    return X_star
+
+def _normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
+    """
+    WARNING: gives less accurate results for OPD.
     Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
     Assumption is that X is of size [n, d].
     Otherwise, specify which simension to normalize with dim.
@@ -1416,6 +1435,7 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     """
     from torch.linalg import norm
     X_star: Tensor = (X - X.mean(dim=dim, keepdim=True)) / norm(X, "fro")
+    assert False, 'normalize_matrix_for_similarity which uses centered data for normalization.'
     return X_star
 
 def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
@@ -2299,28 +2319,6 @@ def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
         sim = cxa_sim(model1, model2, x, layer_name, iters=1, cxa_sim_type=sim_type)
         sims_per_layer.append(sim)
     return sims_per_layer  # [..., s_l, ...]_l
-
-# def get_l2_similarities_per_layer(self, model1, model2, X, layer_names, sim_type='nes_torch'):
-#     import copy
-#     from uutils.torch_uu import l2_sim_torch
-#     # get [..., s_l, ...] sim per layer (for this data set)
-#     modules = zip(model1.named_children(), model2.named_children())
-#     sims_per_layer = []
-#     out1 = X
-#     out2 = X
-#     for (name1, m1), (name2, m2) in modules:
-#         # print(f'{(name1, m1), (name2, m2)}')
-#         # - always do the forward pass of the net for all layers
-#         out1 = m1(out1)
-#         m2_callable = copy.deepcopy(m1)
-#         m2_callable.load_state_dict(m2.state_dict())
-#         out2 = m2_callable(out2)
-#         # - only collect values for chosen layers
-#         if name1 in layer_names:
-#             # out1, out2 = normalize_matrix_for_similarity(out1, dim=1), normalize_matrix_for_similarity(out2, dim=1)
-#             sim = l2_sim_torch(out1, out2, sim_type=sim_type)
-#             sims_per_layer.append(sim)
-#     return sims_per_layer  # [[s_k,l]_k]_l = [..., [...,s_k,l, ...]_k, ...]_l
 
 def compare_based_on_mdl1_vs_mdl2(args: Namespace, meta_dataloader):
     print(f'{args.num_workers=}')

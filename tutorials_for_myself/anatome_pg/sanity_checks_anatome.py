@@ -44,8 +44,8 @@ cxa_dist_type = 'opd'
 X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, Din))
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
-print(f'Is it close to 1.0? {approx_equal(sim, 1.0, tolerance=1e-2)}')
-assert(approx_equal(sim, 1.0, tolerance=1e-2)), f'Sim should be close to 1.0 but got {sim=}'
+print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
 
 #%%
 """
