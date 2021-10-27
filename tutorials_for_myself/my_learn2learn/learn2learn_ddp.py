@@ -1,10 +1,14 @@
 #%%
 """
-test a basic DDP example
+test a basic DDP example for learn2learn
 
 refs:
-- https://stackoverflow.com/questions/69730835/how-does-one-create-a-distributed-data-loader-with-pytorchs-torchmeta
-- https://github.com/tristandeleu/pytorch-meta/issues/116
+    - l2l:
+        - https://github.com/learnables/learn2learn/issues/197
+        - https://pytorch.org/docs/stable/distributed.html#launch-utility
+    - torchmeta
+        - https://stackoverflow.com/questions/69730835/how-does-one-create-a-distributed-data-loader-with-pytorchs-torchmeta
+        - https://github.com/tristandeleu/pytorch-meta/issues/116
 """
 from argparse import Namespace
 
