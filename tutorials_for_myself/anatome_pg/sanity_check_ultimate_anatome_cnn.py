@@ -28,6 +28,7 @@ B: int = 4
 C, H, W = Cin, 64, 64
 # downsample_size = None
 cxa_dist_type = 'svcca'
+cxa_dist_type = 'pwcca'
 X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, C, H, W))
 
 # - compute sim for NO downsample: so layer matrix is []
@@ -38,6 +39,12 @@ assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
 
 # - compute sim for downsample
 downsample_size: int = 5
-sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=5, iters=1, cxa_dist_type=cxa_dist_type)
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=downsample_size, iters=1, cxa_dist_type=cxa_dist_type)
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
+
+# - compute sim for downsample
+downsample_size: int = 1
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=downsample_size, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
 assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'

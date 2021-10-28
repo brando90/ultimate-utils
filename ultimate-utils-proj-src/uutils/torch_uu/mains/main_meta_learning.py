@@ -103,7 +103,7 @@ def manual_args_load() -> Namespace:
     # args.data_path = Path('~/data/dataset_LS_fully_connected_NN_nb_tasks200_data_per_task1000_l_4_nb_h_layes3_out1_H15/meta_set_fully_connected_NN_std1_4_std2_1.0_noise_std0.1nb_h_layes3_out1_H15').expanduser()
     # args.data_path = Path('~/data/dataset_LS_fully_connected_NN_nb_tasks200_data_per_task1000_l_4_nb_h_layes3_out1_H15/meta_set_fully_connected_NN_std1_16_std2_1.0_noise_std0.1nb_h_layes3_out1_H15').expanduser()
     # mini-imagenet
-    # args.data_path = 'miniimagenet'
+    # args.data_path = 'torchmeta_mini_imagenet'
     # args.data_path = 'sinusoid'
     # Data loader options
     # Base model
@@ -302,7 +302,7 @@ def main(args):
         raise ValueError(f"Invalid trainable opt: {args.meta_learner_name}")
 
     # Get Meta-Sets for few shot learning
-    if 'miniimagenet' in str(args.data_path):
+    if 'torchmeta_mini_imagenet' in str(args.data_path):
         args.meta_learner.classification()
         args.training_mode = 'iterations'
         meta_train_dataloader, meta_val_dataloader, meta_test_dataloader = get_miniimagenet_dataloaders_torchmeta(args)

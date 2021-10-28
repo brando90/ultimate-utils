@@ -2013,51 +2013,34 @@ def equal_two_few_shot_cnn_models(model1: nn.Module, model2: nn.Module) -> bool:
     # simple compare the feature layers, see file /Users/brando/automl-meta-learning/automl-proj-src/meta_learning/base_models/learner_from_opt_as_few_shot_paper.py
     # to see the deatails of what the model arch is and why we do it this way
     return str(model1.model.features) == str(model2.model.features)
-    # return str(list(args.model1.modules())[:-1]) == str(list(args.model2.modules())[:-1])
-    # return str(list(args.model1.modules())[:-1]) == str(list(args.model2.modules())[:-1])
-    # - to get the feature leayers
-    # model1 = model1.model.features
-    # model2 = model2.model.features
-    # # - check names and module
-    # eq_archs: bool = True
-    # for (name1, module1), (name2, module2) in zip(model1.named_modules(), model2.named_modules()):
-    #     # eq_archs = eq_archs and name1 == name2
-    #     if name1 != 'cls' or name2 != 'cls':
-    #         assert str(module1) == str(module2), f'Modules at layer are not the same {str(module1)}, {str(module2)}'
-    #         eq_archs = eq_archs and str(module1) == str(module2)
-    #     assert name1 != 'spp'
-    #     assert name2 != 'spp'
-    # # - check same length
-    # eq_archs = eq_archs and len(list(model1.modules())) == len(list(model2.modules()))
-    # return eq_archs
 
-def get_layer_names_for_sim_analysis_5cnn(args: Namespace,
-                                          model: nn.Module,
-                                          layer_for_analysis: str,
-                                          include_final_layer_in_lst: bool = True) -> list[str]:
-    """
-    Do rep analysis on pool layer.
-
-    Thoughts:
-    This might be good since a layer for 5CNN looks as follows C,N,ReLU,P so the translational invariance has
-    been done, the non-linearity has been applied but due to pooling it's not going to be higher than expected
-    due to lots of zeros. It seems that makes sense, at least if we want the first layer to be more than just
-    a linear transform.
-    But worth trying all the layers.
-    """
-    layer_names: list = []
-    for name, m in model.named_modules():
-        # - to do analysis on inner activations
-        if layer_for_analysis in name:
-            layer_names.append(name)
-        assert name != 'spp', f'Get an spp layer, we are currently not training any model to handle spp.'
-        if include_final_layer_in_lst and name == 'cls':
-            layer_names.append(name)
-    # - print layers & return
-    from uutils.torch_uu.distributed import is_lead_worker
-    if is_lead_worker(args.rank):
-        print(layer_names)
-    return layer_names
+# def get_layer_names_for_sim_analysis_5cnn(args: Namespace,
+#                                           model: nn.Module,
+#                                           layer_for_analysis: str,
+#                                           include_final_layer_in_lst: bool = True) -> list[str]:
+#     """
+#     Do rep analysis on pool layer.
+#
+#     Thoughts:
+#     This might be good since a layer for 5CNN looks as follows C,N,ReLU,P so the translational invariance has
+#     been done, the non-linearity has been applied but due to pooling it's not going to be higher than expected
+#     due to lots of zeros. It seems that makes sense, at least if we want the first layer to be more than just
+#     a linear transform.
+#     But worth trying all the layers.
+#     """
+#     layer_names: list = []
+#     for name, m in model.named_modules():
+#         # - to do analysis on inner activations
+#         if layer_for_analysis in name:
+#             layer_names.append(name)
+#         assert name != 'spp', f'Get an spp layer, we are currently not training any model to handle spp.'
+#         if include_final_layer_in_lst and name == 'cls':
+#             layer_names.append(name)
+#     # - print layers & return
+#     from uutils.torch_uu.distributed import is_lead_worker
+#     if is_lead_worker(args.rank):
+#         print(layer_names)
+#     return layer_names
 
 def get_layer_names_to_do_sim_analysis_relu(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
@@ -2409,6 +2392,32 @@ def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
         # sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=2, iters=1, cxa_dist_type=cxa_dist_type)
         sims.append(sim)
     return data_sizes, sims
+
+def assert_sim_of_model_with_itself_is_approx_one(mdl: nn.Module, X: Tensor,
+                                        layer_name: str,
+                                        downsample_size: Optional[int] = None,
+                                        cxa_dist_type: str = 'pwcca') -> bool:
+    """
+    Returns true if model is ok. If not it asserts against you (never returns False).
+    """
+    sim: float = cxa_sim(mdl, mdl, X, layer_name, downsample_size=downsample_size, iters=1,
+                         cxa_dist_type=cxa_dist_type)
+    print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
+    sim_equals: bool = approx_equal(sim, 1.0)
+    assert sim_equals, f'Sim should be close to 1.0 but got: {sim=}'
+    return sim_equals
+
+def sanity_check_same_model_with_itself_cnn(mdl: nn.Module, X: Optional[Tensor] = None,
+                                            layer_name: str = 'model.features.norm4',
+                                            downsample_size: Optional[int] = None,
+                                            cxa_dist_type: str = 'pwcca') -> bool:
+    if X is None:
+        B, C, H, W = 32, 3, 84, 84
+        X: Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, C, H, W))
+    # - check sim is 1.0
+    success: bool = assert_sim_of_model_with_itself_is_approx_one(mdl, X, layer_name, downsample_size, cxa_dist_type)
+    return success
+
 
 # -- pytorch hooks
 # ref: https://medium.com/the-dl/how-to-use-pytorch-hooks-5041d777f904
