@@ -1032,7 +1032,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
 def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
                      X1: Tensor, X2: Tensor, layer_name: str,
                      downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca',
-                     effecive_neuron_type: str = 'filter') -> float:
+                     effective_neuron_type: str = 'filter') -> float:
     """
     Computes distance between layer matrices for a specific layer:
         d: float = dist(mdl1(X1), mdl2(X2))  # d = 1 - sim
@@ -1061,7 +1061,7 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
         mdl2(X2)
     # - compute distiance with hooks
     # dist: float = hook1.distance(hook2, size=downsample_size)  # size: size of the feature map after downsampling
-    dist: float = hook1.distance(hook2, size=downsample_size, effecive_neuron_type=effecive_neuron_type)  # size: size of the feature map after downsampling
+    dist: float = hook1.distance(hook2, size=downsample_size, effective_neuron_type=effective_neuron_type)  # size: size of the feature map after downsampling
     # - remove hook, to make sure code stops being stateful (I hope)
     hook1.clear()
     hook2.clear()
@@ -1071,18 +1071,18 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
 
 def cxa_sim_general(mdl1: nn.Module, mdl2: nn.Module,
                      X1: Tensor, X2: Tensor, layer_name: str,
-                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effecive_neuron_type: str = 'filter') -> float:
-    dist: float = cxa_dist_general(mdl1, mdl2, X1, X2, layer_name, downsample_size, iters, cxa_dist_type, effecive_neuron_type)
+                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
+    dist: float = cxa_dist_general(mdl1, mdl2, X1, X2, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
     return 1.0 - dist
 
 def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effecive_neuron_type: str = 'filter') -> float:
-    dist: float = cxa_dist_general(mdl1, mdl2, X, X, layer_name, downsample_size, iters, cxa_dist_type, effecive_neuron_type)
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
+    dist: float = cxa_dist_general(mdl1, mdl2, X, X, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
     return float(dist)
 
 def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effecive_neuron_type: str = 'filter') -> float:
-    dist = cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type, effecive_neuron_type)
+             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
+    dist = cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
     return 1.0 - dist
 
 # def dCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
@@ -1093,7 +1093,7 @@ def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
 #              downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
 #     return cxa_sim(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
 
-def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2, effecive_neuron_type: str = 'filter'):
+def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2, effective_neuron_type: str = 'filter'):
     # meta_batch [T, N*K, CHW], [T, K, D]
     from anatome import SimilarityHook
     # get sim/dis functions
@@ -1106,7 +1106,7 @@ def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din
         mdl1(x)
         mdl2(x)
     dist = hook1.distance(hook2, size=cca_size)
-    # dist = hook1.distance(hook2, size=cca_size, effecive_neuron_type=effecive_neuron_type)
+    # dist = hook1.distance(hook2, size=cca_size, effective_neuron_type=effective_neuron_type)
     # -
     hook1.clear()
     hook2.clear()
