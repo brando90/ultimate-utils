@@ -11,6 +11,8 @@ import torch.nn as nn
 
 from uutils.torch_uu import cxa_sim, approx_equal
 from uutils.torch_uu.models import get_single_conv_model
+import anatome
+print(f'from import: {anatome=}')
 
 print('--- Sanity check: sCCA = 1.0 when using same net twice with same input. --')
 
@@ -25,10 +27,17 @@ layer_name = 'conv1'
 B: int = 4
 C, H, W = Cin, 64, 64
 # downsample_size = None
-downsample_size = 5
 cxa_dist_type = 'svcca'
 X: torch.Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, C, H, W))
+
+# - compute sim for NO downsample: so layer matrix is []
+downsample_size = None
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=downsample_size, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
-print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
+assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
+
+# - compute sim for downsample
+downsample_size: int = 5
+sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=5, iters=1, cxa_dist_type=cxa_dist_type)
+print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
 assert(approx_equal(sim, 1.0)), f'Sim should be close to 1.0 but got {sim=}'
