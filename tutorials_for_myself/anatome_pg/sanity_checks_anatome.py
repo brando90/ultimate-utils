@@ -2,6 +2,8 @@
 """
 The similarity of the same network should always be 1.0 on same input.
 """
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
 
@@ -15,7 +17,7 @@ Din: int = 10
 Dout: int = Din
 B: int = 2000
 mdl1: nn.Module = get_named_identity_one_layer_linear_model(D=Din)
-mdl2: nn.Module = mdl1
+mdl2: nn.Module = deepcopy(mdl1)  # use deepcopy otherwise the models will collect the data in the hook twice
 layer_name = 'fc0'
 
 # - ends up comparing two matrices of size [B, Dout], on same data, on same model
@@ -58,9 +60,6 @@ correlation there will be.
 This is correct because 1/4*E[|| Xw - Yw||^2]^2 is proportional the pearson's correlation (assuming Xw, Yw is standardized).
 
 """
-from pathlib import Path
-from matplotlib import pyplot as plt
-
 import torch
 import torch.nn as nn
 
@@ -75,10 +74,12 @@ print('\n--- Sanity check: when number of data points B is smaller than D, then 
 B: int = 10
 Dout: int = 300
 mdl1: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
-mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)
+mdl2: nn.Module = get_named_one_layer_random_linear_model(B, Dout)  # no need for deep copy since models are already different
 layer_name = 'fc0'
-# cxa_dist_type = 'pwcca'
-cxa_dist_type = 'svcca'
+# cxa_dist_type = 'svcca'
+cxa_dist_type = 'pwcca'
+# cxa_dist_type = 'lincka'
+# cxa_dist_type = 'opd'
 
 # - get sim for B << D e.g. [B=10, D=300] easy to "fit", to many degrees of freedom
 X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
@@ -86,7 +87,7 @@ X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=} (since we have many features to match the two Xw1, Yw2).')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
-assert(approx_equal(sim, 1.0))
+# assert(approx_equal(sim, 1.0))
 
 print('\n-- Santity: just makes sure that when low data is present sim is high and afterwards (as n->infty) sim (CCA) '
       'converges to the "true" cca value (eventually)')
@@ -97,6 +98,7 @@ data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 # data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
 sims: list[float] = []
 for b in data_sizes:
+    # print('---')
     X: torch.Tensor = uutils.torch_uu.get_identity_data(b)
     mdl1: nn.Module = get_named_one_layer_random_linear_model(b, Dout)
     mdl2: nn.Module = get_named_one_layer_random_linear_model(b, Dout)
@@ -106,7 +108,7 @@ for b in data_sizes:
     sims.append(sim)
 
 print(f'{sims=}')
-uulot.plot(x=data_sizes, y=sims, xlabel='number of data points (n)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='ndata_vs_svcca_sim', title='Features (D) vs Sim (SVCCA)', x_hline=Dout, x_hline_label=f'B=D={Dout}')
+uulot.plot(x=data_sizes, y=sims, xlabel='number of data points (n)', ylabel=f'similarity ({cxa_dist_type})', show=True, save_plot=True, plot_filename=f'ndata_vs_sim_{cxa_dist_type}', title=f'Features (D) vs Sim ({cxa_dist_type})', x_hline=Dout, x_hline_label=f'B=D={Dout}')
 
 #%%
 
@@ -127,22 +129,27 @@ B: int = 10  # [101, 200, 500, 1000, 2000, 5000, 10000]
 Din: int = B
 Dout: int = 300
 mdl1: nn.Module = get_named_one_layer_random_linear_model(Din, Dout)
-mdl2: nn.Module = get_named_one_layer_random_linear_model(Din, Dout)
+mdl2: nn.Module = get_named_one_layer_random_linear_model(Din, Dout)  # no need for deep copy since models are already different
 layer_name = 'fc0'
-# cxa_dist_type = 'pwcca'
 cxa_dist_type = 'svcca'
+# cxa_dist_type = 'pwcca'
+# cxa_dist_type = 'lincka'
+# cxa_dist_type = 'opd'
 
 X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
 sim: float = cxa_sim(mdl1, mdl2, X, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
 print(f'Should be very very close to 1.0: {sim=}')
 print(f'Is it close to 1.0? {approx_equal(sim, 1.0)}')
-assert(approx_equal(sim, 1.0))
+# assert(approx_equal(sim, 1.0))
 
-# data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
+# data_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000]
 B: int = 64
-D_feature_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000]
+D_feature_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000]
+if cxa_dist_type == 'opd':
+    D_feature_sizes: list[int] = [10, 25, 50, 100, 200, 500, 1_000, 2_000]
 sims: list[float] = []
 for d in D_feature_sizes:
+    print(f'{d=}')
     X: torch.Tensor = uutils.torch_uu.get_identity_data(B)
     mdl1: nn.Module = get_named_one_layer_random_linear_model(B, d)
     mdl2: nn.Module = get_named_one_layer_random_linear_model(B, d)
@@ -151,6 +158,5 @@ for d in D_feature_sizes:
     sims.append(sim)
 
 print(f'{sims=}')
-uuplot.plot(x=D_feature_sizes, y=sims, xlabel='number of features/size of dimension (D)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='D_vs_sim_svcca', title='Features (D) vs Sim (SVCCA)', x_hline=B, x_hline_label=f'B=D={B}')
-# uuplot.plot(x=D_feature_sizes, y=sims, xlabel='number of features/size of dimension (D)', ylabel='similarity (svcca)', show=True, save_plot=True, plot_filename='D_vs_sim', title='Features (D) vs Sim (SVCCA)')
+uuplot.plot(x=D_feature_sizes, y=sims, xlabel='number of features/size of dimension (D)', ylabel=f'similarity ({cxa_dist_type})', show=True, save_plot=True, plot_filename=f'D_vs_sim_{cxa_dist_type}', title=f'Features (D) vs Sim ({cxa_dist_type})', x_hline=B, x_hline_label=f'B=D={B}')
 

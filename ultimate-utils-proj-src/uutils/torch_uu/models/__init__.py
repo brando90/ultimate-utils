@@ -91,3 +91,24 @@ def get_simple_model(in_features: int, hidden_features: int, out_features: int, 
                 modules.append((f'fc{l}', nn.Linear(in_features=in_features, out_features=hidden_features)))
     mdl = nn.Sequential(modules)
     return mdl
+
+def get_single_conv_model(in_channels: int, num_out_filters: int, kernel_size: int = 3, padding: int = 1) -> nn.Module:
+    """
+    Gives a conv layer with in_channels as input.
+    Default gives a filter size such that the spatial dimensions (H, W) do not change i.e. the output tensor after
+    passing data in of this convolution is [B, new_filter_size, H, W] (so same H and W).
+
+    Note:
+        - H' = (H + 2*padding - kernel_size.H + 1) if padding = 1, kernel_size.H = 3 we have:
+            H + 2 - 3 + 1 = H, which retains the size.
+    :param in_channels: e.g. 3 for the the input being the raw image.
+    :param num_out_filters:
+    :param kernel_size:
+    :param padding:
+    :return:
+    """
+    conv_layer: nn.Module = nn.Conv2d(in_channels=in_channels,
+                                      out_channels=num_out_filters,
+                                      kernel_size=kernel_size,
+                                      padding=padding)
+    return conv_layer
