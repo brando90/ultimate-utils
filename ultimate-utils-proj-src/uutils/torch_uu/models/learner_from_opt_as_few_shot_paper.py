@@ -13,11 +13,45 @@ from typing import Optional
 
 from automl.core.operations import SPP
 
+
 def helloworld(msg="hello"):
     print(f'hello world with mgs: {msg}')
 
+
+def get_defaul_args_for_5cnn() -> Namespace:
+    args: Namespace = Namespace()
+    args.image_size = 84
+    args.bn_eps = 1e-3
+    args.bn_momentum = 0.95
+    args.n_classes = 5
+    args.filter_size = 32
+    args.levels = None
+    args.spp = False
+    return args
+
+
 def get_learner_from_args(args: Namespace) -> nn.Module:
     return Learner(args.image_size, args.bn_eps, args.bn_momentum, args.n_classes)
+
+
+def get_default_learner(image_size: int = 84,
+                bn_eps: float = 1e-3,
+                bn_momentum: float = 0.95,
+                n_classes: int = 5,
+                filter_size: int = 32,
+                levels: Optional = None,
+                spp: bool = False) -> nn.Module:
+    return Learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
+
+def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> nn.Module:
+    if args is None:
+        args = get_defaul_args_for_5cnn()
+    mdl = get_learner_from_args(args)
+    return mdl
+
+
+def get_feature_extractor_layers(L: int = 4) -> list[str]:
+    return [f'model.features.pool{i}' for i in range(1, L+1)]
 
 class Learner(nn.Module):
 
@@ -69,7 +103,7 @@ class Learner(nn.Module):
             self.model.update({'spp': spp_})
             self.model.update({'cls': nn.Linear(spp_.output_size, n_classes)})
         else:
-            clr_in = image_size // 2**4
+            clr_in = image_size // 2 ** 4
             self.model.update({'cls': nn.Linear(filter_size * clr_in * clr_in, n_classes)})
         # self.criterion = nn.CrossEntropyLoss()
 
@@ -115,4 +149,3 @@ class Learner(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.BatchNorm2d):
                 m.reset_running_stats()
-
