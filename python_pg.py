@@ -12203,3 +12203,65 @@ for batch in dataloader:
     print('Test inputs shape: {0}'.format(test_inputs.shape))      # (16, 75, 1, 28, 28)
     print('Test targets shape: {0}'.format(test_targets.shape))    # (16, 75)
     break
+
+#%%
+
+# A Python program to demonstrate working of OrderedDict
+from collections import OrderedDict
+
+print("This is a Dict:\n")
+d = {}
+d['a'] = 1
+d['b'] = 2
+d['c'] = 3
+d['d'] = 4
+
+for key, value in d.items():
+    print(key, value)
+
+print("\nThis is an Ordered Dict:\n")
+od = OrderedDict()
+od['a'] = 1
+od['b'] = 2
+od['c'] = 3
+od['d'] = 4
+
+for key, value in od.items():
+    print(key, value)
+
+od[0] # error
+list(od)[0]  # gets first key
+
+#%%
+od = OrderedDict()
+od[(0, 0)] = 0
+od[(0, 1)] = 1
+od[(1, 0)] = 2
+od[(1, 1)] = 3
+
+print(od)
+
+for key, value in od.items():
+    print(type(key))
+    print(key, value)
+
+#%%
+"""
+forced named arguments: https://stackoverflow.com/questions/2965271/forced-naming-of-parameters-in-python/14298976#14298976
+"""
+
+def foo(pos, *, forcenamed = None):
+    print(pos, forcenamed)
+
+foo(pos=10, forcenamed=20)
+foo(10, forcenamed=20)
+foo(10)
+foo(10, 20)  # error
+
+def foo2(pos, *, forcenamed):
+    print(pos, forcenamed)
+
+foo2(pos=10, forcenamed=20)
+foo2(10, forcenamed=20)
+# basically you always have to give the (named) value!
+foo2(10)

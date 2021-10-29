@@ -2817,7 +2817,7 @@ def grad_clipper_hook_test():
 
     print(clipped_resnet.fc.bias.grad[:25])
 
-# -- __main__
+# -- _main
 
 if __name__ == '__main__':
     # test_ned()
