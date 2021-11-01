@@ -1032,7 +1032,10 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
 def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
                      X1: Tensor, X2: Tensor, layer_name: str,
                      downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca',
-                     effective_neuron_type: str = 'filter') -> float:
+                     effective_neuron_type: str = 'filter',
+                     subsample_effective_num_data_method: Optional[str] = None,
+                     subsample_effective_num_data_param: Optional[int] = None
+                     ) -> float:
     """
     Computes distance between layer matrices for a specific layer:
         d: float = dist(mdl1(X1), mdl2(X2))  # d = 1 - sim
@@ -1061,7 +1064,10 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
         mdl2(X2)
     # - compute distiance with hooks
     # dist: float = hook1.distance(hook2, size=downsample_size)  # size: size of the feature map after downsampling
-    dist: float = hook1.distance(hook2, size=downsample_size, effective_neuron_type=effective_neuron_type)  # size: size of the feature map after downsampling
+    dist: float = hook1.distance(hook2, size=downsample_size,
+                                 effective_neuron_type=effective_neuron_type,
+                                 subsample_effective_num_data_method=subsample_effective_num_data_method,
+                                 subsample_effective_num_data_param=subsample_effective_num_data_param)  # size: size of the feature map after downsampling
     # - remove hook, to make sure code stops being stateful (I hope)
     hook1.clear()
     hook2.clear()
