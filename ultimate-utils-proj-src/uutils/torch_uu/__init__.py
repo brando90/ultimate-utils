@@ -56,6 +56,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 Batch = list
 
+
 def hello():
     """
 
@@ -64,6 +65,7 @@ def hello():
     """
     import uutils.torch_uu as torch_uu
     print(f'\nhello from torch_uu __init__.py in:\n{torch_uu}\n')
+
 
 def gpu_test_torch_any_device():
     """
@@ -79,6 +81,7 @@ def gpu_test_torch_any_device():
     assert out.size() == torch.Size([2, 1])
     print(f'Success, torch works with whatever device is shown in the output tensor:\n{out=}')
 
+
 def gpu_test():
     """
     python -c "import uutils; uutils.torch_uu.gpu_test()"
@@ -92,10 +95,12 @@ def gpu_test():
     assert out.size() == torch.Size([2, 1])
     print(f'Success, no Cuda errors means it worked see:\n{out=}')
 
+
 # -
 
 def device_name():
     return gpu_name_otherwise_cpu()
+
 
 def gpu_name_otherwise_cpu():
     gpu_name_or_cpu = None
@@ -106,7 +111,8 @@ def gpu_name_otherwise_cpu():
         gpu_name_or_cpu = device
     return gpu_name_or_cpu
 
-def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool = True):
+
+def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool = True):
     """
 
     Note: use_deterministic_algorithms makes all algorithms deterministic while torch_uu.backends.cudnn.deterministic=True
@@ -140,7 +146,8 @@ def make_code_deterministic(seed: int, always_use_deterministic_algorithms:bool 
     np.random.seed(seed)
     random.seed(seed)
 
-def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
+
+def index(tensor: Tensor, value, ith_match: int = 0) -> Union[int, Tensor]:
     """
     Returns generalized index (i.e. location/coordinate) of the first occurence of value
     in Tensor. For flat tensors (i.e. arrays/lists) it returns the indices of the occurrences
@@ -161,6 +168,7 @@ def index(tensor: Tensor, value, ith_match:int =0) -> Union[int, Tensor]:
         # get index/coordinate of the occurence you want (e.g. 1st occurence ith_match=0)
         index = matches[ith_match]
         return index
+
 
 def insert_unk(vocab):
     """
@@ -183,6 +191,7 @@ def insert_unk(vocab):
     assert isinstance(vocab, Vocab)
     return vocab
 
+
 def insert_special_symbols(vocab):
     from torchtext.vocab import Vocab
 
@@ -199,6 +208,7 @@ def insert_special_symbols(vocab):
     assert vocab['<eos>'] == 3
     assert isinstance(vocab, Vocab)
     return vocab
+
 
 def diagonal_mask(size: int, device) -> Tensor:
     """
@@ -225,12 +235,14 @@ def diagonal_mask(size: int, device) -> Tensor:
     mask = mask.to(device)
     return mask
 
+
 def process_batch_simple(args: Namespace, x_batch, y_batch):
     if isinstance(x_batch, Tensor):
         x_batch = x_batch.to(args.device)
     if isinstance(y_batch, Tensor):
         y_batch = y_batch.to(args.device)
     return x_batch, y_batch
+
 
 def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     # - upack the data
@@ -243,8 +255,10 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
     # - convert to float32 single float, somehow the ckpts seem to need this for sinusoid
     if hasattr(args, 'to_single_float_float32'):
         if args.to_single_float_float32:
-            spt_x, spt_y, qry_x, qry_y = spt_x.to(torch.float32), spt_y.to(torch.float32), qry_x.to(torch.float32), qry_y.to(torch.float32)
+            spt_x, spt_y, qry_x, qry_y = spt_x.to(torch.float32), spt_y.to(torch.float32), qry_x.to(
+                torch.float32), qry_y.to(torch.float32)
     return spt_x.to(args.device), spt_y.to(args.device), qry_x.to(args.device), qry_y.to(args.device)
+
 
 # def get_model(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:
 #     if isinstance(mdl, DistributedDataParallel):
@@ -256,12 +270,14 @@ def set_requires_grad(bool, mdl):
     for name, w in mdl.named_parameters():
         w.requires_grad = bool
 
+
 def print_dict_of_dataloaders_dataset_types(dataloaders):
     msg = 'dataset/loader type: '
     for split, dataloader in dataloaders.items():
         dataset = dataloader.dataset
         msg += f'{split=}: {dataset=}, '
     print(msg)
+
 
 def print_dataloaders_info(opts, dataloaders, split):
     print(f'{split=}')
@@ -273,6 +289,7 @@ def print_dataloaders_info(opts, dataloaders, split):
     if hasattr(opts, 'world_size'):
         print(f"{len(dataloaders[split])*opts.world_size=}")
 
+
 def check_mdl_in_single_gpu(mdl):
     """
     note this only checks the first param and from that infers the rest is in gpu.
@@ -282,6 +299,7 @@ def check_mdl_in_single_gpu(mdl):
     """
     device = next(mdl.parameters()).device
     return device
+
 
 def get_device_from(mdl) -> torch.device:
     """
@@ -293,9 +311,11 @@ def get_device_from(mdl) -> torch.device:
     device: torch.device = next(mdl.parameters()).device
     return device
 
+
 def get_device() -> torch.device:
     device: torch.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     return device
+
 
 def create_detached_deep_copy_old(mdl):
     mdl_new = copy.deepcopy(mdl)
@@ -307,6 +327,7 @@ def create_detached_deep_copy_old(mdl):
     # load model
     mdl_new.load_state_dict(detached_params)
     return mdl_new
+
 
 def create_detached_deep_copy(human_mdl, mdl_to_copy):
     """
@@ -352,7 +373,7 @@ def _create_detached_copy_old(mdl, deep_copy, requires_grad):
             w_new = w.clone().detach()
         else:
             w_new = w.detach()
-        #w_new = nn.Parameter(w_new)
+        # w_new = nn.Parameter(w_new)
         # set requires_grad
         w_new.requires_grad = requires_grad
         # append
@@ -392,7 +413,7 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     # get gpu
     use_cuda = torch.cuda.is_available()
     device_gpu_if_avail = torch.device("cuda" if use_cuda else "cpu")
-    device = device if device==None else device_gpu_if_avail
+    device = device if device == None else device_gpu_if_avail
     ## get initial memory and hidden cell (c and h)
     nb_directions = 2 if bidirectional else 1
     h_n = torch.randn(nb_layers * nb_directions, batch_size, hidden_size, device=device)
@@ -400,13 +421,16 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     hidden = (h_n, c_n)
     return hidden
 
+
 def lp_norm(mdl, p=2):
     lp_norms = [w.norm(p) for name, w in mdl.named_parameters()]
     return sum(lp_norms)
 
+
 def lp_norm_grads(mdl, p=2, grads=False):
     lp_norms = [w.grad.norm(p) for name, w in mdl.named_parameters()]
     return sum(lp_norms)
+
 
 def check_two_models_equal(model1, model2):
     '''
@@ -420,16 +444,19 @@ def check_two_models_equal(model1, model2):
             return False
     return True
 
+
 def are_all_params_leafs(mdl):
     all_leafs = True
     for name, w in mdl.named_parameters():
         all_leafs = all_leafs and w.is_leaf
     return all_leafs
 
+
 def calc_error(mdl: torch.nn.Module, X: torch.Tensor, Y):
     train_acc = calc_accuracy(mdl, X, Y)
     train_err = 1.0 - train_acc
     return train_err
+
 
 def calc_accuracy(mdl: torch.nn.Module, X: torch.Tensor, Y: torch.Tensor) -> float:
     """
@@ -446,13 +473,15 @@ def calc_accuracy(mdl: torch.nn.Module, X: torch.Tensor, Y: torch.Tensor) -> flo
     y_logits = mdl(X)  # unnormalized probs
     # -- return the values & indices with the largest value in the dimension where the scores for each class is
     # get the scores with largest values & their corresponding idx (so the class that is most likely)
-    max_scores, max_idx_class = y_logits.max(dim=1)  # [B, n_classes] -> [B], # get values & indices with the max vals in the dim with scores for each class/label
+    max_scores, max_idx_class = y_logits.max(
+        dim=1)  # [B, n_classes] -> [B], # get values & indices with the max vals in the dim with scores for each class/label
     # usually 0th coordinate is batch size
     n = X.size(0)
-    assert(n == max_idx_class.size(0))
+    assert (n == max_idx_class.size(0))
     # -- calulate acc (note .item() to do float division)
     acc = (max_idx_class == Y).sum() / n
     return acc.item()
+
 
 def calc_accuracy_from_logits(y_logits: torch.Tensor, y: torch.Tensor) -> float:
     """
@@ -463,9 +492,10 @@ def calc_accuracy_from_logits(y_logits: torch.Tensor, y: torch.Tensor) -> float:
     """
     max_logits, max_indices_classes = y_logits.max(dim=1)  # [B, C] -> [B]
     n_examples = y.size(0)  # usually baatch_size
-    assert(n_examples == max_indices_classes.size(0))
+    assert (n_examples == max_indices_classes.size(0))
     acc = (max_indices_classes == y).sum() / n_examples
     return acc.item()
+
 
 def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torch.FloatTensor]:
     """
@@ -506,7 +536,8 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
         # Note: this for any example in batch we can only ever get 1 match (so we never overestimate accuracy <1)
         target_reshaped = target.view(1, -1).expand_as(y_pred)  # [B] -> [B, 1] -> [maxk, B]
         # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
-        correct = (y_pred == target_reshaped)  # [maxk, B] were for each example we know which topk prediction matched truth
+        correct = (
+                    y_pred == target_reshaped)  # [maxk, B] were for each example we know which topk prediction matched truth
         # original: correct = pred.eq(target.view(1, -1).expand_as(pred))
 
         # -- get topk accuracy
@@ -515,9 +546,11 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
             # get tensor of which topk answer was right
             ind_which_topk_matched_truth = correct[:k]  # [maxk, B] -> [k, B]
             # flatten it to help compute if we got it correct for each example in batch
-            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(-1).float()  # [k, B] -> [kB]
+            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(
+                -1).float()  # [k, B] -> [kB]
             # get if we got it right for any of our top k prediction for each example in batch
-            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0, keepdim=True)  # [kB] -> [1]
+            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0,
+                                                                                        keepdim=True)  # [kB] -> [1]
             # compute topk accuracy - the accuracy of the mode's ability to get it right within it's top k guesses/preds
             topk_acc = tot_correct_topk / batch_size  # topk accuracy for entire batch
             list_topk_accs.append(topk_acc)
@@ -525,6 +558,7 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
             return list_topk_accs[0]  # only the top accuracy you requested
         else:
             return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
+
 
 def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torch.FloatTensor]:
     """
@@ -565,7 +599,8 @@ def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List
         # Note: this for any example in batch we can only ever get 1 match (so we never overestimate accuracy <1)
         target_reshaped = target.view(-1, 1).expand_as(y_pred)  # [B] -> [B, 1] -> [B, maxk]
         # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
-        correct = (y_pred == target_reshaped)  # [B, maxk] were for each example we know which topk prediction matched truth
+        correct = (
+                    y_pred == target_reshaped)  # [B, maxk] were for each example we know which topk prediction matched truth
 
         # -- get topk accuracy
         list_topk_accs = []  # idx is topk1, topk2, ... etc
@@ -573,13 +608,16 @@ def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List
             # get tensor of which topk answer was right
             ind_which_topk_matched_truth = correct[:, :k]  # [B, maxk] -> [B, maxk]
             # flatten it to help compute if we got it correct for each example in batch
-            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(-1).float()  # [k, B] -> [kB]
+            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(
+                -1).float()  # [k, B] -> [kB]
             # get if we got it right for any of our top k prediction for each example in batch
-            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0, keepdim=True)  # [kB] -> [1]
+            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0,
+                                                                                        keepdim=True)  # [kB] -> [1]
             # compute topk accuracy - the accuracy of the mode's ability to get it right within it's top k guesses/preds
             topk_acc = tot_correct_topk / batch_size  # topk accuracy for entire batch
             list_topk_accs.append(topk_acc)
         return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
+
 
 def accuracy_original(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -598,6 +636,7 @@ def accuracy_original(output, target, topk=(1,)):
 
     return res
 
+
 def get_stats(flatten_tensor):
     """Get some stats from tensor.
     
@@ -611,6 +650,7 @@ def get_stats(flatten_tensor):
     min_v, max_v, med = flatten_tensor.min(), flatten_tensor.max(), flatten_tensor.median()
     return [mu, std, min_v, max_v, med]
 
+
 def add_inner_train_info_simple(diffopt, *args, **kwargs):
     """  Function that adds any train info desired to be passed to the diffopt to be used during the inner update step.
 
@@ -619,6 +659,7 @@ def add_inner_train_info_simple(diffopt, *args, **kwargs):
     """
     diffopt.param_groups[0]['kwargs']['trainfo_kwargs'] = kwargs
     diffopt.param_groups[0]['kwargs']['trainfo_args'] = args
+
 
 def add_inner_train_stats(diffopt, *args, **kwargs):
     """ Add any train info desired to pass to diffopt for it to use during the update step.
@@ -630,6 +671,7 @@ def add_inner_train_stats(diffopt, *args, **kwargs):
     inner_train_err = kwargs['inner_train_err']
     diffopt.param_groups[0]['kwargs']['prev_trainable_opt_state']['train_loss'] = inner_loss
     diffopt.param_groups[0]['kwargs']['prev_trainable_opt_state']['inner_train_err'] = inner_train_err
+
 
 ####
 
@@ -664,17 +706,20 @@ def load(path: Union[Path, str], filename: str, pickle_module=dill):
     data = torch.load(path / filename, pickle_module=pickle_module)
     return data
 
+
 def save_checkpoint_simple(args, meta_learner):
     # make dir to logs (and ckpts) if not present. Throw no exceptions if it already exists
-    args.path_2_save_ckpt.mkdir(parents=True, exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    args.path_2_save_ckpt.mkdir(parents=True,
+                                exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
 
     args.base_model = "check the meta_learner field in the checkpoint not in the args field"  # so that we don't save the child model so many times since it's part of the meta-learner
     # note this obj has the last episode/outer_i we ran
     torch.save({'args': args, 'meta_learner': meta_learner}, args.path_2_save_ckpt / Path('/ckpt_file'))
 
+
 def resume_ckpt_meta_learning(args):
     path_to_ckpt = args.resume_ckpt_path / Path('db')
-    with open(path_to_ckpt, 'rb') as db_file: 
+    with open(path_to_ckpt, 'rb') as db_file:
         db = pickle.load(db_file)
         args_recovered = db['args']
         meta_learner = db['meta_learner']
@@ -684,51 +729,55 @@ def resume_ckpt_meta_learning(args):
         args = args_recovered
         return args, meta_learner
 
+
 def ckpt_meta_learning_test(args, meta_learner, verbose=False):
     path_to_ckpt = args.logger.current_logs_path
-    path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    path_to_ckpt.mkdir(parents=True,
+                       exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
 
     # Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
-    db = {} # database dict
-    args.base_model = "no child mdl" # so that we don't save the child model so many times since it's part of the meta-learner
-    db['args'] = args # note this obj has the last episode/outer_i we ran
-    args.base_model = meta_learner.base_model # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
+    db = {}  # database dict
+    args.base_model = "no child mdl"  # so that we don't save the child model so many times since it's part of the meta-learner
+    db['args'] = args  # note this obj has the last episode/outer_i we ran
+    args.base_model = meta_learner.base_model  # need to re-set it otherwise later in the code the pointer to child model will be updated and code won't work
     db['meta_learner'] = meta_learner
-    with open(ckpt_path_plus_path , 'wb+') as db_file:
+    with open(ckpt_path_plus_path, 'wb+') as db_file:
         dumped_outer_i = args.outer_i
         pickle.dump(db, db_file)
-    with open(ckpt_path_plus_path , 'rb') as db_file:
+    with open(ckpt_path_plus_path, 'rb') as db_file:
         args = get_args_debug(path=path_to_ckpt)
         loaded_outer_i = args.outer_i
     if verbose:
         print(f'==> dumped_outer_i = {dumped_outer_i}')
         print(f'==> loaded_outer_i = {loaded_outer_i}')
     ## Assertion Tests
-    assert(dumped_outer_i == loaded_outer_i)
+    assert (dumped_outer_i == loaded_outer_i)
     return
 
 
 def ckpt_test(args, verbose=False):
     path_to_ckpt = args.logger.current_logs_path
-    path_to_ckpt.mkdir(parents=True, exist_ok=True) # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
+    path_to_ckpt.mkdir(parents=True,
+                       exist_ok=True)  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
     ckpt_path_plus_path = path_to_ckpt / Path('db')
 
     ## Pickle args & logger (note logger is inside args already), source: https://stackoverflow.com/questions/25348532/can-python-pickle-lambda-functions
-    db = {} # database dict
-    db['args'] = args # note this obj has the last episode/outer_i we ran
-    with open(ckpt_path_plus_path , 'wb+') as db_file:
+    db = {}  # database dict
+    db['args'] = args  # note this obj has the last episode/outer_i we ran
+    with open(ckpt_path_plus_path, 'wb+') as db_file:
         dumped_outer_i = args.outer_i
         pickle.dump(db, db_file)
-    with open(ckpt_path_plus_path , 'rb') as db_file:
+    with open(ckpt_path_plus_path, 'rb') as db_file:
         args = get_args_debug(path=path_to_ckpt)
         loaded_outer_i = args.outer_i
     if verbose:
         print(f'==> dumped_outer_i = {dumped_outer_i}')
         print(f'==> loaded_outer_i = {loaded_outer_i}')
     ## Assertion Tests
-    assert(dumped_outer_i == loaded_outer_i)
+    assert (dumped_outer_i == loaded_outer_i)
     return
+
 
 def get_args_debug(args=None, path=''):
     if args is not None:
@@ -742,12 +791,14 @@ def get_args_debug(args=None, path=''):
     db_file.close()
     return args
 
+
 def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
     ckpt = torch.load(resume, map_location=device)
     last_episode = ckpt['episode']
     metalearner.load_state_dict(ckpt['metalearner'])
     optim.load_state_dict(ckpt['optim'])
     return last_episode, metalearner, optim
+
 
 def save_ckpt_meta_lstm(episode, metalearner, optim, save):
     if not os.path.exists(os.path.join(save, 'ckpts')):
@@ -758,6 +809,7 @@ def save_ckpt_meta_lstm(episode, metalearner, optim, save):
         'metalearner': metalearner.state_dict(),
         'optim': optim.state_dict()
     }, os.path.join(save, 'ckpts', 'meta-learner-{}.pth.tar'.format(episode)))
+
 
 def set_system_wide_force_flush2():
     """
@@ -771,12 +823,14 @@ def set_system_wide_force_flush2():
     print2 = functools.partial(print, flush=True)
     builtins.print = print2
 
+
 def resume_ckpt_meta_lstm(metalearner, optim, resume, device):
     ckpt = torch.load(resume, map_location=device)
     last_episode = ckpt['episode']
     metalearner.load_state_dict(ckpt['metalearner'])
     optim.load_state_dict(ckpt['optim'])
     return last_episode, metalearner, optim
+
 
 def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, train_loss_tolerance=0.01):
     """
@@ -794,6 +848,7 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
     import uutils
 
     set_system_wide_force_flush2()
+
     # train_batch = next(iter(agent.dataloaders['train']))
     # val_batch = next(iter(agent.dataloaders['val']))
 
@@ -821,18 +876,21 @@ def train_single_batch_agent(agent, train_batch, val_batch, acc_tolerance=1.0, t
         if agent.args.it % 10 == 0:
             bar.update(agent.args.it)
             log_train_stats(agent.args.it, train_loss, train_acc)
-            agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+            agent.save(
+                agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
 
         agent.args.it += 1
         gc.collect()
         # if train_acc >= acc_tolerance and train_loss <= train_loss_tolerance:
         if train_acc >= acc_tolerance:
             log_train_stats(agent.args.it, train_loss, train_acc)
-            agent.save(agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
+            agent.save(
+                agent.args.it)  # very expensive! since your only fitting one batch its ok to save it every time you log - but you might want to do this left often.
             bar.update(agent.args.it)
             break  # halt once performance is good enough
 
     return avg_loss.item(), avg_acc.item()
+
 
 def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_loss_tolerance=0.01):
     """
@@ -892,6 +950,7 @@ def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_los
 
     return avg_loss.item(), avg_acc.item()
 
+
 ##
 
 def replace_bn(module, name):
@@ -904,13 +963,15 @@ def replace_bn(module, name):
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)
         if type(target_attr) == torch.nn.BatchNorm2d:
-            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum, target_attr.affine,
+            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum,
+                                          target_attr.affine,
                                           track_running_stats=False)
             setattr(module, attr_str, new_bn)
 
     # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
     for name, immediate_child_module in module.named_children():
         replace_bn(immediate_child_module, name)
+
 
 def set_tracking_running_stats(model):
     """
@@ -930,6 +991,7 @@ def set_tracking_running_stats(model):
             # target_attr.reset_running_stats()
     return
 
+
 ##
 
 def count_nb_params(net):
@@ -937,6 +999,7 @@ def count_nb_params(net):
     for p in net.parameters():
         count += p.data.nelement()
     return count
+
 
 ##
 
@@ -952,7 +1015,7 @@ def gradient_clip(args, meta_opt):
     Raises:
         ValueError: For invalid arguments to args.grad_clip_mode
     """
-    #do gradient clipping: If ‖g‖ ≥ c Then g := c * g/‖g‖
+    # do gradient clipping: If ‖g‖ ≥ c Then g := c * g/‖g‖
     # note: grad_clip_rate is a number for clipping the other is the type
     # of clipping we are doing
     if hasattr(args, 'grad_clip_rate'):
@@ -969,6 +1032,7 @@ def gradient_clip(args, meta_opt):
                 pass
             else:
                 raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
+
 
 def preprocess_grad_loss(x, p=10, eps=1e-8):
     """ Preprocessing (vectorized) implementation from the paper:
@@ -1009,6 +1073,7 @@ def preprocess_grad_loss(x, p=10, eps=1e-8):
     x_proc = torch.stack([x_proc1, x_proc2], 1)
     return x_proc
 
+
 # - distances
 
 def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
@@ -1027,29 +1092,27 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
     else:
         pointwise_diff = lambda x: abs(f1(x) - f2(x)) ** p
     norm, abs_err = integrate.quad(pointwise_diff, a=lb, b=ub)
-    return norm**(1/p), abs_err
+    return norm ** (1 / p), abs_err
 
-def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
-                     X1: Tensor, X2: Tensor, layer_name: str,
-                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca',
-                     effective_neuron_type: str = 'filter',
-                     subsample_effective_num_data_method: Optional[str] = None,
-                     subsample_effective_num_data_param: Optional[int] = None
-                     ) -> float:
+
+def get_metric(mdl1: nn.Module, mdl2: nn.Module,
+               X1: Tensor, X2: Tensor,
+               layer_name: str,
+               cxa_dist_type: str = 'pwcca',
+               iters: int = 1,
+               effective_neuron_type: str = 'filter',
+               downsample_method: Optional[str] = None,
+               downsample_size: Optional[int] = None,
+               subsample_effective_num_data_method: Optional[str] = None,
+               subsample_effective_num_data_param: Optional[int] = None,
+               metric_as_sim_or_dist: str = 'dist'
+               ) -> float:
     """
     Computes distance between layer matrices for a specific layer:
         d: float = dist(mdl1(X1), mdl2(X2))  # d = 1 - sim
 
-    Note:
-        - size: size of the feature map after downsampling
-
     :argument: cxa_dist_type 'svcca', 'pwcca', 'lincka', 'opd'.
     """
-    # import copy
-    # mdl1 = copy.deepcopy(mdl1)
-    # mdl2 = copy.deepcopy(mdl2)
-    # from anatome import DistanceHook
-    # from anatome import SimilarityHook
     from anatome import SimilarityHook as DistanceHook
     # - get distance hooks (to intercept the features)
     hook1 = DistanceHook(mdl1, layer_name, cxa_dist_type)
@@ -1057,17 +1120,19 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
     mdl1.eval()
     mdl2.eval()
     # - populate hook tensors in the data dimension (1st dimension):
-    # self._hooked_tensors = torch.cat([self._hooked_tensors, output], dim=0).contiguous()
     # so it populates the self._hooked_tensors in the hook objects.
     for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
         mdl1(X1)
         mdl2(X2)
     # - compute distiance with hooks
-    # dist: float = hook1.distance(hook2, size=downsample_size)  # size: size of the feature map after downsampling
-    dist: float = hook1.distance(hook2, size=downsample_size,
+    dist: float = hook1.distance(hook2,
                                  effective_neuron_type=effective_neuron_type,
+                                 downsample_method=downsample_method,
+                                 downsample_size=downsample_size,
                                  subsample_effective_num_data_method=subsample_effective_num_data_method,
-                                 subsample_effective_num_data_param=subsample_effective_num_data_param)  # size: size of the feature map after downsampling
+                                 subsample_effective_num_data_param=subsample_effective_num_data_param,
+                                 metric_as_sim_or_dist=metric_as_sim_or_dist
+                                 )
     # - remove hook, to make sure code stops being stateful (I hope)
     hook1.clear()
     hook2.clear()
@@ -1075,21 +1140,6 @@ def cxa_dist_general(mdl1: nn.Module, mdl2: nn.Module,
     remove_hook(mdl2, hook2)
     return float(dist)
 
-def cxa_sim_general(mdl1: nn.Module, mdl2: nn.Module,
-                     X1: Tensor, X2: Tensor, layer_name: str,
-                     downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
-    dist: float = cxa_dist_general(mdl1, mdl2, X1, X2, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
-    return 1.0 - dist
-
-def cxa_dist(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
-    dist: float = cxa_dist_general(mdl1, mdl2, X, X, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
-    return float(dist)
-
-def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-             downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca', effective_neuron_type: str = 'filter') -> float:
-    dist = cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
-    return 1.0 - dist
 
 def ned(f, y):
     """
@@ -1103,14 +1153,16 @@ def ned(f, y):
     @param y:
     @return:
     """
-    ned = (0.5*np.var(f - y) / (np.var(f) + np.var(y)) )**0.5
+    ned = (0.5 * np.var(f - y) / (np.var(f) + np.var(y))) ** 0.5
     return ned
+
 
 def r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor):
     """ returns the accuracy from torch_uu tensors """
     from sklearn.metrics import r2_score
     acc = r2_score(y_true=y_true.detach().cpu().numpy(), y_pred=y_pred.detach().cpu().numpy())
     return acc
+
 
 def r2_symmetric(f, y, r2_type='explained_variance'):
     """
@@ -1139,7 +1191,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
     if r2_type == 'average_r2s':
         r2_f = r2_score(y_true=f, y_pred=y)
         r2_y = r2_score(y_true=y, y_pred=f)
-        r2 = 0.5*r2_f + 0.5*r2_y
+        r2 = 0.5 * r2_f + 0.5 * r2_y
     elif r2_type == 'normalized_average_r2s':
         r2_f = r2_score(y_true=f, y_pred=y)
         r2_y = r2_score(y_true=y, y_pred=f)
@@ -1170,6 +1222,7 @@ def r2_symmetric(f, y, r2_type='explained_variance'):
     else:
         raise ValueError(f'Not implemented: {r2_type}')
     return r2
+
 
 def compressed_r2_score(y_true, y_pred, compressor='tanh'):
     """
@@ -1214,7 +1267,7 @@ def compressed_r2_score(y_true, y_pred, compressor='tanh'):
     if compressor == 'Sigmoid':
         if r2 > 0:
             # so that cr2 intercepts at 0.5
-            compressed_r2 = 0.5*r2 + 0.5
+            compressed_r2 = 0.5 * r2 + 0.5
         else:
             compressed_r2 = logistic.cdf(r2)
     elif compressor == 'tanh':
@@ -1226,6 +1279,7 @@ def compressed_r2_score(y_true, y_pred, compressor='tanh'):
         raise ValueError(f'compressor {compressor} not implemented')
     return compressed_r2
 
+
 def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, compressor='tanh'):
     """
     Though it seems this function is not needed, surprisingly! It processes torch_uu tensors just fine...
@@ -1235,6 +1289,7 @@ def compressed_r2_score_from_torch(y_true: torch.Tensor, y_pred: torch.Tensor, c
     :return:
     """
     return compressed_r2_score(y_true.detach().numpy(), y_pred.detach().numpy(), compressor)
+
 
 # def normalized_r2_torch(y_true, y_pred, normalizer='Sigmoid'):
 #     """
@@ -1286,6 +1341,7 @@ def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch') -> Tensor:
         raise ValueError(f'Not implemented sim_type={sim_type}')
     return sim
 
+
 def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
     """
     Normalized eucledian distance in pytorch.
@@ -1318,17 +1374,21 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
         # [K] -> [1]
         ned_2 = 0.5 * ((x1 - x2).var() / (x1.var() + x2.var() + eps))
     # if the input is a (row) vector e.g. when comparing two batches of acts of D=1 like with scores right before sf
-    elif x1.size() == torch.Size([x1.size(0), 1]):  # note this special case is needed since var over dim=1 is nan (1 value has no variance).
+    elif x1.size() == torch.Size(
+            [x1.size(0), 1]):  # note this special case is needed since var over dim=1 is nan (1 value has no variance).
         # [B, 1] -> [B]
-        ned_2 = 0.5 * ((x1 - x2)**2 / (x1**2 + x2**2 + eps)).squeeze()  # Squeeze important to be consistent with .var, otherwise tensors of different sizes come out without the user expecting it
+        ned_2 = 0.5 * ((x1 - x2) ** 2 / (
+                    x1 ** 2 + x2 ** 2 + eps)).squeeze()  # Squeeze important to be consistent with .var, otherwise tensors of different sizes come out without the user expecting it
     # common case is if input is a batch
     else:
         # e.g. [B, D] -> [B]
         ned_2 = 0.5 * ((x1 - x2).var(dim=dim) / (x1.var(dim=dim) + x2.var(dim=dim) + eps))
     return ned_2 ** 0.5
 
-def nes_torch(x1, x2, dim: int =1, eps: float =1e-8) -> Tensor:
+
+def nes_torch(x1, x2, dim: int = 1, eps: float = 1e-8) -> Tensor:
     return 1.0 - ned_torch(x1, x2, dim, eps)
+
 
 def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = True) -> Tensor:
     """
@@ -1374,6 +1434,7 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0
     d: Tensor = d / 2.0 if normalize_for_range_0_to_1 else d
     return d
 
+
 def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = True) -> Tensor:
     """
     Returns orthogonal procurstes similarity. If normalized then output is in invertval [0, 1] and if not then output
@@ -1387,6 +1448,7 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range
     d = orthogonal_procrustes_distance(x1, x2, normalize_for_range_0_to_1)
     sim: Tensor = 1.0 - d if normalize_for_range_0_to_1 else 2.0 - d
     return sim
+
 
 def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     """
@@ -1406,6 +1468,7 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     X_star: Tensor = X_centered / norm(X_centered, "fro")
     return X_star
 
+
 # def _normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
 #     """
 #     WARNING: gives less accurate results for OPD.
@@ -1423,6 +1486,7 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
 def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
     """ Center according to columns and divide by frobenius norm. Matrix is assumed to be [n, d] else sepcify dim. """
     return normalize_matrix_for_similarity(X, dim)
+
 
 def tensorify(lst):
     """
@@ -1451,6 +1515,7 @@ def tensorify(lst):
     tensor_lst = torch.stack(lst, dim=0)
     return tensor_lst
 
+
 def floatify_results(dic):
     if type(dic) is not dict:
         if type(dic) is torch.Tensor:
@@ -1470,7 +1535,7 @@ def floatify_results(dic):
         return d
 
 
-def print_results_old(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all_diffs_cka, all_diffs_neds):
+def print_results_old(args, all_meta_eval_losses, all_diffs_qry, all_diffs_cca, all_diffs_cka, all_diffs_neds):
     print(f'experiment {args.data_path}\n')
 
     print(f'Meta Val loss (using query set of course, (k_val = {args.k_eval}))')
@@ -1519,7 +1584,7 @@ def print_results_old(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca,
     # print(f'-> diff_ned_mean = {diff_r2_1_mse_var_mean} +-{diff_r2_1_mse_var_std}')
 
 
-def print_results(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all_diffs_cka, all_diffs_neds):
+def print_results(args, all_meta_eval_losses, all_diffs_qry, all_diffs_cca, all_diffs_cka, all_diffs_neds):
     print(f'experiment {args.data_path}\n')
 
     print(f'Meta Val loss (using query set of course, (k_val = {args.k_eval}))')
@@ -1566,11 +1631,13 @@ def print_results(args, all_meta_eval_losses, all_diffs_qry,  all_diffs_cca, all
     # diff_r2_1_mse_var_mean = np.average(all_diffs_r2_1_mse_var)
     # diff_r2_1_mse_var_std = np.std(all_diffs_r2_1_mse_var)
     # print(f'-> diff_ned_mean = {diff_r2_1_mse_var_mean} +-{diff_r2_1_mse_var_std}')
+
 
 def compute_result_stats(all_sims):
     cxas = ['cca', 'cka']
     l2 = ['nes', 'cosine']
-    stats = {metric: {'avg': None, 'std': None, 'rep': {'avg': None, 'std': None}, 'all': {'avg': None, 'std': None}} for metric, _ in all_sims.items()}
+    stats = {metric: {'avg': None, 'std': None, 'rep': {'avg': None, 'std': None}, 'all': {'avg': None, 'std': None}}
+             for metric, _ in all_sims.items()}
     for metric, tensor_of_metrics in all_sims.items():
         if metric in cxas:
             # compute average cxa per layer: [T, L] -> [L]
@@ -1578,7 +1645,7 @@ def compute_result_stats(all_sims):
             std_sims = tensor_of_metrics.std(dim=0)
             # compute representation & all avg cxa [T, L] -> [1]
             L = tensor_of_metrics.size(1)
-            indicies = torch.tensor(range(L-1))
+            indicies = torch.tensor(range(L - 1))
             representation_tensors = tensor_of_metrics.index_select(dim=1, index=indicies)
             avg_sims_representation_layer = representation_tensors.mean()
             std_sims_representation_layer = representation_tensors.std()
@@ -1591,7 +1658,7 @@ def compute_result_stats(all_sims):
             std_sims = tensor_of_metrics.std(dim=[0, 2])
             # compute representation & all avg l2 [T, L, K_eval] -> [1]
             L = tensor_of_metrics.size(1)
-            indicies = torch.tensor(range(L-1))
+            indicies = torch.tensor(range(L - 1))
             representation_tensors = tensor_of_metrics.index_select(dim=1, index=indicies)
             avg_sims_representation_layer = representation_tensors.mean()
             std_sims_representation_layer = representation_tensors.std()
@@ -1604,12 +1671,13 @@ def compute_result_stats(all_sims):
             std_sims = tensor_of_metrics.std(dim=0)
         stats[metric]['avg'] = avg_sims
         stats[metric]['std'] = std_sims
-        if metric in cxas+l2:
+        if metric in cxas + l2:
             stats[metric]['rep']['avg'] = avg_sims_representation_layer
             stats[metric]['rep']['std'] = std_sims_representation_layer
             stats[metric]['all']['avg'] = avg_sims_all
             stats[metric]['all']['std'] = std_sims_all
     return stats
+
 
 def get_mean_std_pairs(metric: dict):
     """
@@ -1638,10 +1706,12 @@ def get_mean_std_pairs(metric: dict):
         values_in_columns.append(f'{avg:.3f}{sep}{std:.3f}')
     return values_in_columns
 
+
 # -- similarity comparisons for MAML
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self, name):
         self.name = name
         self.reset()
@@ -1678,8 +1748,10 @@ class AverageMeter(object):
         fmtstr = '{name} val:{val} avg:{avg}'
         return fmtstr.format(**self.__dict__)
 
+
 class StatsCollector(object):
     """Computes stores the average and the std. """
+
     def __init__(self):
         pass
 
@@ -1698,6 +1770,7 @@ class StatsCollector(object):
         # fmtstr = f'{name} val:{val} avg:{avg}'
         # return fmtstr.format(**self.__dict__)
 
+
 def flatten2float_list(t: torch.Tensor) -> List[float]:
     """
     Maps a tensor to a flatten list of floats
@@ -1707,6 +1780,7 @@ def flatten2float_list(t: torch.Tensor) -> List[float]:
     t = t.view(-1).detach().numpy().tolist()
     # t = torch_uu.flatten(t).numpy().tolist()
     return t
+
 
 # -- not using for now
 
@@ -1731,6 +1805,7 @@ class AverageStdMeter(object):
     if your using the true Var[] opertor but if your computing it emprically you'd get NaN since the
     variance is undefined for 1 element.
     """
+
     def __init__(self, name):
         self.name = name
         raise ValueError('Dont use.')
@@ -1752,6 +1827,7 @@ class AverageStdMeter(object):
         fmtstr = '{name} {avg} +- {std}'
         return fmtstr.format(self.name, self.avg, self.std)
 
+
 def split_train_val_test(X, y, random_state=1, ratio=[0.80, 0.10, 0.10]):
     #
     # # shuffle = False  # shufflebool, default=True, Whether or not to shuffle the data_lib before splitting. If shuffle=False then stratify must be None.
@@ -1770,22 +1846,24 @@ def split_train_val_test(X, y, random_state=1, ratio=[0.80, 0.10, 0.10]):
 
 
 def split_two(lst, ratio=[0.5, 0.5]):
-    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    assert (np.sum(ratio) == 1.0)  # makes sure the splits make sense
     train_ratio = ratio[0]
     # note this function needs only the "middle" index to split, the remaining is the rest of the split
     indices_for_splittin = [int(len(lst) * train_ratio)]
     train, test = np.split(lst, indices_for_splittin)
     return train, test
 
+
 def split_three(lst, ratio=[0.8, 0.1, 0.1]):
     import numpy as np
 
     train_r, val_r, test_r = ratio
-    assert(np.sum(ratio) == 1.0)  # makes sure the splits make sense
+    assert (np.sum(ratio) == 1.0)  # makes sure the splits make sense
     # note we only need to give the first 2 indices to split, the last one it returns the rest of the list or empty
-    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r+val_r))]
+    indicies_for_splitting = [int(len(lst) * train_r), int(len(lst) * (train_r + val_r))]
     train, val, test = np.split(lst, indicies_for_splitting)
     return train, val, test
+
 
 # -- Label smoothing
 
@@ -1799,12 +1877,14 @@ https://stackoverflow.com/questions/55681502/label-smoothing-in-pytorch
 
 """
 
+
 class LabelSmoothingLoss(nn.Module):
     """
     With label smoothing,
     KL-divergence between q_{smoothed ground truth prob.}(w)
     and p_{prob. computed by model}(w) is minimized.
     """
+
     def __init__(self, label_smoothing, tgt_vocab_size, ignore_index=-100):
         assert 0.0 < label_smoothing <= 1.0
         self.ignore_index = ignore_index
@@ -1827,6 +1907,7 @@ class LabelSmoothingLoss(nn.Module):
         model_prob.masked_fill_((target == self.ignore_index).unsqueeze(1), 0)
 
         return F.kl_div(output, model_prob, reduction='sum')
+
 
 def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.01):
     """
@@ -1887,10 +1968,11 @@ def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.
 
     return avg_loss.item(), avg_acc.item()
 
+
 # - data set downloads
 
-def download_dataset(url: str, path2save_filename:Union[str, None] = None,
-                     do_unzip:bool = False) -> None:
+def download_dataset(url: str, path2save_filename: Union[str, None] = None,
+                     do_unzip: bool = False) -> None:
     """
 
     :param url:
@@ -1912,6 +1994,7 @@ def download_dataset(url: str, path2save_filename:Union[str, None] = None,
         unzip(filename, './')
         # untar(filename, './')
 
+
 def unzip(path2zip: str, path2unzip: str):
     """
     todo - fix, so that it works in any os
@@ -1925,14 +2008,18 @@ def unzip(path2zip: str, path2unzip: str):
     #     zip_ref.extractall(path2zip)
     path = str(Path(path2zip).expanduser())
     path2unzip = str(Path(path2unzip).expanduser())
-    os.system(f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
+    os.system(
+        f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
     os.remove(path2zip)
+
 
 def untar(path2zip: str, path2unzip: str):
     path = str(Path(path2zip).expanduser())
     path2unzip = str(Path(path2unzip).expanduser())
-    os.system(f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
+    os.system(
+        f'tar -xvzf {path2zip} -C {path2unzip}/')  # extract data set in above location i.e at path / 'miniImagenet'
     os.remove(path2zip)
+
 
 def _unzip(filename: Union[str, Path], extract_dir):
     """
@@ -1956,6 +2043,7 @@ def _unzip(filename: Union[str, Path], extract_dir):
     # execute(f'tar -xvzf {filename}')
     # print(f'done unzipping {filename}\n')
     pass
+
 
 def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
               dirname: Union[None, Path] = None, ckpt_name: str = 'ckpt.pt'):
@@ -1981,6 +2069,7 @@ def save_ckpt(args: Namespace, mdl: nn.Module, optimizer: torch.optim.Optimizer,
                pickle_module=dill,
                f=dirname / ckpt_name)  # f'mdl_{epoch_num:03}.pt'
 
+
 def equal_two_few_shot_cnn_models(model1: nn.Module, model2: nn.Module) -> bool:
     """
     Checks the two models have the same arch by comparing the string value of the module of each layer.
@@ -1990,6 +2079,7 @@ def equal_two_few_shot_cnn_models(model1: nn.Module, model2: nn.Module) -> bool:
     # simple compare the feature layers, see file /Users/brando/automl-meta-learning/automl-proj-src/meta_learning/base_models/learner_from_opt_as_few_shot_paper.py
     # to see the deatails of what the model arch is and why we do it this way
     return str(model1.model.features) == str(model2.model.features)
+
 
 # def get_layer_names_for_sim_analysis_5cnn(args: Namespace,
 #                                           model: nn.Module,
@@ -2043,6 +2133,7 @@ def get_layer_names_to_do_sim_analysis_relu(args: Namespace, include_final_layer
         print(layer_names)
     return layer_names
 
+
 def get_layer_names_to_do_sim_analysis_bn(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
     Get the layers to do the similarity analysis.
@@ -2066,6 +2157,7 @@ def get_layer_names_to_do_sim_analysis_bn(args: Namespace, include_final_layer_i
     if is_lead_worker(args.rank):
         print(layer_names)
     return layer_names
+
 
 def get_layer_names_to_do_sim_analysis_fc(args: Namespace, include_final_layer_in_lst: bool = True) -> list[str]:
     """
@@ -2093,6 +2185,7 @@ def get_layer_names_to_do_sim_analysis_fc(args: Namespace, include_final_layer_i
     if is_lead_worker(args.rank):
         print(layer_names)
     return layer_names
+
 
 def summarize_similarities(args: Namespace, sims: dict) -> dict:
     """
@@ -2146,21 +2239,22 @@ def summarize_similarities(args: Namespace, sims: dict) -> dict:
     assert std_summarized_rep_sim['cca'].size() == torch.Size([])
     return mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim
 
+
 def log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args: Namespace,
-                                               it: int,
-                                               mdl1: nn.Module, mdl2: nn.Module,
-                                               batch_x: torch.Tensor, batch_y: torch.Tensor,
+                                                            it: int,
+                                                            mdl1: nn.Module, mdl2: nn.Module,
+                                                            batch_x: torch.Tensor, batch_y: torch.Tensor,
 
-                                               # spt_x, spt_y, qry_x, qry_y,  # these are multiple tasks
+                                                            # spt_x, spt_y, qry_x, qry_y,  # these are multiple tasks
 
-                                               log_freq_for_detection_of_feature_reuse: int = 3,
+                                                            log_freq_for_detection_of_feature_reuse: int = 3,
 
-                                               force_log: bool = False,
-                                               parallel: bool = False,
-                                               iter_tasks=None,
-                                               log_to_wandb: bool = False,
-                                               show_layerwise_sims: bool = True
-                                               ):
+                                                            force_log: bool = False,
+                                                            parallel: bool = False,
+                                                            iter_tasks=None,
+                                                            log_to_wandb: bool = False,
+                                                            show_layerwise_sims: bool = True
+                                                            ):
     """
     Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that
     """
@@ -2177,11 +2271,11 @@ def log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args: Namespace,
     total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
 
     if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-    # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-    #     if hasattr(args, 'metrics_as_dist'):
-    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
-    #     else:
-    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
+        # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        #     if hasattr(args, 'metrics_as_dist'):
+        #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
+        #     else:
+        #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
         sims = distances_btw_models(args, mdl1, mdl2, batch_x, batch_y, args.layer_names, args.metrics_as_dist)
         print(sims)
         # mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(args, sims)
@@ -2217,11 +2311,12 @@ def log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args: Namespace,
         #     rep_summary_log[it_or_epoch] = it
         #     wandb.log(rep_summary_log, commit=True)
 
+
 def distances_btw_models(args: Namespace,
-                        model1: nn.Module, model2: nn.Module,
-                        batch_x: torch.Tensor, batch_y: torch.Tensor,
-                        layer_names: list[str],
-                        metrics_as_dist: bool = True) -> dict:
+                         model1: nn.Module, model2: nn.Module,
+                         batch_x: torch.Tensor, batch_y: torch.Tensor,
+                         layer_names: list[str],
+                         metrics_as_dist: bool = True) -> dict:
     """
     Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
     two batch of any type of examples).
@@ -2268,8 +2363,10 @@ def distances_btw_models(args: Namespace,
             out_metrics[metric] = 1.0 - out_metrics[metric]
             if metric != 'cosine':
                 error_tolerance: float = -0.0001
-                assert (out_metrics[metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
+                assert (out_metrics[
+                            metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
     return out_metrics
+
 
 def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
                                    x: torch.Tensor, layer_names: list[str],
@@ -2284,6 +2381,7 @@ def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
         sim = cxa_sim(model1, model2, x, layer_name, iters=1, cxa_sim_type=sim_type)
         sims_per_layer.append(sim)
     return sims_per_layer  # [..., s_l, ...]_l
+
 
 def compare_based_on_mdl1_vs_mdl2(args: Namespace, meta_dataloader):
     print(f'{args.num_workers=}')
@@ -2310,13 +2408,16 @@ def compare_based_on_mdl1_vs_mdl2(args: Namespace, meta_dataloader):
             # args.model1
 
             # -- log it stats
-            log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args, args.it, args.model1, args.model2, batch_x, batch_y, force_log=True, parallel=args.sim_compute_parallel)
+            log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args, args.it, args.model1, args.model2, batch_x,
+                                                                    batch_y, force_log=True,
+                                                                    parallel=args.sim_compute_parallel)
 
             # - break
             halt: bool = args.it >= args.num_its - 1
             if halt:
                 break
             args.it += 1
+
 
 def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
     print(f'{args.num_workers=}')
@@ -2346,6 +2447,7 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
             args.it += 1
     return meta_eval_loss, meta_eval_acc
 
+
 def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
                         X1: Tensor, X2: Tensor,
                         layer_name: str, cxa_dist_type: str) -> tuple[list[int], list[float]]:
@@ -2354,26 +2456,28 @@ def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
 
     X1: [n_c*k_eval*H*W, F]
     """
-    assert(X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA type analysis to work.' \
-                                      f'but got: {X1.size(0)=}, {X2.size(0)=}'
+    assert (X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA type analysis to work.' \
+                                       f'but got: {X1.size(0)=}, {X2.size(0)=}'
     # - get the sims vs data_set sizes
     # data_sizes: list[int] = [X1.size(0)]
     # data_sizes: list[int] = [10]
-    data_sizes: list[int] = [args.k_eval*args.n_classes]
-    print(f'# examples = {args.k_eval*args.n_classes}')
+    data_sizes: list[int] = [args.k_eval * args.n_classes]
+    print(f'# examples = {args.k_eval * args.n_classes}')
     # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
     sims: list[float] = []
     for b in data_sizes:
         x1, x2 = X1[:b], X2[:b]  # get first b images
-        sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1, cxa_dist_type=cxa_dist_type)
+        sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1,
+                                     cxa_dist_type=cxa_dist_type)
         # sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=2, iters=1, cxa_dist_type=cxa_dist_type)
         sims.append(sim)
     return data_sizes, sims
 
+
 def assert_sim_of_model_with_itself_is_approx_one(mdl: nn.Module, X: Tensor,
-                                        layer_name: str,
-                                        downsample_size: Optional[int] = None,
-                                        cxa_dist_type: str = 'pwcca') -> bool:
+                                                  layer_name: str,
+                                                  downsample_size: Optional[int] = None,
+                                                  cxa_dist_type: str = 'pwcca') -> bool:
     """
     Returns true if model is ok. If not it asserts against you (never returns False).
     """
@@ -2383,6 +2487,7 @@ def assert_sim_of_model_with_itself_is_approx_one(mdl: nn.Module, X: Tensor,
     sim_equals: bool = approx_equal(sim, 1.0)
     assert sim_equals, f'Sim should be close to 1.0 but got: {sim=}'
     return sim_equals
+
 
 def sanity_check_same_model_with_itself_cnn(mdl: nn.Module, X: Optional[Tensor] = None,
                                             layer_name: str = 'model.features.norm4',
@@ -2405,12 +2510,14 @@ def module_hook(module: nn.Module, input: Tensor, output: Tensor):
     """
     pass
 
+
 def tensor_hook(grad: Tensor):
     """
     For Tensor objects only.
     Only executed during the *backward* pass!
     """
     pass
+
 
 # For Tensor objects only.
 # Only executed during the *backward* pass!
@@ -2423,6 +2530,7 @@ def hook_for_printing_output_shape(layer: nn.Module, input: Tensor, output: Tens
     of it's modules then use this automatically when calling the forward pass of your model.
     """
     print(f"{layer.__name__}: {output.shape}")
+
 
 class VerboseExecutionHook(nn.Module):
     """
@@ -2440,6 +2548,7 @@ class VerboseExecutionHook(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
+
 
 class FeatureExtractorHook(nn.Module):
     def __init__(self, model: nn.Module, layers: Iterable[str]):
@@ -2459,6 +2568,7 @@ class FeatureExtractorHook(nn.Module):
         def fn(_, __, output):
             # append output features of current layer to hook_self obj.
             self._features[layer_id] = output
+
         return fn
 
     def forward(self, x: Tensor) -> dict[str, Tensor]:
@@ -2470,11 +2580,13 @@ class FeatureExtractorHook(nn.Module):
         _ = self.model(x)
         return self._features
 
+
 def gradient_clipper_hook(model: nn.Module, val: float) -> nn.Module:
     for parameter in model.parameters():
         parameter.register_hook(lambda grad: grad.clamp_(-val, val))
 
     return model
+
 
 class GetMaxFiltersExtractorHook(nn.Module):
     def __init__(self, model: nn.Module, layers: Iterable[str]):
@@ -2495,6 +2607,7 @@ class GetMaxFiltersExtractorHook(nn.Module):
         def hook(_, __, output):
             # append output features of current layer to hook_self obj.
             self._features[layer_id] = output
+
         return hook
 
     def forward(self, x: Tensor) -> dict[str, Tensor]:
@@ -2506,6 +2619,7 @@ class GetMaxFiltersExtractorHook(nn.Module):
         _ = self.model(x)
         return self._features
 
+
 # -- misc
 
 def remove_hook(mdl: nn.Module, hook):
@@ -2515,12 +2629,14 @@ def remove_hook(mdl: nn.Module, hook):
     handle = mdl.register_forward_hook(hook)
     handle.remove()
 
+
 def approx_equal(val1: float, val2: float, tolerance: float = 1.0e-4) -> bool:
     """
     Returns wether two values are approximately equal e.g. if they are less than 4 orders of magnitude apart.
     """
     eq: bool = abs(val1 - val2) <= tolerance
     return eq
+
 
 def get_identity_data(B: int) -> torch.Tensor:
     """
@@ -2532,6 +2648,7 @@ def get_identity_data(B: int) -> torch.Tensor:
     data: torch.Tensor = torch.diag(torch.ones(B))
     return data
 
+
 def get_normal_data(B: int, Din: int, loc: float = 0.0, scale: float = 1.0) -> torch.Tensor:
     """
     Returns normally distributed data of size [B, Din].
@@ -2540,6 +2657,7 @@ def get_normal_data(B: int, Din: int, loc: float = 0.0, scale: float = 1.0) -> t
     """
     data: torch.Tensor = torch.distributions.Normal(loc=loc, scale=scale).sample((B, Din))
     return data
+
 
 # --
 
@@ -2559,7 +2677,8 @@ def ned_test():
         ned_tensor = ned_torch(x1, x2)
         print(ned_tensor)
         print(ned_tensor.size())
-        #print(ned_torch(x1, x2, dim=dim))
+        # print(ned_torch(x1, x2, dim=dim))
+
 
 def tensorify_test():
     t = [1, 2, 3]
@@ -2569,12 +2688,14 @@ def tensorify_test():
     ttt = [tt, tt, tt]
     print(tensorify(ttt))
 
+
 def compressed_r2_score():
     y = torch.randn(10, 1)
     y_pred = 2 * y
     c_r2 = compressed_r2_score(y, y_pred)
     c_r2_torch = compressed_r2_score_from_torch(y, y_pred)
-    assert(c_r2_torch == c_r2)
+    assert (c_r2_torch == c_r2)
+
 
 def topk_accuracy_and_accuracy_test():
     import torch
@@ -2592,12 +2713,13 @@ def topk_accuracy_and_accuracy_test():
 
     acc_top1, acc_top2, acc_top5 = accuracy(output=y_logits, target=y, topk=(1, 2, 5))
     acc_top1_, acc_top2_, acc_top5_ = topk_accuracy(output=y_logits, target=y, topk=(1, 2, 5))
-    assert(acc_top5 == acc_top5_)
-    assert(acc_top1 == acc_top1_)
+    assert (acc_top5 == acc_top5_)
+    assert (acc_top1 == acc_top1_)
     acc1 = calc_accuracy(mdl, x, y)
     acc1_ = calc_accuracy_from_logits(y_logits, y)
-    assert(acc1 == acc1_)
-    assert(acc1_ == acc_top1)
+    assert (acc1 == acc1_)
+    assert (acc1_ == acc_top1)
+
 
 def split_test():
     files = list(range(10))
@@ -2605,6 +2727,7 @@ def split_test():
     print(train, test)
     train, val, test = split_three(files)
     print(train, val, test)
+
 
 def split_data_train_val_test():
     from sklearn.model_selection import train_test_split
@@ -2630,6 +2753,7 @@ def split_data_train_val_test():
     print(len(X_val))
     print(len(X_test))
 
+
 def simple_determinism_test():
     args = Namespace(seed=0, deterministic_alg=True)
     make_code_deterministic(args.seed, args.deterministic_alg)
@@ -2638,6 +2762,7 @@ def simple_determinism_test():
     print(f'{x.sum()=}')
     out = x @ x
     print(f'{out.sum()}')
+
 
 def op_test():
     from uutils.torch_uu.models import hardcoded_3_layer_model
@@ -2663,8 +2788,9 @@ def op_test():
             m2_callable.load_state_dict(m2.state_dict())
             out2 = m2_callable(out2)
             sim = l2_sim_torch(out1, out2, sim_type='op_torch')
-            sims_per_layer.append((name1,sim))
+            sims_per_layer.append((name1, sim))
     pprint(sims_per_layer)
+
 
 def anatome_test_are_same_nets_very_similar():
     """
@@ -2684,9 +2810,10 @@ def anatome_test_are_same_nets_very_similar():
     # - data
     X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, Din))
     scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
-    assert(abs(scca_full - 1.0) < 1e-5)
+    assert (abs(scca_full - 1.0) < 1e-5)
     scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    assert(abs(scca_downsampled - 1.0) < 1e-5)
+    assert (abs(scca_downsampled - 1.0) < 1e-5)
+
 
 def anatome_test_are_random_vs_pretrain_resnets_different():
     """
@@ -2745,12 +2872,14 @@ def anatome_test_are_random_vs_pretrain_resnets_different():
     # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
     # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
 
+
 def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_similar_or_different():
     """
     - real, fake data
     - focus on pre-trained net since that is what I am comparing stuff during my research, not random nets.
     """
     pass
+
 
 def verbose_exec_test():
     import torch
@@ -2771,6 +2900,7 @@ def verbose_exec_test():
     # avgpool: torch.Size([10, 2048, 1, 1])
     # fc: torch.Size([10, 1000])
 
+
 def feature_extractor_hook_test():
     import torch
     from torchvision.models import resnet50
@@ -2781,6 +2911,7 @@ def feature_extractor_hook_test():
 
     print({name: output.shape for name, output in features.items()})
     # {'layer4': torch.Size([10, 2048, 7, 7]), 'avgpool': torch.Size([10, 2048, 1, 1])}
+
 
 def grad_clipper_hook_test():
     import torch
@@ -2793,6 +2924,7 @@ def grad_clipper_hook_test():
     loss.backward()
 
     print(clipped_resnet.fc.bias.grad[:25])
+
 
 # -- _main
 
