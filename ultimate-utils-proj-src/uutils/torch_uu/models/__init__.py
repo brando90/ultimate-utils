@@ -1,7 +1,10 @@
 from collections import OrderedDict
+from typing import Optional
 
 import torch
 from torch import nn
+
+
 
 def get_linear_model(in_features: int, out_features: int) -> nn.Module:
     return nn.Linear(in_features=in_features, out_features=out_features)
@@ -112,3 +115,18 @@ def get_single_conv_model(in_channels: int, num_out_filters: int, kernel_size: i
                                       kernel_size=kernel_size,
                                       padding=padding)
     return conv_layer
+
+def get_5cnn_model(image_size: int = 84,
+                bn_eps: float = 1e-3,
+                bn_momentum: float = 0.95,
+                n_classes: int = 5,
+                filter_size: int = 32,
+                levels: Optional = None,
+                spp: bool = False) -> nn.Module:
+    """
+    Gets a 5CNN that does not change the spatial dimension [H,W] as it processes the image.
+    :return:
+    """
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner
+    mdl: nn.Module = get_default_learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
+    return mdl

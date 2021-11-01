@@ -1098,7 +1098,7 @@ def functional_diff_norm(f1, f2, lb=-1.0, ub=1.0, p=2):
 def get_metric(mdl1: nn.Module, mdl2: nn.Module,
                X1: Tensor, X2: Tensor,
                layer_name: str,
-               cxa_dist_type: str = 'pwcca',
+               metric_comparison_type: str = 'pwcca',
                iters: int = 1,
                effective_neuron_type: str = 'filter',
                downsample_method: Optional[str] = None,
@@ -1115,8 +1115,8 @@ def get_metric(mdl1: nn.Module, mdl2: nn.Module,
     """
     from anatome import SimilarityHook as DistanceHook
     # - get distance hooks (to intercept the features)
-    hook1 = DistanceHook(mdl1, layer_name, cxa_dist_type)
-    hook2 = DistanceHook(mdl2, layer_name, cxa_dist_type)
+    hook1 = DistanceHook(mdl1, layer_name, metric_comparison_type)
+    hook2 = DistanceHook(mdl2, layer_name, metric_comparison_type)
     mdl1.eval()
     mdl2.eval()
     # - populate hook tensors in the data dimension (1st dimension):
