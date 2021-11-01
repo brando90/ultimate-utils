@@ -1085,35 +1085,6 @@ def cxa_sim(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
     dist = cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type, effective_neuron_type)
     return 1.0 - dist
 
-# def dCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-#              downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
-#     return cxa_dist(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
-#
-# def sCXA(mdl1: nn.Module, mdl2: nn.Module, X: Tensor, layer_name: str,
-#              downsample_size: Optional[str] = None, iters: int = 1, cxa_dist_type: str = 'pwcca') -> float:
-#     return cxa_sim(mdl1, mdl2, X, layer_name, downsample_size, iters, cxa_dist_type)
-
-def cca_rand_data(mdl1, mdl2, num_samples_per_task, layer_name, lb=-1, ub=1, Din=1, cca_size=None, iters=2, effective_neuron_type: str = 'filter'):
-    # meta_batch [T, N*K, CHW], [T, K, D]
-    from anatome import SimilarityHook
-    # get sim/dis functions
-    hook1 = SimilarityHook(mdl1, layer_name)
-    hook2 = SimilarityHook(mdl2, layer_name)
-    mdl1.eval()
-    mdl2.eval()
-    for _ in range(iters):  # might make sense to go through multiple is NN is stochastic e.g. BN, dropout layers
-        x = torch.torch.distributions.Uniform(low=lb, high=ub).sample((num_samples_per_task, Din))
-        mdl1(x)
-        mdl2(x)
-    dist = hook1.distance(hook2, size=cca_size)
-    # dist = hook1.distance(hook2, size=cca_size, effective_neuron_type=effective_neuron_type)
-    # -
-    hook1.clear()
-    hook2.clear()
-    remove_hook(mdl1, hook1)
-    remove_hook(mdl2, hook2)
-    return dist
-
 def ned(f, y):
     """
     Normalized euncleadian distance
