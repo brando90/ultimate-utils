@@ -1113,7 +1113,6 @@ def get_metric(mdl1: nn.Module, mdl2: nn.Module,
 
     :argument: cxa_dist_type 'svcca', 'pwcca', 'lincka', 'opd'.
     """
-    assert (metric_as_sim_or_dist in ['dist', 'sim'])
     from anatome import SimilarityHook as DistanceHook
     # - get distance hooks (to intercept the features)
     hook1 = DistanceHook(mdl1, layer_name, metric_comparison_type)
@@ -2449,57 +2448,43 @@ def compare_based_on_meta_learner(args: Namespace, meta_dataloader):
     return meta_eval_loss, meta_eval_acc
 
 
-def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
-                        X1: Tensor, X2: Tensor,
-                        layer_name: str, cxa_dist_type: str) -> tuple[list[int], list[float]]:
-    """
-    Plots sim vs N given a fixed D.
-
-    X1: [n_c*k_eval*H*W, F]
-    """
-    assert (X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA type analysis to work.' \
-                                       f'but got: {X1.size(0)=}, {X2.size(0)=}'
-    # - get the sims vs data_set sizes
-    # data_sizes: list[int] = [X1.size(0)]
-    # data_sizes: list[int] = [10]
-    data_sizes: list[int] = [args.k_eval * args.n_classes]
-    print(f'# examples = {args.k_eval * args.n_classes}')
-    # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
-    sims: list[float] = []
-    for b in data_sizes:
-        x1, x2 = X1[:b], X2[:b]  # get first b images
-        sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1,
-                                     cxa_dist_type=cxa_dist_type)
-        # sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=2, iters=1, cxa_dist_type=cxa_dist_type)
-        sims.append(sim)
-    return data_sizes, sims
+# def get_sim_vs_num_data(args: Namespace, mdl1: nn.Module, mdl2: nn.Module,
+#                         X1: Tensor, X2: Tensor,
+#                         layer_name: str, cxa_dist_type: str) -> tuple[list[int], list[float]]:
+#     """
+#     Plots sim vs N given a fixed D.
+#
+#     X1: [n_c*k_eval*H*W, F]
+#     """
+#     assert (X1.size(0) == X2.size(0)), f'Data sets must to have the same sizes for CCA type analysis to work.' \
+#                                        f'but got: {X1.size(0)=}, {X2.size(0)=}'
+#     # - get the sims vs data_set sizes
+#     # data_sizes: list[int] = [X1.size(0)]
+#     # data_sizes: list[int] = [10]
+#     data_sizes: list[int] = [args.k_eval * args.n_classes]
+#     print(f'# examples = {args.k_eval * args.n_classes}')
+#     # data_sizes: list[int] = [10, 25, 50, 100, 101, 200, 500, 1_000, 2_000, 5_000, 10_000, 50_000, 100_000]
+#     sims: list[float] = []
+#     for b in data_sizes:
+#         x1, x2 = X1[:b], X2[:b]  # get first b images
+#         sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=None, iters=1,
+#                                      cxa_dist_type=cxa_dist_type)
+#         # sim: float = cxa_sim_general(mdl1, mdl2, x1, x2, layer_name, downsample_size=2, iters=1, cxa_dist_type=cxa_dist_type)
+#         sims.append(sim)
+#     return data_sizes, sims
 
 
 def assert_sim_of_model_with_itself_is_approx_one(mdl: nn.Module, X: Tensor,
                                                   layer_name: str,
-                                                  downsample_size: Optional[int] = None,
-                                                  cxa_dist_type: str = 'pwcca') -> bool:
+                                                  metric_comparison_type: str = 'pwcca',
+                                                  metric_as_sim_or_dist: str = 'dist') -> bool:
     """
     Returns true if model is ok. If not it asserts against you (never returns False).
     """
-    sim: float = cxa_sim(mdl, mdl, X, layer_name, downsample_size=downsample_size, iters=1,
-                         cxa_dist_type=cxa_dist_type)
-    print(f'Should be very very close to 1.0: {sim=} ({cxa_dist_type=})')
-    sim_equals: bool = approx_equal(sim, 1.0)
-    assert sim_equals, f'Sim should be close to 1.0 but got: {sim=}'
-    return sim_equals
-
-
-def sanity_check_same_model_with_itself_cnn(mdl: nn.Module, X: Optional[Tensor] = None,
-                                            layer_name: str = 'model.features.norm4',
-                                            downsample_size: Optional[int] = None,
-                                            cxa_dist_type: str = 'pwcca') -> bool:
-    if X is None:
-        B, C, H, W = 32, 3, 84, 84
-        X: Tensor = torch.distributions.Normal(loc=0.0, scale=1.0).sample((B, C, H, W))
-    # - check sim is 1.0
-    success: bool = assert_sim_of_model_with_itself_is_approx_one(mdl, X, layer_name, downsample_size, cxa_dist_type)
-    return success
+    dist: float = get_metric(mdl, mdl, X, X, layer_name, metric_comparison_type=metric_comparison_type, metric_as_sim_or_dist=metric_as_sim_or_dist)
+    print(f'Should be very very close to 0.0: {dist=} ({metric_comparison_type=})')
+    assert approx_equal(dist, 0.0), f'Sim should be close to 1.0 but got: {dist=}'
+    return True
 
 
 # -- pytorch hooks
