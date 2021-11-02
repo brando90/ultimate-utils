@@ -1,3 +1,17 @@
+"""
+Notes:
+- 1. For the conv layer we have H' = H since H' = H+2p-k+1 = H' for p=1, k=3. i.e. same as previous layer
+    - since stride=1 as default (so only moves by 1) since you want to see all the image for a conv.
+- 2. For the avg pool layer we have H' = H/2 i.e. half of previous layer
+    - since stride=kernel_size as default (so you want to avg more significantly for pool layers e.g. for invariance)
+- 3. H = W should the true for this model and data, unless you feed rectangular data for some reason.
+
+For this model if H = 84, input layer H^(l)_{layer_type} = is the H at layer l for layer_type we have:
+- H^(l)_{conv} = H/2**(l-1)
+- H^(l)_{avg_pool} = H/2**(l)
+since, for the conv layer the height don't change and the pooling layer halves for each spatial dimension.
+
+"""
 from __future__ import division, print_function, absolute_import
 
 import pdb
@@ -80,22 +94,22 @@ class Learner(nn.Module):
             ('conv1', nn.Conv2d(in_channels=3, out_channels=filter_size, kernel_size=3, padding=1)),
             ('norm1', nn.BatchNorm2d(filter_size, bn_eps, bn_momentum)),
             ('relu1', nn.ReLU(inplace=False)),
-            ('pool1', nn.MaxPool2d(2)),
+            ('pool1', nn.MaxPool2d(kernel_size=2)),
 
-            ('conv2', nn.Conv2d(filter_size, filter_size, 3, padding=1)),
+            ('conv2', nn.Conv2d(in_channels=filter_size, out_channels=filter_size, kernel_size=3, padding=1)),
             ('norm2', nn.BatchNorm2d(filter_size, bn_eps, bn_momentum)),
             ('relu2', nn.ReLU(inplace=False)),
-            ('pool2', nn.MaxPool2d(2)),
+            ('pool2', nn.MaxPool2d(kernel_size=2)),
 
-            ('conv3', nn.Conv2d(filter_size, filter_size, 3, padding=1)),
+            ('conv3', nn.Conv2d(in_channels=filter_size, out_channels=filter_size, kernel_size=3, padding=1)),
             ('norm3', nn.BatchNorm2d(filter_size, bn_eps, bn_momentum)),
             ('relu3', nn.ReLU(inplace=False)),
-            ('pool3', nn.MaxPool2d(2)),
+            ('pool3', nn.MaxPool2d(kernel_size=2)),
 
-            ('conv4', nn.Conv2d(filter_size, filter_size, 3, padding=1)),
+            ('conv4', nn.Conv2d(in_channels=filter_size, out_channels=filter_size, kernel_size=3, padding=1)),
             ('norm4', nn.BatchNorm2d(filter_size, bn_eps, bn_momentum)),
             ('relu4', nn.ReLU(inplace=False)),
-            ('pool4', nn.MaxPool2d(2))]))
+            ('pool4', nn.MaxPool2d(kernel_size=2))]))
         })
 
         if spp:

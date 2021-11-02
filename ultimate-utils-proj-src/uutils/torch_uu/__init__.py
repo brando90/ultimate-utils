@@ -1113,6 +1113,7 @@ def get_metric(mdl1: nn.Module, mdl2: nn.Module,
 
     :argument: cxa_dist_type 'svcca', 'pwcca', 'lincka', 'opd'.
     """
+    assert (metric_as_sim_or_dist in ['dist', 'sim'])
     from anatome import SimilarityHook as DistanceHook
     # - get distance hooks (to intercept the features)
     hook1 = DistanceHook(mdl1, layer_name, metric_comparison_type)
