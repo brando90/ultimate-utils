@@ -179,6 +179,47 @@ def get_maml_adapted_model_with_higher(base_model: nn.Module,
         diffopt.step(inner_loss)
     return fmodel
 
+def _get_maml_adapted_model_with_higher_with_context_manager(base_model: nn.Module,
+                                       inner_opt: optim.Optimizer,
+                                       spt_x_t: Tensor, spt_y_t: Tensor,
+                                       training: bool,
+                                       copy_initial_weights: bool,
+                                       track_higher_grads: bool,
+                                       fo: bool,
+                                       nb_inner_train_steps: int,
+                                       criterion: nn.Module) -> FuncModel:
+    """
+    Return an adaptated model using MAML using pytorch's higher lib.
+
+    Decision of .eval() and .train():
+        - when training we are doing base_model.trian() because that is what the official omniglot maml higher code is
+        doing. Probably that is fine since during training even if the moel collects BN stats from different tasks, it's
+        not a big deal (since it can only improve or worsen the performance but at least it does not "cheat" when reporting
+        meta-test accuracy results).
+        - whe meta-testing we always do .eval() to avoid task info jumping illegally from one place to another. When it
+        solves a task (via spt, qry set) it only uses the BN stats from training (if it has them) or the current batch
+        statistics (due to mdl.eval()).
+
+    ref:
+        - official higher maml omniglot: https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py
+        - how to do this questioon on higher: https://github.com/facebookresearch/higher/issues/119
+    """
+    print('get_maml_adapted_model_with_higher_with_context_manager')
+    # - get fmodel and diffopt ready for inner adaptation
+    base_model.train() if training else base_model.eval()
+
+    # - Inner Loop Adaptation
+    with higher.innerloop_ctx(base_model, inner_opt, copy_initial_weights=copy_initial_weights,
+                              track_higher_grads=track_higher_grads) as (fmodel, diffopt):
+        # - do inner addptation using task/support set
+        diffopt.fo = fo
+        for i_inner in range(nb_inner_train_steps):
+            # base model forward pass
+            spt_logits_t = fmodel(spt_x_t)
+            inner_loss = criterion(spt_logits_t, spt_y_t)
+            # inner-opt update
+            diffopt.step(inner_loss)
+    return fmodel
 
 # def inner_loop():
 #     meta_batch_size = spt_x.size(0)
