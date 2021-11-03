@@ -64,8 +64,29 @@ def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> n
     return mdl
 
 
-def get_feature_extractor_layers(L: int = 4) -> list[str]:
+def get_feature_extractor_pool_layers(L: int = 4) -> list[str]:
     return [f'model.features.pool{i}' for i in range(1, L+1)]
+
+
+def get_feature_extractor_conv_layers(L: int = 4) -> list[str]:
+    layers: list[str] = [f'model.features.conv{i}' for i in range(1, L+1)]
+    # layers: list[str] = layers + ['model.cls']
+    return layers
+
+
+def get_all_layers_minus_cls(L: int = 4) -> list[str]:
+    layer_names: str = []
+    for l in range(1, L+1):
+        layer_name1: str = f'model.features.conv{l}'
+        layer_name2: str = f'model.features.norm{l}'
+        layer_name3: str = f'model.features.relu{l}'
+        layer_name4: str = f'model.features.pool{l}'
+        layer_names.append(layer_name1)
+        layer_names.append(layer_name2)
+        layer_names.append(layer_name3)
+        layer_names.append(layer_name4)
+    return layer_names
+
 
 class Learner(nn.Module):
 

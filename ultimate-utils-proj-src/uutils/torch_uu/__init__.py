@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import List, Union, Any, Optional, Iterable
 
 import torch
-from torch import Tensor
+from torch import Tensor, optim
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -252,6 +252,8 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
         spt_x, spt_y, qry_x, qry_y = batch
     else:
         raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
+    # invariant: we have spt_x, spt_y, qry_x, qry_y after here
+
     # - convert to float32 single float, somehow the ckpts seem to need this for sinusoid
     if hasattr(args, 'to_single_float_float32'):
         if args.to_single_float_float32:
@@ -312,8 +314,15 @@ def get_device_from(mdl) -> torch.device:
     return device
 
 
-def get_device() -> torch.device:
-    device: torch.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def get_device(gpu_idx: int = 0) -> torch.device:
+    """
+    Get default gpu torch device.
+
+    :param gpu_idx:
+    :return:
+    """
+    device: torch.device = torch.device(f"cuda:{gpu_idx}" if torch.cuda.is_available() else "cpu")
+    # device: torch.device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
     return device
 
 
@@ -2604,6 +2613,7 @@ class GetMaxFiltersExtractorHook(nn.Module):
         """
         _ = self.model(x)
         return self._features
+
 
 
 # -- misc
