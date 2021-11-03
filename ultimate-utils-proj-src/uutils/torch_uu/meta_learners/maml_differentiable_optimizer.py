@@ -78,14 +78,14 @@ class MAML(DifferentiableOptimizer):  # copy pasted from DifferentiableSGD but w
 higher.register_optim(NonDiffMAML, MAML)
 
 
-def get_maml_inner_optimizer(model: nn.Module, lr_inner: float) -> NonDiffMAML:
+def get_maml_inner_optimizer(model: nn.Module, inner_lr: float) -> NonDiffMAML:
     """
     This is meant to return the non-differentiable version and once you give it to the
     get_diff optimizer (or context loop), makes it differentiable. It's a higher detail.
     """
-    # inner_opt = torch_uu.optim.SGD(self.base_model.parameters(), lr=self.lr_inner)
-    inner_opt = NonDiffMAML(model.parameters(), lr=lr_inner)
-    # inner_opt = torch_uu.optim.Adam(self.base_model.parameters(), lr=self.lr_inner)
+    # inner_opt = torch_uu.optim.SGD(self.base_model.parameters(), lr=self.inner_lr)
+    inner_opt = NonDiffMAML(model.parameters(), lr=inner_lr)
+    # inner_opt = torch_uu.optim.Adam(self.base_model.parameters(), lr=self.inner_lr)
     # self.args.inner_opt_name = str(inner_opt)
     return inner_opt
 
@@ -230,6 +230,10 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     :param qry_x:
     :param qry_y:
     :param layer_names:
+    :param inner_opt:
+    :param fo:
+    :param nb_inner_train_steps:
+    :param criterion:
     :param metric_comparison_type:
     :param iters:
     :param effective_neuron_type:
@@ -241,12 +245,13 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     :param force_cpu:
     :param training:
     :param copy_initial_weights:
+    :param track_higher_grads:
     :return:
     """
     # - [B, M, C, H, W] -> [B, L]
     L: int = len(layer_names)
     B: int = spt_x.size(0)
-    dists_per_batch_per_layer = list[OrderedDict[LayerIdentifier, float]] = []
+    dists_per_batch_per_layer: list[OrderedDict[LayerIdentifier, float]] = []
     for t in range(B):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         #
