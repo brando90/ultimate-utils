@@ -4,6 +4,7 @@ from collections import OrderedDict
 from typing import Optional
 
 import higher
+import numpy as np
 from higher.optim import _add
 from higher.optim import DifferentiableOptimizer
 from higher.optim import _GroupedGradsType
@@ -138,7 +139,7 @@ def get_diff_optimizer_and_functional_model(model: nn.Module,
     return fmodel, diffopt
 
 
-def get_maml_adapted_model_with_higher(base_model: nn.Module,
+def get_maml_adapted_model_with_higher_one_task(base_model: nn.Module,
                                        inner_opt: optim.Optimizer,
                                        spt_x_t: Tensor, spt_y_t: Tensor,
                                        training: bool,
@@ -164,12 +165,13 @@ def get_maml_adapted_model_with_higher(base_model: nn.Module,
         - how to do this questioon on higher: https://github.com/facebookresearch/higher/issues/119
     """
     # - get fmodel and diffopt ready for inner adaptation
-    base_model.train() if training else base_model.eval()
+    # base_model.train() if training else base_model.eval()
     fmodel, diffopt = get_diff_optimizer_and_functional_model(base_model,
                                                               inner_opt,
                                                               copy_initial_weights=copy_initial_weights,
                                                               track_higher_grads=track_higher_grads)
     # - do inner addptation using task/support set
+    print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
     diffopt.fo = fo
     for i_inner in range(nb_inner_train_steps):
         # base model forward pass
@@ -177,17 +179,19 @@ def get_maml_adapted_model_with_higher(base_model: nn.Module,
         inner_loss = criterion(spt_logits_t, spt_y_t)
         # inner-opt update
         diffopt.step(inner_loss)
+    print(f'>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
     return fmodel
 
-def _get_maml_adapted_model_with_higher_with_context_manager(base_model: nn.Module,
-                                       inner_opt: optim.Optimizer,
-                                       spt_x_t: Tensor, spt_y_t: Tensor,
-                                       training: bool,
-                                       copy_initial_weights: bool,
-                                       track_higher_grads: bool,
-                                       fo: bool,
-                                       nb_inner_train_steps: int,
-                                       criterion: nn.Module) -> FuncModel:
+
+def _get_maml_adapted_model_with_higher_one_task_with_context_manager(base_model: nn.Module,
+                                                             inner_opt: optim.Optimizer,
+                                                             spt_x_t: Tensor, spt_y_t: Tensor,
+                                                             training: bool,
+                                                             copy_initial_weights: bool,
+                                                             track_higher_grads: bool,
+                                                             fo: bool,
+                                                             nb_inner_train_steps: int,
+                                                             criterion: nn.Module) -> FuncModel:
     """
     Return an adaptated model using MAML using pytorch's higher lib.
 
@@ -204,7 +208,7 @@ def _get_maml_adapted_model_with_higher_with_context_manager(base_model: nn.Modu
         - official higher maml omniglot: https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py
         - how to do this questioon on higher: https://github.com/facebookresearch/higher/issues/119
     """
-    print('get_maml_adapted_model_with_higher_with_context_manager')
+    # print('get_maml_adapted_model_with_higher_one_task_with_context_manager')
     # - get fmodel and diffopt ready for inner adaptation
     base_model.train() if training else base_model.eval()
 
@@ -213,13 +217,16 @@ def _get_maml_adapted_model_with_higher_with_context_manager(base_model: nn.Modu
                               track_higher_grads=track_higher_grads) as (fmodel, diffopt):
         # - do inner addptation using task/support set
         diffopt.fo = fo
+        print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
         for i_inner in range(nb_inner_train_steps):
             # base model forward pass
             spt_logits_t = fmodel(spt_x_t)
             inner_loss = criterion(spt_logits_t, spt_y_t)
             # inner-opt update
             diffopt.step(inner_loss)
-    return fmodel
+        print(f'>>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+        return fmodel
+
 
 # def inner_loop():
 #     meta_batch_size = spt_x.size(0)
@@ -296,7 +303,7 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     for t in range(B):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         #
-        adapted_mdl: FuncModel = get_maml_adapted_model_with_higher(mdl,
+        adapted_mdl: FuncModel = get_maml_adapted_model_with_higher_one_task(mdl,
                                                                     inner_opt,
                                                                     spt_x_t, spt_y_t,
                                                                     training,
@@ -334,3 +341,306 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
 
     # - [B, L] distances ready!
     return dists_per_batch_per_layer
+
+# - meta-evaluation
+
+def meta_eval_no_context_manager(args: Namespace, val_iterations: int = 0, save_val_ckpt: bool = True, split: str = 'val') -> tuple:
+    """
+    Evaluates the meta-learner on the given meta-set.
+
+    ref for BN/eval:
+        - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
+        - https://github.com/tristandeleu/pytorch-maml/issues/19
+    """
+    from uutils.torch_uu import process_meta_batch
+    # - need to re-implement if you want to go through the entire data-set to compute an epoch (no more is ever needed)
+    assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, if you want more precision increase (meta) batch size.'
+    args.meta_learner.eval()
+    for batch_idx, batch in enumerate(args.dataloaders[split]):
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+
+        # Forward pass
+        # eval_loss, eval_acc = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
+        # eval_loss, eval_acc = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split=split)
+        # eval_loss, eval_acc = forward(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
+        eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
+
+        # store eval info
+        if batch_idx >= val_iterations:
+            break
+
+    save_val_ckpt = False if split == 'test' else save_val_ckpt  # don't save models based on test set
+    if float(eval_loss) < float(args.best_val_loss) and save_val_ckpt:
+        args.best_val_loss = float(eval_loss)
+        # from meta_learning.training.meta_training import save_for_meta_learning
+        # save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
+    return eval_loss, eval_acc
+
+
+def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y, split: str = 'train') -> tuple[float, float]:
+    """
+    Returns the acc & loss on the meta-batch of query sets.
+
+    Note: crucially, this code uses the code that does not use the context manager from higher. This is so to
+    test that code that is later use to compare models using ultimate-anatome.
+    """
+    training: bool = (split == 'train')
+    # - get inner opt
+    inner_opt = NonDiffMAML(meta_learner.base_model.parameters(), lr=meta_learner.lr_inner)
+    print(f'{inner_opt=}')
+    # inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.lr_inner)
+
+    # - adapt
+    # eval_loss, eval_acc = meta_learner(spt_x, spt_y, qry_x, qry_y)
+    # return eval_loss, eval_acc
+    meta_learner.base_model.train() if training else meta_learner.base_model.eval()
+    meta_batch_size = spt_x.size(0)
+    meta_losses, meta_accs = [], []
+    for t in range(meta_batch_size):
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        # - Inner Loop Adaptation
+        # fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(meta_learner.base_model,
+        #                                                        inner_opt,
+        #                                                        spt_x_t, spt_y_t,
+        #                                                        training,
+        #                                                        copy_initial_weights=meta_learner.args.copy_initial_weights,
+        #                                                        track_higher_grads=meta_learner.args.track_higher_grads,
+        #                                                        fo=meta_learner.fo,
+        #                                                        nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
+        #                                                        criterion=meta_learner.args.criterion)
+        # fmodel: FuncModel = _get_maml_adapted_model_with_higher_one_task_with_context_manager(meta_learner.base_model,
+        #                                                                 inner_opt,
+        #                                                                 spt_x_t, spt_y_t,
+        #                                                                 training,
+        #                                                                 copy_initial_weights=meta_learner.args.copy_initial_weights,
+        #                                                                 track_higher_grads=meta_learner.args.track_higher_grads,
+        #                                                                 fo=meta_learner.fo,
+        #                                                                 nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
+        #                                                                 criterion=meta_learner.args.criterion)
+        self = meta_learner
+        with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
+                                  track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
+            diffopt.fo = self.fo
+            print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+            for i_inner in range(self.args.nb_inner_train_steps):
+                # fmodel.train()  # omniglot doesn't have this here, it has a single one at the top https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py#L116
+
+                # base/child model forward pass
+                spt_logits_t = fmodel(spt_x_t)
+                inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
+                # inner_train_err = calc_error(mdl=fmodel, X=S_x, Y=S_y)  # for more advanced learners like meta-lstm
+
+                # inner-opt update
+                diffopt.step(inner_loss)
+            print(f'>>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+
+        # Evaluate on query set for current task
+        qry_logits_t = fmodel(qry_x_t)
+        qry_loss_t = meta_learner.args.criterion(qry_logits_t, qry_y_t)
+
+        # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
+        # note this is more mem efficient (removes intermediate data needed since backward has already been called)
+        (qry_loss_t / meta_batch_size).backward()
+
+        # get accuracy
+        if meta_learner.target_type == 'classification':
+            from uutils.torch_uu import calc_accuracy_from_logits
+            qry_acc_t = calc_accuracy_from_logits(y_logits=qry_logits_t, y=qry_y_t)
+        else:
+            from uutils.torch_uu import r2_score_from_torch
+            qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
+
+        # collect losses & accs
+        meta_losses.append(qry_loss_t.item())
+        meta_accs.append(qry_acc_t)
+    assert len(meta_losses) == meta_batch_size
+    meta_loss = np.mean(meta_losses)
+    meta_acc = np.mean(meta_accs)
+    return meta_loss, meta_acc
+
+
+# --
+
+# def _adapt_untested(meta_learner, spt_x, spt_y, qry_x, qry_y, split: str = 'train') -> tuple[float, float]:
+#     """
+#     """
+#     # - get inner opt
+#     inner_opt = NonDiffMAML(meta_learner.base_model.parameters(), lr=meta_learner.lr_inner)
+#
+#     # - adapt
+#     meta_learner.base_model.train() if split == 'train' else meta_learner.base_model.eval()
+#     meta_batch_size = spt_x.size(0)
+#     meta_losses, meta_accs = [], []
+#     for t in range(meta_batch_size):
+#         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+#         # - Inner Loop Adaptation
+#         with higher.innerloop_ctx(meta_learner.base_model, inner_opt,
+#                                   copy_initial_weights=meta_learner.args.copy_initial_weights,
+#                                   track_higher_grads=meta_learner.args.track_higher_grads) as (fmodel, diffopt):
+#             diffopt.fo = meta_learner.fo
+#             for i_inner in range(meta_learner.args.nb_inner_train_steps):
+#                 fmodel.train()
+#                 # base/child model forward pass
+#                 spt_logits_t = fmodel(spt_x_t)
+#                 inner_loss = meta_learner.args.criterion(spt_logits_t, spt_y_t)
+#                 # inner-opt update
+#                 diffopt.step(inner_loss)
+#
+#         # Evaluate on query set for current task
+#         qry_logits_t = fmodel(qry_x_t)
+#         qry_loss_t = meta_learner.args.criterion(qry_logits_t, qry_y_t)
+#
+#         # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
+#         (
+#                 qry_loss_t / meta_batch_size).backward()  # note this is more memory efficient (as it removes intermediate data that used to be needed since backward has already been called)
+#
+#         # get accuracy
+#         if meta_learner.target_type == 'classification':
+#             from uutils.torch_uu import calc_accuracy_from_logits
+#             qry_acc_t = calc_accuracy_from_logits(y_logits=qry_logits_t, y=qry_y_t)
+#         else:
+#             from uutils.torch_uu import r2_score_from_torch
+#             qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
+#
+#         # collect losses & accs for logging/debugging
+#         meta_losses.append(qry_loss_t.item())
+#         meta_accs.append(qry_acc_t)
+#
+#     assert len(meta_losses) == meta_batch_size
+#     meta_loss = np.mean(meta_losses)
+#     meta_acc = np.mean(meta_accs)
+#     return meta_loss, meta_acc
+
+def forward(self, spt_x, spt_y, qry_x, qry_y):
+    """Does L(A(theta,S), Q) = sum^N_{t=1} L(A(theta,S_t),Q_t) where A(theta,S) is the inner-adaptation loop.
+    It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
+
+    Decision for BN/eval:
+    - during training always use .train().
+    During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
+    Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
+
+    ref for BN/eval:
+        - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
+        - https://github.com/tristandeleu/pytorch-maml/issues/19
+
+    Args:
+        spt_x ([type]): x's for support set. Example shape [N,k_shot,D] D=1 or D=[C,H,W]
+        spt_y ([type]): y's/target value for support set. Example shape [N,k_eval] or [N,k_eval,D]
+        qry_x ([type]): x's for query set. Example shape [N,C,D] D=1 or D=[C,H,W]
+        qry_y ([type]): y's/target value for query set. Example shape [N,k_eval] or [N,k_eval,D]
+
+    Returns:
+        [type]: [description]
+    """
+    # inner_opt = torch_uu.optim.SGD(self.base_model.parameters(), lr=self.lr_inner)
+    inner_opt = NonDiffMAML(self.base_model.parameters(), lr=self.lr_inner)
+    print(f'{inner_opt=}')
+    # inner_opt = torch_uu.optim.Adam(self.base_model.parameters(), lr=self.lr_inner)
+    self.args.inner_opt_name = str(inner_opt)
+
+    self.base_model.train() if self.args.split == 'train' else self.base_model.eval()
+    meta_batch_size = spt_x.size(0)
+    meta_losses, meta_accs = [], []
+    for t in range(meta_batch_size):
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        # - Inner Loop Adaptation
+        with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
+                                  track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
+            diffopt.fo = self.fo
+            print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+            for i_inner in range(self.args.nb_inner_train_steps):
+                # fmodel.train()  # omniglot doesn't have this here, it has a single one at the top https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py#L116
+
+                # base/child model forward pass
+                spt_logits_t = fmodel(spt_x_t)
+                inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
+                # inner_train_err = calc_error(mdl=fmodel, X=S_x, Y=S_y)  # for more advanced learners like meta-lstm
+
+                # inner-opt update
+                diffopt.step(inner_loss)
+        print(f'>>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+
+        # Evaluate on query set for current task
+        qry_logits_t = fmodel(qry_x_t)
+        qry_loss_t = self.args.criterion(qry_logits_t, qry_y_t)
+
+        # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
+        (qry_loss_t / meta_batch_size).backward()  # note this is more memory efficient (as it removes intermediate data that used to be needed since backward has already been called)
+
+        # get accuracy
+        if self.target_type == 'classification':
+            from uutils.torch_uu import calc_accuracy_from_logits
+            qry_acc_t = calc_accuracy_from_logits(y_logits=qry_logits_t, y=qry_y_t)
+        else:
+            from uutils.torch_uu import r2_score_from_torch
+            qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
+            # qry_acc_t = compressed_r2_score(y_true=qry_y_t.detach().numpy(), y_pred=qry_logits_t.detach().numpy())
+
+        # collect losses & accs for logging/debugging
+        meta_losses.append(qry_loss_t.item())
+        meta_accs.append(qry_acc_t)
+
+    assert len(meta_losses) == meta_batch_size
+    meta_loss = np.mean(meta_losses)
+    meta_acc = np.mean(meta_accs)
+    return meta_loss, meta_acc
+
+def forward2(self, spt_x, spt_y, qry_x, qry_y):
+    """
+    """
+    inner_opt = NonDiffMAML(self.base_model.parameters(), lr=self.lr_inner)
+    self.args.inner_opt_name = str(inner_opt)
+
+    self.base_model.train() if self.args.split == 'train' else self.base_model.eval()
+    meta_batch_size = spt_x.size(0)
+    meta_losses, meta_accs = [], []
+    for t in range(meta_batch_size):
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        # - Inner Loop Adaptation
+        # with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
+        #                           track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
+        #     diffopt.fo = self.fo
+        #     print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+        #     for i_inner in range(self.args.nb_inner_train_steps):
+        #         # fmodel.train()  # omniglot doesn't have this here, it has a single one at the top https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py#L116
+        #
+        #         # base/child model forward pass
+        #         spt_logits_t = fmodel(spt_x_t)
+        #         inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
+        #         # inner_train_err = calc_error(mdl=fmodel, X=S_x, Y=S_y)  # for more advanced learners like meta-lstm
+        #
+        #         # inner-opt update
+        #         diffopt.step(inner_loss)
+        fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(self.base_model,
+                                                               inner_opt,
+                                                               spt_x_t, spt_y_t,
+                                                               training=False,
+                                                               copy_initial_weights=self.args.copy_initial_weights,
+                                                               track_higher_grads=self.args.track_higher_grads,
+                                                               fo=self.fo,
+                                                               nb_inner_train_steps=self.args.nb_inner_train_steps,
+                                                               criterion=self.args.criterion)
+        # Evaluate on query set for current task
+        qry_logits_t = fmodel(qry_x_t)
+        qry_loss_t = self.args.criterion(qry_logits_t, qry_y_t)
+
+        # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
+        (qry_loss_t / meta_batch_size).backward()  # note this is more memory efficient (as it removes intermediate data that used to be needed since backward has already been called)
+
+        # get accuracy
+        if self.target_type == 'classification':
+            from uutils.torch_uu import calc_accuracy_from_logits
+            qry_acc_t = calc_accuracy_from_logits(y_logits=qry_logits_t, y=qry_y_t)
+        else:
+            from uutils.torch_uu import r2_score_from_torch
+            qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
+
+        # collect losses & accs for logging/debugging
+        meta_losses.append(qry_loss_t.item())
+        meta_accs.append(qry_acc_t)
+
+    assert len(meta_losses) == meta_batch_size
+    meta_loss = np.mean(meta_losses)
+    meta_acc = np.mean(meta_accs)
+    return meta_loss, meta_acc
