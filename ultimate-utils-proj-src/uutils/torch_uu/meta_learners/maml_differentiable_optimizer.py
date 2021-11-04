@@ -344,7 +344,10 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
 
 # - meta-evaluation
 
-def meta_eval_no_context_manager(args: Namespace, val_iterations: int = 0, save_val_ckpt: bool = True, split: str = 'val') -> tuple:
+def meta_eval_no_context_manager(args: Namespace,
+                                 val_iterations: int = 0,
+                                 save_val_ckpt: bool = True,
+                                 split: str = 'val') -> tuple:
     """
     Evaluates the meta-learner on the given meta-set.
 
@@ -363,17 +366,20 @@ def meta_eval_no_context_manager(args: Namespace, val_iterations: int = 0, save_
         # eval_loss, eval_acc = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
         # eval_loss, eval_acc = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split=split)
         # eval_loss, eval_acc = forward(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
-        eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
+        # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
+        # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split='train')
+        eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split='val')
+        # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split=split)
 
         # store eval info
         if batch_idx >= val_iterations:
             break
 
-    save_val_ckpt = False if split == 'test' else save_val_ckpt  # don't save models based on test set
-    if float(eval_loss) < float(args.best_val_loss) and save_val_ckpt:
-        args.best_val_loss = float(eval_loss)
-        # from meta_learning.training.meta_training import save_for_meta_learning
-        # save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
+    # save_val_ckpt = False if split == 'test' else save_val_ckpt  # don't save models based on test set
+    # if float(eval_loss) < float(args.best_val_loss) and save_val_ckpt:
+    #     args.best_val_loss = float(eval_loss)
+    #     from meta_learning.training.meta_training import save_for_meta_learning
+    #     save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
     return eval_loss, eval_acc
 
 
@@ -586,13 +592,15 @@ def forward(self, spt_x, spt_y, qry_x, qry_y):
     meta_acc = np.mean(meta_accs)
     return meta_loss, meta_acc
 
-def forward2(self, spt_x, spt_y, qry_x, qry_y):
+def forward2(self, spt_x, spt_y, qry_x, qry_y, split: str = 'train'):
     """
     """
+    print('==== in forward2')
+    training: bool = (split == 'train')
     inner_opt = NonDiffMAML(self.base_model.parameters(), lr=self.lr_inner)
     self.args.inner_opt_name = str(inner_opt)
 
-    self.base_model.train() if self.args.split == 'train' else self.base_model.eval()
+    self.base_model.train() if training else self.base_model.eval()
     meta_batch_size = spt_x.size(0)
     meta_losses, meta_accs = [], []
     for t in range(meta_batch_size):
@@ -615,7 +623,7 @@ def forward2(self, spt_x, spt_y, qry_x, qry_y):
         fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(self.base_model,
                                                                inner_opt,
                                                                spt_x_t, spt_y_t,
-                                                               training=False,
+                                                               training=training,
                                                                copy_initial_weights=self.args.copy_initial_weights,
                                                                track_higher_grads=self.args.track_higher_grads,
                                                                fo=self.fo,
