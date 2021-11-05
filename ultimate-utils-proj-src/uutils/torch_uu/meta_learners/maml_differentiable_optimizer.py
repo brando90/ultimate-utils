@@ -173,6 +173,7 @@ def get_maml_adapted_model_with_higher_one_task(base_model: nn.Module,
     # - do inner addptation using task/support set
     print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
     diffopt.fo = fo
+    base_model.train()
     for i_inner in range(nb_inner_train_steps):
         # base model forward pass
         spt_logits_t = fmodel(spt_x_t)
@@ -368,7 +369,7 @@ def meta_eval_no_context_manager(args: Namespace,
         # eval_loss, eval_acc = forward(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
         # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y)
         # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split='train')
-        eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split='val')
+        eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split='train')
         # eval_loss, eval_acc = forward2(args.meta_learner, spt_x, spt_y, qry_x, qry_y, split=split)
 
         # store eval info
@@ -605,21 +606,9 @@ def forward2(self, spt_x, spt_y, qry_x, qry_y, split: str = 'train'):
     meta_losses, meta_accs = [], []
     for t in range(meta_batch_size):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        # self.eval()
+        self.base_model.eval()
         # - Inner Loop Adaptation
-        # with higher.innerloop_ctx(self.base_model, inner_opt, copy_initial_weights=self.args.copy_initial_weights,
-        #                           track_higher_grads=self.args.track_higher_grads) as (fmodel, diffopt):
-        #     diffopt.fo = self.fo
-        #     print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
-        #     for i_inner in range(self.args.nb_inner_train_steps):
-        #         # fmodel.train()  # omniglot doesn't have this here, it has a single one at the top https://github.com/facebookresearch/higher/blob/main/examples/maml-omniglot.py#L116
-        #
-        #         # base/child model forward pass
-        #         spt_logits_t = fmodel(spt_x_t)
-        #         inner_loss = self.args.criterion(spt_logits_t, spt_y_t)
-        #         # inner_train_err = calc_error(mdl=fmodel, X=S_x, Y=S_y)  # for more advanced learners like meta-lstm
-        #
-        #         # inner-opt update
-        #         diffopt.step(inner_loss)
         fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(self.base_model,
                                                                inner_opt,
                                                                spt_x_t, spt_y_t,
@@ -634,7 +623,7 @@ def forward2(self, spt_x, spt_y, qry_x, qry_y, split: str = 'train'):
         qry_loss_t = self.args.criterion(qry_logits_t, qry_y_t)
 
         # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
-        (qry_loss_t / meta_batch_size).backward()  # note this is more memory efficient (as it removes intermediate data that used to be needed since backward has already been called)
+        # (qry_loss_t / meta_batch_size).backward()  # note this is more memory efficient (as it removes intermediate data that used to be needed since backward has already been called)
 
         # get accuracy
         if self.target_type == 'classification':
