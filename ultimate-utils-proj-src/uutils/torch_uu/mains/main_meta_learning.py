@@ -9,7 +9,7 @@ import torch.optim as optim
 
 import uutils
 
-from uutils.torch_uu import replace_bn, get_layer_names_to_do_sim_analysis_bn, get_layer_names_to_do_sim_analysis_fc
+from uutils.torch_uu import get_layer_names_to_do_sim_analysis_fc
 
 from meta_learning.training.meta_training import meta_eval, meta_train_fixed_iterations_full_epoch_possible
 from meta_learning.meta_learners.maml_meta_learner import MAMLMetaLearner
@@ -169,21 +169,21 @@ def main(args):
             args.device)
     elif args.base_model_mode == 'resnet18':
         args.base_model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=False)
-        replace_bn(args.base_model, 'model')
+        # replace_bn(args.base_model, 'model')
         args.base_model.fc = torch.nn.Linear(in_features=512, out_features=args.n_classes, bias=True)
     elif args.base_model_mode == 'resnet50':
         model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet50', pretrained=False)
-        replace_bn(model, 'model')
+        # replace_bn(model, 'model')
         model.fc = torch.nn.Linear(in_features=2048, out_features=args.n_classes, bias=True)
         args.base_model = model
     elif args.base_model_mode == 'resnet101':
         model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet101', pretrained=False)
-        replace_bn(model, 'model')
+        # replace_bn(model, 'model')
         model.fc = torch.nn.Linear(in_features=2048, out_features=args.n_classes, bias=True)
         args.base_model = model
     elif args.base_model_mode == 'resnet152':
         model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet152', pretrained=False)
-        replace_bn(model, 'model')
+        # replace_bn(model, 'model')
         model.fc = torch.nn.Linear(in_features=2048, out_features=args.n_classes, bias=True)
         args.base_model = model
     elif args.base_model_mode == 'rand_init_true_arch':

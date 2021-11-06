@@ -130,3 +130,48 @@ def get_5cnn_model(image_size: int = 84,
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner
     mdl: nn.Module = get_default_learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
     return mdl
+
+# -- misc
+
+def _set_track_running_stats_to_false(module: nn.Module, name: str):
+    """
+    refs:
+        - https://discuss.pytorch.org/t/batchnorm1d-with-batchsize-1/52136/8
+        - https://stackoverflow.com/questions/64920715/how-to-use-have-batch-norm-not-forget-batch-statistics-it-just-used-in-pytorch
+    """
+    assert False, 'Untested'
+    for attr_str in dir(module):
+        target_attr = getattr(module, attr_str)
+        print(target_attr)
+        if type(target_attr) == torch.nn.BatchNorm1d:
+            target_attr.track_running_stats = False
+            # target_attr.running_mean = input.mean()
+            # target_attr.running_var = input.var()
+            # target_attr.num_batches_tracked = torch.tensor(0, dtype=torch.long)
+
+    # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
+    for name, immediate_child_module in module.named_children():
+        _path_bn_layer_for_functional_eval(immediate_child_module, name)
+
+def _replace_bn(module: nn.Module, name: str):
+    """
+    Recursively put desired batch norm in nn.module module.
+    Note, this will replace
+
+    set module = net to start code.
+    """
+    assert False, 'Untested'
+    # go through all attributes of module nn.module (e.g. network or layer) and put batch norms if present
+    for attr_str in dir(module):
+        target_attr = getattr(module, attr_str)
+        if type(target_attr) == torch.nn.BatchNorm2d:
+            # - I don't think this is right. You need to retain the old values but change track_running_stats to False...
+            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum,
+                                          target_attr.affine,
+                                          track_running_stats=False)
+            new_bn.load_state_dict(target_attr.state_dict())
+            setattr(module, attr_str, new_bn)
+
+    # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
+    for name, immediate_child_module in module.named_children():
+        _replace_bn(immediate_child_module, name)

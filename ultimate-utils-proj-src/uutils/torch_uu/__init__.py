@@ -962,43 +962,6 @@ def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_los
 
 ##
 
-def replace_bn(module, name):
-    """
-    Recursively put desired batch norm in nn.module module.
-
-    set module = net to start code.
-    """
-    # go through all attributes of module nn.module (e.g. network or layer) and put batch norms if present
-    for attr_str in dir(module):
-        target_attr = getattr(module, attr_str)
-        if type(target_attr) == torch.nn.BatchNorm2d:
-            new_bn = torch.nn.BatchNorm2d(target_attr.num_features, target_attr.eps, target_attr.momentum,
-                                          target_attr.affine,
-                                          track_running_stats=False)
-            setattr(module, attr_str, new_bn)
-
-    # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
-    for name, immediate_child_module in module.named_children():
-        replace_bn(immediate_child_module, name)
-
-
-def set_tracking_running_stats(model):
-    """
-    https://discuss.pytorch.org/t/batchnorm1d-with-batchsize-1/52136/8
-    https://stackoverflow.com/questions/64920715/how-to-use-have-batch-norm-not-forget-batch-statistics-it-just-used-in-pytorch
-
-    @param model:
-    @return:
-    """
-    for attr in dir(model):
-        if 'bn' in attr:
-            target_attr = getattr(model, attr)
-            target_attr.track_running_stats = True
-            target_attr.running_mean = torch.nn.Parameter(torch.zeros(target_attr.num_features, requires_grad=False))
-            target_attr.running_var = torch.nn.Parameter(torch.ones(target_attr.num_features, requires_grad=False))
-            target_attr.num_batches_tracked = torch.nn.Parameter(torch.tensor(0, dtype=torch.long), requires_grad=False)
-            # target_attr.reset_running_stats()
-    return
 
 
 ##

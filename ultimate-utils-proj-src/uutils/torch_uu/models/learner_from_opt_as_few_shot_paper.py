@@ -68,9 +68,17 @@ def get_feature_extractor_pool_layers(L: int = 4) -> list[str]:
     return [f'model.features.pool{i}' for i in range(1, L+1)]
 
 
-def get_feature_extractor_conv_layers(L: int = 4) -> list[str]:
+def get_feature_extractor_conv_layers(L: int = 4, include_cls: bool = False) -> list[str]:
+    """
+    Note: if the cls is present then we need B >= s*D since the output for it has shape
+        [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
+        s being used for B = 13 is
+            s_cls = B/n_c = 13/5 = 2.6
+            s_cls = B/n_c = 26/5 = 5.2
+    """
     layers: list[str] = [f'model.features.conv{i}' for i in range(1, L+1)]
-    # layers: list[str] = layers + ['model.cls']
+    if include_cls:
+        layers: list[str] = layers + ['model.cls']
     return layers
 
 
