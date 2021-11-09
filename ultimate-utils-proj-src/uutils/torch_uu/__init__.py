@@ -431,13 +431,8 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     return hidden
 
 
-def lp_norm(mdl, p=2):
+def lp_norm(mdl: nn.Module, p: int = 2) -> Tensor:
     lp_norms = [w.norm(p) for name, w in mdl.named_parameters()]
-    return sum(lp_norms)
-
-
-def lp_norm_grads(mdl, p=2, grads=False):
-    lp_norms = [w.grad.norm(p) for name, w in mdl.named_parameters()]
     return sum(lp_norms)
 
 

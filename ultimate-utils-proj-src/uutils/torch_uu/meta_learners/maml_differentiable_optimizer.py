@@ -434,7 +434,7 @@ def meta_eval_no_context_manager(args: Namespace,
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
 
         # Forward pass
-        eval_loss, eval_acc = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
+        eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
 
         # store eval info
         if batch_idx >= val_iterations:
@@ -444,7 +444,7 @@ def meta_eval_no_context_manager(args: Namespace,
         args.best_val_loss = float(eval_loss)
         from meta_learning.training.meta_training import save_for_meta_learning
         save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
-    return eval_loss, eval_acc
+    return eval_loss, eval_acc, eval_loss_std, eval_acc_std
 
 
 def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y,
@@ -498,4 +498,6 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
     assert len(meta_losses) == meta_batch_size
     meta_loss = np.mean(meta_losses)
     meta_acc = np.mean(meta_accs)
-    return meta_loss, meta_acc
+    meta_loss_std = np.std(meta_losses)
+    meta_acc_std = np.std(meta_accs)
+    return meta_loss, meta_acc, meta_loss_std, meta_acc_std

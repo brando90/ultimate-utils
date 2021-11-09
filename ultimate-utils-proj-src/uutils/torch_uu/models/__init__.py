@@ -5,9 +5,9 @@ import torch
 from torch import nn
 
 
-
 def get_linear_model(in_features: int, out_features: int) -> nn.Module:
     return nn.Linear(in_features=in_features, out_features=out_features)
+
 
 def get_named_one_layer_linear_model(Din: int, Dout: int, bias: bool = True) -> nn.Module:
     """
@@ -20,11 +20,13 @@ def get_named_one_layer_linear_model(Din: int, Dout: int, bias: bool = True) -> 
     mdl = nn.Sequential(params)
     return mdl
 
+
 def get_named_one_layer_random_linear_model(Din: int, Dout: int, bias: bool = True) -> nn.Module:
     """
     Returns a random linear Fully Connected Neural Network (FCNN) with random weights and only layer named `fc0`.
     """
     return get_named_one_layer_linear_model(Din, Dout, bias)
+
 
 def get_named_identity_one_layer_linear_model(D: int, debug: bool = False) -> nn.Module:
     """
@@ -39,6 +41,7 @@ def get_named_identity_one_layer_linear_model(D: int, debug: bool = False) -> nn
     if debug:
         print(f'You should see the identity matrix:\n{mdl.fc0.weight=}')
     return mdl
+
 
 def hardcoded_3_layer_model(in_features: int, out_features: int) -> nn.Module:
     """
@@ -57,6 +60,7 @@ def hardcoded_3_layer_model(in_features: int, out_features: int) -> nn.Module:
     ])
     mdl = nn.Sequential(modules)
     return mdl
+
 
 def get_simple_model(in_features: int, hidden_features: int, out_features: int, num_layer: int = 2):
     """
@@ -95,6 +99,7 @@ def get_simple_model(in_features: int, hidden_features: int, out_features: int, 
     mdl = nn.Sequential(modules)
     return mdl
 
+
 def get_single_conv_model(in_channels: int, num_out_filters: int, kernel_size: int = 3, padding: int = 1) -> nn.Module:
     """
     Gives a conv layer with in_channels as input.
@@ -116,13 +121,14 @@ def get_single_conv_model(in_channels: int, num_out_filters: int, kernel_size: i
                                       padding=padding)
     return conv_layer
 
+
 def get_5cnn_model(image_size: int = 84,
-                bn_eps: float = 1e-3,
-                bn_momentum: float = 0.95,
-                n_classes: int = 5,
-                filter_size: int = 32,
-                levels: Optional = None,
-                spp: bool = False) -> nn.Module:
+                   bn_eps: float = 1e-3,
+                   bn_momentum: float = 0.95,
+                   n_classes: int = 5,
+                   filter_size: int = 32,
+                   levels: Optional = None,
+                   spp: bool = False) -> nn.Module:
     """
     Gets a 5CNN that does not change the spatial dimension [H,W] as it processes the image.
     :return:
@@ -130,6 +136,7 @@ def get_5cnn_model(image_size: int = 84,
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner
     mdl: nn.Module = get_default_learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
     return mdl
+
 
 # -- misc
 
@@ -153,6 +160,7 @@ def _set_track_running_stats_to_false(module: nn.Module, name: str):
     for name, immediate_child_module in module.named_children():
         _path_bn_layer_for_functional_eval(immediate_child_module, name)
 
+
 def _replace_bn(module: nn.Module, name: str):
     """
     Recursively put desired batch norm in nn.module module.
@@ -175,3 +183,93 @@ def _replace_bn(module: nn.Module, name: str):
     # "recurse" iterate through immediate child modules. Note, the recursion is done by our code no need to use named_modules()
     for name, immediate_child_module in module.named_children():
         _replace_bn(immediate_child_module, name)
+
+
+def reset_all_weights(model: nn.Module) -> None:
+    """
+    refs:
+        - https://discuss.pytorch.org/t/how-to-re-set-alll-parameters-in-a-network/20819/6
+        - https://stackoverflow.com/questions/63627997/reset-parameters-of-a-neural-network-in-pytorch
+        - https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    """
+
+    @torch.no_grad()
+    def weight_reset(m: nn.Module):
+        # - check if the current module has reset_parameters & if it's callabed called it on m
+        reset_parameters = getattr(m, "reset_parameters", None)
+        if callable(reset_parameters):
+            m.reset_parameters()
+
+    # Applies fn recursively to every submodule see: https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    model.apply(fn=weight_reset)
+
+
+def _reset_all_linear_layer_weights(model: nn.Module) -> nn.Module:
+    """
+    Resets all weights recursively for linear layers.
+
+    ref:
+        - https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    """
+
+    @torch.no_grad()
+    def init_weights(m):
+        if type(m) == nn.Linear:
+            m.weight.fill_(1.0)
+            # torch.nn.init.xavier_uniform(m.weight.data)
+
+    # Applies fn recursively to every submodule see: https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    model.apply(init_weights)
+
+
+def reset_all_weights_with_specific_layer_type(model: nn.Module, modules_type2reset) -> nn.Module:
+    """
+    Resets all weights recursively for linear layers.
+
+    ref:
+        - https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    """
+
+    @torch.no_grad()
+    def init_weights(m):
+        if type(m) == modules_type2reset:
+            # if type(m) == torch.nn.BatchNorm2d:
+            #     m.weight.fill_(1.0)
+            m.reset_parameters()
+
+    # Applies fn recursively to every submodule see: https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+    model.apply(init_weights)
+
+
+# -- tests
+
+def reset_params_test():
+    """
+    test works especially becuase the reset norm for both pretrained and random is very close.
+
+    lp_norm(resnet18)=tensor(517.5472, grad_fn=<AddBackward0>)
+    lp_norm(resnet18_random)=tensor(668.0970, grad_fn=<AddBackward0>)
+    lp_norm(resnet18)=tensor(517.5472, grad_fn=<AddBackward0>)
+    lp_norm(resnet18_random)=tensor(668.0970, grad_fn=<AddBackward0>)
+    lp_norm(resnet18)=tensor(476.0279, grad_fn=<AddBackward0>)
+    lp_norm(resnet18_random)=tensor(475.9575, grad_fn=<AddBackward0>)
+    """
+    import torchvision.models as models
+    from uutils.torch_uu import lp_norm
+
+    resnet18 = models.resnet18(pretrained=True)
+    resnet18_random = models.resnet18(pretrained=False)
+
+    print(f'{lp_norm(resnet18)=}')
+    print(f'{lp_norm(resnet18_random)=}')
+    print(f'{lp_norm(resnet18)=}')
+    print(f'{lp_norm(resnet18_random)=}')
+    reset_all_weights(resnet18)
+    reset_all_weights(resnet18_random)
+    print(f'{lp_norm(resnet18)=}')
+    print(f'{lp_norm(resnet18_random)=}')
+
+
+if __name__ == '__main__':
+    reset_params_test()
+    print('Done! \a\n')
