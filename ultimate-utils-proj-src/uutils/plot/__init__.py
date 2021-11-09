@@ -90,6 +90,7 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
                           title: str,
                           curve_label: Optional[str] = None,
                           error_band_label: Optional[str] = None,
+                          x_vals_as_symbols: Optional[list[str]] = None,
                           color: Optional[str] = None, ecolor: Optional[str] = None,
                           linewidth: float = 1.0,
                           style: Optional[str] = 'default',
@@ -98,6 +99,8 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
                           show: bool = False
                           ):
     """
+    Plot custom error bands given x and y.
+
     note:
         - example values for color and ecolor:
             color='tab:blue', ecolor='tab:blue'
@@ -106,6 +109,8 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
         - sample values for curves and error_band labels:
             curve_label: str = 'mean with error bars',
             error_band_label: str = 'error band',
+        - use x_vals_as_symbols to have strings in the x-axis for each individual points. Warning, it might clutter the
+        x-axis so use just a few.
     refs:
         - for making the seaborn and matplot lib look the same see: https://stackoverflow.com/questions/54522709/my-seaborn-and-matplotlib-plots-look-the-same
     """
@@ -126,6 +131,11 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
     # ax = plt.gca()
     # fig = plt.gcf(
     # fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
+    # - if symbols in x axis instead of raw x value
+    if x_vals_as_symbols is not None:
+        # plt.xticks(x, [f'val{v}' for v in x]) to test
+        plt.xticks(x, x_vals_as_symbols)
+    # - plot bands
     plt.errorbar(x=x, y=y, yerr=yerr, color=color, ecolor=ecolor,
                  capsize=capsize, linewidth=linewidth, label=curve_label)
     plt.fill_between(x=x, y1=y - yerr, y2=y + yerr, alpha=alpha, label=error_band_label)
@@ -500,6 +510,16 @@ def seaborn_multiple_curves_with_only_matrices_example():
 
     plt.show()
 
+def xticks():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    x = np.array([0, 1, 2, 3])
+    y = np.array([20, 21, 22, 23])
+    my_xticks = ['John', 'Arnold', 'Mavis', 'Matt']
+    plt.xticks(x, my_xticks)
+    plt.plot(x, y)
+    plt.show()
 
 # - tests
 
@@ -572,10 +592,46 @@ def plot_with_error_bands_test():
     plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn')
     plt.show()
 
+def plot_with_error_bands_xticks_test():
+    import numpy as np  # v 1.19.2
+    import matplotlib.pyplot as plt  # v 3.3.2
+
+    # the number of x values to consider in a given range e.g. [0,1] will sample 10 raw features x sampled at in [0,1] interval
+    num_x: int = 5
+    # the repetitions for each x feature value e.g. multiple measurements for sample x=0.0 up to x=1.0 at the end
+    rep_per_x: int = 5
+    total_size_data_set: int = num_x * rep_per_x
+    print(f'{total_size_data_set=}')
+    # - create fake data set
+    # only consider 10 features from 0 to 1
+    x = np.linspace(start=0.0, stop=2*np.pi, num=num_x)
+
+    # to introduce fake variation add uniform noise to each feature and pretend each one is a new observation for that feature
+    noise_uniform: np.ndarray = np.random.rand(rep_per_x, num_x)
+    # same as above but have the noise be the same for each x (thats what the 1 means)
+    noise_normal: np.ndarray = np.random.randn(rep_per_x, 1)
+    # signal function
+    sin_signal: np.ndarray = np.sin(x)
+    cos_signal: np.ndarray = np.cos(x)
+    # [rep_per_x, num_x]
+    y1: np.ndarray = sin_signal + noise_uniform + noise_normal
+    y2: np.ndarray = cos_signal + noise_uniform + noise_normal
+
+    y1mean = y1.mean(axis=0)
+    y1err = y1.std(axis=0)
+    y2mean = y2.mean(axis=0)
+    y2err = y2.std(axis=0)
+
+    x_vals_as_symbols: list[str] = [f'Val{v:0.2f}' for v in x]
+    plot_with_error_bands(x=x, y=y1mean, yerr=y1err, xlabel='x', ylabel='y', title='Custom Seaborn', x_vals_as_symbols=x_vals_as_symbols)
+    plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn', x_vals_as_symbols=x_vals_as_symbols)
+    plt.show()
+
 
 if __name__ == '__main__':
     # save_plot_test()
     # default_seabron_example()
     # plot_seaborn_curve_with_x_values_y_values_test()
-    plot_with_error_bands_test()
+    # plot_with_error_bands_test()
+    plot_with_error_bands_xticks_test()
     print('Done, success! \a')
