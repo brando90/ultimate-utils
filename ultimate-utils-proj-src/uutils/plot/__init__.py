@@ -21,7 +21,7 @@ def plot_quick(y: Array, xlabel: str, ylabel: str, linewidth: float = 2.0, show:
     plt.plot(y, lw=linewidth)  # lw is linewidth
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.grid()
+    plt.grid(True)
     plt.tight_layout()
     # note: needs to be done in this order or it will clear the plot.
     if save_plot:
@@ -39,7 +39,7 @@ def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
     plt.plot(x, y, lw=linewidth)  # lw is linewidth
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.grid()
+    plt.grid(True)
     plt.tight_layout()
     # - optionals
     plt.title(title)
@@ -70,7 +70,7 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
     axs.set_xlabel(xlabel)
     axs.set_ylabel(ylabel)
     axs.set_title(title)
-    axs.grid()  # adds nice grids instead of plot being white
+    axs.grid(True)  # adds nice grids instead of plot being white
     plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area.
     # - optionals
     if x_hline:  # horizontal sets a constant x value
@@ -86,19 +86,58 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
 
 
 def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
-                          color: str = None, ecolor: str = None,
-                          curve_label: str = 'mean with error bars',
-                          error_band_label: str = 'error band',
-                          linewidth: float = 2.0
+                          xlabel: str, ylabel: str,
+                          title: str,
+                          curve_label: Optional[str] = None,
+                          error_band_label: Optional[str] = None,
+                          color: Optional[str] = None, ecolor: Optional[str] = None,
+                          linewidth: float = 1.0,
+                          style: Optional[str] = 'default',
+                          capsize: float = 3.0,
+                          alpha: float = 0.2,
+                          show: bool = False
                           ):
-    fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
-    axs.grid()
-    plt.errorbar(x=x, y=y, yerr=yerr, color='tab:blue', ecolor='tab:blue',
-                 capsize=3, linewidth=linewidth, label='mean with error bars')
-    plt.fill_between(x=x, y1=y - yerr, y2=y + yerr, alpha=0.2, label='error band')
-    plt.legend()
+    """
+    note:
+        - example values for color and ecolor:
+            color='tab:blue', ecolor='tab:blue'
+        - capsize is the length of the horizontal line for the error bar. Larger number makes it longer horizontally.
+        - alpha value create than 0.2 make the error bands color for filling it too dark. Really consider not changing.
+        - sample values for curves and error_band labels:
+            curve_label: str = 'mean with error bars',
+            error_band_label: str = 'error band',
+    refs:
+        - for making the seaborn and matplot lib look the same see: https://stackoverflow.com/questions/54522709/my-seaborn-and-matplotlib-plots-look-the-same
+    """
+    if style == 'default':
+        # use the standard matplotlib
+        plt.style.use("default")
+    elif style == 'seaborn' or style == 'sns':
+        # looks idential to seaborn
+        import seaborn as sns
+        sns.set()
+    elif style == 'seaborn-darkgrid':
+        # uses the default colours of matplot but with blue background of seaborn
+        plt.style.use("seaborn-darkgrid")
+    elif style == 'ggplot':
+        # other alternative to something that looks like seaborn
+        plt.style.use('ggplot')
 
-    # plt.show()
+    # ax = plt.gca()
+    # fig = plt.gcf(
+    # fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
+    plt.errorbar(x=x, y=y, yerr=yerr, color=color, ecolor=ecolor,
+                 capsize=capsize, linewidth=linewidth, label=curve_label)
+    plt.fill_between(x=x, y1=y - yerr, y2=y + yerr, alpha=alpha, label=error_band_label)
+    plt.grid(True)
+    if curve_label or error_band_label:
+        plt.legend()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+
+    if show:
+        plt.show()
 
 
 def save_to_desktop(plot_name: str = 'plot'):
@@ -504,14 +543,14 @@ def plot_with_error_bands_test():
     import matplotlib.pyplot as plt  # v 3.3.2
 
     # the number of x values to consider in a given range e.g. [0,1] will sample 10 raw features x sampled at in [0,1] interval
-    num_x: int = 10
+    num_x: int = 30
     # the repetitions for each x feature value e.g. multiple measurements for sample x=0.0 up to x=1.0 at the end
     rep_per_x: int = 5
     total_size_data_set: int = num_x * rep_per_x
     print(f'{total_size_data_set=}')
     # - create fake data set
     # only consider 10 features from 0 to 1
-    x = np.linspace(start=0.0, stop=1.0, num=num_x)
+    x = np.linspace(start=0.0, stop=2*np.pi, num=num_x)
 
     # to introduce fake variation add uniform noise to each feature and pretend each one is a new observation for that feature
     noise_uniform: np.ndarray = np.random.rand(rep_per_x, num_x)
@@ -525,12 +564,18 @@ def plot_with_error_bands_test():
     y2: np.ndarray = cos_signal + noise_uniform + noise_normal
 
     y1mean = y1.mean(axis=0)
-    y1error = y1.std(axis=0)
+    y1err = y1.std(axis=0)
     y2mean = y2.mean(axis=0)
-    y2error = y2.std(axis=0)
+    y2err = y2.std(axis=0)
+
+    plot_with_error_bands(x=x, y=y1mean, yerr=y1err, xlabel='x', ylabel='y', title='Custom Seaborn')
+    plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn')
+    plt.show()
+
 
 if __name__ == '__main__':
     # save_plot_test()
     # default_seabron_example()
-    plot_seaborn_curve_with_x_values_y_values_test()
+    # plot_seaborn_curve_with_x_values_y_values_test()
+    plot_with_error_bands_test()
     print('Done, success! \a')
