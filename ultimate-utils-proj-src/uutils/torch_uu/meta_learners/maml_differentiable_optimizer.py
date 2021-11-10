@@ -1,3 +1,5 @@
+"""
+"""
 import gc
 from argparse import Namespace
 from collections import OrderedDict
@@ -17,6 +19,7 @@ from torch import Tensor
 from torch.optim.optimizer import required
 
 from anatome.helper import LayerIdentifier, dist_data_set_per_layer
+from meta_learning.meta_learners.pretrain_convergence import get_adapted_according_to_ffl
 
 FuncModel = _MonkeyPatchBase
 
@@ -140,14 +143,14 @@ def get_diff_optimizer_and_functional_model(model: nn.Module,
 
 
 def get_maml_adapted_model_with_higher_one_task(base_model: nn.Module,
-                                       inner_opt: optim.Optimizer,
-                                       spt_x_t: Tensor, spt_y_t: Tensor,
-                                       training: bool,
-                                       copy_initial_weights: bool,
-                                       track_higher_grads: bool,
-                                       fo: bool,
-                                       nb_inner_train_steps: int,
-                                       criterion: nn.Module) -> FuncModel:
+                                                inner_opt: optim.Optimizer,
+                                                spt_x_t: Tensor, spt_y_t: Tensor,
+                                                training: bool,
+                                                copy_initial_weights: bool,
+                                                track_higher_grads: bool,
+                                                fo: bool,
+                                                nb_inner_train_steps: int,
+                                                criterion: nn.Module) -> FuncModel:
     """
     Return an adaptated model using MAML using pytorch's higher lib.
 
@@ -185,14 +188,14 @@ def get_maml_adapted_model_with_higher_one_task(base_model: nn.Module,
 
 
 def _get_maml_adapted_model_with_higher_one_task_with_context_manager(base_model: nn.Module,
-                                                             inner_opt: optim.Optimizer,
-                                                             spt_x_t: Tensor, spt_y_t: Tensor,
-                                                             training: bool,
-                                                             copy_initial_weights: bool,
-                                                             track_higher_grads: bool,
-                                                             fo: bool,
-                                                             nb_inner_train_steps: int,
-                                                             criterion: nn.Module) -> FuncModel:
+                                                                      inner_opt: optim.Optimizer,
+                                                                      spt_x_t: Tensor, spt_y_t: Tensor,
+                                                                      training: bool,
+                                                                      copy_initial_weights: bool,
+                                                                      track_higher_grads: bool,
+                                                                      fo: bool,
+                                                                      nb_inner_train_steps: int,
+                                                                      criterion: nn.Module) -> FuncModel:
     """
     Return an adaptated model using MAML using pytorch's higher lib.
 
@@ -224,6 +227,7 @@ def _get_maml_adapted_model_with_higher_one_task_with_context_manager(base_model
             diffopt.step(inner_loss)
         # print(f'>>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
         return fmodel
+
 
 # - comparing models with maml
 
@@ -281,14 +285,14 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         #
         adapted_mdl: FuncModel = get_maml_adapted_model_with_higher_one_task(mdl,
-                                                                    inner_opt,
-                                                                    spt_x_t, spt_y_t,
-                                                                    training,
-                                                                    copy_initial_weights,
-                                                                    track_higher_grads,
-                                                                    fo,
-                                                                    nb_inner_train_steps,
-                                                                    criterion)
+                                                                             inner_opt,
+                                                                             spt_x_t, spt_y_t,
+                                                                             training,
+                                                                             copy_initial_weights,
+                                                                             track_higher_grads,
+                                                                             fo,
+                                                                             nb_inner_train_steps,
+                                                                             criterion)
         # - [M, C, H, W], [L] -> [L]
         X: Tensor = qry_x_t
         dists_per_layer: OrderedDict[LayerIdentifier, float] = dist_data_set_per_layer(mdl1=mdl,
@@ -319,6 +323,7 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     # - [B, L] distances ready!
     return dists_per_batch_per_layer
 
+
 def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
         mdl_fixed: nn.Module, mdl_ml: nn.Module,
         spt_x: Tensor, spt_y: Tensor, qry_x: Tensor, qry_y: Tensor,
@@ -341,29 +346,11 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
         track_higher_grads: bool = False
 ) -> list[OrderedDict[LayerIdentifier, float]]:
     """
-    :param mdl:
-    :param spt_x: not as a tuple due to having to move them to gpu potentially.
-    :param spt_y:
-    :param qry_x:
-    :param qry_y:
-    :param layer_names:
-    :param inner_opt:
-    :param fo:
-    :param nb_inner_train_steps:
-    :param criterion:
-    :param metric_comparison_type:
-    :param iters:
-    :param effective_neuron_type:
-    :param downsample_method:
-    :param downsample_size:
-    :param subsample_effective_num_data_method:
-    :param subsample_effective_num_data_param:
-    :param metric_as_sim_or_dist:
-    :param force_cpu:
-    :param training:
-    :param copy_initial_weights:
-    :param track_higher_grads:
-    :return:
+    todo:
+        - modify code so that it takes two meta-learners and returns the adapted model according to the meta-learner
+        object. Note you can't make it functional since each meta-learner modifies the model with it's own code, so
+        you eventually need to pattern the class to the function being used (or have the object carry that function
+        intrinsically).
     """
     # - [B, M, C, H, W] -> [B, L]
     L: int = len(layer_names)
@@ -373,14 +360,20 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         #
         adapted_mdl: FuncModel = get_maml_adapted_model_with_higher_one_task(mdl_ml,
-                                                                    inner_opt,
-                                                                    spt_x_t, spt_y_t,
-                                                                    training,
-                                                                    copy_initial_weights,
-                                                                    track_higher_grads,
-                                                                    fo,
-                                                                    nb_inner_train_steps,
-                                                                    criterion)
+                                                                             inner_opt,
+                                                                             spt_x_t, spt_y_t,
+                                                                             training,
+                                                                             copy_initial_weights,
+                                                                             track_higher_grads,
+                                                                             fo,
+                                                                             nb_inner_train_steps,
+                                                                             criterion)
+        mdl_fixed: nn.Module = get_adapted_according_to_ffl(base_model=mdl_fixed,
+                                                            spt_x_t=spt_x_t, spt_y_t=spt_y_t, qry_x_t=qry_x_t,
+                                                            qry_y_t=qry_y_t,
+                                                            layer_to_replace='model.cls',
+                                                            training=training,
+                                                            target_type='classification', classifier='LR')
         # - [M, C, H, W], [L] -> [L]
         X: Tensor = qry_x_t
         dists_per_layer: OrderedDict[LayerIdentifier, float] = dist_data_set_per_layer(mdl1=mdl_fixed,
@@ -410,6 +403,7 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
 
     # - [B, L] distances ready!
     return dists_per_batch_per_layer
+
 
 # - meta-evaluation
 
@@ -468,14 +462,14 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         # - Inner Loop Adaptation
         fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(meta_learner.base_model,
-                                                               inner_opt,
-                                                               spt_x_t, spt_y_t,
-                                                               training,
-                                                               copy_initial_weights=meta_learner.args.copy_initial_weights,
-                                                               track_higher_grads=meta_learner.args.track_higher_grads,
-                                                               fo=meta_learner.fo,
-                                                               nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
-                                                               criterion=meta_learner.args.criterion)
+                                                                        inner_opt,
+                                                                        spt_x_t, spt_y_t,
+                                                                        training,
+                                                                        copy_initial_weights=meta_learner.args.copy_initial_weights,
+                                                                        track_higher_grads=meta_learner.args.track_higher_grads,
+                                                                        fo=meta_learner.fo,
+                                                                        nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
+                                                                        criterion=meta_learner.args.criterion)
 
         # Evaluate on query set for current task
         qry_logits_t = fmodel(qry_x_t)

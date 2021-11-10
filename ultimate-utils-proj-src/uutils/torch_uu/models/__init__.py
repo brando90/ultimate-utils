@@ -241,6 +241,13 @@ def reset_all_weights_with_specific_layer_type(model: nn.Module, modules_type2re
     model.apply(init_weights)
 
 
+def getattr_model(model: nn.Module, layer_to_replace: str) -> nn.Module:
+    target_module: nn.Module = model
+    # - loop through all modules according to layer name until we get to the end which is the one we want
+    for field_name in layer_to_replace.split('.'):
+        target_module: nn.Module = getattr(target_module, field_name)
+    return target_module
+
 # -- tests
 
 def reset_params_test():

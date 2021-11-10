@@ -49,13 +49,14 @@ def get_learner_from_args(args: Namespace) -> nn.Module:
 
 
 def get_default_learner(image_size: int = 84,
-                bn_eps: float = 1e-3,
-                bn_momentum: float = 0.95,
-                n_classes: int = 5,
-                filter_size: int = 32,
-                levels: Optional = None,
-                spp: bool = False) -> nn.Module:
+                        bn_eps: float = 1e-3,
+                        bn_momentum: float = 0.95,
+                        n_classes: int = 5,
+                        filter_size: int = 32,
+                        levels: Optional = None,
+                        spp: bool = False) -> nn.Module:
     return Learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
+
 
 def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> nn.Module:
     if args is None:
@@ -65,7 +66,7 @@ def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> n
 
 
 def get_feature_extractor_pool_layers(L: int = 4) -> list[str]:
-    return [f'model.features.pool{i}' for i in range(1, L+1)]
+    return [f'model.features.pool{i}' for i in range(1, L + 1)]
 
 
 def get_feature_extractor_conv_layers(L: int = 4, include_cls: bool = False) -> list[str]:
@@ -76,15 +77,19 @@ def get_feature_extractor_conv_layers(L: int = 4, include_cls: bool = False) -> 
             s_cls = B/n_c = 13/5 = 2.6
             s_cls = B/n_c = 26/5 = 5.2
     """
-    layers: list[str] = [f'model.features.conv{i}' for i in range(1, L+1)]
+    layers: list[str] = [f'model.features.conv{i}' for i in range(1, L + 1)]
     if include_cls:
         layers: list[str] = layers + ['model.cls']
     return layers
 
 
+def get_head_cls() -> list[str]:
+    return ['model.cls']
+
+
 def get_all_layers_minus_cls(L: int = 4) -> list[str]:
     layer_names: str = []
-    for l in range(1, L+1):
+    for l in range(1, L + 1):
         layer_name1: str = f'model.features.conv{l}'
         layer_name2: str = f'model.features.norm{l}'
         layer_name3: str = f'model.features.relu{l}'
