@@ -434,7 +434,8 @@ def meta_eval_no_context_manager(args: Namespace,
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
 
         # Forward pass
-        eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
+        # eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
+        eval_loss, eval_acc, eval_loss_std, eval_acc_std = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
 
         # store eval info
         if batch_idx >= val_iterations:
