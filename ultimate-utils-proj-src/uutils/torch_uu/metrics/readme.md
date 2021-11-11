@@ -1,12 +1,50 @@
 # Introduction
 
 This package is for computing metrics, especially using adaptation of the original svcca, pwcca.
-NOTE: it's here but decided not to do anything with it for now.
+If you use anything in this file please cite the original authors:
+
+```
+@incollection{NIPS2017_7188,
+title = {SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability},
+author = {Raghu, Maithra and Gilmer, Justin and Yosinski, Jason and Sohl-Dickstein, Jascha},
+booktitle = {Advances in Neural Information Processing Systems 30},
+editor = {I. Guyon and U. V. Luxburg and S. Bengio and H. Wallach and R. Fergus and S. Vishwanathan and R. Garnett},
+pages = {6076--6085},
+year = {2017},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/7188-svcca-singular-vector-canonical-correlation-analysis-for-deep-learning-dynamics-and-interpretability.pdf}
+}
+
+```
+
+```
+@incollection{NIPS2018_7815,
+title = {Insights on representational similarity in neural networks with canonical correlation},
+author = {Morcos, Ari and Raghu, Maithra and Bengio, Samy},
+booktitle = {Advances in Neural Information Processing Systems 31},
+editor = {S. Bengio and H. Wallach and H. Larochelle and K. Grauman and N. Cesa-Bianchi and R. Garnett},
+pages = {5732--5741},
+year = {2018},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/7815-insights-on-representational-similarity-in-neural-networks-with-canonical-correlation.pdf}
+}
+
+```
 
 # LICENSE
 
 Due to original authors of svcca, pwcca, we are adding their license here and adding comments in the `./cca/NOTICE` file.
 
+# Licensing comment
+
+My understanding from opensource SO:
+> You can use (and modify) the codebase of the Apache component under the Apache license. You cannot re-license the 
+> Apache code to use MIT in the future, because there are addnl restrictions in the Apache license (stating changes, 
+> trademark use) which do not appear in the MIT license.
+> I always recommend to have one file licenses.md (or .txt or whatever) either in the top folder or in a 
+> 'licenses' subfolder, and include everything in that one file. In addition you should put a 'notices.md' into the 
+> same folder with the copyright attribution, list of changes etc. Some people put the notices in the same file with 
+> the licenses, but I think that makes it very difficult to read.
+
 ## LICENSE References
-- https://law.stackexchange.com/questions/73848/what-type-of-notices-and-licenses-do-i-need-to-add-when-adding-and-modifying-c
-- https://law.stackexchange.com/questions/6081/can-i-bundle-mit-licensed-components-in-a-apache-2-0-licensed-project?noredirect=1&lq=1
+- https://opensource.stackexchange.com/q/12263/25395

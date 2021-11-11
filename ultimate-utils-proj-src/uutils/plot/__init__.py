@@ -183,6 +183,15 @@ def save_to(root: Path, plot_name: str = 'plot'):
     plt.savefig(root / f'{plot_name}.pdf')
 
 
+def draw_veritcal_line(at_x_value: float, start: float, stop: float, num: int = 100, linestyle:str = "--"):
+    """
+    Draws a vertical line at a specific x value for a given range [start, stop].
+
+    Note:
+        - num tells us how dense to draw this line.
+    """
+    plt.plot([at_x_value] * num, np.linspace(start, stop, num), linestyle=linestyle)
+
 # - seaborn
 
 LayerIdentifier = str

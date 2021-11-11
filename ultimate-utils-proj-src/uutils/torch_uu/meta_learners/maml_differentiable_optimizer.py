@@ -368,12 +368,12 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
                                                                              fo,
                                                                              nb_inner_train_steps,
                                                                              criterion)
-        mdl_fixed: nn.Module = get_adapted_according_to_ffl(base_model=mdl_fixed,
-                                                            spt_x_t=spt_x_t, spt_y_t=spt_y_t, qry_x_t=qry_x_t,
-                                                            qry_y_t=qry_y_t,
-                                                            layer_to_replace='model.cls',
-                                                            training=training,
-                                                            target_type='classification', classifier='LR')
+        # mdl_fixed: nn.Module = get_adapted_according_to_ffl(base_model=mdl_fixed,
+        #                                                     spt_x_t=spt_x_t, spt_y_t=spt_y_t, qry_x_t=qry_x_t,
+        #                                                     qry_y_t=qry_y_t,
+        #                                                     layer_to_replace='model.cls',
+        #                                                     training=training,
+        #                                                     target_type='classification', classifier='LR')
         # - [M, C, H, W], [L] -> [L]
         X: Tensor = qry_x_t
         dists_per_layer: OrderedDict[LayerIdentifier, float] = dist_data_set_per_layer(mdl1=mdl_fixed,

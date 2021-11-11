@@ -541,7 +541,7 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
         target_reshaped = target.view(1, -1).expand_as(y_pred)  # [B] -> [B, 1] -> [maxk, B]
         # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
         correct = (
-                    y_pred == target_reshaped)  # [maxk, B] were for each example we know which topk prediction matched truth
+                y_pred == target_reshaped)  # [maxk, B] were for each example we know which topk prediction matched truth
         # original: correct = pred.eq(target.view(1, -1).expand_as(pred))
 
         # -- get topk accuracy
@@ -604,7 +604,7 @@ def topk_accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List
         target_reshaped = target.view(-1, 1).expand_as(y_pred)  # [B] -> [B, 1] -> [B, maxk]
         # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
         correct = (
-                    y_pred == target_reshaped)  # [B, maxk] were for each example we know which topk prediction matched truth
+                y_pred == target_reshaped)  # [B, maxk] were for each example we know which topk prediction matched truth
 
         # -- get topk accuracy
         list_topk_accs = []  # idx is topk1, topk2, ... etc
@@ -958,7 +958,6 @@ def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_los
 ##
 
 
-
 ##
 
 def count_nb_params(net):
@@ -1309,7 +1308,7 @@ def l2_sim_torch(x1, x2, dim=1, sim_type='nes_torch') -> Tensor:
     return sim
 
 
-def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
+def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=0, eps=1e-8) -> Tensor:
     """
     Normalized eucledian distance in pytorch.
 
@@ -1336,6 +1335,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
     https://stats.stackexchange.com/questions/136232/definition-of-normalized-euclidean-distance/498753?noredirect=1#comment937825_498753
     https://github.com/brando90/Normalized-Euclidean-Distance-and-Similarity
     """
+    assert False, f'Need to test if dim=0 is correct...'
     # to compute ned for two individual vectors e.g to compute a loss (NOT BATCHES/COLLECTIONS of vectorsc)
     if len(x1.size()) == 1:
         # [K] -> [1]
@@ -1345,7 +1345,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
             [x1.size(0), 1]):  # note this special case is needed since var over dim=1 is nan (1 value has no variance).
         # [B, 1] -> [B]
         ned_2 = 0.5 * ((x1 - x2) ** 2 / (
-                    x1 ** 2 + x2 ** 2 + eps)).squeeze()  # Squeeze important to be consistent with .var, otherwise tensors of different sizes come out without the user expecting it
+                x1 ** 2 + x2 ** 2 + eps)).squeeze()  # Squeeze important to be consistent with .var, otherwise tensors of different sizes come out without the user expecting it
     # common case is if input is a batch
     else:
         # e.g. [B, D] -> [B]
@@ -1353,7 +1353,7 @@ def ned_torch(x1: torch.Tensor, x2: torch.Tensor, dim=1, eps=1e-8) -> Tensor:
     return ned_2 ** 0.5
 
 
-def nes_torch(x1, x2, dim: int = 1, eps: float = 1e-8) -> Tensor:
+def nes_torch(x1, x2, dim: int = 0, eps: float = 1e-8) -> Tensor:
     return 1.0 - ned_torch(x1, x2, dim, eps)
 
 
@@ -1417,7 +1417,7 @@ def orthogonal_procrustes_similairty(x1: Tensor, x2: Tensor, normalize_for_range
     return sim
 
 
-def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
+def normalize_matrix_for_similarity(X: Tensor, dim: int = 0) -> Tensor:
     """
     Normalize matrix of size wrt to the data dimension according to Ding et. al.
         X_normalized = X_centered / ||X_centered||_F
@@ -1431,26 +1431,24 @@ def normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
     ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
     """
     from torch.linalg import norm
-    X_centered: Tensor = (X - X.mean(dim=dim, keepdim=True))
+    # X_centered: Tensor = (X - X.mean(dim=dim, keepdim=True))
+    X_centered: Tensor = center(X, dim)
     X_star: Tensor = X_centered / norm(X_centered, "fro")
     return X_star
 
 
-# def _normalize_matrix_for_similarity(X: Tensor, dim: int = 1) -> Tensor:
-#     """
-#     WARNING: gives less accurate results for OPD.
-#     Normalize matrix of size wrt to the data dimension according to the similarity preprocessing standard.
-#     Assumption is that X is of size [n, d].
-#     Otherwise, specify which simension to normalize with dim.
-#
-#     ref: https://stats.stackexchange.com/questions/544812/how-should-one-normalize-activations-of-batches-before-passing-them-through-a-si
-#     """
-#     from torch.linalg import norm
-#     X_star: Tensor = (X - X.mean(dim=dim, keepdim=True)) / norm(X, "fro")
-#     assert False, 'normalize_matrix_for_similarity which uses centered data for normalization.'
-#     return X_star
+def center(input: Tensor,
+           dim: int
+           ) -> Tensor:
+    return _zero_mean(input, dim)
 
-def normalize_matrix_for_distance(X: Tensor, dim: int = 1) -> Tensor:
+
+def _zero_mean(input: Tensor,
+               dim: int
+               ) -> Tensor:
+    return input - input.mean(dim=dim, keepdim=True)
+
+def normalize_matrix_for_distance(X: Tensor, dim: int = 0) -> Tensor:
     """ Center according to columns and divide by frobenius norm. Matrix is assumed to be [n, d] else sepcify dim. """
     return normalize_matrix_for_similarity(X, dim)
 
@@ -2448,7 +2446,8 @@ def assert_sim_of_model_with_itself_is_approx_one(mdl: nn.Module, X: Tensor,
     """
     Returns true if model is ok. If not it asserts against you (never returns False).
     """
-    dist: float = get_metric(mdl, mdl, X, X, layer_name, metric_comparison_type=metric_comparison_type, metric_as_sim_or_dist=metric_as_sim_or_dist)
+    dist: float = get_metric(mdl, mdl, X, X, layer_name, metric_comparison_type=metric_comparison_type,
+                             metric_as_sim_or_dist=metric_as_sim_or_dist)
     print(f'Should be very very close to 0.0: {dist=} ({metric_comparison_type=})')
     assert approx_equal(dist, 0.0), f'Sim should be close to 1.0 but got: {dist=}'
     return True
@@ -2571,7 +2570,6 @@ class GetMaxFiltersExtractorHook(nn.Module):
         """
         _ = self.model(x)
         return self._features
-
 
 
 # -- misc
@@ -2879,6 +2877,27 @@ def grad_clipper_hook_test():
 
     print(clipped_resnet.fc.bias.grad[:25])
 
+
+# -- misc2
+
+def cov(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
+    """
+    Compute covariance of input
+
+    :param x: [M, D]
+    :param y: [M, D]
+    :return:
+    """
+    if y is not None:
+        y = x
+    else:
+        assert x.size(0) == y.size(0)
+    # - center first
+    x = center(x, dim=0)
+    y = center(y, dim=0)
+    # - conv = E[XY] is outer product of X^T Y or X Y^T depending on shapes
+    sigma_xy: Tensor = x.T @ y
+    return sigma_xy
 
 # -- _main
 
