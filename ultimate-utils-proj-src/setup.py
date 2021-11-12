@@ -30,7 +30,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.5.0',
+    version='0.5.1',
     description='Brandos ultimate utils for science, machine learning and AI',
     long_description=README,
     long_description_content_type="text/markdown",
