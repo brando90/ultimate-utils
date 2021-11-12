@@ -23,7 +23,8 @@ for full details.
 """
 
 import numpy as np
-import cca_core
+# import .cca_core
+from uutils.torch_uu.metrics.cca import cca_core
 
 def compute_pwcca(acts1, acts2, epsilon=0.):
     """ Computes projection weighting for weighting CCA coefficients 

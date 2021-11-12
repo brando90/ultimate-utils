@@ -20,10 +20,15 @@ def svcca_with_keeping_fixed_dims(x: np.ndarray, y: np.ndarray, dims_to_keep: in
     Note:
       - To compute svcca distance do: svcca: float = np.mean(svcca_baseline["cca_coef1"])
       - Input data is assumed to be of size [D, N] to make it consistent with the original tutorial: https://github.com/google/svcca/blob/master/tutorials/001_Introduction.ipynb
+      - Centering code does not make a difference because get_cc_similarity uses np.cov and cov(x,y) = E[(x-mu_x)(y-mu_y)]
+      so it's already centering. But to my surprise giving the SV part non-centered data doesn't make a difference but
+      I would have expected a difference.
     """
     # Mean subtract baseline activations
-    cx = center(x, axis=axis, keepdims=keepdims)
-    cy = center(y, axis=axis, keepdims=keepdims)
+    # cx = center(x, axis=axis, keepdims=keepdims)
+    # cy = center(y, axis=axis, keepdims=keepdims)
+    cx = x
+    cy = y
 
     # Perform SVD
     Ux, sx, Vx = np.linalg.svd(cx, full_matrices=full_matrices)
@@ -32,9 +37,10 @@ def svcca_with_keeping_fixed_dims(x: np.ndarray, y: np.ndarray, dims_to_keep: in
     svx = np.dot(sx[:dims_to_keep] * np.eye(dims_to_keep), Vx[:dims_to_keep])
     svy = np.dot(sy[:dims_to_keep] * np.eye(dims_to_keep), Vy[:dims_to_keep])
 
-    # Recenter after SVD since CCA assumes incoming stuff is centered
-    svx = center(svx, axis=axis, keepdims=keepdims)
-    svy = center(svy, axis=axis, keepdims=keepdims)
+    # Recenter after SVD since CCA assumes incoming stuff is centered - this is something I added myself to match
+    # ultimate anatome's code but it doesn't seem to make a difference.
+    # svx = center(svx, axis=axis, keepdims=keepdims)
+    # svy = center(svy, axis=axis, keepdims=keepdims)
 
     svcca_baseline = get_cca_similarity(svx, svy, epsilon=epsilon, verbose=verbose)
     # print("Baseline", np.mean(svcca_baseline["cca_coef1"]), "and MNIST", np.mean(svcca_results["cca_coef1"]))
