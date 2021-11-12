@@ -33,9 +33,13 @@ url = {http://papers.nips.cc/paper/7815-insights-on-representational-similarity-
 
 # LICENSE
 
-Due to original authors of svcca, pwcca, we are adding their license here and adding comments in the `./cca/NOTICE` file.
+Due to original authors of svcca, pwcca, we are adding their license here and adding list of changes here instead of 
+in the `./cca/NOTICE` file:
 
-# Licensing comment
+Changes:
+    - all additions to the original svcca library are in file `uutils_cca_core_addendums.py`
+
+## Licensing comment
 
 My understanding from opensource SO:
 > You can use (and modify) the codebase of the Apache component under the Apache license. You cannot re-license the 
