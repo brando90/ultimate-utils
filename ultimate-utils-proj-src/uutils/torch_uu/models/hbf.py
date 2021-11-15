@@ -1,5 +1,5 @@
 """
-Hyper Basis Function Networks
+Hyper Basis Function (HBFs) Networks
 
 Ref:
     - https://dspace.mit.edu/handle/1721.1/113159

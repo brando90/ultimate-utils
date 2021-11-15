@@ -128,7 +128,7 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
                           by remove_small
             y_idxs:       Same as above but for sigma_yy
   """
-
+  from uutils import is_pos_def
   (sigma_xx, sigma_xy, sigma_yx, sigma_yy,
    x_idxs, y_idxs) = remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon)
 
@@ -148,8 +148,13 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
 
   if verbose:
     print("taking square root")
-  invsqrt_xx = positivedef_matrix_sqrt(inv_xx)
-  invsqrt_yy = positivedef_matrix_sqrt(inv_yy)
+  # print('their sqrt')
+  # invsqrt_xx = positivedef_matrix_sqrt(inv_xx)
+  # invsqrt_yy = positivedef_matrix_sqrt(inv_yy)
+  import scipy
+  # print('npy\'s sqrt')
+  invsqrt_xx = scipy.linalg.sqrtm(inv_xx)
+  invsqrt_yy = scipy.linalg.sqrtm(inv_yy)
 
   if verbose:
     print("dot products...")
@@ -157,6 +162,8 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
 
   if verbose:
     print("trying to take final svd")
+  # arr.dropna(inplace=True)
+  # print(f'{np.isnan(arr)=}')
   u, s, v = np.linalg.svd(arr)
 
   if verbose:

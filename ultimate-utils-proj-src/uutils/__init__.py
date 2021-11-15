@@ -1162,6 +1162,14 @@ def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     args = Namespace(**merged_key_values_for_namespace)
     return args
 
+
+def is_pos_def(x: np.ndarray) -> bool:
+    """
+    ref:
+        - https://stackoverflow.com/questions/16266720/find-out-if-matrix-is-positive-definite-with-numpy
+    """
+    return np.all(np.linalg.eigvals(x) > 0)
+
 # -- tests
 
 def draw_test():
