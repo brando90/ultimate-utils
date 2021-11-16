@@ -44,12 +44,12 @@ class Logger:
     def __init__(self, args: Namespace, log_with_logger: bool = False):
         """
         Main functionality is to print to console (and optionally to a file in the log_root too), track experiment
-        loss, acc values/stats and save them, use those to generate my svg, png, pdf plots, print/log only if the rank
+        loss, acc values/stats and save them, use those to generate my svg, png, pdf MI_plots_sl_vs_maml_1st_attempt, print/log only if the rank
         is for the lead worker when using ddp.
 
         Note: - Log/print info to log_root / log_filename. See: uutils.setup_args_for_experiment for details.
                 - log_root path is usually ~/data/logs/logs_date_expt
-              - Also save plots to log_root path.
+              - Also save MI_plots_sl_vs_maml_1st_attempt to log_root path.
 
         Decided not to include tb tensorboard stuff here (arbitarily). To seperate tb from my code and keep tb stuff
         as functional as possible.

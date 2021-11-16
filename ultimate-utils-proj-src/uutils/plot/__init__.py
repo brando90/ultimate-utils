@@ -58,7 +58,7 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
     """
     Nice easy plot function to quickly plot x vs y and labeling the x and y.
 
-    Nice optional args, like plotting straight (horizontal or vertical lines), saving plots, showing the plot, adding
+    Nice optional args, like plotting straight (horizontal or vertical lines), saving MI_plots_sl_vs_maml_1st_attempt, showing the plot, adding
     optional legends etc.
     Saves png, svg, pdf, to Desktop automatically if save_plot=True.
 
