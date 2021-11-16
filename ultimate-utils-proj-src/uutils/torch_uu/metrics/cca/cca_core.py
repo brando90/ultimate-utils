@@ -149,12 +149,12 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
   if verbose:
     print("taking square root")
   # print('their sqrt')
-  # invsqrt_xx = positivedef_matrix_sqrt(inv_xx)
-  # invsqrt_yy = positivedef_matrix_sqrt(inv_yy)
-  import scipy
-  # print('npy\'s sqrt')
-  invsqrt_xx = scipy.linalg.sqrtm(inv_xx)
-  invsqrt_yy = scipy.linalg.sqrtm(inv_yy)
+  invsqrt_xx = positivedef_matrix_sqrt(inv_xx)
+  invsqrt_yy = positivedef_matrix_sqrt(inv_yy)
+  # import scipy
+  # # print('npy\'s sqrt')
+  # invsqrt_xx = scipy.linalg.sqrtm(inv_xx)
+  # invsqrt_yy = scipy.linalg.sqrtm(inv_yy)
 
   if verbose:
     print("dot products...")

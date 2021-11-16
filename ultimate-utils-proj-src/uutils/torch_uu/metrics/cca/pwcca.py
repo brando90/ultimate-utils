@@ -63,9 +63,13 @@ def compute_pwcca(acts1, acts2, epsilon=0.):
 def compute_pwcca2(acts1, acts2, epsilon=0.):
     """ Computes projection weighting for weighting CCA coefficients
 
+    Ref:
+        - credit: https://github.com/google/svcca/pull/9
+
     Args:
          acts1: 2d numpy array, shaped (neurons, num_datapoints)
 	 acts2: 2d numpy array, shaped (neurons, num_datapoints)
+
     Returns:
 	 Original cca coefficient mean and weighted mean
     """
