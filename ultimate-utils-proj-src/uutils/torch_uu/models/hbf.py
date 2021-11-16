@@ -3,6 +3,14 @@ Hyper Basis Function (HBFs) Networks
 
 Ref:
     - https://dspace.mit.edu/handle/1721.1/113159
+
+
+todo:
+    - ask or get norm 2/dist with direct pytorch with a batch x=[B, D], w=[D, D1]
+    - ask or get mahalobis distance direct pytorch with a batch x=[B, D]
+    - HBF class layer
+    - create hierarchical hbfs
+    - hp sweep for FCNN then HHBF
 """
 import torch
 from torch import nn, Tensor
