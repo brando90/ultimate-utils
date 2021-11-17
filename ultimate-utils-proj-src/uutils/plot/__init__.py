@@ -183,7 +183,7 @@ def save_to(root: Path, plot_name: str = 'plot'):
     plt.savefig(root / f'{plot_name}.pdf')
 
 
-def draw_veritcal_line(at_x_value: float, start: float, stop: float, num: int = 100, linestyle:str = "--"):
+def draw_veritcal_line(at_x_value: float, start: float, stop: float, num: int = 100, linestyle: str = "--"):
     """
     Draws a vertical line at a specific x value for a given range [start, stop].
 
@@ -191,6 +191,7 @@ def draw_veritcal_line(at_x_value: float, start: float, stop: float, num: int = 
         - num tells us how dense to draw this line.
     """
     plt.plot([at_x_value] * num, np.linspace(start, stop, num), linestyle=linestyle)
+
 
 # - seaborn
 
@@ -340,14 +341,51 @@ def put_pm_to_pandas_data(data: dict) -> dict:
     """
     Change the +- to \pm for latex display.
 
+    Note: to have the pandas frame display the table string correctly use the escapte=False as in:
+        latex_table: str = df.to_latex(index=False, escape=False, caption='caption goes here', label='label_goes_here')
+
     ref:
         - https://stackoverflow.com/questions/70008992/how-to-print-a-literal-backslash-to-get-pm-in-a-pandas-data-frame-to-generate-a
     """
     for column_name, data_values in data.items():
-        # data[column_name] = [data_value.replace('+-', r'\pm') for data_value in data_values]
-        # data[column_name] = [data_value.replace('+-', r'\\pm') for data_value in data_values]
-        data[column_name] = [data_value.replace('+-', '\pm') for data_value in data_values]
+        data[column_name] = [data_value.replace('+-', ' $\pm$ ') for data_value in data_values]
     return data
+
+
+def get_latex_table_as_text_nice_default(data_frame, column_format: Optional = None) -> str:
+    """
+    Transform a pandas data frame to latex table string with nice default format similar to this paper:
+    https://arxiv.org/pdf/1909.09157.pdf
+
+    ref:
+        - https://stackoverflow.com/questions/70010421/how-does-one-put-the-caption-and-label-at-the-end-of-a-latex-string-outputted-by
+        - https://stackoverflow.com/questions/70008992/how-to-print-a-literal-backslash-to-get-pm-in-a-pandas-data-frame-to-generate-a
+        - https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_latex.html
+
+    :param data_frame:
+    :param column_format: None or default left or centered for centering
+    :return:
+    """
+    import pandas as pd
+    data_frame: pd.DataFrame = data_frame
+    # - get data, where initial keys are the colums see: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html
+    data: dict = data_frame.to_dict()
+    if column_format is None:
+        pass
+    elif column_format == 'centered':
+        # - create string c...c according to number of columns
+        column_format = ''.join(['c' for table_column in data.keys()])
+    else:
+        raise ValueError(f'Invalid option, got: {column_format=}')
+    # - see: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_latex.html
+    latex_table: str = data_frame.to_latex(index=False,
+                                           escape=False,
+                                           column_format=column_format,
+                                           caption='caption goes here, what is your table saying?',
+                                           label='label_for_using_as_ref_goes_here',
+                                           position='!h')
+    return latex_table
+
 
 # def _data_frame_2_table(data: dict):
 #     import pandas as pd
@@ -381,6 +419,7 @@ def put_pm_to_pandas_data(data: dict) -> dict:
 
 def data_frame_to_latex_with_backslashes(data_frame) -> str:
     return data_frame.to_latex(index=False, escape=False)
+
 
 # - examples
 
@@ -570,6 +609,7 @@ def seaborn_multiple_curves_with_only_matrices_example():
 
     plt.show()
 
+
 def xticks():
     import matplotlib.pyplot as plt
     import numpy as np
@@ -580,6 +620,7 @@ def xticks():
     plt.xticks(x, my_xticks)
     plt.plot(x, y)
     plt.show()
+
 
 # - tests
 
@@ -618,6 +659,7 @@ def plot_seaborn_curve_with_x_values_y_values_test():
     plot_seaborn_curve_with_x_values_y_values(x=x, y=y2, xlabel='x', ylabel='y', title='Sin vs Cos')
     plt.show()
 
+
 def plot_with_error_bands_test():
     import numpy as np  # v 1.19.2
     import matplotlib.pyplot as plt  # v 3.3.2
@@ -630,7 +672,7 @@ def plot_with_error_bands_test():
     print(f'{total_size_data_set=}')
     # - create fake data set
     # only consider 10 features from 0 to 1
-    x = np.linspace(start=0.0, stop=2*np.pi, num=num_x)
+    x = np.linspace(start=0.0, stop=2 * np.pi, num=num_x)
 
     # to introduce fake variation add uniform noise to each feature and pretend each one is a new observation for that feature
     noise_uniform: np.ndarray = np.random.rand(rep_per_x, num_x)
@@ -652,6 +694,7 @@ def plot_with_error_bands_test():
     plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn')
     plt.show()
 
+
 def plot_with_error_bands_xticks_test():
     import numpy as np  # v 1.19.2
     import matplotlib.pyplot as plt  # v 3.3.2
@@ -664,7 +707,7 @@ def plot_with_error_bands_xticks_test():
     print(f'{total_size_data_set=}')
     # - create fake data set
     # only consider 10 features from 0 to 1
-    x = np.linspace(start=0.0, stop=2*np.pi, num=num_x)
+    x = np.linspace(start=0.0, stop=2 * np.pi, num=num_x)
 
     # to introduce fake variation add uniform noise to each feature and pretend each one is a new observation for that feature
     noise_uniform: np.ndarray = np.random.rand(rep_per_x, num_x)
@@ -683,8 +726,10 @@ def plot_with_error_bands_xticks_test():
     y2err = y2.std(axis=0)
 
     x_vals_as_symbols: list[str] = [f'Val{v:0.2f}' for v in x]
-    plot_with_error_bands(x=x, y=y1mean, yerr=y1err, xlabel='x', ylabel='y', title='Custom Seaborn', x_vals_as_symbols=x_vals_as_symbols)
-    plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn', x_vals_as_symbols=x_vals_as_symbols)
+    plot_with_error_bands(x=x, y=y1mean, yerr=y1err, xlabel='x', ylabel='y', title='Custom Seaborn',
+                          x_vals_as_symbols=x_vals_as_symbols)
+    plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn',
+                          x_vals_as_symbols=x_vals_as_symbols)
     plt.show()
 
 
