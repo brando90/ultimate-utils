@@ -334,6 +334,54 @@ def plot_seaborn_curve_with_x_values_y_values(x: np.ndarray, y: np.ndarray,
         plt.show()
 
 
+# - tables
+
+def put_pm_to_pandas_data(data: dict) -> dict:
+    """
+    Change the +- to \pm for latex display.
+
+    ref:
+        - https://stackoverflow.com/questions/70008992/how-to-print-a-literal-backslash-to-get-pm-in-a-pandas-data-frame-to-generate-a
+    """
+    for column_name, data_values in data.items():
+        # data[column_name] = [data_value.replace('+-', r'\pm') for data_value in data_values]
+        # data[column_name] = [data_value.replace('+-', r'\\pm') for data_value in data_values]
+        data[column_name] = [data_value.replace('+-', '\pm') for data_value in data_values]
+    return data
+
+# def _data_frame_2_table(data: dict):
+#     import pandas as pd
+#
+#     # - to pandas table
+#     df = pd.DataFrame(data)
+#     print(df)
+#
+#     # https://stackoverflow.com/questions/70009242/how-does-one-generate-latex-table-images-with-proper-equations-from-python-panda
+#
+#     # - to latex
+#     data = put_pm_to_pandas_data(data)
+#     df = pd.DataFrame(data)
+#
+#     print(df.to_latex(index=False, escape=False))
+#
+#     import matplotlib.pyplot as plt
+#     import pandas as pd
+#     from pandas.plotting import table
+#
+#     # ax = plt.subplot(111, frame_on=False) # no visible frame
+#     ax = plt.gca()
+#     ax.xaxis.set_visible(False)  # hide the x axis
+#     ax.yaxis.set_visible(False)  # hide the y axis
+#
+#     # table(ax, df)  # where df is your data frame
+#     table(ax, df)  # where df is your data frame
+#
+#     plt.show()
+
+
+def data_frame_to_latex_with_backslashes(data_frame) -> str:
+    return data_frame.to_latex(index=False, escape=False)
+
 # - examples
 
 def my_example_seaborn_error_bands_example():

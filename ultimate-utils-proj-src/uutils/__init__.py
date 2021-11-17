@@ -1170,6 +1170,21 @@ def is_pos_def(x: np.ndarray) -> bool:
     """
     return np.all(np.linalg.eigvals(x) > 0)
 
+
+def _put_pm_to_pandas_data(data: dict) -> dict:
+    """
+    Change the +- to \pm for latex display.
+
+    ref:
+        - https://stackoverflow.com/questions/70008992/how-to-print-a-literal-backslash-to-get-pm-in-a-pandas-data-frame-to-generate-a
+    """
+    for column_name, data_values in data.items():
+        # data[column_name] = [data_value.replace('+-', r'\pm') for data_value in data_values]
+        # data[column_name] = [data_value.replace('+-', r'\\pm') for data_value in data_values]
+        data[column_name] = [data_value.replace('+-', '\pm') for data_value in data_values]
+    return data
+
+
 # -- tests
 
 def draw_test():
