@@ -33,7 +33,7 @@ url = {http://papers.nips.cc/paper/7815-insights-on-representational-similarity-
 
 # LICENSE
 
-Due to original authors of svcca, pwcca, we are adding their license here and adding list of changes  
+Due to original authors we are adding their license here and adding list of changes  
 in the `./cca/NOTICE` file:
 
 Changes:

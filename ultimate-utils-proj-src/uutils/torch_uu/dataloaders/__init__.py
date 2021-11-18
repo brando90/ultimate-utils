@@ -43,6 +43,22 @@ def get_torchmeta_meta_data_batch(args: Namespace) -> tuple[Tensor, Tensor]:
     spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
     return qry_x, qry_y
 
+def get_torchmeta_list_of_meta_batches_of_tasks(args: Namespace,
+                                  split: str = 'val',
+                                  num_meta_batches: int = 1) -> list[tuple[Tensor, Tensor, Tensor, Tensor]]:
+    """
+    Get a list of meta-batches of tasks e.g. list[[B, M, C, H, W]]
+    """
+    from uutils.torch_uu import process_meta_batch
+    dataloaders: dict = get_miniimagenet_dataloaders_torchmeta(args)
+    list_of_meta_batches: list[tuple[Tensor, Tensor, Tensor, Tensor]] = []
+    for i in range(num_meta_batches):
+        meta_batch: dict = next(iter(dataloaders[split]))
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, meta_batch)
+        list_of_meta_batches.append((spt_x, spt_y, qry_x, qry_y))
+    assert len(list_of_meta_batches) == num_meta_batches
+    return list_of_meta_batches
+
 
 def get_torchmeta_meta_data_images(args: Namespace, torchmeta_dataloader) -> Tensor:
     """
