@@ -101,6 +101,16 @@ def get_all_layers_minus_cls(L: int = 4) -> list[str]:
     return layer_names
 
 
+def get_last_two_layers(layer_type: str = 'conv', include_cls: bool = True,
+                        start_L: int = 4, end_L: int = 4
+                        ) -> list[str]:
+    assert layer_type in ['conv', 'norm', 'relu', 'pool']
+    layers: list[str] = [f'model.features.{layer_type}{i}' for i in range(start_L, end_L + 1)]
+    if include_cls:
+        layers: list[str] = layers + ['model.cls']
+    return layers
+
+
 class Learner(nn.Module):
 
     def __init__(self, image_size,

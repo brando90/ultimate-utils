@@ -622,6 +622,37 @@ def xticks():
     plt.show()
 
 
+def table_example():
+    import pandas as pd
+
+    data = {
+        'Initialization': ['Random',
+                           'Random2',
+                           ],
+
+        'Test Accuracy': ['0.200+-0.029',
+                          '0.200+-0.0',
+                          ],
+    }
+
+    # - to pandas table
+    df = pd.DataFrame(data)
+    print(df)
+
+    # https://stackoverflow.com/questions/70009242/how-does-one-generate-latex-table-images-with-proper-equations-from-python-panda
+
+    # - to latex,
+    # idea is to have it initially print a table and then custumize it manually
+    # https://www.overleaf.com/learn/latex/Tables#Creating_a_simple_table_in_LaTeX
+    data = put_pm_to_pandas_data(data)
+    df = pd.DataFrame(data)
+
+    print()
+    # column_format = ''.join(['c' for k in data.keys()])
+    # print(df.to_latex(index=False, escape=False, column_format=column_format))
+    # print(df.to_latex(index=False, escape=False, caption='caption goes here', label='label_goes_here'))
+    print(get_latex_table_as_text_nice_default(df))
+
 # - tests
 
 def save_plot_test():
