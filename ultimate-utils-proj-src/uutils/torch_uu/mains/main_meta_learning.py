@@ -42,7 +42,7 @@ def manual_args_load() -> Namespace:
     :return:
     """
     # -- parse args from terminal
-    args: Namespace = uutils.parse_basic_meta_learning_args()
+    args: Namespace = uutils.parse_basic_meta_learning_args_from_terminal()
 
     # -- manual args load
     # Config for few-shot learning

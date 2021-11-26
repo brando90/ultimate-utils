@@ -9,6 +9,7 @@ import time
 
 import math
 from datetime import datetime
+from pprint import pprint
 
 import dill
 import networkx as nx
@@ -52,6 +53,7 @@ def hello():
     import uutils
     print(f'\nhello from uutils __init__.py in:\n{uutils}\n')
 
+
 def print_pids():
     import torch.multiprocessing as mp
 
@@ -59,14 +61,53 @@ def print_pids():
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
 
+
 # - getting args for expts
 
 def set_up_args_for_experiment(args: Namespace) -> Namespace:
     return setup_args_for_experiment(args)
 
-def setup_args_for_experiment(args: Namespace) -> Namespace:
+
+def setup_args_for_experiment(args: Namespace,
+                              num_workers: int = 0) -> Namespace:
     """
-    :return:
+    Sets up programming details for experiment to run but it should not affect the machine learning results.
+    The pretty print & save the args in alphabetically sorted order.
+
+    Note:
+        - This function assume the arguments for the experiment have been given already (e.g. through the terminal
+        or manually hardcoded in the main/run script).
+
+    Example/Recommended pattern to use:
+    1. From terminal (e.g. by running a bash main.sh script that runs python main_experiment.py):
+        args = parse_basic_meta_learning_args_from_terminal()
+        args = uutils.setup_args_for_experiment(args)
+        main(args)
+        wandb.finish() if is_lead_worker(args.rank) and args.log_to_wandb else None
+        print("Done with experiment, success!\a")
+
+    2. From script (also called, manual or hardcoded)
+        args = parse_basic_meta_learning_args_from_terminal()
+        args = manual_values_for_run(args)  # e.g. args.batch_size = 64, or ckpt
+        args = uutils.setup_args_for_experiment(args)
+        main(args)
+        wandb.finish() if is_lead_worker(args.rank) and args.log_to_wandb else None
+        print("Done with experiment, success!\a")
+
+    Things it sets up:
+        - 1. makes sure it has intial index (or use the one provided by user/checkpoint
+        - gets rank, port for DDP
+        - sets determinism or not
+        - device name
+        - dirs & filenames for logging
+        - cluster job id stuff
+        - pid, githash
+        - best_val_loss as -infinity
+        - wandb be stuff based on your options
+    todo:
+        - decide where to put annealing, likely in the parse args from terminal and set the default there. Likely
+        no annealing as default, or some rate that is done 5 times during entire training time or something like
+        that is based on something that tends to work.
     """
     import torch
     import logging
@@ -74,8 +115,22 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     from uutils.logger import Logger as uuLogger
     from torch.utils.tensorboard import SummaryWriter
 
-    # - to make sure epochs or iterations is explicit, set it up in the argparse arguments
+    # - 0. to make sure epochs or iterations is explicit, set it up in the argparse arguments
     assert args.training_mode in ['epochs', 'iterations']
+    # - 1. set the iteration/epoch number to start training from
+    if args.training_mode == 'iterations':
+        # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
+        args.it = 0 if not hasattr(args, 'it') else args.it
+        assert args.it >= 0, f'Iteration to train has to be start at zero or above but got: {args.it}'
+    elif args.training_mode == 'epochs':
+        # set the training epoch number to start from beginning or from specified value e.g. from ckpt epoch_num index.
+        args.epoch_num = 0 if not hasattr(args, 'epoch_num') else args.epoch_num
+        assert args.epoch_num >= 0, f'Epoch number to train has to be start at zero or above but got: {args.epoch_num}'
+    else:
+        raise ValueError(f'Invalid training mode: {args.training_mode}')
+    # - annealing learning rate...
+    # if (not args.no_validation) and (args.lr_reduce_steps is not None):
+    #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')
 
     # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
     if hasattr(args, 'no_validation'):
@@ -110,16 +165,12 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     args.tb_dir.mkdir(parents=True, exist_ok=True)
     args.tb = SummaryWriter(log_dir=args.tb_dir)
 
-    # - annealing learning rate...
-    # if (not args.no_validation) and (args.lr_reduce_steps is not None):
-    #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')
-
     # - get device name if possible
     try:
         args.gpu_name = torch.cuda.get_device_name(0)
     except:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        args.gpu_name = device
+        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        args.gpu_name = args.device
     print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
 
     # - save PID
@@ -127,32 +178,20 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     if torch.cuda.is_available():
         args.nccl = torch.cuda.nccl.version()
 
-    # - email option
+    # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
     # args.mail_user = 'brando.science@gmail.com'
     # args.pw_path = Path('~/pw_app.config.json').expanduser()
 
-    # - try to get githash, might fail and return error string in field but whatever\
+    # - try to get githash, might fail and return error string in field but whatever
     args.githash: str = try_to_get_git_revision_hash_short()
     args.githash_short: str = try_to_get_git_revision_hash_short()
     args.githash_long: str = try_to_get_git_revision_hash_long()
 
-    # - get my logger is set at the agent level
+    # - get my logger, its set at the agent level
     args.logger: uuLogger = uutils.logger.Logger(args)
 
     # - best val loss
     args.best_val_loss: float = float('inf')
-
-    # - set up step/it/epoch_num field, if you are running from checkpoint do this seperately outside
-    args.it = -1 if not hasattr(args, 'it') else args.it
-    args.epoch_num = -1 if not hasattr(args, 'epoch_num') else args.epoch_num
-    if args.num_epochs != -1:
-        args.epoch_num = 0
-    else:
-        # use the its variable for fit until convergence or when doing num_its
-        args.it = 0
-    # todo - or give path here so it does it here...
-    # if resume_from_ckpt:
-    #     pass
 
     # - wandb
     if hasattr(args, 'log_to_wandb'):
@@ -186,10 +225,15 @@ def setup_args_for_experiment(args: Namespace) -> Namespace:
     # - for debugging
     # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
 
+    # - to avoid pytorch multiprocessing issues with CUDA: https://pytorch.org/docs/stable/data.html
+    args.pin_memory = False
+    args.num_workers = num_workers
+
     # - return
     uutils.print_args(args)
     uutils.save_args(args)
     return args
+
 
 def parse_args_synth_agent():
     import argparse
@@ -243,7 +287,6 @@ def parse_args_synth_agent():
 
     parser.add_argument('--lr_reduce_patience', type=int, default=10)
 
-    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully determinsitic')
@@ -261,19 +304,33 @@ def parse_args_synth_agent():
     args = parser.parse_args()
     return args
 
-def parse_basic_meta_learning_args() -> Namespace:
+
+def parse_basic_meta_learning_args_from_terminal() -> Namespace:
+    """
+    Parse the arguments from the terminal so that the experiment runs as the user specified there.
+
+    Example/Recommended pattern to use:
+        See setup_args_for_experiment(...) to avoid copy pasting example/only mantain it in one place.
+
+    Note:
+        - Strongly recommended to see setup_args_for_experiment(...)
+    """
     import argparse
-    import torch.nn as nn
+    # import torch.nn as nn
 
     parser = argparse.ArgumentParser()
 
     # experimental setup
     parser.add_argument('--debug', action='store_true', help='if debug')
     parser.add_argument('--serial', action='store_true', help='if running serially')
+    parser.add_argument('--args_hardcoded_in_script', action='store_true',
+                        help='set to true if the args will be set from the script manually'
+                             'e.g. by hardcoding them in the script.')
 
     parser.add_argument('--split', type=str, default='train', help=' train, val, test')
     # this is the name used in synth agent, parser.add_argument('--data_set_path', type=str, default='', help='path to data set splits')
-    parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT', help='path to data set splits')
+    parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT',
+                        help='path to data set splits')
 
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
@@ -281,19 +338,12 @@ def parse_basic_meta_learning_args() -> Namespace:
     parser.add_argument('--num_its', type=int, default=-1)
     parser.add_argument('--training_mode', type=str, default='iterations')
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
-
-    # - for now default is 4 since meta-learning code is not parallizable right now.
-    parser.add_argument('--num_workers', type=int, default=4,
-                        help='the number of data_lib-loading threads (when running serially')
-
     # parser.add_argument('--embed_dim', type=int, default=256)
     # parser.add_argument('--nhead', type=int, default=8)
     # parser.add_argument('--num_layers', type=int, default=1)
-    #
-    # # tactic label classifier
     # parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
 
-    # optimization
+    # - optimization
     # parser.add_argument('--optimizer', type=str, default='Adam')
     # parser.add_argument('--learning_rate', type=float, default=1e-5)
     # parser.add_argument('--num_warmup_steps', type=int, default=-1)
@@ -305,10 +355,16 @@ def parse_basic_meta_learning_args() -> Namespace:
     #                     (only applicable when no_validation == True)')
     # parser.add_argument('--lr_reduce_patience', type=int, default=10)
 
-    # parser.add_argument('--resume', type=str, help='the model checkpoint to resume')
+    # - miscellaneous
+    parser.add_argument('--path_to_checkpoint', type=str, default=None,
+                        help='the model checkpoint path to resume from.')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully determinsitic')
+    # for now default is 4 since meta-learning code is not parallizable right now.
+    parser.add_argument('--num_workers', type=int, default=4,
+                        help='the number of data_lib-loading threads (when running serially')
+
     # - sims/dists computations
     parser.add_argument('--sim_compute_parallel', action='store_true', help='compute sim or dist in parallel.')
     parser.add_argument('--metrics_as_dist', action='store_true', help='')
@@ -395,6 +451,121 @@ def parse_args() -> Namespace:
 
     return parser.parse_args()
 
+
+def args_hardcoded_in_script(args: Namespace) -> bool:
+    if hasattr(args, 'args_hardcoded_in_script'):  # common pattern for backwards compatability
+        # this flag is set to true from the user if they want to have a config file, or set the args within the script
+        args_hardcoded: bool = args.args_hardcoded_in_script
+        return args_hardcoded
+    else:
+        return False
+
+
+def resume_from_checkpoint(args: Namespace) -> bool:
+    """
+    Returns true if to resume from checkpoint.
+    """
+    # - if args does not have path_to_checkpoint, then we don't need to check if we want to start from a checkpoint
+    if not hasattr(args, 'path_to_checkpoint'):
+        # for backwards compatibility
+        return False
+    else:
+        # - check if some path to the ckpt is set, if yes then make it it as an expanded Path.
+        resume: bool = args.path_to_checkpoint is not None
+        # if isinstance(args.path_to_checkpoint, str):
+        #     args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
+        # elif isinstance(args.path_to_checkpoint, Path):
+        #     args.path_to_checkpoint.expanduser()
+        # else:
+        #     raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
+        #                      f'with value: {args.path_to_checkpoint=}')
+    return resume
+
+
+def get_args_from_checkpoint_pickle_file(args: Namespace) -> Namespace:
+    """
+    Get the args from the checkpoint when the args is inside the pickle file saved by the torch.save, dill, etc.
+    """
+    import torch
+    ckpt: dict = torch.load(args.path_2_init_sl, map_location=torch.device('cpu'))
+    return ckpt['args']
+
+
+def get_args_from_checkpoint_json_file(path: str, filename: str, mode='r') -> Namespace:
+    """
+    Load the arguments from a checkpoint when the args is saved in a json file e.g. filename = args.json.
+    """
+    args: dict = load_json(path=path, filename=filename, mode=mode)
+    args: Namespace = dict2namespace(args)
+    return args
+
+
+def make_args_from_checkpoint_from_metalearning(args: Namespace, filename: str = "args.json") -> Namespace:
+    """
+
+    """
+    args_ckpt: Namespace = get_args_from_checkpoint_json_file(path=args.path_to_checkpoint, filename='args.json')
+    args_ckpt: Namespace = map_args_fields_from_string_to_usable_value(args_ckpt)
+    # - updater args has precedence
+    args = merge_args(starting_args=args, updater_args=args_ckpt)
+    get_args_from_checkpoint_json_file
+    pass
+
+
+def map_args_fields_from_string_to_usable_value(args_ckpt: Namespace) -> Namespace:
+    new_args: Namespace = Namespace()
+    dict_args: dict = vars(args_ckpt)
+    for field, value in dict_args.items():
+        # if not isinstance(field, str):
+        #     value_processed = field
+        if value == 'True':
+            value_processed: bool = True
+        elif value == 'False':
+            value_processed: bool = False
+        elif value == 'None':
+            value_processed = None
+        elif value.isnumeric():  # positive int
+            value_processed: int = int(value)
+        elif is_negative_int(value):
+            value_processed: int = int(value)
+        elif is_float(value):
+            value_processed: float = float(value)
+        else:
+            value_processed: str = str(value)
+        setattr(new_args, field, value_processed)
+    return new_args
+
+
+def _load_model_and_optimizer_from_checkpoint(args: Namespace, training: bool = True) -> Namespace:
+    """
+    based from: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+    """
+    import torch
+    from torch import optim
+    import torch.nn as nn
+    # model = Net()
+    args.model = nn.Linear()
+    # optimizer = optim.SGD(args.model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.Adam(args.model.parameters(), lr=0.001)
+
+    # scheduler...
+
+    checkpoint = torch.load(args.PATH)
+    args.model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    args.epoch_num = checkpoint['epoch_num']
+    args.loss = checkpoint['loss']
+
+    args.model.train() if training else args.model.eval()
+
+
+# def load_checkpoint_meta_learning(args: Namespace) -> Namespace:
+#     import torch
+#
+#     ckpt: dict = torch.load(args.path_2_init_maml, map_location=torch.device('cpu'))
+#     # ckpt: dict = torch.load(args.path_2_init_maml)
+
+
 # --
 
 def try_to_get_git_revision_hash_short():
@@ -406,6 +577,7 @@ def try_to_get_git_revision_hash_short():
         print(f'(Not critical), unable to retrieve githash for reason: {e}')
         return f'{e}'
 
+
 def try_to_get_git_revision_hash_long():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
     try:
@@ -415,13 +587,16 @@ def try_to_get_git_revision_hash_long():
         print(f'(Not critical), unable to retrieve githash for reason: {e}')
         return f'{e}'
 
+
 def _get_git_revision_hash():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
+
 def _get_git_revision_short_hash():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+
 
 def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.ProgressBar:
     """
@@ -453,9 +628,11 @@ def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.Prog
     bar = progressbar.ProgressBar(widgets=widgets, max_value=max_value)
     return bar
 
+
 def get_good_progressbar_tdqm():
     # https://github.com/tqdm/tqdm/discussions/1211
     pass
+
 
 def get_logger(name, log_path, log_filename, rank=0):
     """
@@ -508,6 +685,7 @@ def _make_and_check_dir(path):
         parents=True, exit_ok=True
     )  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
 
+
 def create_folder(path2folder) -> None:
     """
     Creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
@@ -519,6 +697,7 @@ def create_folder(path2folder) -> None:
         path2folder = Path(path2folder).expanduser()
     assert isinstance(path2folder, Path)
     path2folder.mkdir(parents=True, exist_ok=True)
+
 
 def timeSince(start):
     """
@@ -541,8 +720,9 @@ def timeSince(start):
 def report_times(start: float) -> str:
     import time
     duration_secs = time.time() - start
-    msg = f"time passed: hours:{duration_secs/(60**2)}, minutes={duration_secs/60}, seconds={duration_secs}"
+    msg = f"time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}"
     return msg
+
 
 def is_NaN(value):
     """
@@ -551,13 +731,14 @@ def is_NaN(value):
     """
     return not np.isfinite(value) or np.isinf(value) or np.isnan(value)
 
+
 def make_args_pickable(args: Namespace) -> Namespace:
     """
     Returns a copy of the args namespace but with unpickable objects as strings.
 
     note: implementation not tested against deep copying.
-
-    todo - fix for meta learning, why does it say it's not pickable?
+    ref:
+        - https://stackoverflow.com/questions/70128335/what-is-the-proper-way-to-make-an-object-with-unpickable-fields-pickable
     """
     pickable_args = argparse.Namespace()
     # - go through fields in args, if they are not pickable make it a string else leave as it
@@ -569,9 +750,11 @@ def make_args_pickable(args: Namespace) -> Namespace:
         setattr(pickable_args, field, field_val)
     return pickable_args
 
+
 def make_opts_pickable(opts):
     """ Makes a namespace pickable """
     return make_args_pickable(opts)
+
 
 def xor(a: Any, b: Any) -> bool:
     """
@@ -583,6 +766,7 @@ def xor(a: Any, b: Any) -> bool:
     xor_bool: bool = (bool(a) + bool(b) == 1)
     return xor_bool
 
+
 ##
 
 def make_and_check_dir2(path):
@@ -593,6 +777,7 @@ def make_and_check_dir2(path):
         os.makedirs(path)
     except OSError:
         pass
+
 
 ####
 
@@ -745,8 +930,14 @@ def print_args(args: Namespace):
     assert isinstance(args, Namespace), f'Error: args has to be of type Namespace but got {type(args)}'
     [print(f'{k, v}') for k, v in vars(args).items()]
 
+
+def pprint_args(args: Namespace):
+    print_args(args)
+
+
 def pprint_dict(dic):
     pprint_any_dict(dic)
+
 
 def pprint_any_dict(dic):
     """
@@ -767,9 +958,11 @@ def pprint_any_dict(dic):
     print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
     # return pretty_dic
 
+
 def pprint_namespace(ns):
     """ pretty prints a namespace """
     pprint_any_dict(ns)
+
 
 def _to_json_dict_with_strings(dictionary):
     """
@@ -790,6 +983,7 @@ def _to_json_dict_with_strings(dictionary):
     d = {k: _to_json_dict_with_strings(v) for k, v in dictionary.items()}
     return d
 
+
 def to_json(dic):
     import types
     import argparse
@@ -800,19 +994,23 @@ def to_json(dic):
         dic = dic.__dict__
     return _to_json_dict_with_strings(dic)
 
+
 def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
     import json
 
     with open(path, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
 
+
 def save_args_to_sorted_json(args, dirpath):
     with open(dirpath / 'args.json', 'w+') as argsfile:
         args_data = {key: str(value) for (key, value) in args.__dict__.items()}
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
+
 def save_opts_to_sorted_json(opts, dirpath):
     save_args_to_sorted_json(opts, dirpath)
+
 
 def save_git_hash_if_possible_in_args(args, path_to_repo_root):
     """
@@ -827,6 +1025,7 @@ def save_git_hash_if_possible_in_args(args, path_to_repo_root):
         print(f'githash: {githash} \n"')
     except:
         args.githash = -1
+
 
 ##
 
@@ -844,6 +1043,7 @@ def to_table(df):
     table(df)
     df.plot(table=True)
 
+
 def to_latex_is_rapid_learning_real(df: DataFrame):
     # put the |c|...|c| for each column
     column_format = '|'
@@ -858,6 +1058,7 @@ def to_latex_is_rapid_learning_real(df: DataFrame):
     latex = latex.replace(rules[2], '\\hline')
     latex = latex.replace('+-', ' $\\pm$ ')
     return latex
+
 
 ##
 
@@ -883,9 +1084,11 @@ def save_opts(opts: Namespace, args_filename: str = 'opts.json'):
         args_data = {key: str(value) for key, value in opts.__dict__.items()}
         json.dump(args_data, argsfile, indent=4, sort_keys=True)
 
+
 def save_args(args: Namespace, args_filename: str = 'args.json'):
     """ Saves args, crucially in sorted order. """
     save_opts(args, args_filename)
+
 
 def load_cluster_jobids_to(args):
     import os
@@ -928,6 +1131,7 @@ def set_system_wide_force_flush():
     print2 = functools.partial(print, flush=True)
     builtins.print = print2
 
+
 # graph stuff
 
 def draw_nx(g, labels=None):
@@ -937,6 +1141,7 @@ def draw_nx(g, labels=None):
     pos = nx.kamada_kawai_layout(g)
     nx.draw(g, pos, with_labels=True)
     plt.show()
+
 
 def draw_nx_attributes_as_labels(g, attribute):
     # import pylab
@@ -949,9 +1154,11 @@ def draw_nx_attributes_as_labels(g, attribute):
     # pylab.show()
     plt.show()
 
+
 def draw_nx_with_pygraphviz(g, path2file=None, save_file=False):
     attribute_name = None
     draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file, save_file)
+
 
 def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=None, save_file=False):
     import pygraphviz as pgv
@@ -991,6 +1198,7 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
     if not save_file:
         path2file.unlink()
 
+
 def visualize_lark(string: str, parser: Lark, path2filename: Union[str, Path]):
     if type(path2filename) is str:
         path2filename = Path(path2filename).expanduser()
@@ -1000,7 +1208,8 @@ def visualize_lark(string: str, parser: Lark, path2filename: Union[str, Path]):
     tree.pydot__tree_to_png(ast, path2filename)
     # tree.pydot__tree_to_dot(parser.parse(sentence), filename)
 
-def bfs(root_node : Tree, f) -> Tree:
+
+def bfs(root_node: Tree, f) -> Tree:
     """
 
     To do BFS you want to process the elements in the dequeue int he order of a queue i.e. the "fair" way - whoever
@@ -1018,7 +1227,8 @@ def bfs(root_node : Tree, f) -> Tree:
             dq.append(child)  # adds to the end
     return root_node
 
-def dfs(root_node : Tree, f) -> Tree:
+
+def dfs(root_node: Tree, f) -> Tree:
     """
 
     To do DFS we need to implement a stack. In other words we need to go down the depth until the depth has been
@@ -1040,7 +1250,8 @@ def dfs(root_node : Tree, f) -> Tree:
             dq.appendleft(child)
     return root_node
 
-def dfs_stack(ast : Tree, f) -> Tree:
+
+def dfs_stack(ast: Tree, f) -> Tree:
     stack = [ast]
     while len(stack) != 0:
         current_node = stack.pop()  # pop from the end, from the side you are adding
@@ -1049,7 +1260,8 @@ def dfs_stack(ast : Tree, f) -> Tree:
             stack.append(child)
     return ast
 
-def dfs_recursive(ast : Tree, f) -> Tree:
+
+def dfs_recursive(ast: Tree, f) -> Tree:
     """
     Go through the first child in children before processing the rest of the tree.
     Note that you can apply f after you've processed all the children too to "colour" the nodes in a different order.
@@ -1061,10 +1273,12 @@ def dfs_recursive(ast : Tree, f) -> Tree:
     for child in ast.children:
         dfs_recursive(child, f)
 
+
 def save_dataset_with_dill(path2data: str, dataset_name: str, data_set) -> None:
     path2data: str = str(Path(path2data).expanduser())
     with open(path2data / f'{dataset_name}.pt', 'wb') as f2dataset:
         dill.dump(data_set, f2dataset)
+
 
 def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> None:
     path: Path = Path(path).expanduser()
@@ -1073,13 +1287,15 @@ def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> No
     with open(path / filename, mode) as f:
         dill.dump(python_obj, f)
 
+
 def load_with_dill(path: str, filename: str, mode='rb') -> Any:
     path: Path = Path(path).expanduser()
     with open(path / filename, mode) as f:
         python_obj = dill.load(f)
     return python_obj
 
-def load_json(path: str, filename: str, mode='r') -> list:
+
+def load_json(path: str, filename: str, mode='r') -> dict:
     from pathlib import Path
     import json
 
@@ -1087,6 +1303,7 @@ def load_json(path: str, filename: str, mode='r') -> list:
     with open(path / filename, mode) as f:
         data: dict = json.load(f)
     return data
+
 
 def load_json_list(path: str, filename: str, mode='r') -> list:
     from pathlib import Path
@@ -1097,11 +1314,13 @@ def load_json_list(path: str, filename: str, mode='r') -> list:
         d: list = json.load(f)
     return d
 
+
 def write_str_to_file(path: str, filename: str, file_content: str, mode: str = 'w'):
     path: Path = Path(path).expanduser()
     path.mkdir(parents=True, exist_ok=True)  # if it already exists it WONT raise an error (exists is ok!)
     with open(path / filename, mode) as f:
         f.write(file_content)
+
 
 def namespace2dict(args: Namespace) -> dict:
     """
@@ -1116,6 +1335,17 @@ def namespace2dict(args: Namespace) -> dict:
     # Note: Return the __dict__ attribute for a module, class, instance, or any other object with a __dict__ attribute.
     return vars(args)
 
+
+def dict2namespace(dict_args: dict) -> Namespace:
+    """
+    Makes a dictionary of args to a Namespace args with the same values.
+
+    ref:
+        - https://stackoverflow.com/questions/2597278/python-load-variables-in-a-dict-into-namespace
+    """
+    return Namespace(**dict_args)
+
+
 def merge_two_dicts(starting_dict: dict, updater_dict: dict) -> dict:
     """
     Starts from base starting dict and then adds the remaining key values from updater replacing the values from
@@ -1128,9 +1358,10 @@ def merge_two_dicts(starting_dict: dict, updater_dict: dict) -> dict:
     :param updater_dict:
     :return:
     """
-    new_dict: dict = starting_dict.copy()   # start with keys and values of starting_dict
-    new_dict.update(updater_dict)    # modifies starting_dict with keys and values of updater_dict
+    new_dict: dict = starting_dict.copy()  # start with keys and values of starting_dict
+    new_dict.update(updater_dict)  # modifies starting_dict with keys and values of updater_dict
     return new_dict
+
 
 def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
     """
@@ -1147,6 +1378,7 @@ def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
     # The vars() function returns the __dict__ attribute to values of the given object e.g {field:value}.
     args = Namespace(**vars(args1), **vars(args2))
     return args
+
 
 def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     """
@@ -1185,6 +1417,49 @@ def _put_pm_to_pandas_data(data: dict) -> dict:
     return data
 
 
+def is_float(element: Any) -> bool:
+    try:
+        float(element)
+        return True
+    except ValueError:
+        return False
+
+
+# def to_float(element: Any) -> float:
+#     try:
+#         return float(element)
+#     except ValueError:
+#         return element
+
+def is_positive_int(value: str) -> bool:
+    """
+
+    refs:
+        - https://stackoverflow.com/questions/736043/checking-if-a-string-can-be-converted-to-float-in-python
+        - isdigit vs isnumeric: https://stackoverflow.com/questions/44891070/whats-the-difference-between-str-isdigit-isnumeric-and-isdecimal-in-python
+    """
+    # return value.isdigit()
+    return value.isalnum()
+    return value.isnumeric()
+
+
+def is_negative_int(value: str) -> bool:
+    """
+    ref:
+        - https://www.kite.com/python/answers/how-to-check-if-a-string-represents-an-integer-in-python#:~:text=To%20check%20for%20positive%20integers,rest%20must%20represent%20an%20integer.
+        - https://stackoverflow.com/questions/37472361/how-do-i-check-if-a-string-is-a-negative-number-before-passing-it-through-int
+    """
+    if value == "":
+        return False
+    is_positive_integer: bool = value.isdigit()
+    if is_positive_integer:
+        return True
+    else:
+        is_negative_integer: bool = value.startswith("-") and value[1:].isdigit()
+        is_integer: bool = is_positive_integer or is_negative_integer
+        return is_integer
+
+
 # -- tests
 
 def draw_test():
@@ -1207,12 +1482,14 @@ def draw_test():
     draw_nx_with_pygraphviz(g)
     draw_nx(g)
 
+
 def bfs_test():
     # token requires two values due to how Lark works, ignore it
     ast = Tree(1, [Tree(2, [Tree(3, []), Tree(4, [])]), Tree(5, [])])
     print()
     # the key is that 5 should go first than 3,4 because it is BFS
     bfs(ast, print)
+
 
 def dfs_test():
     print()
@@ -1233,6 +1510,7 @@ def dfs_test():
     # the key is that 3,4 should go first than 5 because it is DFS
     dfs_recursive(ast, print)
 
+
 def good_progressbar_test():
     import time
     bar = get_good_progressbar()
@@ -1247,12 +1525,14 @@ def good_progressbar_test():
             time.sleep(1)
             bar.update(i)
 
+
 def xor_test():
     assert xor(0, 0) == False
     assert xor(0, 1) == True
     assert xor(1, 0) == True
     assert xor(1, 1) == False
     print('passed xor test')
+
 
 def merge_args_test():
     """
@@ -1266,13 +1546,24 @@ def merge_args_test():
     print('-- merged args')
     print(f'{args=}')
     assert args.collided_key == 'from_args2', 'Error in merge dict, expected the second argument to be the one used' \
-                                                 'to resolve collision'
+                                              'to resolve collision'
+
+
+def _map_args_fields_from_string_to_usable_value_test():
+    path_to_checkpoint: str = '/Users/brando/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668'
+    args: Namespace = get_args_from_checkpoint_json_file(path=path_to_checkpoint, filename='args.json')
+    pprint_args(args)
+    args: Namespace = map_args_fields_from_string_to_usable_value(args)
+    print('----')
+    pprint_args(args)
+
 
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
     # test_dfs()
     # test_good_progressbar()
-    xor_test()
-    merge_args_test()
+    # xor_test()
+    # merge_args_test()
+    _map_args_fields_from_string_to_usable_value_test()
     print('Done!\a')

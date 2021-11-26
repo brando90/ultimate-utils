@@ -2,7 +2,7 @@
 
 # to test impots
 import sys
-from typing import List, NewType
+from typing import List, NewType, Any
 
 for path in sys.path:
     print(path)
@@ -12265,3 +12265,30 @@ foo2(pos=10, forcenamed=20)
 foo2(10, forcenamed=20)
 # basically you always have to give the (named) value!
 foo2(10)
+
+#%%
+
+print('0'.isnumeric())
+print('1'.isnumeric())
+print('123'.isnumeric())
+print('-123'.isnumeric())
+print('-1.23'.isnumeric())
+print('0.0'.isnumeric())
+print('-1'.isnumeric())
+
+print()
+
+print('0'.isdigit())
+print('1'.isdigit())
+print('123'.isdigit())
+print('-123'.isdigit())
+print('-1.23'.isdigit())
+print('0.0'.isdigit())
+print('-1'.isdigit())
+
+
+def is_float(element: Any) -> bool:
+    try:
+        return float(element)
+    except ValueError:
+        return False
