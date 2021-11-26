@@ -137,9 +137,13 @@ def get_real_path_to_torchmeta_miniimagenet(dummy_datapath: Path) -> Path:
         containing the dataset but instead wants the path to the folder containing the data set instead of the direct
         path to the data set.
     """
-    # -- ~/data/miniimagenet/ -> ~/data/
-    # splits by folder removes the work miniimagenet and gives the real path to torchmeta's miniimagenet
-    data_path: Path = Path('/'.join(str(dummy_datapath.expanduser()).split('/')[:-1]))
+    if dummy_datapath == 'miniimagenet':
+        # - this is the location torchmeta expects to be pointed to
+        data_path: Path = Path('~/data/').expanduser()
+    else:
+        # splits by folder removes the word miniimagenet and gives the real path to torchmeta's miniimagenet
+        # -- ~/data/miniimagenet/ -> ~/data/
+        data_path: Path = Path('/'.join(str(dummy_datapath.expanduser()).split('/')[:-1]))
     return data_path
 
 def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
@@ -180,6 +184,8 @@ def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
 
 
 def get_miniimagenet_dataloaders_torchmeta(args: Namespace) -> dict:
+    # - mini-imagenet has C(64,5) exponential # of tasks so 1 epoch is intractable, don't train with epochs
+    # and for now all training is done with classification
     args.trainin_with_epochs = False
     args.criterion = nn.CrossEntropyLoss()
     # - get data sets

@@ -818,6 +818,10 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
         #     meta_learner.base_model = meta_learner.base_model.cuda()
         meta_learner.base_model.to(device)
         meta_learner.to(device)
+    # -
+    # args.base_model = model
+    # args.outer_opt = outer_opt
+    # args.meta_learner = meta_learner
     return model, outer_opt, meta_learner
 
 
@@ -3035,14 +3039,13 @@ def _resume_from_checkpoint_meta_learning_for_resnets_rfs_test():
     mdl_ckpt, outer_opt, meta_learner = get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args,
                                                                                                     path2ckpt=args.path_to_checkpoint,
                                                                                                     filename='ckpt_file.pt')
-    # - f_rand
+    # - mdl_rand
     mdl_rand = copy.deepcopy(mdl_ckpt)
     reset_all_weights(mdl_rand)
     # - print if ckpt model is different from a random model
     print(lp_norm(mdl_ckpt))
     print(lp_norm(mdl_rand))
     assert(lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
-
 
 # -- _main
 

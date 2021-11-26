@@ -524,6 +524,7 @@ def make_args_from_metalearning_checkpoint(args: Namespace,
     path2args: Path = Path(path2args).expanduser() if isinstance(path2args, str) else path2args.expanduser()
     args_ckpt: Namespace = get_args_from_checkpoint_json_file(path=path2args, filename=filename)
     args_ckpt: Namespace = map_args_fields_from_string_to_usable_value(args_ckpt)
+    # args.num_its = args.train_iters
     # - for forward compatibility, but ideally getting the args and the checkpoint will be all in one place in the future
     args.training_mode = 'iterations'
     args.it = it
