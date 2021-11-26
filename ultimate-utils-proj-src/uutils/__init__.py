@@ -42,7 +42,7 @@ from collections import deque
 
 from argparse import Namespace
 
-from typing import Union, Any
+from typing import Union, Any, Optional
 
 import progressbar
 
@@ -64,12 +64,10 @@ def print_pids():
 
 # - getting args for expts
 
-def set_up_args_for_experiment(args: Namespace) -> Namespace:
-    return setup_args_for_experiment(args)
-
-
 def setup_args_for_experiment(args: Namespace,
-                              num_workers: int = 0) -> Namespace:
+                              num_workers: int = 0,
+                              use_tb: bool = False  # not needed anymore since wandb exists
+                              ) -> Namespace:
     """
     Sets up programming details for experiment to run but it should not affect the machine learning results.
     The pretty print & save the args in alphabetically sorted order.
@@ -113,7 +111,6 @@ def setup_args_for_experiment(args: Namespace,
     import logging
     import uutils
     from uutils.logger import Logger as uuLogger
-    from torch.utils.tensorboard import SummaryWriter
 
     # - 0. to make sure epochs or iterations is explicit, set it up in the argparse arguments
     assert args.training_mode in ['epochs', 'iterations']
@@ -157,13 +154,27 @@ def setup_args_for_experiment(args: Namespace,
     # - get log_root
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
+    args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
     args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
     args.log_root.mkdir(parents=True, exist_ok=True)
     # create tb in log_root
-    args.tb_dir = args.log_root / 'tb'
-    args.tb_dir.mkdir(parents=True, exist_ok=True)
-    args.tb = SummaryWriter(log_dir=args.tb_dir)
+    if use_tb:
+        from torch.utils.tensorboard import SummaryWriter
+        args.tb_dir = args.log_root / 'tb'
+        args.tb_dir.mkdir(parents=True, exist_ok=True)
+        args.tb = SummaryWriter(log_dir=args.tb_dir)
+
+    # - setup expanded path to checkpoint
+    if hasattr(args, 'path_to_checkpoint'):
+        # str -> Path(path_to_checkpoint).expand()
+        if isinstance(args.path_to_checkpoint, str):
+            args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
+        elif isinstance(args.path_to_checkpoint, Path):
+            args.path_to_checkpoint.expanduser()
+        else:
+            raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
+                             f'with value: {args.path_to_checkpoint=}')
 
     # - get device name if possible
     try:
@@ -179,6 +190,7 @@ def setup_args_for_experiment(args: Namespace,
         args.nccl = torch.cuda.nccl.version()
 
     # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
+    # logging.warning('uutils email is not recommended! very unreliable, especially from cluster to cluster)
     # args.mail_user = 'brando.science@gmail.com'
     # args.pw_path = Path('~/pw_app.config.json').expanduser()
 
@@ -472,13 +484,6 @@ def resume_from_checkpoint(args: Namespace) -> bool:
     else:
         # - check if some path to the ckpt is set, if yes then make it it as an expanded Path.
         resume: bool = args.path_to_checkpoint is not None
-        # if isinstance(args.path_to_checkpoint, str):
-        #     args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
-        # elif isinstance(args.path_to_checkpoint, Path):
-        #     args.path_to_checkpoint.expanduser()
-        # else:
-        #     raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
-        #                      f'with value: {args.path_to_checkpoint=}')
     return resume
 
 
@@ -500,19 +505,48 @@ def get_args_from_checkpoint_json_file(path: str, filename: str, mode='r') -> Na
     return args
 
 
-def make_args_from_checkpoint_from_metalearning(args: Namespace, filename: str = "args.json") -> Namespace:
+def make_args_from_metalearning_checkpoint(args: Namespace,
+                                           path2args: str,
+                                           filename: str = "args.json",
+                                           precedence_to_args_checkpoint: bool = True,
+                                           it: Optional[int] = 0,
+                                           ) -> Namespace:
     """
+    Get args form metalearning and merge it with current args. Default precedence is to the checkpoint
+    since you want to keep training from the checkpoint value.
 
+    Note:
+        - you could get the it or epoch_num from the ckpt pickle file here too and set it in args but I decided
+        to not do this here and do it when processing the actualy pickle file to seperate what the code is doing
+        and make it less confusing (in one place you process the args.json and the other you process the pickled
+        file with the actual model, opt, meta_learner etc).
     """
-    args_ckpt: Namespace = get_args_from_checkpoint_json_file(path=args.path_to_checkpoint, filename='args.json')
+    path2args: Path = Path(path2args).expanduser() if isinstance(path2args, str) else path2args.expanduser()
+    args_ckpt: Namespace = get_args_from_checkpoint_json_file(path=path2args, filename=filename)
     args_ckpt: Namespace = map_args_fields_from_string_to_usable_value(args_ckpt)
+    # - for forward compatibility, but ideally getting the args and the checkpoint will be all in one place in the future
+    args.training_mode = 'iterations'
+    args.it = it
     # - updater args has precedence
-    args = merge_args(starting_args=args, updater_args=args_ckpt)
-    get_args_from_checkpoint_json_file
-    pass
+    if precedence_to_args_checkpoint:
+        args: Namespace = merge_args(starting_args=args, updater_args=args_ckpt)
+    else:
+        args: Namespace = merge_args(starting_args=args_ckpt, updater_args=args)
+    # - always overwrite the path to the checkpoint with the one given by the user
+    # (since relitive paths aren't saved properly since they are usually saved as expanded paths)
+    args.path_to_checkpoint: Path = path2args
+    args.log_root: Path = Path('~/data/logs/')
+    return args
 
 
 def map_args_fields_from_string_to_usable_value(args_ckpt: Namespace) -> Namespace:
+    """
+    Since in some previous code the args where saved as a .json file with the field values as strings, you
+    need to convert them to their actualy usable values for experiments e.g. string int to actual int.
+
+    Note:
+        - future checkpointing make sure to make args a pickable object and save it in the pickle checkpoint.
+    """
     new_args: Namespace = Namespace()
     dict_args: dict = vars(args_ckpt)
     for field, value in dict_args.items():
@@ -524,7 +558,7 @@ def map_args_fields_from_string_to_usable_value(args_ckpt: Namespace) -> Namespa
             value_processed: bool = False
         elif value == 'None':
             value_processed = None
-        elif value.isnumeric():  # positive int
+        elif value.isnumeric():  # non-negative int
             value_processed: int = int(value)
         elif is_negative_int(value):
             value_processed: int = int(value)
@@ -535,38 +569,7 @@ def map_args_fields_from_string_to_usable_value(args_ckpt: Namespace) -> Namespa
         setattr(new_args, field, value_processed)
     return new_args
 
-
-def _load_model_and_optimizer_from_checkpoint(args: Namespace, training: bool = True) -> Namespace:
-    """
-    based from: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
-    """
-    import torch
-    from torch import optim
-    import torch.nn as nn
-    # model = Net()
-    args.model = nn.Linear()
-    # optimizer = optim.SGD(args.model.parameters(), lr=0.001, momentum=0.9)
-    optimizer = optim.Adam(args.model.parameters(), lr=0.001)
-
-    # scheduler...
-
-    checkpoint = torch.load(args.PATH)
-    args.model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    args.epoch_num = checkpoint['epoch_num']
-    args.loss = checkpoint['loss']
-
-    args.model.train() if training else args.model.eval()
-
-
-# def load_checkpoint_meta_learning(args: Namespace) -> Namespace:
-#     import torch
-#
-#     ckpt: dict = torch.load(args.path_2_init_maml, map_location=torch.device('cpu'))
-#     # ckpt: dict = torch.load(args.path_2_init_maml)
-
-
-# --
+# -
 
 def try_to_get_git_revision_hash_short():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """

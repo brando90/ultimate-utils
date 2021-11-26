@@ -1,3 +1,4 @@
+import logging
 from collections import OrderedDict
 from typing import Optional
 
@@ -168,7 +169,8 @@ def _replace_bn(module: nn.Module, name: str):
 
     set module = net to start code.
     """
-    assert False, 'Untested'
+    # assert False, 'Untested'
+    logging.warning('Untested')
     # go through all attributes of module nn.module (e.g. network or layer) and put batch norms if present
     for attr_str in dir(module):
         target_attr = getattr(module, attr_str)

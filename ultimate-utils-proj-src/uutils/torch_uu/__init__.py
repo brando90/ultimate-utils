@@ -721,6 +721,33 @@ def save_checkpoint_simple(args, meta_learner):
     torch.save({'args': args, 'meta_learner': meta_learner}, args.path_2_save_ckpt / Path('/ckpt_file'))
 
 
+def _save(agent, epoch_num: int, dirname=None, ckpt_filename: str = 'mdl.pt'):
+    """
+    Saves checkpoint for any worker.
+    Intended use is to save by worker that got a val loss that improved.
+
+    todo - goot save ckpt always with epoch and it, much sure epoch_num and it are
+    what you intended them to be...
+    """
+    from uutils.torch_uu.distributed import is_lead_worker
+    if is_lead_worker(agent.args.rank):
+        import uutils
+        from torch.nn.parallel.distributed import DistributedDataParallel
+        dirname = agent.args.log_root if dirname is None else dirname
+        pickable_args = uutils.make_args_pickable(agent.args)
+        import dill
+        mdl = agent.mdl.module if type(agent.mdl) is DistributedDataParallel else agent.mdl
+        # self.remove_term_encoder_cache()
+        torch.save({'state_dict': agent.mdl.state_dict(),
+                    'epoch_num': epoch_num,
+                    'it': agent.args.it,
+                    'optimizer': agent.optimizer.state_dict(),
+                    'args': pickable_args,
+                    'mdl': mdl},
+                   pickle_module=dill,
+                   f=dirname / ckpt_filename)  # f'mdl_{epoch_num:03}.pt'
+
+
 def resume_ckpt_meta_learning(args):
     path_to_ckpt = args.resume_ckpt_path / Path('db')
     with open(path_to_ckpt, 'rb') as db_file:
@@ -732,6 +759,96 @@ def resume_ckpt_meta_learning(args):
         args.base_model = "no child mdl in args see meta_learner"
         args = args_recovered
         return args, meta_learner
+
+
+MetaLearner = object
+
+
+def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
+                                                                path2ckpt: str,
+                                                                filename: str,
+                                                                device: Optional[torch.device] = None,
+                                                                # precedence_to_args_checkpoint: bool = True,
+                                                                ) -> tuple[nn.Module, optim.Optimizer, MetaLearner]:
+    """
+    Get the model, optimizer, meta_learner to resume training from checkpoint.
+
+    Examples:
+        - see: _resume_from_checkpoint_meta_learning_for_resnets_rfs_test
+
+    ref:
+        - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
+    """
+    import uutils
+    path2ckpt: Path = Path(path2ckpt).expanduser() if isinstance(path2ckpt, str) else path2ckpt.expanduser()
+    ckpt: dict = torch.load(path2ckpt / filename, map_location=torch.device('cpu'))
+    # - args
+    # args_ckpt: Namespace = ckpt['args']
+    # if args_ckpt is not None:
+    #     if precedence_to_args_checkpoint:
+    #         args: Namespace = uutils.merge_args(starting_args=args, updater_args=args_ckpt)
+    #     else:
+    #         args: Namespace = uutils.merge_args(starting_args=args_ckpt, updater_args=args)
+    # -
+    training_mode = ckpt.get('training_mode')
+    if training_mode is not None:
+        assert uutils.xor(training_mode == 'epochs', training_mode == 'iterations')
+        if training_mode == 'epochs':
+            args.epoch_num = ckpt['epoch_num']
+        else:
+            args.it = ckpt['it']
+    # - get meta-learner
+    meta_learner: MetaLearner = ckpt['meta_learner']
+    # - get model
+    model: nn.Module = meta_learner.base_model
+    # - get outer-opt
+    outer_opt_str = ckpt.get('outer_opt_str')
+    if outer_opt_str is not None:
+        # use the string to create optimizer, load the state dict, etc.
+        outer_opt: optim.Optimizer = get_optimizer(outer_opt_str)
+        outer_opt_state_dict: dict = ckpt['outer_opt_state_dict']
+        outer_opt.load_state_dict(outer_opt_state_dict)
+    else:
+        # this is not ideal, but since Adam has a exponentially moving average for it's adaptive learning rate,
+        # hopefully this doesn't screw my checkpoint to much
+        outer_opt: optim.Optimizer = optim.Adam(model.parameters(), lr=args.outer_lr)
+    # - device setup
+    if device is not None:
+        # if torch.cuda.is_available():
+        #     meta_learner.base_model = meta_learner.base_model.cuda()
+        meta_learner.base_model.to(device)
+        meta_learner.to(device)
+    return model, outer_opt, meta_learner
+
+
+def get_optimizer(optimizer_name: str) -> optim.Optimizer:
+    raise ValueError('Not implemented')
+
+
+def _load_model_and_optimizer_from_checkpoint(args: Namespace, training: bool = True) -> Namespace:
+    """
+    based from: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+
+    ref:
+        - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
+    """
+    import torch
+    from torch import optim
+    import torch.nn as nn
+    # model = Net()
+    args.model = nn.Linear()
+    # optimizer = optim.SGD(args.model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.Adam(args.model.parameters(), lr=0.001)
+
+    # scheduler...
+
+    checkpoint = torch.load(args.PATH)
+    args.model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    args.epoch_num = checkpoint['epoch_num']
+    args.loss = checkpoint['loss']
+
+    args.model.train() if training else args.model.eval()
 
 
 def ckpt_meta_learning_test(args, meta_learner, verbose=False):
@@ -1447,6 +1564,7 @@ def _zero_mean(input: Tensor,
                dim: int
                ) -> Tensor:
     return input - input.mean(dim=dim, keepdim=True)
+
 
 def normalize_matrix_for_distance(X: Tensor, dim: int = 0) -> Tensor:
     """ Center according to columns and divide by frobenius norm. Matrix is assumed to be [n, d] else sepcify dim. """
@@ -2833,6 +2951,28 @@ def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_simil
     pass
 
 
+def cov(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
+    """
+    Compute covariance of input
+
+    :param x: [M, D]
+    :param y: [M, D]
+    :return:
+    """
+    if y is not None:
+        y = x
+    else:
+        assert x.size(0) == y.size(0)
+    # - center first
+    x = center(x, dim=0)
+    y = center(y, dim=0)
+    # - conv = E[XY] is outer product of X^T Y or X Y^T depending on shapes
+    sigma_xy: Tensor = x.T @ y
+    return sigma_xy
+
+
+# -- tests
+
 def verbose_exec_test():
     import torch
     from torchvision.models import resnet50
@@ -2878,26 +3018,31 @@ def grad_clipper_hook_test():
     print(clipped_resnet.fc.bias.grad[:25])
 
 
-# -- misc2
+def _resume_from_checkpoint_meta_learning_for_resnets_rfs_test():
+    import uutils
+    from uutils.torch_uu.models import reset_all_weights
+    import copy
+    # - get args to ckpt
+    args: Namespace = Namespace()
+    args.path_to_checkpoint: str = '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668'
+    args: Namespace = uutils.make_args_from_metalearning_checkpoint(args=args,
+                                                                    path2args=args.path_to_checkpoint,
+                                                                    filename='args.json',
+                                                                    precedence_to_args_checkpoint=True,
+                                                                    it=37_500)
+    args: Namespace = uutils.setup_args_for_experiment(args)
+    # - get model from ckpt
+    mdl_ckpt, outer_opt, meta_learner = get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args,
+                                                                                                    path2ckpt=args.path_to_checkpoint,
+                                                                                                    filename='ckpt_file.pt')
+    # - f_rand
+    mdl_rand = copy.deepcopy(mdl_ckpt)
+    reset_all_weights(mdl_rand)
+    # - print if ckpt model is different from a random model
+    print(lp_norm(mdl_ckpt))
+    print(lp_norm(mdl_rand))
+    assert(lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
 
-def cov(x: Tensor, y: Optional[Tensor] = None) -> Tensor:
-    """
-    Compute covariance of input
-
-    :param x: [M, D]
-    :param y: [M, D]
-    :return:
-    """
-    if y is not None:
-        y = x
-    else:
-        assert x.size(0) == y.size(0)
-    # - center first
-    x = center(x, dim=0)
-    y = center(y, dim=0)
-    # - conv = E[XY] is outer product of X^T Y or X Y^T depending on shapes
-    sigma_xy: Tensor = x.T @ y
-    return sigma_xy
 
 # -- _main
 
@@ -2911,5 +3056,6 @@ if __name__ == '__main__':
     # anatome_test_are_same_nets_very_similar()
     # anatome_test_are_random_vs_pretrain_resnets_different()
     # verbose_exec_test()
-    feature_extractor_hook_test()
+    # feature_extractor_hook_test()
+    _resume_from_checkpoint_meta_learning_for_resnets_rfs_test()
     print('Done\a')
