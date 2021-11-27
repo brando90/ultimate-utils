@@ -119,10 +119,12 @@ def setup_args_for_experiment(args: Namespace,
         # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
         args.it = 0 if not hasattr(args, 'it') else args.it
         assert args.it >= 0, f'Iteration to train has to be start at zero or above but got: {args.it}'
+        args.epoch_num = -1
     elif args.training_mode == 'epochs':
         # set the training epoch number to start from beginning or from specified value e.g. from ckpt epoch_num index.
         args.epoch_num = 0 if not hasattr(args, 'epoch_num') else args.epoch_num
         assert args.epoch_num >= 0, f'Epoch number to train has to be start at zero or above but got: {args.epoch_num}'
+        args.it = -1
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
     # - annealing learning rate...
@@ -155,6 +157,7 @@ def setup_args_for_experiment(args: Namespace,
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
+    args.log_root: Path = args.log_root.expanduser()
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
     args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
     args.log_root.mkdir(parents=True, exist_ok=True)
@@ -262,7 +265,7 @@ def parse_args_synth_agent():
                              '10K dataset.')
     parser.add_argument('--debug', action='store_true', help='if debug')
     parser.add_argument('--serial', action='store_true', help='if running serially')
-
+    vars
     parser.add_argument('--split', type=str, default='train', help=' train, val, test')
     parser.add_argument('--data_set_path', type=str, default='~/data/simply_type_lambda_calc/dataset10000/',
                         help='path to data set splits')
@@ -925,14 +928,23 @@ def collect_content_from_file(filepath):
 
 # - cluster stuff
 
-def print_args(args: Namespace):
+def print_args(args: Namespace, sort_keys: bool = True):
     """
-    todo - compare with pprint_any_dict
-    :param args:
-    :return:
+    Note:
+        - compared with pprint_any_dict this does not convert values into strings and does not create a
+        dictionary.
+            - If you want a dictionary with the true values pprint(vars(args))
+
+    ref:
+        - https://stackoverflow.com/questions/24728933/sort-dictionary-alphabetically-when-the-key-is-a-string-name
     """
     assert isinstance(args, Namespace), f'Error: args has to be of type Namespace but got {type(args)}'
-    [print(f'{k, v}') for k, v in vars(args).items()]
+    dict_args: dict = vars(args)
+    if sort_keys:
+        sorted_names: list = sorted(dict_args.keys(), key=lambda x: x)
+    [print(f'{k, dict_args[k]}') for k in sorted_names]
+    # pprint_any_dict(dict_args)
+    # pprint(vars(args))
 
 
 def pprint_args(args: Namespace):
@@ -943,23 +955,25 @@ def pprint_dict(dic):
     pprint_any_dict(dic)
 
 
-def pprint_any_dict(dic):
+def pprint_any_dict(dic: dict, indent: Optional[int] = None):
     """
     This pretty prints a json.
 
-    @param dic:
-    @return:
-
     Note: this is not the same as pprint.
+
+    Warning:
+        - if indent is an int then the values will become strings.
+
+    todo: how to have pprint do indent and keep value without making it into a string.
     """
     import json
 
-    # make all keys strings recursively with their naitve str function
-    dic = to_json(dic)
-    # pretty print
-    # pretty_dic = json.dumps(dic, indent=4, sort_keys=True)
-    # print(pretty_dic)
-    print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
+    if indent:
+        # make all keys strings recursively with their naitve str function
+        dic = to_json(dic)
+        print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
+    else:
+        pprint(dict)
     # return pretty_dic
 
 

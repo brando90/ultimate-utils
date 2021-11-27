@@ -160,7 +160,6 @@ class Logger:
 
     def save_experiment_stats_to_json_file(self):
         """ save experiment stats to json file. """
-        # torch_uu.save(self.experiment_stats, current_logs_path / 'experiment_stats')
         with open(self.args.log_root / 'experiment_stats.json', 'w+') as f:
             json.dump(self.experiment_stats, f, indent=4, sort_keys=True)
 
@@ -197,7 +196,7 @@ class Logger:
             grid: bool = True,
             show: bool = False,
 
-            wandb_log_fig = False
+            wandb_log_fig: bool = False
         ):
         if is_lead_worker(self.args.rank):
             # plt.style.use('default')
