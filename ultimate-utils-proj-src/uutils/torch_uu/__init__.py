@@ -37,6 +37,8 @@ import copy
 
 from argparse import Namespace
 
+from torch.optim.lr_scheduler import _LRScheduler
+
 from uutils.torch_uu.tensorboard import log_2_tb
 
 import gc
@@ -769,7 +771,7 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
                                                                 filename: str,
                                                                 device: Optional[torch.device] = None,
                                                                 # precedence_to_args_checkpoint: bool = True,
-                                                                ) -> tuple[nn.Module, optim.Optimizer, MetaLearner]:
+                                                                ) -> tuple[nn.Module, optim.Optimizer, _LRScheduler, MetaLearner]:
     """
     Get the model, optimizer, meta_learner to resume training from checkpoint.
 
@@ -797,10 +799,13 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
             args.epoch_num = ckpt['epoch_num']
         else:
             args.it = ckpt['it']
+
     # - get meta-learner
     meta_learner: MetaLearner = ckpt['meta_learner']
+
     # - get model
     model: nn.Module = meta_learner.base_model
+
     # - get outer-opt
     outer_opt_str = ckpt.get('outer_opt_str')
     if outer_opt_str is not None:
@@ -812,6 +817,12 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
         # this is not ideal, but since Adam has a exponentially moving average for it's adaptive learning rate,
         # hopefully this doesn't screw my checkpoint to much
         outer_opt: optim.Optimizer = optim.Adam(model.parameters(), lr=args.outer_lr)
+
+    # - scheduler
+    scheduler = None
+    # args.outer_opt = Adafactor(args.meta_learner.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
+    # args.scheduler = AdafactorSchedule(args.outer_opt)
+
     # - device setup
     if device is not None:
         # if torch.cuda.is_available():
@@ -822,7 +833,8 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     # args.base_model = model
     # args.outer_opt = outer_opt
     # args.meta_learner = meta_learner
-    return model, outer_opt, meta_learner
+    args.scheduler = scheduler
+    return model, outer_opt, scheduler, meta_learner
 
 
 def get_optimizer(optimizer_name: str) -> optim.Optimizer:

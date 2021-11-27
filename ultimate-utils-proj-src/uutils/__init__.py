@@ -396,6 +396,8 @@ def parse_basic_meta_learning_args_from_terminal() -> Namespace:
 
     # - parse arguments
     args = parser.parse_args()
+    # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
+    load_cluster_jobids_to(args)
     return args
 
 
