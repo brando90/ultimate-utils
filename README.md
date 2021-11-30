@@ -136,8 +136,10 @@ If you use this implementation consider citing us:
 ```
 @software{brando2021ultimateutils,
     author={Brando Miranda},
-    title={The ultimate utils library for Machine Learning and Artificial Intelligence},
+    title={Ultimate Utils - the Ultimate Utils library for Machine Learning and Artificial Intelligence},
     url={https://github.com/brando90/ultimate-utils},
     year={2021}
 }
 ```
+
+A permanent link lives here: https://www.ideals.illinois.edu/handle/2142/112797
