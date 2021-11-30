@@ -782,6 +782,7 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
         - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
     """
     import uutils
+    from transformers import Adafactor
     path2ckpt: Path = Path(path2ckpt).expanduser() if isinstance(path2ckpt, str) else path2ckpt.expanduser()
     ckpt: dict = torch.load(path2ckpt / filename, map_location=torch.device('cpu'))
     # - args
@@ -792,7 +793,7 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     #     else:
     #         args: Namespace = uutils.merge_args(starting_args=args_ckpt, updater_args=args)
     # -
-    training_mode = ckpt.get('training_mode')
+    training_mode = ckpt.get('training_mode')  # Return the value for key if key is in dict, else default None.
     if training_mode is not None:
         assert uutils.xor(training_mode == 'epochs', training_mode == 'iterations')
         if training_mode == 'epochs':
@@ -819,9 +820,10 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
         outer_opt: optim.Optimizer = optim.Adam(model.parameters(), lr=args.outer_lr)
 
     # - scheduler
-    scheduler = None
-    # args.outer_opt = Adafactor(args.meta_learner.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
-    # args.scheduler = AdafactorSchedule(args.outer_opt)
+    scheduler = ckpt.get('scheduler')  # Return the value for key if key is in dict, else default None.
+    # https://stackoverflow.com/questions/70171427/adafactor-from-transformers-hugging-face-only-works-with-transfromers-does-it
+    outer_opt = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
+    # scheduler = AdafactorSchedule(args.outer_opt)
 
     # - device setup
     if device is not None:
@@ -833,7 +835,7 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     # args.base_model = model
     # args.outer_opt = outer_opt
     # args.meta_learner = meta_learner
-    args.scheduler = scheduler
+    # args.scheduler = scheduler
     return model, outer_opt, scheduler, meta_learner
 
 

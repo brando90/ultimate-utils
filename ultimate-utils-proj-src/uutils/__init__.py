@@ -264,6 +264,7 @@ def parse_args_synth_agent():
                              'the simply type lambda cal experiments on the '
                              '10K dataset.')
     parser.add_argument('--debug', action='store_true', help='if debug')
+    parser.add_argument('--force_log', action='store_true', help='to force logging')
     parser.add_argument('--serial', action='store_true', help='if running serially')
     vars
     parser.add_argument('--split', type=str, default='train', help=' train, val, test')
@@ -337,6 +338,7 @@ def parse_basic_meta_learning_args_from_terminal() -> Namespace:
 
     # experimental setup
     parser.add_argument('--debug', action='store_true', help='if debug')
+    parser.add_argument('--force_log', action='store_true', help='to force logging')
     parser.add_argument('--serial', action='store_true', help='if running serially')
     parser.add_argument('--args_hardcoded_in_script', action='store_true',
                         help='set to true if the args will be set from the script manually'
