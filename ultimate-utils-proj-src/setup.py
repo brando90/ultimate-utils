@@ -21,18 +21,15 @@ from setuptools import find_packages
 
 import pathlib
 
-# The directory containing this file
-# HERE = pathlib.Path(__file__).parent
-HERE = pathlib.Path('~/ultimate-utils/').expanduser()
 
-# The text of the README file
-README = (HERE / "README.md").read_text()
+with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='ultimate-utils',  # project name
     version='0.5.1',
     description='Brandos ultimate utils for science, machine learning and AI',
-    long_description=README,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/brando90/ultimate-utils',
     author='Brando Miranda',
