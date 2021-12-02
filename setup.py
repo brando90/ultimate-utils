@@ -36,7 +36,8 @@ setup(
     author_email='brandojazz@gmail.com',
     python_requires='>=3.9.0',
     license='MIT',
-    packages=find_packages(),  # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
+    package_dir = {'' : 'ultimate-utils-proj-src'},
+    packages=find_packages('ultimate-utils-proj-src'),  # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
     # basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
     # pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
     install_requires=['torch==1.9.1',
