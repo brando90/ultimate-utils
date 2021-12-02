@@ -66,7 +66,7 @@ def process_batch_ddp(args, batch):
     return x, y
 
 
-def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
+def move_model_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
     """
     Mutates the data batch and returns the mutated version.
     Note that the batch is assumed to have the specific different types of data in
