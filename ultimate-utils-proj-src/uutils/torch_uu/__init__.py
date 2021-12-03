@@ -784,7 +784,8 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     """
     import uutils
     # from transformers import Adafactor
-    from uutils.torch_uu.optim_uu.optimizers import get_uutils_default_adafactor_from_torch_optimizer_default
+    # from transformers.optimization import AdafactorSchedule
+    from uutils.torch_uu.optim_uu.optimizers import get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default
 
     path2ckpt: Path = Path(path2ckpt).expanduser() if isinstance(path2ckpt, str) else path2ckpt.expanduser()
     ckpt: dict = torch.load(path2ckpt / filename, map_location=torch.device('cpu'))
@@ -824,12 +825,14 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
 
     # - scheduler
     scheduler = ckpt.get('scheduler')  # Return the value for key if key is in dict, else default None.
-    # https://stackoverflow.com/questions/70171427/adafactor-from-transformers-hugging-face-only-works-with-transfromers-does-it
     # outer_opt = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
     # scheduler = AdafactorSchedule(args.outer_opt)
-    outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-3)
-    # outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-4)
-    # outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-5)
+
+    scheduler_opt = None
+    # scheduler_opt = 'adafactor_scheduler_from_huggingface'
+    outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
 
     # - device setup
     if device is not None:
