@@ -39,6 +39,7 @@ from argparse import Namespace
 
 from torch.optim.lr_scheduler import _LRScheduler
 
+from uutils.torch_uu.optim_uu.optimizers import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
 from uutils.torch_uu.tensorboard import log_2_tb
 
 import gc
@@ -828,11 +829,24 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     # outer_opt = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
     # scheduler = AdafactorSchedule(args.outer_opt)
 
-    scheduler_opt = None
+    # scheduler_opt = None
     # scheduler_opt = 'adafactor_scheduler_from_huggingface'
-    outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
-    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
-    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
+
+    # scheduler_opt = None
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=None, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
+
+    scheduler_opt = 'adafactor_scheduler_from_huggingface'
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=None, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
+    # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
+    outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
+
 
     # - device setup
     if device is not None:
