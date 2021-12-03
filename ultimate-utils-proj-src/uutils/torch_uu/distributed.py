@@ -66,7 +66,7 @@ def process_batch_ddp(args, batch):
     return x, y
 
 
-def def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
+def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
     # temporary fix for backwards compatibility
     return move_model_to_ddp_gpu_via_dict_mutation(args, batch)
 

@@ -771,7 +771,8 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
                                                                 filename: str,
                                                                 device: Optional[torch.device] = None,
                                                                 # precedence_to_args_checkpoint: bool = True,
-                                                                ) -> tuple[nn.Module, optim.Optimizer, _LRScheduler, MetaLearner]:
+                                                                ) -> tuple[
+    nn.Module, optim.Optimizer, _LRScheduler, MetaLearner]:
     """
     Get the model, optimizer, meta_learner to resume training from checkpoint.
 
@@ -782,7 +783,9 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
         - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
     """
     import uutils
-    from transformers import Adafactor
+    # from transformers import Adafactor
+    from uutils.torch_uu.optim_uu.optimizers import get_uutils_default_adafactor_from_torch_optimizer_default
+
     path2ckpt: Path = Path(path2ckpt).expanduser() if isinstance(path2ckpt, str) else path2ckpt.expanduser()
     ckpt: dict = torch.load(path2ckpt / filename, map_location=torch.device('cpu'))
     # - args
@@ -822,8 +825,11 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     # - scheduler
     scheduler = ckpt.get('scheduler')  # Return the value for key if key is in dict, else default None.
     # https://stackoverflow.com/questions/70171427/adafactor-from-transformers-hugging-face-only-works-with-transfromers-does-it
-    outer_opt = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
+    # outer_opt = Adafactor(model.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
     # scheduler = AdafactorSchedule(args.outer_opt)
+    outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-3)
+    # outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-4)
+    # outer_opt = get_uutils_default_adafactor_from_torch_optimizer_default(mdl=model, lr=1e-5)
 
     # - device setup
     if device is not None:
@@ -3059,7 +3065,8 @@ def _resume_from_checkpoint_meta_learning_for_resnets_rfs_test():
     # - print if ckpt model is different from a random model
     print(lp_norm(mdl_ckpt))
     print(lp_norm(mdl_rand))
-    assert(lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
+    assert (lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
+
 
 # -- _main
 
