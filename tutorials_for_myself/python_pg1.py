@@ -1641,7 +1641,7 @@ def CURRENT_DATETIME_HOSTNAME(comment=''):
 # log_dir (string) – Save directory location.
 # Default is runs/CURRENT_DATETIME_HOSTNAME, which changes after each run.
 # tensorboard --logdir=runs
-log_dir = (Path('~/automl-meta-learning/') / CURRENT_DATETIME_HOSTNAME()).expanduser()
+log_dir = (Path('//') / CURRENT_DATETIME_HOSTNAME()).expanduser()
 print(log_dir)
 tb = SummaryWriter(log_dir=log_dir)
 tb.add_scalar('loss', 15)
@@ -1860,7 +1860,7 @@ print(f'metaset_sinusoid = {metaset_sinusoid}')
 # this is still a data set but helps implement forming D_i
 # i.e. the N-way, K-shot tasks/datasets we need.
 print('\n-- MiniImagenet(CombinationMetaDataset)')
-data_path = Path('~/data').expanduser()
+data_path = Path('/').expanduser()
 metaset_miniimagenet = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_train=True,
                                                        download=True)
 print(f'type(metaset_miniimagenet) = {type(metaset_miniimagenet)}')
@@ -2964,7 +2964,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-path = Path('~/data/').expanduser()
+path = Path('//').expanduser()
 
 # x = np.linspace(0, 2*np.pi, 50)
 x = np.random.uniform(0, 2 * np.pi, 100)
@@ -3134,7 +3134,7 @@ server.quit()
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 
-path = Path('~/data/logs/').expanduser()
+path = Path('/logs/').expanduser()
 tb = SummaryWriter(log_dir=path)
 # tb = SummaryWriter(log_dir=args.current_logs_path)
 
@@ -3237,7 +3237,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 meta_split = 'train'
 dataset = torchmeta.datasets.MiniImagenet(data_path, num_classes_per_task=5, meta_split=meta_split, download=True)
 # dataset = torchmeta.datasets.Omniglot(data_path, num_classes_per_task=5, meta_split=meta_split, download=True)
@@ -3282,7 +3282,7 @@ from torchmeta.utils.data import BatchMetaDataLoader
 from pathlib import Path
 
 meta_split = 'train'
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 dataset = omniglot(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
 dataset = miniimagenet(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
 dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
@@ -3312,7 +3312,7 @@ from pathlib import Path
 import copy
 
 meta_split = 'train'
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 dataset = omniglot(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
 dataset = miniimagenet(data_path, ways=5, shots=5, test_shots=15, meta_split=meta_split, download=True)
 dataloader = BatchMetaDataLoader(dataset, batch_size=16, num_workers=4)
@@ -3393,7 +3393,7 @@ from torchmeta.utils.data import BatchMetaDataLoader
 from pathlib import Path
 
 meta_split = 'train'
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 data_augmentation_transforms = transforms.Compose([
@@ -3444,7 +3444,7 @@ from torchmeta.utils.data import BatchMetaDataLoader
 from pathlib import Path
 
 meta_split = 'train'
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 data_augmentation_transforms = transforms.Compose([
@@ -3483,7 +3483,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 meta_split = 'train'
-data_path = Path('~/data/').expanduser()
+data_path = Path('//').expanduser()
 
 # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 # data_augmentation_transforms = transforms.Compose([
@@ -10362,7 +10362,7 @@ except:
 import capnp
 
 capnp.remove_import_hook()
-example_msg_capnp = Path("~/ultimate-utils/example_msg.capnp").expanduser()
+example_msg_capnp = Path("/tutorials_for_myself/example_msg.capnp").expanduser()
 example_msg_capnp = capnp.load(str(example_msg_capnp))
 
 # Building

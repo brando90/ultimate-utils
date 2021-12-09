@@ -323,3 +323,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# wandb: https://community.wandb.ai/t/what-should-the-gitignore-file-be-when-using-wandb/756/2
+wandb/

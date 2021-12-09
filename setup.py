@@ -15,11 +15,18 @@ python -c "import uutils; uutils.torch_uu.hello()"
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 python -c "import uutils; uutils.torch_uu.gpu_test()"
 
+PyTorch:
+    basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
+    pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+refs:
+    - setup tools: https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#using-find-or-find-packages
 """
 from setuptools import setup
 from setuptools import find_packages
+import os
 
-import pathlib
+# import pathlib
 
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
@@ -27,8 +34,8 @@ with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.5.2',
-    description='Brandos ultimate utils for science, machine learning and AI',
+    version='0.5.3',
+    description="Brando's ultimate utils for science, machine learning and AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/brando90/ultimate-utils',
@@ -36,33 +43,32 @@ setup(
     author_email='brandojazz@gmail.com',
     python_requires='>=3.9.0',
     license='MIT',
-    package_dir = {'' : 'ultimate-utils-proj-src'},
-    packages=find_packages('ultimate-utils-proj-src'),  # imports all modules (folder with __init__.py) & python files in this folder (since defualt args are . and empty exculde i.e. () )
-    # basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
-    # pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-    install_requires=['torch==1.9.1',
-                      'torchvision==0.10.1',
-                      'torchaudio==0.9.1',
-                      'dill',
-                      'networkx>=2.5',
-                      'scipy',
-                      'scikit-learn',
-                      'lark-parser',
-                      'torchtext==0.10.1',
-                      'tensorboard',
-                      'pandas',
-                      'progressbar2',
-                      'transformers',
-                      'requests',
-                      'aiohttp',
-                      'numpy',
-                      'plotly',
-                      'wandb',
-                      'matplotlib',
-                      # 'seaborn'
+    package_dir={'': 'ultimate-utils-proj-src'},
+    packages=find_packages('ultimate-utils-proj-src'),  # imports all modules/folders with  __init__.py & python files
 
-                      # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues, e.g. if the user does not want to do graph stuff then uutils shouldn't need to force the user to install uutils
-                      ]
+    # for pytorch see doc string at the top of file
+    install_requires=[
+        # 'torch==1.9.1',
+        'torchvision==0.10.1',
+        'torchaudio==0.9.1',
+        'dill',
+        'networkx>=2.5',
+        'scipy',
+        'scikit-learn',
+        'lark-parser',
+        'torchtext==0.10.1',
+        'tensorboard',
+        'pandas',
+        'progressbar2',
+        'transformers',
+        'requests',
+        'aiohttp',
+        'numpy',
+        'plotly',
+        'wandb',
+        'matplotlib',
+        # 'seaborn'
+
+        # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues
+    ]
 )
-
-
