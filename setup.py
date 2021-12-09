@@ -18,9 +18,11 @@ python -c "import uutils; uutils.torch_uu.gpu_test()"
 PyTorch:
     basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
     pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+    pip3 install torch torchvision torchaudio
 
 refs:
     - setup tools: https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#using-find-or-find-packages
+    - https://stackoverflow.com/questions/70295885/how-does-one-install-pytorch-and-related-tools-from-within-the-setup-py-install
 """
 from setuptools import setup
 from setuptools import find_packages
@@ -43,14 +45,13 @@ setup(
     author_email='brandojazz@gmail.com',
     python_requires='>=3.9.0',
     license='MIT',
+
+    # currently
     package_dir={'': 'ultimate-utils-proj-src'},
     packages=find_packages('ultimate-utils-proj-src'),  # imports all modules/folders with  __init__.py & python files
 
     # for pytorch see doc string at the top of file
     install_requires=[
-        # 'torch==1.9.1',
-        'torchvision==0.10.1',
-        'torchaudio==0.9.1',
         'dill',
         'networkx>=2.5',
         'scipy',
@@ -68,6 +69,17 @@ setup(
         'wandb',
         'matplotlib',
         # 'seaborn'
+
+        # at the end because it might fail + you might need to pip install it directly for your cuda version
+        # 'torch',
+        # 'torchvision',
+        # 'torchaudio',
+        'torch>=1.4.0,<1.10.0',
+        'torchvision>=0.5.0,<0.11.0',
+        'torchaudio>=0.9.1',
+        # 'torch==1.9.1',
+        # 'torchvision==0.10.1',
+        # 'torchaudio==0.9.1',
 
         # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues
     ]
