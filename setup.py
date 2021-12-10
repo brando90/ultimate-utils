@@ -4,6 +4,16 @@ conda activate uutils_env
 conda remove --all --name uutils_env
 rm -rf /Users/brando/anaconda3/envs/uutils_env
 
+conda create -n uutils_env_gpu python=3.9
+conda activate uutils_env_gpu
+conda remove --all --name uutils_env_gpu
+rm -rf /Users/brando/anaconda3/envs/uutils_env_gpu
+
+conda create -n uutils_env_cpu python=3.9
+conda activate uutils_env_cpu
+conda remove --all --name uutils_env_gpu
+rm -rf /Users/brando/anaconda3/envs/uutils_env_gpu
+
 pip install -e ~/ultimate-utils/ultimate-utils-proj-src/
 
 pip install ultimate-utils
@@ -16,9 +26,10 @@ python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 python -c "import uutils; uutils.torch_uu.gpu_test()"
 
 PyTorch:
-    basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
-    pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-    pip3 install torch torchvision torchaudio
+- basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
+pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip3 install torch torchvision torchaudio
+pip install torch torchvision torchaudio
 
 refs:
     - setup tools: https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#using-find-or-find-packages
@@ -71,16 +82,11 @@ setup(
         # 'seaborn'
 
         # at the end because it might fail + you might need to pip install it directly for your cuda version
-        # 'torch',
-        # 'torchvision',
-        # 'torchaudio',
         'torch>=1.4.0,<1.10.0',
         'torchvision>=0.5.0,<0.11.0',
-        'torchaudio>=0.9.1',
+        'torchaudio>=0.9.1,<0.10.0',
         # 'torch==1.9.1',
         # 'torchvision==0.10.1',
         # 'torchaudio==0.9.1',
-
-        # 'pygraphviz'  # removing because it requires user to install graphviz and gives other issues
     ]
 )
