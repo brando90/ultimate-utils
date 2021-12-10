@@ -15,7 +15,6 @@ conda remove --all --name uutils_env_gpu
 rm -rf /Users/brando/anaconda3/envs/uutils_env_gpu
 
 pip install -e ~/ultimate-utils/ultimate-utils-proj-src/
-
 pip install ultimate-utils
 
 To test it:
