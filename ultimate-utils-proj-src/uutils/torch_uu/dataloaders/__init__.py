@@ -4,10 +4,8 @@ import time
 from pathlib import Path
 
 import uutils.torch_uu
-from meta_learning.datasets.mini_imagenet import MetaImageNet, ImageNet
 
 import torch
-from meta_learning.datasets.rand_fnn import RandFNN
 from torch import nn, nn as nn, Tensor
 from torch.utils.data import DataLoader, Dataset
 from torchmeta.toy.helpers import sinusoid
