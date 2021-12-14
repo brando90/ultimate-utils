@@ -8,15 +8,8 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
 from uutils.torch_uu import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
+from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
 from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
-
-def try_to_get_scheduler_state_dict(scheduler: _LRScheduler) -> Union[dict, None]:
-    try:
-        scheduler_state_dict: dict = scheduler.state_dict()
-    except Exception as e:
-        scheduler_state_dict: None = None
-    return scheduler_state_dict
-
 
 def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
     """
@@ -33,12 +26,11 @@ def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
         import pickle
         args.logger.save_current_plots_and_stats()
         # - ckpt
-        assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
+        # assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
         f: nn.Module = get_model_from_ddp(args.base_model)
         # pickle vs torch.save https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
         args_pickable: Namespace = uutils.make_args_pickable(args)
         torch.save({'training_mode': args.training_mode,
-                    # assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
                     'it': args.it,
                     'epoch_num': args.epoch_num,
 

@@ -327,20 +327,6 @@ def args_hardcoded_in_script(args: Namespace) -> bool:
         return False
 
 
-def resume_from_checkpoint(args: Namespace) -> bool:
-    """
-    Returns true if to resume from checkpoint.
-    """
-    # - if args does not have path_to_checkpoint, then we don't need to check if we want to start from a checkpoint
-    if not hasattr(args, 'path_to_checkpoint'):
-        # for backwards compatibility
-        return False
-    else:
-        # - check if some path to the ckpt is set, if yes then make it it as an expanded Path.
-        resume: bool = args.path_to_checkpoint is not None
-    return resume
-
-
 def get_args_from_checkpoint_pickle_file(args: Namespace) -> Namespace:
     """
     Get the args from the checkpoint when the args is inside the pickle file saved by the torch.save, dill, etc.
