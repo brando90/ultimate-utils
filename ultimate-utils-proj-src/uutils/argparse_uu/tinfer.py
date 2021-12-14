@@ -22,7 +22,7 @@ def parse_args_synth_agent():
     parser.add_argument('--data_set_path', type=str, default='~/data/simply_type_lambda_calc/dataset10000/',
                         help='path to data set splits')
 
-    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+    parser.add_argument('--log_root', type=str, default=Path('/logs/').expanduser())
 
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)

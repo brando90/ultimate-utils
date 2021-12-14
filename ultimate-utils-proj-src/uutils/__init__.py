@@ -1161,6 +1161,16 @@ def load_json(path: str, filename: str, mode='r') -> dict:
     return data
 
 
+def load_json_path2file(load_json_path2file: str, mode='r') -> dict:
+    from pathlib import Path
+    import json
+
+    load_json_path2file: Path = Path(load_json_path2file).expanduser()
+    with open(load_json_path2file, mode) as f:
+        data: dict = json.load(f)
+    return data
+
+
 def load_json_list(path: str, filename: str, mode='r') -> list:
     from pathlib import Path
     import json

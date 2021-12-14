@@ -8,6 +8,7 @@ from typing import Optional
 
 import torch
 from torch import nn, optim
+from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
@@ -46,7 +47,9 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
                     'it': args.it,
                     'epoch_num': args.epoch_num,
 
-                    'args': args_pickable,  # some versions of this might not have args!
+                    # 'args': args_pickable,  # some versions of this might not have args!
+                    # decided only to save the dict version to avoid this ckpt not working, make it args when loading
+                    'args_dict': vars(args_pickable),  # some versions of this might not have args!
 
                     'model_state_dict': args.model.state_dict(),
                     # added later, to make it easier to check what optimizer was used
@@ -61,7 +64,7 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
                     'opt_option': args.opt_option,
 
                     'scheduler_str': str(args.scheduler),
-                    'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler)
+                    'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler),
                     'scheduler_hps_for_cons_dict': args.scheduler_hps_for_cons_dict,
                     'scheduler_option': args.scheduler_option,
                     },
@@ -72,11 +75,19 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
 
 def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namespace,
                                                                     model_option: Optional[str] = None,
-                                                                    mutate_args: bool = False
+                                                                    opt_option: Optional[str] = None,
+                                                                    scheduler_option: Optional[str] = None,
+                                                                    mutate_args: bool = True
                                                                     ) \
-        -> tuple[nn.Module, optim.Optimizer, _LRScheduler]:
+        -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Load the standard most important things: model, optimizer, scheduler.
+
+    Note:
+        - for X_option if obj None then it means use ckpt value, if 'None' for scheduler means use no scheduler. Else,
+        use checkpoint value as default.
+        - Note, mutating args, is necessary, since the model, opt, scheduler objects were not saved in the ckpt, so
+        to recover them we need to place them in args. Its ugly but seems like a neccessary evil.
 
     Ref:
         - standard way: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
@@ -84,6 +95,7 @@ def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namesp
     ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
 
     # - get model the empty model from the hps for the cons for the model
+    model_option: str = args.model_option if model_option is not None else model_option  # if obj None, use ckpt value
     if model_option == '5CNN_opt_as_model_for_few_shot':
         from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import load_model_5CNN_opt_as_model_for_few_shot
         model_hps_for_cons_dict: dict = ckpt['model_hps_for_cons_dict']
@@ -91,19 +103,50 @@ def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namesp
     elif 'resnet' in model_option and 'rfs' in model_option:
         pass
     else:
-        raise ValueError(f'Model type given not found: got {model_option=}')
-
-    # - load state dict for the model
+        raise ValueError(f'Model option given not found: got {model_option=}')
+    # load state dict for the model
     model_state_dict: dict = ckpt['model_state_dict']
     model.load_state_dict(model_state_dict)
 
     # - get optimizer
+    opt_option: str = args.opt_option if opt_option is not None else opt_option
+    if opt_option == 'AdafactorDefaultFair':
+        from uutils.torch_uu.optim_uu.adafactor_uu import \
+            load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict
+        opt_hps_for_cons_dict: dict = ckpt['opt_hps_for_cons_dict']
+        scheduler_hps_for_cons_dict: dict = ckpt['scheduler_hps_for_cons_dict']
+        opt, _ = load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(model,
+                                                                                  opt_hps_for_cons_dict,
+                                                                                  scheduler_hps_for_cons_dict)
+    else:
+        raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
+    # load state dict for the optimizer
+    opt_state_dict: dict = ckpt['opt_state_dict']
+    opt.load_state_dict(opt_state_dict)
 
     # - get scheduler
+    if scheduler_option == 'None':  # None != 'None', obj None means use the ckpt value
+        scheduler: None = None
+    elif scheduler_option == 'AdafactorSchedule':
+        from uutils.torch_uu.optim_uu.adafactor_uu import \
+            load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict
+        opt_hps_for_cons_dict: dict = ckpt['opt_hps_for_cons_dict']
+        scheduler_hps_for_cons_dict: dict = ckpt['scheduler_hps_for_cons_dict']
+        _, scheduler = load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(model,
+                                                                                  opt_hps_for_cons_dict,
+                                                                                  scheduler_hps_for_cons_dict)
+    else:
+        raise ValueError(f'Scheduler option is invalid: got {scheduler_option=}')
+    # load state dict for the scheduler
+    if hasattr(scheduler, 'load_state_dict'):
+        scheduler_state_dict: dict = ckpt['scheduler_state_dict']
+        scheduler.load_state_dict(scheduler_state_dict)
 
-    # - return
+    # - return & perhaps mutate args
     if mutate_args:
-        args.model = model; args.opt = opt; args.scheduler
+        args.model = model
+        args.opt = opt
+        args.scheduler
     return model, opt, scheduler
 
 

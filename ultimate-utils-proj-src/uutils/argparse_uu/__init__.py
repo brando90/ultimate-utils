@@ -99,7 +99,7 @@ def setup_args_for_experiment(args: Namespace,
 
     # - get log_root
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-    args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
+    args.log_root: Path = Path('/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.log_root: Path = args.log_root.expanduser()
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')

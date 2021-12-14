@@ -407,10 +407,22 @@ def clean_end_with_sigsegv_hack(rank):
             time.sleep(1)
 
 
-def dist_log(msg: str, rank: int = -1, flush: bool = False):
+def dist_log(msg: str, rank: int = -1, flush: bool = False, use_pprint: bool = False):
     """Prints only if the current process is the leader (e.g. rank = -1)."""
     if is_lead_worker(rank):
-        print(msg, flush=flush)
+        if not use_pprint:
+            print(msg, flush=flush)
+        else:
+            from pprint import pprint
+            pprint(msg)
+
+
+def print_dist(msg: str, rank: int = -1, flush: bool = False):
+    dist_log(msg, rank, flush)
+
+
+def pprint_dist(msg: str, rank: int = -1, flush: bool = False):
+    dist_log(msg, rank, flush, use_pprint=True)
 
 
 def get_model_from_ddp(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Module:

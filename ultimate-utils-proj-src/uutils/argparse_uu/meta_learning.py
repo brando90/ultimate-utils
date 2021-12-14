@@ -32,7 +32,7 @@ def parse_basic_meta_learning_args_from_terminal() -> Namespace:
     parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT',
                         help='path to data set splits')
 
-    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+    parser.add_argument('--log_root', type=str, default=Path('/logs/').expanduser())
 
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)
