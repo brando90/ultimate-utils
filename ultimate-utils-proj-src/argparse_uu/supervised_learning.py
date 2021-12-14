@@ -39,7 +39,7 @@ def parse_args_standard_sl() -> Namespace:
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
 
     # model & loss function options
-    parser.add_argument('--model_type', type=str, help='model type', help='Options:')
+    parser.add_argument('--model_type', type=str, help='Options:')
     parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
 
     # optimization

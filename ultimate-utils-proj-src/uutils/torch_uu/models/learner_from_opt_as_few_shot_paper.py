@@ -55,7 +55,34 @@ def get_default_learner(image_size: int = 84,
                         filter_size: int = 32,
                         levels: Optional = None,
                         spp: bool = False) -> nn.Module:
+    """
+    Gets a 5CNN as in the paper "optimization as a model for few shot learning". Cbfin et al. in MAML also use
+    the same hps:
+        "For MiniImagenet, we used 32 filters per layer to reduce overfitting, as done by (Ravi & Larochelle, 2017)."
+
+    Copy pasted from my script that ran experiments:
+        args.bn_momentum = 0.95
+        args.bn_eps = 1e-3
+        args.grad_clip_mode = 'clip_all_together'
+        args.image_size = 84
+        args.base_model = Learner(image_size=args.image_size, bn_eps=args.bn_eps, bn_momentum=args.bn_momentum,
+                                  n_classes=args.n_classes).to(args.device)
+
+    """
     return Learner(image_size, bn_eps, bn_momentum, n_classes, filter_size, levels, spp)
+
+
+def get_default_learner_and_hps_dict(image_size: int = 84,
+                                     bn_eps: float = 1e-3,
+                                     bn_momentum: float = 0.95,
+                                     n_classes: int = 5,
+                                     filter_size: int = 32,
+                                     levels: Optional = None,
+                                     spp: bool = False) -> tuple[nn.Module, dict]:
+    model_hps_for_cons_dict: dict = {image_size: image_size, bn_eps: bn_eps, bn_momentum: bn_momentum,
+                                     n_classes: n_classes, filter_size: filter_size, levels: levels, spp: spp}
+    model: nn.Module = Learner(**model_hps_for_cons_dict)
+    return model, model_hps_for_cons_dict
 
 
 def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> nn.Module:
@@ -207,3 +234,10 @@ class Learner(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.BatchNorm2d):
                 m.reset_running_stats()
+
+
+def load_model_5CNN_opt_as_model_for_few_shot(model_hps_for_cons_dict: dict) -> nn.Module:
+    # - get the hps of the model & build the instance
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import Learner
+    model: nn.Module = Learner(**model_hps_for_cons_dict)
+    return model
