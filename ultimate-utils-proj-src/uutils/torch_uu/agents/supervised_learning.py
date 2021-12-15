@@ -1,13 +1,13 @@
-
-class SupervisedLearningAgent:
-
-    def __init__(self):
-        pass
+from torch import nn, Tensor
 
 
+class ClassificationSLAgent(nn.Module):
 
+    def __init__(self, model: nn.Module, loss: nn.Module):
+        self.model = model
+        self.loss = loss
 
-# - tests
-#
-# if __name__ == "__main__":
-#     test1()
+    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+        loss: Tensor = self.loss(self.model(batch))
+        acc: Tensor =
+        return loss, acc

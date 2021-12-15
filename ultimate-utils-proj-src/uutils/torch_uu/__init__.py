@@ -511,6 +511,7 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> List[torc
     if the right answer appears in your top five guesses.
 
     ref:
+    - https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch/63271002#63271002
     - https://pytorch.org/docs/stable/generated/torch.topk.html
     - https://discuss.pytorch.org/t/imagenet-example-accuracy-calculation/7840
     - https://gist.github.com/weiaicunzai/2a5ae6eac6712c70bde0630f3e76b77b
