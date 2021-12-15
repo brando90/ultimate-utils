@@ -117,11 +117,8 @@ def _eval(args: Namespace,
           ) -> tuple:
     """
     ref for BN/eval:
-        - tldr: Use `mdl.train()` since that uses batch statistics (but inference will not be deterministic anymore).
-        You probably won't want to use `mdl.eval()` in meta-learning.
-        - https://stackoverflow.com/questions/69845469/when-should-one-call-eval-and-train-when-doing-maml-with-the-pytorch-highe/69858252#69858252
-        - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-        - https://github.com/tristandeleu/pytorch-maml/issues/19
+        - For SL: do .train() for training and .eval() for eval in SL.
+        - For Meta-learning do train in both, see: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
     """
     assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, ' \
                                 f'if you want more precision increase (meta) batch size.'

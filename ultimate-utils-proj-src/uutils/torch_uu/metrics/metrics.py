@@ -1,155 +1,82 @@
-"""
-ref:
-    - https://stackoverflow.com/questions/70356922/what-is-the-proper-way-to-compute-95-confidence-intervals-with-pytorch-for-clas
-    - https://discuss.pytorch.org/t/what-is-the-proper-way-to-compute-95-confidence-intervals-with-pytorch-for-classification-and-regression/139398
-"""
-import numpy as np
-import scipy
 import torch
-from torch import Tensor
-
-P_CI = {0.90: 1.64,
-        0.95: 1.96,
-        0.98: 2.33,
-        0.99: 2.58,
-        }
+from torch import FloatTensor, nn
 
 
-def mean_confidence_interval_rfs(data, confidence=0.95):
+def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> tuple[FloatTensor]:
     """
-    https://stackoverflow.com/a/15034143/1601580
+    Computes the accuracy over the k top predictions for the specified values of k
+    In top-5 accuracy you give yourself credit for having the right answer
+    if the right answer appears in your top five guesses.
+
+    ref:
+    - https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch/63271002#63271002
+    - https://pytorch.org/docs/stable/generated/torch.topk.html
+    - https://discuss.pytorch.org/t/imagenet-example-accuracy-calculation/7840
+    - https://gist.github.com/weiaicunzai/2a5ae6eac6712c70bde0630f3e76b77b
+    - https://discuss.pytorch.org/t/top-k-error-calculation/48815/2
+    - https://stackoverflow.com/questions/59474987/how-to-get-top-k-accuracy-in-semantic-segmentation-using-pytorch
+
+    :param output: output is the prediction of the model e.g. scores, logits, raw y_pred before normalization or getting classes
+    :param target: target is the truth
+    :param topk: tuple of topk's to compute e.g. (1, 2, 5) computes top 1, top 2 and top 5.
+    e.g. in top 2 it means you get a +1 if your models's top 2 predictions are in the right label.
+    So if your model predicts cat, dog (0, 1) and the true label was bird (3) you get zero
+    but if it were either cat or dog you'd accumulate +1 for that example.
+    :return: list of topk accuracy [top1st, top2nd, ...] depending on your topk input
     """
-    import scipy.stats
+    with torch.no_grad():
+        # ---- get the topk most likely labels according to your model
+        # get the largest k \in [n_classes] (i.e. the number of most likely probabilities we will use)
+        maxk = max(topk)  # max number labels we will consider in the right choices for out model
+        batch_size = target.size(0)
 
-    a = 1.0 * np.array(data)
-    n = len(a)
-    m, se = np.mean(a), scipy.stats.sem(a)
-    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-    return m, h
+        # get top maxk indicies that correspond to the most likely probability scores
+        # (note _ means we don't care about the actual top maxk scores just their corresponding indicies/labels)
+        _, y_pred = output.topk(k=maxk, dim=1)  # _, [B, n_classes] -> [B, maxk]
+        y_pred = y_pred.t()  # [B, maxk] -> [maxk, B] Expects input to be <= 2-D tensor and transposes dimensions 0 and 1.
 
+        # - get the credit for each example if the models predictions is in maxk values (main crux of code)
+        # for any example, the model will get credit if it's prediction matches the ground truth
+        # for each example we compare if the model's best prediction matches the truth. If yes we get an entry of 1.
+        # if the k'th top answer of the model matches the truth we get 1.
+        # Note: this for any example in batch we can only ever get 1 match (so we never overestimate accuracy <1)
+        target_reshaped = target.view(1, -1).expand_as(y_pred)  # [B] -> [B, 1] -> [maxk, B]
+        # compare every topk's model prediction with the ground truth & give credit if any matches the ground truth
+        correct = (
+                y_pred == target_reshaped)  # [maxk, B] were for each example we know which topk prediction matched truth
+        # original: correct = pred.eq(target.view(1, -1).expand_as(pred))
 
-def mean_confidence_interval(data, confidence=0.95):
-    import scipy.stats
-
-    a = 1.0 * data
-    n = len(a)
-    m, se = a.mean(), scipy.stats.sem(a)
-    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-    return m, m - h, m + h
-
-
-def torch_mean_confidence_interval(data: Tensor,
-                                   confidence: float = 0.95,
-                                   by_pass_30_data_points: bool = False
-                                   ) -> Tensor:
-    """
-
-    todo: when is it fine to bypass 30? I mean the other code above doesn't check for that explcitly, so perhaps I won't
-    either.
-    """
-    B: int = data.size(0)
-    assert (data >= 0.0).all(), f'Data has to be positive for this CI to work but you have some negative value.'
-    assert B >= 30 or by_pass_30_data_points, f' Not enough data for CI calc to be valid and approximate a' \
-                                                     f'normal, you have: {B=} but needed 30.'
-    a = 1.0 * data
-    n = len(a)
-    m, se = np.mean(a), scipy.stats.sem(a)
-    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-    return m, m - h, m + h
-
-
-def ci(a, p=0.95):
-    import numpy as np, scipy.stats as st
-    st.t.interval(p, len(a) - 1, loc=np.mean(a), scale=st.sem(a))
+        # -- get topk accuracy
+        list_topk_accs = []  # idx is topk1, topk2, ... etc
+        for k in topk:
+            # get tensor of which topk answer was right
+            ind_which_topk_matched_truth = correct[:k]  # [maxk, B] -> [k, B]
+            # flatten it to help compute if we got it correct for each example in batch
+            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(
+                -1).float()  # [k, B] -> [kB]
+            # get if we got it right for any of our top k prediction for each example in batch
+            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0,
+                                                                                        keepdim=True)  # [kB] -> [1]
+            # compute topk accuracy - the accuracy of the mode's ability to get it right within it's top k guesses/preds
+            topk_acc = tot_correct_topk / batch_size  # topk accuracy for entire batch
+            list_topk_accs.append(topk_acc)
+        if len(list_topk_accs) == 1:
+            return list_topk_accs[0]  # only the top accuracy you requested
+        else:
+            return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
 
 
-# def ci(a, p=0.95):
-#     import statsmodels.stats.api as sms
-#
-#     sms.DescrStatsW(a).tconfint_mean()
-
-def compute_confidence_interval_classification(data: Tensor,
-                                               by_pass_30_data_points: bool = False,
-                                               p_confidence: float = 0.95
-                                               ) -> Tensor:
-    """
-    Computes CI interval
-        [B] -> [1]
-    According to [1] CI the confidence interval for classification error can be calculated as follows:
-        error +/- const * sqrt( (error * (1 - error)) / n)
-
-    The values for const are provided from statistics, and common values used are:
-        1.64 (90%)
-        1.96 (95%)
-        2.33 (98%)
-        2.58 (99%)
-    Assumptions:
-    Use of these confidence intervals makes some assumptions that you need to ensure you can meet. They are:
-
-    Observations in the validation data set were drawn from the domain independently (e.g. they are independent and
-    identically distributed).
-    At least 30 observations were used to evaluate the model.
-    This is based on some statistics of sampling theory that takes calculating the error of a classifier as a binomial
-    distribution, that we have sufficient observations to approximate a normal distribution for the binomial
-    distribution, and that via the central limit theorem that the more observations we classify, the closer we will get
-    to the true, but unknown, model skill.
-
-    Ref:
-        - computed according to: https://machinelearningmastery.com/report-classifier-performance-confidence-intervals/
-
-    todo:
-        - how does it change for other types of losses
-    """
-    B: int = data.size(0)
-    assert (data >= 0.0).all(), f'Data has to be positive for this CI to work but you have some negative value.'
-    assert B >= 30 or by_pass_30_data_points, f' Not enough data for CI calc to be valid and approximate a' \
-                                                     f'normal, you have: {B=} but needed 30.'
-    const: float = P_CI[p_confidence]
-    error: Tensor = data.mean()
-    val = torch.sqrt((error * (1 - error)) / B)
-    print(val)
-    ci_interval: float = const * val
-    return ci_interval
-
-
-def compute_confidence_interval_regression():
-    """
-    todo
-    :return:
-    """
-    raise NotImplementedError
-
-
-# - tests
-
-def ci_test():
-    n: int = 25
-    by_pass_30_data_points: bool = True
-
-    x: Tensor = abs(torch.randn(n))
-    ci_pytorch = compute_confidence_interval_classification(x, by_pass_30_data_points)
-    ci_rfs = mean_confidence_interval(x)
-    print(f'{x.var()=}')
-    print(f'{ci_pytorch=}')
-    print(f'{ci_rfs=}')
-
-    x: Tensor = abs(torch.randn(n, requires_grad=True))
-    ci_pytorch = compute_confidence_interval_classification(x, by_pass_30_data_points)
-    # ci_rfs = mean_confidence_interval(x)
-    print(f'{x.var()=}')
-    print(f'{ci_pytorch=}')
-    # print(f'{ci_rfs=}')
-
-    x: Tensor = torch.randn(n) - 10
-    ci_pytorch = compute_confidence_interval_classification(x, by_pass_30_data_points)
-    ci_rfs = mean_confidence_interval(x)
-    print(f'{x.var()=}')
-    print(f'{ci_pytorch=}')
-    print(f'{ci_rfs=}')
-
-    print()
-
+def acc_test():
+    B = 4
+    Dx, Dy = 2, 3
+    mdl = nn.Linear(Dx, Dy)
+    x = torch.randn(B, Dx)
+    y_logits = mdl(x)
+    y = torch.randint(high=Dy, size=(B,))
+    print(y.size())
+    acc = accuracy(output=y_logits, target=y)
+    print(acc)
 
 if __name__ == '__main__':
-    ci_test()
+    acc_test()
     print('Done, success! \a')

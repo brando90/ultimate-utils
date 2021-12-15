@@ -37,9 +37,9 @@ import copy
 
 from argparse import Namespace
 
-from torch.optim.lr_scheduler import _LRScheduler
+# from torch.optim.lr_scheduler import _LRScheduler
 
-from uutils.torch_uu.optim_uu.optimizers import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
+# from uutils.torch_uu.optim_uu.optimizers import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
 from uutils.torch_uu.tensorboard import log_2_tb
 
 import gc
