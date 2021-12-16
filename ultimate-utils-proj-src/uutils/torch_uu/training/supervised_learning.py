@@ -124,13 +124,7 @@ def _eval(args: Namespace,
                                 f'if you want more precision increase (meta) batch size.'
     # - Training=True for eval only for meta-learning, here we do want .eval(), but then undo it
     args.meta_learner.train() if training else args.meta_learner.eval()
-    original_reduction: str = mdl.loss.reduction
-    mdl.loss.reduction = 'none'
     for batch_idx, eval_batch in enumerate(args.dataloaders[split]):
-        # Forward pass
-        # eval_loss, eval_acc = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
-        # eval_loss, eval_acc, eval_loss_std, eval_acc_std = args.meta_learner(spt_x, spt_y, qry_x, qry_y,
-        #                                                                      training=training)
         eval_loss, eval_acc = mdl(eval_batch)
 
         # store eval info

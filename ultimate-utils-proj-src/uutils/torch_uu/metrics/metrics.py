@@ -1,12 +1,20 @@
 import torch
-from torch import FloatTensor, nn
+from torch import FloatTensor, nn, Tensor
 
 
-def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> tuple[FloatTensor]:
+def accuracy(output: Tensor,
+             target: Tensor,
+             topk: tuple[int] = (1,),
+             reduction: str = 'mean'
+             ) -> tuple[FloatTensor]:
     """
     Computes the accuracy over the k top predictions for the specified values of k
     In top-5 accuracy you give yourself credit for having the right answer
     if the right answer appears in your top five guesses.
+
+    if reduction is
+        - "none" computes the 1 or 0 topk acc for each example so each entry is a tensor of size [B]
+        - "mean" (default) compute the usual topk acc where each entry is acck of size [], single value tensor
 
     ref:
     - https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch/63271002#63271002
@@ -22,7 +30,8 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> tuple[Flo
     e.g. in top 2 it means you get a +1 if your models's top 2 predictions are in the right label.
     So if your model predicts cat, dog (0, 1) and the true label was bird (3) you get zero
     but if it were either cat or dog you'd accumulate +1 for that example.
-    :return: list of topk accuracy [top1st, top2nd, ...] depending on your topk input
+    :return: list of topk accuracies [top1st, top2nd, ...] depending on your topk input. Size [] or [B] depending on
+        reduction type.
     """
     with torch.no_grad():
         # ---- get the topk most likely labels according to your model
@@ -51,32 +60,70 @@ def accuracy(output: torch.Tensor, target: torch.Tensor, topk=(1,)) -> tuple[Flo
         for k in topk:
             # get tensor of which topk answer was right
             ind_which_topk_matched_truth = correct[:k]  # [maxk, B] -> [k, B]
-            # flatten it to help compute if we got it correct for each example in batch
-            flattened_indicator_which_topk_matched_truth = ind_which_topk_matched_truth.reshape(
-                -1).float()  # [k, B] -> [kB]
-            # get if we got it right for any of our top k prediction for each example in batch
-            tot_correct_topk = flattened_indicator_which_topk_matched_truth.float().sum(dim=0,
-                                                                                        keepdim=True)  # [kB] -> [1]
-            # compute topk accuracy - the accuracy of the mode's ability to get it right within it's top k guesses/preds
-            topk_acc = tot_correct_topk / batch_size  # topk accuracy for entire batch
+            # accuracy for the current topk for the whole batch,  [k, B] -> [B]
+            indicator_which_topk_matched_truth = ind_which_topk_matched_truth.float().sum(dim=0)
+            assert indicator_which_topk_matched_truth.size() == torch.Size([batch_size])
+            # put a 1 in the location of the topk we allow if we got it right, only 1 of the k for each B can be 1.
+            # Important: you can only have 1 right in the k dimension since the label will only have 1 label and our
+            if reduction == 'none':
+                topk_acc = indicator_which_topk_matched_truth
+                assert topk_acc.size() == torch.Size([batch_size])
+            elif reduction == 'mean':
+                # compute topk accuracies - the model's ability to get it right within it's top k guesses/preds
+                topk_acc = indicator_which_topk_matched_truth.mean()  # topk accuracy for entire batch
+                assert topk_acc.size() == torch.Size([])
+            else:
+                raise ValueError(f'Invalid reduction type, got: {reduction=}')
             list_topk_accs.append(topk_acc)
-        if len(list_topk_accs) == 1:
-            return list_topk_accs[0]  # only the top accuracy you requested
-        else:
-            return list_topk_accs  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
+        return tuple(list_topk_accs)  # list of topk accuracies for entire batch [topk1, topk2, ... etc]
 
 
 def acc_test():
-    B = 4
-    Dx, Dy = 2, 3
+    B = 10000
+    Dx, Dy = 2, 10
     mdl = nn.Linear(Dx, Dy)
     x = torch.randn(B, Dx)
     y_logits = mdl(x)
     y = torch.randint(high=Dy, size=(B,))
     print(y.size())
-    acc = accuracy(output=y_logits, target=y)
-    print(acc)
+    acc1, acc5 = accuracy(output=y_logits, target=y, topk=(1, 5))
+    print(f'{acc1=}')
+    print(f'{acc5=}')
+
+    accs1, accs5 = accuracy(output=y_logits, target=y, topk=(1, 5), reduction='none')
+    print(f'{accs1=}')
+    print(f'{accs5=}')
+    print(f'{accs1.mean()=}')
+    print(f'{accs5.mean()=}')
+    print(f'{accs1.std()=}')
+    print(f'{accs5.std()=}')
+    print(f'{torch_compute_confidence_interval_classification_torch(accs1)=}')
+    print(f'{torch_compute_confidence_interval_classification_torch(accs5)=}')
+
+def prob_of_truth_being_inside_when_using_ci_as_std():
+    """
+
+    :return:
+    """
+
+    from scipy.integrate import quad
+    # integration between x1 and x1
+    def normal_distribution_function(x):
+        import scipy.stats
+        value = scipy.stats.norm.pdf(x, mean, std)
+        return value
+    mean, std = 0.0, 1.0
+
+    x1 = mean - std
+    x2 = mean + std
+
+    res, err = quad(func=normal_distribution_function, a=x1, b=x2)
+
+    print('Normal Distribution (mean,std):', mean, std)
+    print('Integration bewteen {} and {} --> '.format(x1, x2), res)
+
 
 if __name__ == '__main__':
-    acc_test()
+    # acc_test()
+    prob_of_truth_being_inside_when_using_ci_as_std()
     print('Done, success! \a')
