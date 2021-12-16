@@ -10,11 +10,15 @@ import torch.multiprocessing as mp
 from argparse import Namespace
 
 from uutils import args_hardcoded_in_script, report_times
-from uutils.argparse_uu import setup_args_for_experiment
+from uutils.argparse_uu.common import setup_args_for_experiment
 from uutils.argparse_uu.supervised_learning import make_args_from_supervised_learning_checkpoint, parse_args_standard_sl
+from uutils.torch_uu.agents.common import Agent
+from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
 from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
 from uutils.torch_uu.distributed import set_sharing_strategy, print_process_info, set_devices, setup_process, \
-    move_to_ddp, cleanup
+    move_to_ddp, cleanup, print_dist
+from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_first_time
+from uutils.torch_uu.training.supervised_learning import train_agent_single_batch
 
 
 def manual_load(args) -> Namespace:
@@ -96,46 +100,27 @@ def main():
 def train(rank, args):
     print_process_info(rank, flush=True)
     args.rank = rank  # have each process save the rank
-    set_devices(args)  # basically args.gpu = rank if not debugging/serially
+    set_devices(args)  # args.device = rank or .device
     setup_process(args, rank, master_port=args.master_port, world_size=args.world_size)
     print(f'setup process done for rank={rank}')
 
     # create the dataloaders, todo
-    dataloaders: dict = get_uutils_mnist_dataloaders()
+    args.dataloaders: dict = get_uutils_mnist_dataloaders()
 
-    # create the model
-    mdl = get_tree_gen_simple(args, dataloaders)
-    mdl = move_to_ddp(rank, args, mdl)
-
-    # start_epoch = load_checkpoint(args, optimizer, tactic_predictor)
-    # start_epoch = 0
-    # start_it = 0
-
-    # get scheduler the optimizer & scheduler
-    # todo
-    # optimizer = Adafactor(mdl.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
-    # optimizer = torch_uu.optim.Adam(mdl.parameters(), lr=args.learning_rate, weight_decay=args.l2)
-    # optimizer = radam.RAdam(mdl.parameters(), lr=args.learning_rate)
-    # get scheduler decay/anneal learning rate wrt epochs
-    # todo
-    # scheduler = None
-    # scheduler = ReduceLROnPlateau(optimizer, patience=args.lr_reduce_patience, verbose=True)  # temporary
-    # scheduler = torch_uu.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9, verbose=False)
-    # scheduler = AdafactorSchedule(optimizer)
-    # scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=args.num_warmup_steps)
-    # print(f'{scheduler=}')
+    # create the (ddp) model, opt & scheduler
+    get_and_create_model_opt_scheduler_first_time(args)
+    print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}")
 
     # Agent does everything, proving, training, evaluate etc.
-    agent = ClassificationSLAgent(args, mdl, optimizer, dataloaders, scheduler)
+    agent: Agent = ClassificationSLAgent(args, args.mdl)
 
     # -- Start Training Loop
     agent.log('====> about to start train loop')
-    if not args.reproduce_10K:  # real experiment
-        agent.log('-- running experiment')
-        # agent.main_train_loop_based_on_fixed_number_of_epochs(args, start_epoch)
-        # agent.main_train_loop_until_convergence(args, start_it)
-        agent.main_train_loop_based_on_fixed_iterations(args, start_it)
-        # agent.train_single_batch()
+    if args.training_mode == 'single_batch':
+        train_agent_single_batch(args, agent, args.dataloaders, args.opt, args.scheduler)
+    else:
+        raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
+
 
     # -- Clean Up Distributed Processes
     print(f'\n----> about to cleanup worker with rank {rank}')

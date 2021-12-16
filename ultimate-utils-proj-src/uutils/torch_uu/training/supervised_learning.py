@@ -9,14 +9,14 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
 from uutils.torch_uu import AverageMeter
-from uutils.torch_uu.agents import Agent
+from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 
 
-def train_single_batch_agent(args: Namespace,
-                             mdl: nn.Module,
+def train_agent_single_batch(args: Namespace,
+                             mdl: Agent,
                              dataloaders: dict,
                              opt: Optimizer,
                              scheduler: _LRScheduler,
@@ -62,7 +62,7 @@ def train_single_batch_agent(args: Namespace,
         train_loss, train_acc = mdl(train_batch, training=True)
 
         opt.zero_grad()
-        train_loss.backward()  # each process synchronizes it's gradients in the backward pass
+        train_loss.backward()  # each process synchronizes its gradients in the backward pass
         opt.step()  # the right update is done since all procs have the right synced grads
         if (args.it % 15 == 0 and args.it != 0) or args.debug:
             scheduler.step() if (scheduler is not None) else None
@@ -116,6 +116,9 @@ def main_train_fixed_number_of_epochs(args: Namespace,
 
     return avg_loss.item(), avg_acc.item()  #
 
+
+def main_train_fixed_number_of_iterations():
+    pass
 
 def main_train_loop_until_convergence(agent, args: Namesspace, acc_tolerance: float = 1.0,
                                       train_loss_tolerance: float = 0.001):

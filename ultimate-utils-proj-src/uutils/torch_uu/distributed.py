@@ -5,7 +5,7 @@ For code used in distributed training.
 import time
 from argparse import Namespace
 from pathlib import Path
-from typing import Tuple, Union, Callable
+from typing import Tuple, Union, Callable, Any
 
 import torch
 import torch.distributed as dist
@@ -50,7 +50,7 @@ def set_devices(args):
         args.device = args.rank
 
 
-def process_batch_ddp(args, batch):
+def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     """
     Make sure args has the gpu for each worker.
 

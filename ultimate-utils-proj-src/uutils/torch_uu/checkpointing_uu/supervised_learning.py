@@ -2,6 +2,9 @@
 Note: you are recommended to follow this
 https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
 and likely avoid dill due to possible path to objects changes.
+
+Refs:
+    - for DDP checkpointing see: https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
 """
 from argparse import Namespace
 from typing import Optional
@@ -13,7 +16,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
 from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
-from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
+from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp, is_running_parallel, move_to_ddp
 
 
 def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
@@ -35,6 +38,7 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
     Ref:
         - standard way: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
         - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
+        - DDP checkpointing: https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
     """
     if is_lead_worker(args.rank):
         # import dill
@@ -43,6 +47,7 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
 
         # - ckpt
         args_pickable: Namespace = uutils.make_args_pickable(args)
+        # note not saving any objects, to make sure checkpoint is loadable later with no problems
         torch.save({'training_mode': args.training_mode,
                     'it': args.it,
                     'epoch_num': args.epoch_num,
@@ -51,7 +56,7 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
                     # decided only to save the dict version to avoid this ckpt not working, make it args when loading
                     'args_dict': vars(args_pickable),  # some versions of this might not have args!
 
-                    'model_state_dict': args.model.state_dict(),
+                    'model_state_dict': get_model_from_ddp(args.model).state_dict(),
                     # added later, to make it easier to check what optimizer was used
                     'model_str': str(args.model),  # added later, to make it easier to check what optimizer was used
                     'model_hps_for_cons_dict': args.model_hps_for_cons_dict,
@@ -92,24 +97,30 @@ def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namesp
     Ref:
         - standard way: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
     """
-    ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
+    # - note, this shouldn't be needed since the args at this point should the one from the ckpt, but to be safe we
+    # load the ckpt anyway. Note, we could have also, loaded the args in the ckpt and use that instead, but some values
+    # are extra important, thus they are saved explicitly (and in the saved args_dict in the ckpt).
+    # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
+    ckpt: dict = torch.load(args.path_to_checkpoint, map_location=args.device)
 
     # - get model the empty model from the hps for the cons for the model
-    model_option: str = args.model_option if model_option is not None else model_option  # if obj None, use ckpt value
+    model_option: str = args.model_option if model_option is None else model_option  # if obj None, use ckpt value
     if model_option == '5CNN_opt_as_model_for_few_shot':
         from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import load_model_5CNN_opt_as_model_for_few_shot
         model_hps_for_cons_dict: dict = ckpt['model_hps_for_cons_dict']
         model: nn.Module = load_model_5CNN_opt_as_model_for_few_shot(model_hps_for_cons_dict)
     elif 'resnet' in model_option and 'rfs' in model_option:
-        pass
+        raise NotImplementedError
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     # load state dict for the model
     model_state_dict: dict = ckpt['model_state_dict']
     model.load_state_dict(model_state_dict)
+    model.to(args.device)
+    model = move_to_ddp(model) if is_running_parallel(args.rank) else model
 
     # - get optimizer
-    opt_option: str = args.opt_option if opt_option is not None else opt_option
+    opt_option: str = args.opt_option if opt_option is None else opt_option
     if opt_option == 'AdafactorDefaultFair':
         from uutils.torch_uu.optim_uu.adafactor_uu import \
             load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict
@@ -146,7 +157,7 @@ def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namesp
     if mutate_args:
         args.model = model
         args.opt = opt
-        args.scheduler
+        args.scheduler = scheduler
     return model, opt, scheduler
 
 

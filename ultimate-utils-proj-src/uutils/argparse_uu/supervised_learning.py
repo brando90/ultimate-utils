@@ -42,10 +42,10 @@ def parse_args_standard_sl() -> Namespace:
 
     # model & loss function options
     parser.add_argument('--model_type', type=str, help='Options:')
-    parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
+    parser.add_argument('--loss', type=str, help='loss/criterion', default=nn.CrossEntropyLoss())
 
     # optimization
-    parser.add_argument('--optimizer', type=str, default='Adafactor.')
+    parser.add_argument('--optimizer_option', type=str, default='Adafactor.')
     parser.add_argument('--learning_rate', type=float, default=None, help='Warning: use a learning rate according to'
                                                                           'how previous work trains your model.'
                                                                           'Otherwise, tuning might be needed.'
@@ -61,7 +61,7 @@ def parse_args_standard_sl() -> Namespace:
                                                                           'a good idea.')
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
     parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--scheduler', type=str, default='AdafactorSchedule', help='Its strongly recommended')
+    parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
     # parser.add_argument('--l2', type=float, default=0.0)
     # parser.add_argument('--lr_reduce_steps', default=3, type=int,
     #                     help='the number of steps before reducing the learning rate \
@@ -103,6 +103,7 @@ def make_args_from_supervised_learning_checkpoint(args: Namespace,
         - To create a new path to checkpoint the checkpointed model this code overwrites
     """
     ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
+    # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=args.device)
     args_dict: dict = ckpt['args_dict']
     del ckpt  # since ckpt might have lots of data from previous training, not needed her when recovering only args
     args_ckpt: Namespace = Namespace(**args_dict)
@@ -114,8 +115,8 @@ def make_args_from_supervised_learning_checkpoint(args: Namespace,
         args: Namespace = merge_args(starting_args=args_ckpt, updater_args=args)
 
     # - create a correct path to save the new model that will be checkpointe and not break the previous checkpoint
-    args.path_to_checkpoint: Path = args.path_to_checkpoint
-    args.log_root: Path = Path('/logs/')
+    from uutils.argparse_uu import create_default_log_root
+    create_default_log_root()  # creates a new log root with the current job number etc
     return args
 
 

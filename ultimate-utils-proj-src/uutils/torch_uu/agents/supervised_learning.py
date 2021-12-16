@@ -1,19 +1,26 @@
+from argparse import Namespace
+
 import torch
 from torch import nn, Tensor
 
+from uutils.torch_uu.distributed import process_batch_ddp
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 from uutils.torch_uu.metrics.metrics import accuracy
 
 
 class ClassificationSLAgent(nn.Module):
 
-    def __init__(self, model: nn.Module, loss: nn.Module):
+    def __init__(self,
+                 args: Namespace,
+                 model: nn.Module,
+                 ):
+        self.args = args
         self.model = model
-        self.loss = loss
+        if hasattr(args, 'loss'):
+            self.loss = nn.CrossEntropyLoss() if args.loss is not None else args.loss
 
     def forward(self, batch: Tensor) -> tuple[Tensor, Tensor]:
-        batch_x, batch_y = batch
-        # todo - process batch to gpu
+        batch_x, batch_y = process_batch_ddp(self.args, batch)
         logits: Tensor = self.mdl(batch_x)
         loss: Tensor = self.loss(logits)
         acc, = accuracy(logits, batch_y)
@@ -21,8 +28,7 @@ class ClassificationSLAgent(nn.Module):
         return loss, acc
 
     def eval_forward(self, batch: Tensor, training: bool = False) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        batch_x, batch_y = batch
-        # todo - process batch to gpu
+        batch_x, batch_y = process_batch_ddp(self.args, batch)
         B: int = batch_x.size(0)
         with torch.no_grad():  # note, this might not be needed in meta-eval due to MAML using grads at eval
             # - to make sure we get the [B] tensor to compute confidence intervals/error bars
