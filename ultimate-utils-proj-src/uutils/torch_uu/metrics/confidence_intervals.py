@@ -19,13 +19,31 @@ risk. So x_i = loss(f(x_i), y_i) and you are computing the CI for what is the tr
 function you choose. So mu_n = emperical mean of the loss and std_n = (unbiased) estimate of the std and then you can
 simply plug in the values.
 
+Assumptions for p-CI:
+    - we are making a statement that mu^* is in mu+-pCI = mu+-t_p * sig_n / sqrt n, sig_n ~ Var[x] is inside the CI
+    p% of the time.
+    - we are estimating mu^, a mean
+    - since the quantity of interest is mu^, then the z_p value (or p-value, depending which one is the unknown), is
+    computed using the normal distribution.
+    - p(mu) ~ N(mu; mu_n, sig_n/ sqrt n), vial CTL which holds for sample means. Ideally n >= 30.
+    - x ~ p^*(x) are iid.
+
+Std_n vs t_p*std_n/ sqrt(n)
+    - std_n = var(x) is more pessimistic but holds always. Never shrinks as n->infity
+    - but if n is small then pCI might be too small and your "lying to yourself". So if you have very small data
+    perhaps doing std_n for the CI is better. That holds with prob 99.9%. Hopefuly std is not too large for your
+    experiments to be invalidated.
+
 ref:
     - https://stats.stackexchange.com/questions/554332/confidence-interval-given-the-population-mean-and-standard-deviation?noredirect=1&lq=1
     - https://stackoverflow.com/questions/70356922/what-is-the-proper-way-to-compute-95-confidence-intervals-with-pytorch-for-clas
     - https://www.youtube.com/watch?v=MzvRQFYUEFU&list=PLUl4u3cNGP60hI9ATjSFgLZpbNJ7myAg6&index=205
 
-wontfix:
-    - make it differentiable wrt confidence (though not really needed just for fun)
+todo:
+    - how to do CI for meta-learning, for now std is fine, since it's usually a very worst case estimate.
+    Previous work does CI so should we do CI too? No do std, since that is a worser case analysis (and holds with 99.9
+    of the time). Drawback, interval doesn't shrink as we have more data. But this analysis makes the entire net
+    analysis harder, perhaps try CI only on entire net analysis to see what happens.
 """
 import scipy
 import torch
@@ -93,25 +111,35 @@ def torch_compute_confidence_interval(data: Tensor,
 
 def prob_of_truth_being_inside_when_using_ci_as_std():
     """
-    what is the probability my statement mu_n +- std using the bare std holds. About 68.3 of the time we survey a data
-    set. Plus it's really uncertain where mu^* is since std is large, especially since the CI here doesn't shrink
-    as the number of data points for a single survey increases.
-    """
+    what is the probability my statement mu_n +- std using the bare std holds. According to this analysis it says that
+        Pr[\theta^* \in [mu+- std] ] = int_{std, -std} N(x; mu, std/n**05) dx = int_{+1, -1} N(x; mu, 1/n**0.5) dx
+    for n = 25, N(x;0, 1/n**05) = N(x; 0, 0.2) and the probability the true mean is in interval is really high around
+    0.9999994266968563.
 
+    todo: - Q: so why don't ppl just report mu +- std? it's more pessimistic and it has a higher chance of cantaining
+        the true mean, assuming that is what your trying to "estimate"/bound. Possible due to not dividing by sqrt n,
+        it might make most analysis "invalid" since this is a larger confidence interval, so this makes results more
+        likely to clash - is my guess.
+    """
     from scipy.integrate import quad
     # integration between x1 and x1
+    # mean, std = 0.0, 1.0
+    # mean, std = 0.0, 1/5.4772255
+    n = 25
+    mean, std = 0.0, 1/(n**0.5)
     def normal_distribution_function(x):
         import scipy.stats
         value = scipy.stats.norm.pdf(x, mean, std)
         return value
-    mean, std = 0.0, 1.0
 
-    x1 = mean - std
-    x2 = mean + std
+    # x1 = mean - std
+    # x2 = mean + std
+    x1 = -1
+    x2 = 1
 
     res, err = quad(func=normal_distribution_function, a=x1, b=x2)
 
-    print('Normal Distribution (mean,std):', mean, std)
+    print('\nNormal Distribution (mean,std):', mean, std)
     print('Integration bewteen {} and {} --> '.format(x1, x2), res)
 
 # - tests
@@ -158,4 +186,5 @@ def ci_test_regression():
 if __name__ == '__main__':
     ci_test()
     ci_test_regression()
+    prob_of_truth_being_inside_when_using_ci_as_std()
     print('Done, success! \a')

@@ -6,17 +6,85 @@ from torch.nn.functional import mse_loss
 from torch.optim import Optimizer
 
 import uutils
+from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu import r2_score_from_torch
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.distributed import is_lead_worker
+
+
+def log_train_val_stats(args: Namespace,
+                        it: int,
+
+                        train_loss: float,
+                        train_acc: float,
+
+                        valid,
+
+                        bar,
+
+                        log_freq: int = 10,
+                        ckpt_freq: int = 50,
+                        mdl_watch_log_freq: int = 50,
+                        force_log: bool = False,  # e.g. at the final it/epoch
+
+                        save_val_ckpt: bool = False,
+                        log_to_tb: bool = False,
+                        log_to_wandb: bool = False
+                        ):
+    """
+    Log train and val stats where it is iteration or epoch step.
+
+    Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
+    """
+    import wandb
+    from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
+    # - is it epoch or iteration
+    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+
+    # if its
+    total_its: int = args.num_epochs if args.training_mode == 'epochs' else args.num_its
+
+    if (it % log_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+        # - get eval stats
+        val_loss, val_acc, val_loss_std, val_acc_std = valid(args, save_val_ckpt=save_val_ckpt)
+        # - log ckpt
+        if it % ckpt_freq == 0:
+            save_for_meta_learning(args)
+
+        # - save args
+        uutils.save_args(args, args_filename='args.json')
+
+        # - update progress bar at the end
+        bar.update(it)
+
+        # - print
+        args.logger.log('\n')
+        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
+
+        print(f'{args.it=}')
+        print(f'{args.num_its=}')
+
+        # - record into stats collector
+        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
+        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
+        args.logger.save_experiment_stats_to_json_file()
+        args.logger.save_current_plots_and_stats()
+
+        # - log to wandb
+        if log_to_wandb:
+            log_2_wanbd(it, train_loss, train_acc, val_loss, val_acc, it_or_epoch)
+
+        # - log to tensorboard
+        if log_to_tb:
+            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
+            log_2_tb_supervisedlearning(args.tb, args, it, val_loss, val_acc, 'val')
 
 
 def log_sim_to_check_presence_of_feature_reuse(args: Namespace,
                                                it: int,
 
                                                spt_x, spt_y, qry_x, qry_y,  # these are multiple tasks
-
-                                               log_freq_for_detection_of_feature_reuse: int = 3,
 
                                                force_log: bool = False,
                                                parallel: bool = False,
@@ -25,61 +93,66 @@ def log_sim_to_check_presence_of_feature_reuse(args: Namespace,
                                                show_layerwise_sims: bool = True
                                                ):
     """
-    Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that
+    Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that.
+
+    todo:
+        - requires major fixed and rethinking, for now won't fix, we can just finish training and then
+        do the analysis we need in our other script.
     """
-    import wandb
-    import uutils.torch_uu as torch_uu
-    from pprint import pprint
-    from uutils.torch_uu import summarize_similarities
-    # - is it epoch or iteration
-    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
-    sim_or_dist: str = 'sim'
-    if hasattr(args, 'metrics_as_dist'):
-        sim_or_dist: str = 'dist' if args.metrics_as_dist else sim_or_dist
-    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
-
-    if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        if hasattr(args, 'metrics_as_dist'):
-            sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names,
-                                                                     parallel=parallel, iter_tasks=iter_tasks,
-                                                                     metric_as_dist=args.metrics_as_dist)
-        else:
-            sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names,
-                                                                     parallel=parallel, iter_tasks=iter_tasks)
-        mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(
-            args, sims)
-
-        # -- log (print)
-        args.logger.log(f' \n------ {sim_or_dist} stats: {it_or_epoch}={it} ------')
-        # - per layer
-        # if show_layerwise_sims:
-        print(f'---- Layer-Wise metrics ----')
-        print(f'mean_layer_wise_{sim_or_dist} (per layer)')
-        pprint(mean_layer_wise_sim)
-        print(f'std_layer_wise_{sim_or_dist} (per layer)')
-        pprint(std_layer_wise_sim)
-
-        # - rep sim
-        print(f'---- Representation metrics ----')
-        print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        pprint(mean_summarized_rep_sim)
-        print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        pprint(std_summarized_rep_sim)
-        args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
-
-        # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
-        # - log to wandb
-        # if log_to_wandb:
-        #     if it == 0:
-        #         # have all metrics be tracked with it or epoch (custom step)
-        #         #     wandb.define_metric(f'layer average {metric}', step_metric=it_or_epoch)
-        #         for metric in mean_summarized_rep_sim.keys():
-        #             wandb.define_metric(f'rep mean {metric}', step_metric=it_or_epoch)
-        #     # wandb.log per layer
-        #     rep_summary_log = {f'rep mean {metric}': sim for metric, sim in mean_summarized_rep_sim.items()}
-        #     rep_summary_log[it_or_epoch] = it
-        #     wandb.log(rep_summary_log, commit=True)
+    raise NotImplementedError
+    # import wandb
+    # import uutils.torch_uu as torch_uu
+    # from pprint import pprint
+    # from uutils.torch_uu import summarize_similarities
+    # # - is it epoch or iteration
+    # it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    # sim_or_dist: str = 'sim'
+    # if hasattr(args, 'metrics_as_dist'):
+    #     sim_or_dist: str = 'dist' if args.metrics_as_dist else sim_or_dist
+    # total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
+    #
+    # # note: only needed at the final layer, since this is expensive...or is it? todo
+    # if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+    #     if hasattr(args, 'metrics_as_dist'):
+    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names,
+    #                                                                  parallel=parallel, iter_tasks=iter_tasks,
+    #                                                                  metric_as_dist=args.metrics_as_dist)
+    #     else:
+    #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names,
+    #                                                                  parallel=parallel, iter_tasks=iter_tasks)
+    #     mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(
+    #         args, sims)
+    #
+    #     # -- log (print)
+    #     args.logger.log(f' \n------ {sim_or_dist} stats: {it_or_epoch}={it} ------')
+    #     # - per layer
+    #     # if show_layerwise_sims:
+    #     print(f'---- Layer-Wise metrics ----')
+    #     print(f'mean_layer_wise_{sim_or_dist} (per layer)')
+    #     pprint(mean_layer_wise_sim)
+    #     print(f'std_layer_wise_{sim_or_dist} (per layer)')
+    #     pprint(std_layer_wise_sim)
+    #
+    #     # - rep sim
+    #     print(f'---- Representation metrics ----')
+    #     print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
+    #     pprint(mean_summarized_rep_sim)
+    #     print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
+    #     pprint(std_summarized_rep_sim)
+    #     args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
+    #
+    # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
+    # - log to wandb
+    # if log_to_wandb:
+    #     if it == 0:
+    #         # have all metrics be tracked with it or epoch (custom step)
+    #         #     wandb.define_metric(f'layer average {metric}', step_metric=it_or_epoch)
+    #         for metric in mean_summarized_rep_sim.keys():
+    #             wandb.define_metric(f'rep mean {metric}', step_metric=it_or_epoch)
+    #     # wandb.log per layer
+    #     rep_summary_log = {f'rep mean {metric}': sim for metric, sim in mean_summarized_rep_sim.items()}
+    #     rep_summary_log[it_or_epoch] = it
+    #     wandb.log(rep_summary_log, commit=True)
 
 
 # - tests
@@ -89,12 +162,13 @@ def get_args() -> Namespace:
     args = uutils.setup_args_for_experiment(args)
     return args
 
+
 def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False):
     import torch
 
     for t in range(1):
         x = torch.randn(args.batch_size, 5)
-        y = (x**2 + x + 1).sum(dim=1)
+        y = (x ** 2 + x + 1).sum(dim=1)
 
         y_pred = mdl(x).squeeze(dim=1)
         val_loss, val_acc = mse_loss(y_pred, y), r2_score_from_torch(y_true=y, y_pred=y_pred)
@@ -104,10 +178,11 @@ def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False)
         # save_ckpt(args, args.mdl, args.optimizer, ckpt_name='ckpt_best_val.pt')
     return val_loss, val_acc
 
-def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler = None):
+
+def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler=None):
     for it in range(50):
         x = torch.randn(args.batch_size, 5)
-        y = (x**2 + x + 1).sum(dim=1)
+        y = (x ** 2 + x + 1).sum(dim=1)
 
         y_pred = mdl(x).squeeze(dim=1)
         train_loss, train_acc = mse_loss(y_pred, y), r2_score_from_torch(y_true=y, y_pred=y_pred)
@@ -124,6 +199,7 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
                 pass
 
     return train_loss, train_acc
+
 
 def debug_test():
     args: Namespace = get_args()
@@ -146,8 +222,10 @@ def debug_test():
 
 if __name__ == '__main__':
     import time
+
     start = time.time()
     debug_test()
     duration_secs = time.time() - start
-    print(f"Success, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
+    print(
+        f"Success, time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}")
     print('Done!\a')

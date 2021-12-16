@@ -443,7 +443,7 @@ def _get_git_revision_short_hash():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 
-def get_good_progressbar(max_value: Union[int, None] = None) -> progressbar.ProgressBar:
+def get_good_progressbar(max_value: Union[int, progressbar.UnknownLength, None] = None) -> progressbar.ProgressBar:
     """
     Example output:
 
