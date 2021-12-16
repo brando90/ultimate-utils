@@ -1,6 +1,9 @@
 import torch
 from torch import FloatTensor, nn, Tensor
 
+from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval, \
+    torch_compute_confidence_interval_classification
+
 
 def accuracy(output: Tensor,
              target: Tensor,
@@ -65,10 +68,10 @@ def accuracy(output: Tensor,
             assert indicator_which_topk_matched_truth.size() == torch.Size([batch_size])
             # put a 1 in the location of the topk we allow if we got it right, only 1 of the k for each B can be 1.
             # Important: you can only have 1 right in the k dimension since the label will only have 1 label and our
-            if reduction == 'none':
+            if reduction == 'none' or reduction == 'acc_none':
                 topk_acc = indicator_which_topk_matched_truth
                 assert topk_acc.size() == torch.Size([batch_size])
-            elif reduction == 'mean':
+            elif reduction == 'mean' or reduction == 'acc_mean':
                 # compute topk accuracies - the model's ability to get it right within it's top k guesses/preds
                 topk_acc = indicator_which_topk_matched_truth.mean()  # topk accuracy for entire batch
                 assert topk_acc.size() == torch.Size([])
@@ -79,7 +82,15 @@ def accuracy(output: Tensor,
 
 
 def acc_test():
-    B = 10000
+    """
+    Note that values are not super close but it's not a big deal, close enough:
+
+    torch_compute_confidence_interval(accs1)=(tensor(0.0667), tensor(0.0947))
+    torch_compute_confidence_interval(accs5)=(tensor(0.6000), tensor(0.1861))
+    torch_compute_confidence_interval_classification(accs1)=(tensor(0.0667), tensor(0.0931))
+    torch_compute_confidence_interval_classification(accs5)=(tensor(0.6000), tensor(0.1829))
+    """
+    B = 30
     Dx, Dy = 2, 10
     mdl = nn.Linear(Dx, Dy)
     x = torch.randn(B, Dx)
@@ -97,33 +108,12 @@ def acc_test():
     print(f'{accs5.mean()=}')
     print(f'{accs1.std()=}')
     print(f'{accs5.std()=}')
-    print(f'{torch_compute_confidence_interval_classification_torch(accs1)=}')
-    print(f'{torch_compute_confidence_interval_classification_torch(accs5)=}')
-
-def prob_of_truth_being_inside_when_using_ci_as_std():
-    """
-
-    :return:
-    """
-
-    from scipy.integrate import quad
-    # integration between x1 and x1
-    def normal_distribution_function(x):
-        import scipy.stats
-        value = scipy.stats.norm.pdf(x, mean, std)
-        return value
-    mean, std = 0.0, 1.0
-
-    x1 = mean - std
-    x2 = mean + std
-
-    res, err = quad(func=normal_distribution_function, a=x1, b=x2)
-
-    print('Normal Distribution (mean,std):', mean, std)
-    print('Integration bewteen {} and {} --> '.format(x1, x2), res)
+    print(f'{torch_compute_confidence_interval(accs1)=}')
+    print(f'{torch_compute_confidence_interval(accs5)=}')
+    print(f'{torch_compute_confidence_interval_classification(accs1)=}')
+    print(f'{torch_compute_confidence_interval_classification(accs5)=}')
 
 
 if __name__ == '__main__':
-    # acc_test()
-    prob_of_truth_being_inside_when_using_ci_as_std()
+    acc_test()
     print('Done, success! \a')

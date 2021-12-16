@@ -27,10 +27,10 @@ ref:
 wontfix:
     - make it differentiable wrt confidence (though not really needed just for fun)
 """
-import numpy as np
 import scipy
 import torch
 from torch import Tensor
+import scipy.stats
 
 # P_CI = {0.90: 1.64,
 #         0.95: 1.96,
@@ -90,6 +90,29 @@ def torch_compute_confidence_interval(data: Tensor,
     t_p: float = float(scipy.stats.t.ppf((1 + confidence) / 2., n - 1))
     ci = t_p * se
     return mean, ci
+
+def prob_of_truth_being_inside_when_using_ci_as_std():
+    """
+    what is the probability my statement mu_n +- std using the bare std holds. About 68.3 of the time we survey a data
+    set. Plus it's really uncertain where mu^* is since std is large, especially since the CI here doesn't shrink
+    as the number of data points for a single survey increases.
+    """
+
+    from scipy.integrate import quad
+    # integration between x1 and x1
+    def normal_distribution_function(x):
+        import scipy.stats
+        value = scipy.stats.norm.pdf(x, mean, std)
+        return value
+    mean, std = 0.0, 1.0
+
+    x1 = mean - std
+    x2 = mean + std
+
+    res, err = quad(func=normal_distribution_function, a=x1, b=x2)
+
+    print('Normal Distribution (mean,std):', mean, std)
+    print('Integration bewteen {} and {} --> '.format(x1, x2), res)
 
 # - tests
 
