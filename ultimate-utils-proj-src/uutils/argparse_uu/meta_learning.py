@@ -29,7 +29,7 @@ def parse_basic_meta_learning_args_from_terminal() -> Namespace:
 
     parser.add_argument('--split', type=str, default='train', help=' train, val, test')
     # this is the name used in synth agent, parser.add_argument('--data_set_path', type=str, default='', help='path to data set splits')
-    parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT',
+    parser.add_argument('--path_to_data_set', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT',
                         help='path to data set splits')
 
     parser.add_argument('--log_root', type=str, default=Path('/logs/').expanduser())

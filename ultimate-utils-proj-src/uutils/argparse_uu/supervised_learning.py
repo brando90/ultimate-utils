@@ -22,7 +22,7 @@ def parse_args_standard_sl() -> Namespace:
     # - data set & dataloader options
     parser.add_argument('--split', type=str, default='train', help="possiboe values: "
                                                                    "'train', val', test'")
-    parser.add_argument('--data_set_path', type=str, default=Path('~/data/mnist/').expanduser(),
+    parser.add_argument('--path_to_data_set', type=str, default=Path('~/data/mnist/').expanduser(),
                         help='path to data set splits. The code will assume everything is saved in'
                              'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
                              'setup method and log_root.')

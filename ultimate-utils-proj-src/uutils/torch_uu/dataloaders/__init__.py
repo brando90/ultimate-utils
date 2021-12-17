@@ -1,3 +1,6 @@
+"""
+TODO: make init empty, make their own modules for each data set data loader
+"""
 from argparse import Namespace
 
 import time
