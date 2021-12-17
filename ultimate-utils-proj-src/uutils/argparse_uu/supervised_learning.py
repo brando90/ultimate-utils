@@ -20,7 +20,7 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--parallel', action='store_true', help='if running in parallel')
 
     # - data set & dataloader options
-    parser.add_argument('--log_root', type=str, default=Path('/logs/').expanduser())
+    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
     # - training options
     parser.add_argument('--training_mode', type=str, default='iterations', help='valid values: '
@@ -65,9 +65,9 @@ def parse_args_standard_sl() -> Namespace:
                         help='path to data set splits. The code will assume everything is saved in'
                              'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
                              'setup method and log_root.')
-    parser.add_argument('--not_augment_train', action='store_false', type=bool, default=True)
-    parser.add_argument('--augment_val', action='store_true', type=bool, default=False)
-    parser.add_argument('--augment_test', action='store_true', type=bool, default=False)
+    parser.add_argument('--not_augment_train', action='store_false', default=True)
+    parser.add_argument('--augment_val', action='store_true', default=False)
+    parser.add_argument('--augment_test', action='store_true', default=False)
 
     # parser.add_argument('--l2', type=float, default=0.0)
     # parser.add_argument('--lr_reduce_steps', default=3, type=int,
@@ -90,16 +90,25 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--args_hardcoded_in_script', action='store_true', default=False,
                         help='If part of the args are '
                              'hardcoded in the python script.')
-    parser.add_argument('--pin_memory', action='store_true', type=bool, default=False, help="Using pinning is an"
-                                                                                            "advanced tip according to"
-                                                                                            "pytorch docs, so will "
-                                                                                            "leave it False as default"
-                                                                                            "use it at your own risk"
-                                                                                            "of further debugging and"
-                                                                                            "spending time on none"
-                                                                                            "essential, likely over"
-                                                                                            "optimizing. See:"
-                                                                                            "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
+    parser.add_argument('--pin_memory', action='store_true', default=False, help="Using pinning is an"
+                                                                                 "advanced tip according to"
+                                                                                 "pytorch docs, so will "
+                                                                                 "leave it False as default"
+                                                                                 "use it at your own risk"
+                                                                                 "of further debugging and"
+                                                                                 "spending time on none"
+                                                                                 "essential, likely over"
+                                                                                 "optimizing. See:"
+                                                                                 "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
+
+    # - wandb
+    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
+    parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
+    parser.add_argument('--wandb_entity', type=str, default='brando')
+    parser.add_argument('--wandb_group', type=str, default='experiment_debug', help='helps grouping experiment runs')
+    # parser.add_argument('--wandb_log_freq', type=int, default=10)
+    # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
+    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=-1)
 
     # - parse arguments
     args: Namespace = parser.parse_args()

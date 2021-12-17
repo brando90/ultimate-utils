@@ -25,7 +25,8 @@ import numpy as np
 
 from typing import Optional
 
-from automl.core.operations import SPP
+# from automl.core.operations import SPP
+from uutils.torch_uu.models.spp import SPP
 
 
 def helloworld(msg="hello"):

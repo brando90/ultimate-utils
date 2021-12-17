@@ -29,9 +29,12 @@ you should be aware that pinning is often an expensive operation. Thus, will lea
 ref:
     - on pin_memory: https://pytorch.org/docs/stable/data.html
 """
+from typing import Callable, Optional, Union
+
 import numpy as np
 import torch
-from torch.utils.data import Dataset, SubsetRandomSampler, random_split, DataLoader
+from numpy.random import RandomState
+from torch.utils.data import Dataset, SubsetRandomSampler, random_split, DataLoader, RandomSampler
 
 
 def get_train_val_split_random_sampler(
@@ -97,6 +100,7 @@ def get_train_val_split_with_split(
 
     ref:
         - https://gist.github.com/MattKleinsmith/5226a94bad5dd12ed0b871aed98cb123
+        - change transform: https://discuss.pytorch.org/t/changing-transforms-after-creating-a-dataset/64929/4
     """
     train_dataset, valid_dataset = random_split(train_dataset, train_val_split)
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -106,23 +110,28 @@ def get_train_val_split_with_split(
                                                pin_memory=pin_memory)
     return train_loader, valid_loader
 
-def get_dataloaders(train_dataset,
-                    val_dataset,
-                    batch_size,
-                    batch_size_eval,
-                    rank,
-                    world_size,
-                    merge,
-                    num_workers,  # -1 means its running serially
-                    ):
+
+def get_serial_or_distributed_dataloaders(train_dataset: Dataset,
+                                          val_dataset: Dataset,
+                                          batch_size: int = 128,
+                                          batch_size_eval: int = 64,
+                                          rank: int = -1,
+                                          world_size: int = 0,
+                                          merge: Optional[Callable] = None,
+                                          num_workers: int = -1,  # -1 means its running serially
+                                          pin_memory: bool = False,
+                                          ):
+    """
+
+    """
     from uutils.torch_uu.distributed import is_running_serially
     if is_running_serially(rank):
-        train_sampler, val_sampler = None, None
+        train_sampler = RandomSampler(train_dataset)
+        val_sampler = RandomSampler(val_dataset)
         num_workers = 4 if num_workers == -1 else num_workers
-        assert num_workers == rank, f'Should be running serially.'
     else:
-        assert (batch_size >= world_size)
-        # get dist samplers
+        assert (batch_size >= world_size), f'Each worker must get at least one data point, so batch_size >= world_size' \
+                                           f'but got: {batch_size}{world_size}'
         from torch.utils.data import DistributedSampler
 
         # note: shuffle = True by default
@@ -131,21 +140,34 @@ def get_dataloaders(train_dataset,
         # set the input num_workers but for ddp 0 is recommended afaik, todo - check
         num_workers = 0 if num_workers == -1 else num_workers
     # get dist dataloaders
-    train_dataloader = DataLoader(train_dataset,
-                                  batch_size=batch_size,
-                                  sampler=train_sampler,
-                                  collate_fn=merge,
-                                  num_workers=num_workers)
-    val_dataloader = DataLoader(val_dataset,
-                                batch_size=batch_size_eval,
-                                sampler=val_sampler,
-                                collate_fn=merge,
-                                num_workers=num_workers)
+    train_loader = DataLoader(train_dataset,
+                              batch_size=batch_size,
+                              sampler=train_sampler,
+                              collate_fn=merge,
+                              num_workers=num_workers,
+                              pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset,
+                            batch_size=batch_size_eval,
+                            sampler=val_sampler,
+                            collate_fn=merge,
+                            num_workers=num_workers,
+                            pin_memory=pin_memory)
     # return dataloaders
     # dataloaders = {'train': train_dataloader, 'val': val_dataloader, 'test': test_dataloader}
     # iter(train_dataloader)  # if this fails its likely your running in pycharm and need to set num_workers flag to 0
-    return train_dataloader, val_dataloader
+    return train_loader, val_loader
+
+
+def split_inidices(indices: list,
+                   test_size: Optional[int, float] = None,
+                   random_state: Optional[Union[int, RandomState, None]] = None,
+                   shuffle: bool = False,  # false for reproducibility, and any split is as good as any other.
+                   ) -> tuple[list[int], list[int]]:
+    import sklearn.model_selection
+    # - api: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+    train_indices, val_indices = sklearn.model_selection.train_test_split(indices, test_size=test_size,
+                                                                          random_state=random_state,
+                                                                          shuffle=shuffle)
+    return train_indices, val_indices
 
 # - visualization help
-
-

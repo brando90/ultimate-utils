@@ -3,12 +3,13 @@ from argparse import Namespace
 import torch
 from torch import nn, Tensor
 
+from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.distributed import process_batch_ddp
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 from uutils.torch_uu.metrics.metrics import accuracy
 
 
-class ClassificationSLAgent(nn.Module):
+class ClassificationSLAgent(Agent):
 
     def __init__(self,
                  args: Namespace,
@@ -52,7 +53,7 @@ class ClassificationSLAgent(nn.Module):
         return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci
 
 
-class RegressionSLAgent(nn.Module):
+class RegressionSLAgent(Agent):
     """
     todo - main difference is to use R2 score (perhaps squeezed, for accuracy instead of loss), and
         to make sure it has the options for reduction.

@@ -5,7 +5,7 @@ Inspired from:
 """
 from argparse import Namespace
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable
 
 import numpy as np
 import torch
@@ -13,7 +13,8 @@ from torch.utils.data import random_split, DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
 
-from uutils.torch_uu.dataloaders.common import get_train_val_split_random_sampler
+from uutils.torch_uu.dataloaders.common import get_train_val_split_random_sampler, split_inidices, \
+    get_serial_or_distributed_dataloaders
 
 NORMALIZE_MNIST = transforms.Normalize((0.1307,), (0.3081,))  # MNIST
 
@@ -25,14 +26,20 @@ def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
                     'augment_train': args.augment_train,
                     'augment_val': args.augment_val,
                     'num_workers': args.num_workers,
-                    'pin_memory': args.pin_memory
+                    'pin_memory': args.pin_memory,
+                    'rank': args.randk,
+                    'world_size': args.world_size,
+                    'merge': None
                     }
     test_kwargs = {'data_dir': args.data_dir,
-                    'batch_size_eval': args.batch_size_eval,
-                    'augment_test': args.augment_train,
-                    'num_workers': args.num_workers,
-                    'pin_memory': args.pin_memory
-                    }
+                   'batch_size_eval': args.batch_size_eval,
+                   'augment_test': args.augment_train,
+                   'num_workers': args.num_workers,
+                   'pin_memory': args.pin_memory,
+                   'rank': args.randk,
+                   'world_size': args.world_size,
+                   'merge': None
+                   }
     train_loader, val_loader = get_train_valid_loader(**train_kwargs)
     test_loader: DataLoader = get_test_loader(**test_kwargs)
     dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
@@ -58,13 +65,18 @@ def get_transform(augment: bool):
 def get_train_valid_loader(data_dir: Path,
                            batch_size: int = 128,
                            batch_size_eval: int = 64,
-                           # seed: Optional[int] = None,
+                           seed: Optional[int] = None,
                            augment_train: bool = True,
                            augment_val: bool = False,
                            val_size: Optional[float] = 0.2,
-                           # shuffle=True,
-                           num_workers=4,
-                           pin_memory=False):
+                           shuffle: bool = False,  # false for reproducibility, and any split is as good as any other.
+                           num_workers: int = -1,
+                           pin_memory: bool = False,
+
+                           rank: int = -1,
+                           world_size: int = 0,
+                           merge: Optional[Callable] = None,
+                           ) -> tuple[DataLoader, DataLoader]:
     """
     Utility function for loading and returning train and valid
     multi-process iterators over the MNIST dataset. A sample
@@ -83,14 +95,20 @@ def get_train_valid_loader(data_dir: Path,
                                    download=True, transform=train_transform)
     val_dataset = datasets.MNIST(root=data_dir, train=True,
                                  download=True, transform=val_transform)
-    train_loader, val_loader = get_train_val_split_random_sampler(train_dataset,
-                                                                  val_dataset,
-                                                                  val_size=val_size,
-                                                                  batch_size=batch_size,
-                                                                  batch_size_eval=batch_size_eval,
-                                                                  num_workers=num_workers,
-                                                                  pin_memory=pin_memory
-                                                                  )
+    indices = list(range(len(train_dataset)))
+    train_indices, val_indices = split_inidices(indices, test_size=val_size, random_state=seed, shuffle=shuffle)
+    train_dataset = torch.utils.data.Subset(train_dataset, train_indices)
+    val_dataset = torch.utils.data.Subset(val_dataset, val_indices)
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(train_dataset,
+                                                                     val_dataset,
+                                                                     batch_size,
+                                                                     batch_size_eval,
+                                                                     rank,
+                                                                     world_size,
+                                                                     merge,
+                                                                     num_workers,
+                                                                     pin_memory
+                                                                     )
     return train_loader, val_loader
 
 
@@ -100,7 +118,11 @@ def get_test_loader(data_dir,
                     augment_test: bool = False,
                     num_workers=4,
                     pin_memory=False,
-                    ):
+
+                    rank: int = -1,
+                    world_size: int = 0,
+                    merge: Optional[Callable] = None,
+                    ) -> DataLoader:
     """
     Utility function for loading and returning a multi-process
     test iterator over the MNIST dataset.
@@ -123,13 +145,26 @@ def get_test_loader(data_dir,
     # define transform
     test_transform = get_transform(augment_test)
 
-    dataset = datasets.MNIST(root=data_dir,
-                             train=False,  # ensures its test set
-                             download=True,
-                             transform=test_transform)
-    test_loader = torch.utils.data.DataLoader(dataset,
+    # load the dataset
+    data_dir: str = str(Path(data_dir).expanduser())
+    test_dataset = datasets.MNIST(root=data_dir,
+                                  train=False,  # ensures its test set
+                                  download=True,
+                                  transform=test_transform)
+    test_loader = torch.utils.data.DataLoader(test_dataset,
                                               batch_size=batch_size_eval,
                                               shuffle=shuffle,
                                               num_workers=num_workers,
                                               pin_memory=pin_memory)
+    _, test_dataset = get_serial_or_distributed_dataloaders(# None,
+                                                            # deepcopy(test_dataset),
+                                                            test_dataset,
+                                                            batch_size_eval,
+                                                            batch_size_eval,
+                                                            rank,
+                                                            world_size,
+                                                            merge,
+                                                            num_workers,
+                                                            pin_memory,
+                                                            )
     return test_loader

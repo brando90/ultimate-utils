@@ -10,7 +10,6 @@ from torch.optim.lr_scheduler import _LRScheduler
 import uutils
 from uutils.torch_uu import AverageMeter
 from uutils.torch_uu.agents.common import Agent
-from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 
@@ -120,7 +119,7 @@ def main_train_fixed_number_of_epochs(args: Namespace,
 def main_train_fixed_number_of_iterations():
     pass
 
-def main_train_loop_until_convergence(agent, args: Namesspace, acc_tolerance: float = 1.0,
+def main_train_loop_until_convergence(agent, args: Namespace, acc_tolerance: float = 1.0,
                                       train_loss_tolerance: float = 0.001):
     pass
 

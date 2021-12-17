@@ -15,6 +15,7 @@ from uutils.argparse_uu.supervised_learning import make_args_from_supervised_lea
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
 from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
+from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
 from uutils.torch_uu.distributed import set_sharing_strategy, print_process_info, set_devices, setup_process, \
     move_to_ddp, cleanup, print_dist
 from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_first_time
@@ -79,7 +80,7 @@ def main():
     if torch.cuda.is_available():
         args.world_size = torch.cuda.device_count()
         print(f"{torch.cuda.device_count()=}")
-    elif args.serial:
+    elif not args.parallel:
         args.world_size = 1
         print('RUNNING SERIALLY')
     else:
@@ -104,8 +105,8 @@ def train(rank, args):
     setup_process(args, rank, master_port=args.master_port, world_size=args.world_size)
     print(f'setup process done for rank={rank}')
 
-    # create the dataloaders, todo
-    args.dataloaders: dict = get_uutils_mnist_dataloaders()
+    # create the dataloaders
+    args.dataloaders: dict = get_sl_dataloader(args)
 
     # create the (ddp) model, opt & scheduler
     get_and_create_model_opt_scheduler_first_time(args)
@@ -121,7 +122,6 @@ def train(rank, args):
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
 
-
     # -- Clean Up Distributed Processes
     print(f'\n----> about to cleanup worker with rank {rank}')
     cleanup(rank)
@@ -132,6 +132,7 @@ def train(rank, args):
 
 if __name__ == "__main__":
     import time
+
     start = time.time()
     # - run experiment
     main()

@@ -120,13 +120,14 @@ def setup_args_for_experiment(args: Namespace,
     # - setup expanded path to checkpoint
     if hasattr(args, 'path_to_checkpoint'):
         # str -> Path(path_to_checkpoint).expand()
-        if isinstance(args.path_to_checkpoint, str):
-            args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
-        elif isinstance(args.path_to_checkpoint, Path):
-            args.path_to_checkpoint.expanduser()
-        else:
-            raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
-                             f'with value: {args.path_to_checkpoint=}')
+        if args.path_to_checkpoint is not None:
+            if isinstance(args.path_to_checkpoint, str):
+                args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
+            elif isinstance(args.path_to_checkpoint, Path):
+                args.path_to_checkpoint.expanduser()
+            else:
+                raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
+                                 f'with value: {args.path_to_checkpoint=}')
 
     # - get device name if possible
     try:
