@@ -20,12 +20,6 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--parallel', action='store_true', help='if running in parallel')
 
     # - data set & dataloader options
-    parser.add_argument('--split', type=str, default='train', help="possiboe values: "
-                                                                   "'train', val', test'")
-    parser.add_argument('--path_to_data_set', type=str, default=Path('~/data/mnist/').expanduser(),
-                        help='path to data set splits. The code will assume everything is saved in'
-                             'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
-                             'setup method and log_root.')
     parser.add_argument('--log_root', type=str, default=Path('/logs/').expanduser())
 
     # - training options
@@ -60,8 +54,21 @@ def parse_args_standard_sl() -> Namespace:
                                                                           'Doing a hp search with with wanbd'
                                                                           'a good idea.')
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
-    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
+
+    # - data set args
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--batch_size_eval', type=int, default=128)
+    parser.add_argument('--split', type=str, default='train', help="possiboe values: "
+                                                                   "'train', val', test'")
+    parser.add_argument('--path_to_data_set', type=str, default=Path('~/data/mnist/').expanduser(),
+                        help='path to data set splits. The code will assume everything is saved in'
+                             'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
+                             'setup method and log_root.')
+    parser.add_argument('--not_augment_train', action='store_false', type=bool, default=True)
+    parser.add_argument('--augment_val', action='store_true', type=bool, default=False)
+    parser.add_argument('--augment_test', action='store_true', type=bool, default=False)
+
     # parser.add_argument('--l2', type=float, default=0.0)
     # parser.add_argument('--lr_reduce_steps', default=3, type=int,
     #                     help='the number of steps before reducing the learning rate \
@@ -83,6 +90,16 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--args_hardcoded_in_script', action='store_true', default=False,
                         help='If part of the args are '
                              'hardcoded in the python script.')
+    parser.add_argument('--pin_memory', action='store_true', type=bool, default=False, help="Using pinning is an"
+                                                                                            "advanced tip according to"
+                                                                                            "pytorch docs, so will "
+                                                                                            "leave it False as default"
+                                                                                            "use it at your own risk"
+                                                                                            "of further debugging and"
+                                                                                            "spending time on none"
+                                                                                            "essential, likely over"
+                                                                                            "optimizing. See:"
+                                                                                            "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
 
     # - parse arguments
     args: Namespace = parser.parse_args()
