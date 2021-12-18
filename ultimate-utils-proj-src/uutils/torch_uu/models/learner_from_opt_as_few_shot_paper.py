@@ -80,8 +80,8 @@ def get_default_learner_and_hps_dict(image_size: int = 84,
                                      filter_size: int = 32,
                                      levels: Optional = None,
                                      spp: bool = False) -> tuple[nn.Module, dict]:
-    model_hps_for_cons_dict: dict = {image_size: image_size, bn_eps: bn_eps, bn_momentum: bn_momentum,
-                                     n_classes: n_classes, filter_size: filter_size, levels: levels, spp: spp}
+    model_hps_for_cons_dict: dict = {'image_size': image_size, 'bn_eps': bn_eps, 'bn_momentum': bn_momentum,
+                                     'n_classes': n_classes, 'filter_size': filter_size, 'levels': levels, 'spp': spp}
     model: nn.Module = Learner(**model_hps_for_cons_dict)
     return model, model_hps_for_cons_dict
 

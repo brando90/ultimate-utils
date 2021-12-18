@@ -116,7 +116,7 @@ def get_serial_or_distributed_dataloaders(train_dataset: Dataset,
                                           batch_size: int = 128,
                                           batch_size_eval: int = 64,
                                           rank: int = -1,
-                                          world_size: int = 0,
+                                          world_size: int = 1,
                                           merge: Optional[Callable] = None,
                                           num_workers: int = -1,  # -1 means its running serially
                                           pin_memory: bool = False,
@@ -159,7 +159,7 @@ def get_serial_or_distributed_dataloaders(train_dataset: Dataset,
 
 
 def split_inidices(indices: list,
-                   test_size: Optional[int, float] = None,
+                   test_size: Optional = None,
                    random_state: Optional[Union[int, RandomState, None]] = None,
                    shuffle: bool = False,  # false for reproducibility, and any split is as good as any other.
                    ) -> tuple[list[int], list[int]]:

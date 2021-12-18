@@ -19,7 +19,9 @@ from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
 from uutils.torch_uu.distributed import set_sharing_strategy, print_process_info, set_devices, setup_process, \
     move_to_ddp, cleanup, print_dist
 from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_first_time
-from uutils.torch_uu.training.supervised_learning import train_agent_single_batch
+from uutils.torch_uu.training.supervised_learning import train_agent_fit_single_batch, \
+    train_agent_fixed_number_of_iterations, train_agent_fixed_number_of_epochs, train_agent_fit_until_convergence, \
+    train_agent_fit_until_perfect_train_accuracy
 
 
 def manual_load(args) -> Namespace:
@@ -44,7 +46,8 @@ def load_args() -> Namespace:
     args.experiment_name = f'debug'
     args.run_name = f'debug (Adafactor) : {args.jobid=}'
     args.force_log = True
-    args.log_to_wandb = True
+    # args.log_to_wandb = True
+    args.log_to_wandb = False
 
     # - real args
     # args.experiment_name = f'Real experiment name (Real)'
@@ -77,23 +80,14 @@ def main():
     [print(f'{k, v}') for k, v in vars(args).items()]
 
     # - parallel train
-    if torch.cuda.is_available():
-        args.world_size = torch.cuda.device_count()
-        print(f"{torch.cuda.device_count()=}")
-    elif not args.parallel:
+    if not args.parallel:  # serial
+        print('RUNNING SERIALLY')
         args.world_size = 1
-        print('RUNNING SERIALLY')
-    else:
-        # args.world_size = mp.cpu_count() - 1  # 1 process is main, the rest are (parallel) trainers
-        args.world_size = 4
-
-    print(f'\n{args.world_size=}')
-    if args.serial:
-        print('RUNNING SERIALLY')
         train(rank=-1, args=args)
     else:
-        # spawn the distributed training code
-        print('\nABOUT TO SPAWN WORKERS')
+        print(f"{torch.cuda.device_count()=}")
+        args.world_size = torch.cuda.device_count()
+        # args.world_size = mp.cpu_count() - 1  # 1 process is main, the rest are (parallel) trainers
         set_sharing_strategy()
         mp.spawn(fn=train, args=(args,), nprocs=args.world_size)
 
@@ -105,20 +99,26 @@ def train(rank, args):
     setup_process(args, rank, master_port=args.master_port, world_size=args.world_size)
     print(f'setup process done for rank={rank}')
 
+    # create the (ddp) model, opt & scheduler
+    get_and_create_model_opt_scheduler_first_time(args)
+    print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}", args.rank)
+
     # create the dataloaders
     args.dataloaders: dict = get_sl_dataloader(args)
 
-    # create the (ddp) model, opt & scheduler
-    get_and_create_model_opt_scheduler_first_time(args)
-    print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}")
-
     # Agent does everything, proving, training, evaluate etc.
-    agent: Agent = ClassificationSLAgent(args, args.mdl)
+    agent: Agent = ClassificationSLAgent(args, args.model)
 
     # -- Start Training Loop
-    agent.log('====> about to start train loop')
-    if args.training_mode == 'single_batch':
-        train_agent_single_batch(args, agent, args.dataloaders, args.opt, args.scheduler)
+    print_dist('====> about to start train loop', args.rank)
+    if args.training_mode == 'iterations':
+        train_agent_fixed_number_of_iterations(args, agent, args.dataloaders, args.opt, args.scheduler)
+    elif args.training_mode == 'epochs':
+        train_agent_fixed_number_of_epochs(args, agent, args.dataloaders, args.opt, args.scheduler)
+    elif args.training_mode == 'fit_single_batch':
+        train_agent_fit_single_batch(args, agent, args.dataloaders, args.opt, args.scheduler)
+    elif args.training_mode == 'fit_until_convergence':
+        train_agent_fit_until_convergence(args, agent, args.dataloaders, args.opt, args.scheduler)
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
 

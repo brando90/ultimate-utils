@@ -15,6 +15,7 @@ class ClassificationSLAgent(Agent):
                  args: Namespace,
                  model: nn.Module,
                  ):
+        super().__init__()
         self.args = args
         self.model = model
         if hasattr(args, 'loss'):
@@ -60,5 +61,6 @@ class RegressionSLAgent(Agent):
     """
 
     def __init__(self, model: nn.Module, loss: nn.Module):
+        super().__init__()
         self.model = model
         self.loss = loss

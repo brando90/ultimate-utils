@@ -20,7 +20,7 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace,
     """
     # - get model the empty model from the hps for the cons for the model
     model_option: str = args.model_option if model_option is None else model_option  # if obj None, use ckpt value
-    if model_option == '5CNN_opt_as_model_for_few_shot':
+    if model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict()
     elif 'resnet' in model_option and 'rfs' in model_option:
         raise NotImplementedError
@@ -33,15 +33,17 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace,
     # - get optimizer
     opt_option: str = args.opt_option if opt_option is None else opt_option
     if opt_option == 'AdafactorDefaultFair':
-        args.opt, _, args.opt_hps, _ = get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict()
+        args.opt, _, args.opt_hps, _ = get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(args.model)
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 
     # - get scheduler
+    scheduler_option: str = args.scheduler_option if scheduler_option is None else scheduler_option
     if scheduler_option == 'None':  # None != 'None', obj None means use the ckpt value
         args.scheduler = None
     elif scheduler_option == 'AdafactorSchedule':
-        _, args.scheduler, _, args.scheduler_hps = get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict()
+        _, args.scheduler, _, args.scheduler_hps = get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(
+            args.model)
     else:
         raise ValueError(f'Scheduler option is invalid: got {scheduler_option=}')
     return args.model, args.opt, args.scheduler

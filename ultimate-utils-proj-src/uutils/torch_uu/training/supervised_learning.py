@@ -1,3 +1,9 @@
+"""
+
+To save time, debug, coding; have everything be in terms of iterations, but control the frequency of logging with
+the log frequency parameter. When calling the epochs function, automatically set that in that function,
+else set some defaults in the argparse.
+"""
 from argparse import Namespace
 from typing import Any
 
@@ -14,13 +20,13 @@ from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_superv
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 
 
-def train_agent_single_batch(args: Namespace,
-                             mdl: Agent,
-                             dataloaders: dict,
-                             opt: Optimizer,
-                             scheduler: _LRScheduler,
-                             acc_tolerance: float = 1.0,
-                             train_loss_tolerance: float = 0.01):
+def train_agent_fit_single_batch(args: Namespace,
+                                 mdl: Agent,
+                                 dataloaders: dict,
+                                 opt: Optimizer,
+                                 scheduler: _LRScheduler,
+                                 acc_tolerance: float = 1.0,
+                                 train_loss_tolerance: float = 0.01):
     """
     Train for a single batch
     """
@@ -77,11 +83,15 @@ def train_agent_single_batch(args: Namespace,
         args.it += 1
 
 
-def main_train_fixed_number_of_epochs(args: Namespace,
-                                      mdl: nn.Module,
-                                      dataloaders: dict,
-                                      opt: Optimizer,
-                                      scheduler: _LRScheduler):
+def train_agent_fixed_number_of_iterations():
+    pass
+
+
+def train_agent_fixed_number_of_epochs(args: Namespace,
+                                       mdl: nn.Module,
+                                       dataloaders: dict,
+                                       opt: Optimizer,
+                                       scheduler: _LRScheduler):
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
@@ -116,10 +126,7 @@ def main_train_fixed_number_of_epochs(args: Namespace,
     return avg_loss.item(), avg_acc.item()  #
 
 
-def main_train_fixed_number_of_iterations():
-    pass
-
-def main_train_loop_until_convergence(agent, args: Namespace, acc_tolerance: float = 1.0,
+def train_agent_fit_until_convergence(agent, args: Namespace, acc_tolerance: float = 1.0,
                                       train_loss_tolerance: float = 0.001):
     pass
 

@@ -13,30 +13,30 @@ from torch.utils.data import random_split, DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
 
-from uutils.torch_uu.dataloaders.common import get_train_val_split_random_sampler, split_inidices, \
+from uutils.torch_uu.dataloaders.common import split_inidices, \
     get_serial_or_distributed_dataloaders
 
 NORMALIZE_MNIST = transforms.Normalize((0.1307,), (0.3081,))  # MNIST
 
 
 def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
-    train_kwargs = {'data_dir': args.data_dir,
+    train_kwargs = {'path_to_data_set': args.path_to_data_set,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
                     'augment_train': args.augment_train,
                     'augment_val': args.augment_val,
                     'num_workers': args.num_workers,
                     'pin_memory': args.pin_memory,
-                    'rank': args.randk,
+                    'rank': args.rank,
                     'world_size': args.world_size,
                     'merge': None
                     }
-    test_kwargs = {'data_dir': args.data_dir,
+    test_kwargs = {'path_to_data_set': args.path_to_data_set,
                    'batch_size_eval': args.batch_size_eval,
                    'augment_test': args.augment_train,
                    'num_workers': args.num_workers,
                    'pin_memory': args.pin_memory,
-                   'rank': args.randk,
+                   'rank': args.rank,
                    'world_size': args.world_size,
                    'merge': None
                    }
@@ -62,7 +62,7 @@ def get_transform(augment: bool):
     return transform
 
 
-def get_train_valid_loader(data_dir: Path,
+def get_train_valid_loader(path_to_data_set: Path,
                            batch_size: int = 128,
                            batch_size_eval: int = 64,
                            seed: Optional[int] = None,
@@ -74,7 +74,7 @@ def get_train_valid_loader(data_dir: Path,
                            pin_memory: bool = False,
 
                            rank: int = -1,
-                           world_size: int = 0,
+                           world_size: int = 1,
                            merge: Optional[Callable] = None,
                            ) -> tuple[DataLoader, DataLoader]:
     """
@@ -90,10 +90,10 @@ def get_train_valid_loader(data_dir: Path,
     val_transform = get_transform(augment_val)
 
     # load the dataset
-    data_dir: str = str(Path(data_dir).expanduser())
-    train_dataset = datasets.MNIST(root=data_dir, train=True,
+    path_to_data_set: str = str(Path(path_to_data_set).expanduser())
+    train_dataset = datasets.MNIST(root=path_to_data_set, train=True,
                                    download=True, transform=train_transform)
-    val_dataset = datasets.MNIST(root=data_dir, train=True,
+    val_dataset = datasets.MNIST(root=path_to_data_set, train=True,
                                  download=True, transform=val_transform)
     indices = list(range(len(train_dataset)))
     train_indices, val_indices = split_inidices(indices, test_size=val_size, random_state=seed, shuffle=shuffle)
@@ -112,15 +112,15 @@ def get_train_valid_loader(data_dir: Path,
     return train_loader, val_loader
 
 
-def get_test_loader(data_dir,
+def get_test_loader(path_to_data_set,
                     batch_size_eval: int = 64,
                     shuffle: bool = True,
                     augment_test: bool = False,
-                    num_workers=4,
+                    num_workers: int = -1,
                     pin_memory=False,
 
                     rank: int = -1,
-                    world_size: int = 0,
+                    world_size: int = 1,
                     merge: Optional[Callable] = None,
                     ) -> DataLoader:
     """
@@ -129,7 +129,7 @@ def get_test_loader(data_dir,
     If using CUDA, num_workers should be set to 1 and pin_memory to True.
     Params
     ------
-    - data_dir: path directory to the dataset.
+    - path_to_data_set: path directory to the dataset.
     - batch_size: how many samples per batch to load.
     - shuffle: whether to shuffle the dataset after every epoch.
     - num_workers: number of subprocesses to use when loading the dataset.
@@ -146,18 +146,12 @@ def get_test_loader(data_dir,
     test_transform = get_transform(augment_test)
 
     # load the dataset
-    data_dir: str = str(Path(data_dir).expanduser())
-    test_dataset = datasets.MNIST(root=data_dir,
+    path_to_data_set: str = str(Path(path_to_data_set).expanduser())
+    test_dataset = datasets.MNIST(root=path_to_data_set,
                                   train=False,  # ensures its test set
                                   download=True,
                                   transform=test_transform)
-    test_loader = torch.utils.data.DataLoader(test_dataset,
-                                              batch_size=batch_size_eval,
-                                              shuffle=shuffle,
-                                              num_workers=num_workers,
-                                              pin_memory=pin_memory)
-    _, test_dataset = get_serial_or_distributed_dataloaders(# None,
-                                                            # deepcopy(test_dataset),
+    _, test_loader = get_serial_or_distributed_dataloaders(test_dataset,
                                                             test_dataset,
                                                             batch_size_eval,
                                                             batch_size_eval,

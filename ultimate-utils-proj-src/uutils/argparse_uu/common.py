@@ -85,6 +85,10 @@ def setup_args_for_experiment(args: Namespace,
     # if (not args.no_validation) and (args.lr_reduce_steps is not None):
     #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')
 
+    # - default augment train set
+    if not hasattr(args, 'augment_train'):
+        args.augment_train = True if not hasattr(args, 'not_augment_train') else not args.not_augment_train
+
     # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
     if hasattr(args, 'no_validation'):
         args.validation = not args.no_validation
@@ -101,7 +105,9 @@ def setup_args_for_experiment(args: Namespace,
 
     # - get device name
     print(f'{args.seed=}')
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)  # args.device = rank or .device
     print(f'device: {args.device}')
 
     # - get cluster info (including hostname)

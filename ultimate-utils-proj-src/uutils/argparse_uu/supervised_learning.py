@@ -19,27 +19,32 @@ def parse_args_standard_sl() -> Namespace:
     # parser.add_argument('--serial', action='store_true', help='if running serially')
     parser.add_argument('--parallel', action='store_true', help='if running in parallel')
 
-    # - data set & dataloader options
+    # - path to log_root
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
     # - training options
-    parser.add_argument('--training_mode', type=str, default='iterations', help='valid values: '
-                                                                                'iterations,'
-                                                                                'epochs, '
-                                                                                'train_until_perfect_train_accuracy, '
-                                                                                'fit_single_batch, '
-                                                                                'fit_until_convergence'
+    parser.add_argument('--training_mode', type=str, default='fit_until_convergence',
+                        help='valid values: '
+                             'fit_single_batch, '
+                             'iterations,'
+                             'epochs, '
+                             'fit_until_convergence'
+                             'fit_until_perfect_train_accuracy, '
                         )
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
 
     # model & loss function options
-    parser.add_argument('--model_type', type=str, help='Options:')
+    parser.add_argument('--model_option',
+                        type=str,
+                        default='5CNN_opt_as_model_for_few_shot_sl',
+                        help="Options: '5CNN_opt_as_model_for_few_shot_sl'"
+                        )
     parser.add_argument('--loss', type=str, help='loss/criterion', default=nn.CrossEntropyLoss())
 
     # optimization
-    parser.add_argument('--optimizer_option', type=str, default='Adafactor.')
+    parser.add_argument('--opt_option', type=str, default='AdafactorDefaultFair')
     parser.add_argument('--learning_rate', type=float, default=None, help='Warning: use a learning rate according to'
                                                                           'how previous work trains your model.'
                                                                           'Otherwise, tuning might be needed.'
@@ -141,8 +146,8 @@ def make_args_from_supervised_learning_checkpoint(args: Namespace,
         args: Namespace = merge_args(starting_args=args_ckpt, updater_args=args)
 
     # - create a correct path to save the new model that will be checkpointe and not break the previous checkpoint
-    from uutils.argparse_uu import create_default_log_root
-    create_default_log_root()  # creates a new log root with the current job number etc
+    from uutils.argparse_uu.common import create_default_log_root
+    create_default_log_root(args)  # creates a new log root with the current job number etc
     return args
 
 
