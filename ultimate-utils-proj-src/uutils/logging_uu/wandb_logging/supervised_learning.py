@@ -5,6 +5,7 @@ from progressbar import ProgressBar
 
 import uutils
 from uutils.logging_uu.wandb_logging.common import log_2_wanbd
+from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
 
@@ -121,8 +122,8 @@ def _log_train_val_stats(args: Namespace,
             log_2_tb_supervisedlearning(args.tb, args, step, val_loss, val_acc, 'val')
 
 
-def log_zeroth_step(args: Namespace):
+def log_zeroth_step(args: Namespace, model: Agent):
     batch: Any = next(iter(args.dataloaders['train']))
-    train_loss, train_acc = args.mdl(batch, training=True)
+    train_loss, train_acc = model(batch, training=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, args.epoch_num, step_name, train_loss, train_acc)

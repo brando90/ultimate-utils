@@ -66,15 +66,13 @@ def setup_args_for_experiment(args: Namespace,
     import uutils
     from uutils.logger import Logger as uuLogger
 
-    # - 0. to make sure epochs or iterations is explicit, set it up in the argparse arguments
-    assert args.training_mode in ['epochs', 'iterations']
-    # - 1. set the iteration/epoch number to start training from
-    if args.training_mode == 'iterations':
+    # - set the iteration/epoch number to start training from
+    if 'iterations' in args.training_mode:
         # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
         args.it = 0 if not hasattr(args, 'it') else args.it
         assert args.it >= 0, f'Iteration to train has to be start at zero or above but got: {args.it}'
         args.epoch_num = -1
-    elif args.training_mode == 'epochs':
+    elif 'epochs' in args.training_mode or args.training_mode == 'fit_single_batch':
         # set the training epoch number to start from beginning or from specified value e.g. from ckpt epoch_num index.
         args.epoch_num = 0 if not hasattr(args, 'epoch_num') else args.epoch_num
         assert args.epoch_num >= 0, f'Epoch number to train has to be start at zero or above but got: {args.epoch_num}'
@@ -82,7 +80,7 @@ def setup_args_for_experiment(args: Namespace,
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
     # - logging frequencies
-    if args.log_freq != -1:  # if log_freq is not set
+    if args.log_freq == -1:  # if log_freq is not set
         if args.training_mode == 'fit_single_batch':
             args.log_freq = 15
             log_scheduler_freq = 1

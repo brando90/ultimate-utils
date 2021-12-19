@@ -60,9 +60,11 @@ def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     """
     x, y = batch
     if type(x) == torch.Tensor:
-        x = x.to(args.gpu)
+        # x = x.to(args.gpu)
+        x = x.to(args.device)
     if type(y) == torch.Tensor:
-        y = y.to(args.gpu)
+        # y = y.to(args.gpu)
+        y = y.to(args.device)
     return x, y
 
 

@@ -98,24 +98,25 @@ def train(rank, args):
     setup_process(args, rank, master_port=args.master_port, world_size=args.world_size)
     print(f'setup process done for rank={rank}')
 
+    # create the dataloaders, this goes first so you can select the mdl (e.g. final layer) based on task
+    args.dataloaders: dict = get_sl_dataloader(args)
+
     # create the (ddp) model, opt & scheduler
     get_and_create_model_opt_scheduler_first_time(args)
     print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}", args.rank)
 
-    # create the dataloaders
-    args.dataloaders: dict = get_sl_dataloader(args)
-
     # Agent does everything, proving, training, evaluate etc.
     agent: Agent = ClassificationSLAgent(args, args.model)
+    # args.agent = agent
 
     # -- Start Training Loop
     print_dist('====> about to start train loop', args.rank)
     if args.training_mode == 'fit_single_batch':
         train_agent_fit_single_batch(args, agent, args.dataloaders, args.opt, args.scheduler)
-    elif args.training_mode == 'iterations':
+    elif 'iterations' in args.training_mode:
         # note train code will see training mode to determine halting criterion
         train_agent_iterations(args, agent, args.dataloaders, args.opt, args.scheduler)
-    elif args.training_mode == 'epochs':
+    elif 'epochs' in args.training_mode:
         # note train code will see training mode to determine halting criterion
         train_agent_epochs(args, agent, args.dataloaders, args.opt, args.scheduler)
     else:

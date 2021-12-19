@@ -140,7 +140,7 @@ class ConvergenceMeter:
         self.current_lowest = 0
         self.counts_bellow_current_lowest = 0
         self.convergence_patience = convergence_patience
-        self.rest()
+        self.reset()
 
     def reset(self, new_lowest: float = 0.0):
         self.current_lowest = new_lowest

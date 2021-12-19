@@ -21,9 +21,10 @@ class ClassificationSLAgent(Agent):
         if hasattr(args, 'loss'):
             self.loss = nn.CrossEntropyLoss() if args.loss is not None else args.loss
 
-    def forward(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(self, batch: Tensor, training: bool = True) -> tuple[Tensor, Tensor]:
+        self.model.train() if training else self.model.eval()
         batch_x, batch_y = process_batch_ddp(self.args, batch)
-        logits: Tensor = self.mdl(batch_x)
+        logits: Tensor = self.model(batch_x)
         loss: Tensor = self.loss(logits)
         acc, = accuracy(logits, batch_y)
         assert loss.size() == torch.Size([]) == acc.size()
@@ -39,7 +40,7 @@ class ClassificationSLAgent(Agent):
             self.model.train() if training else self.model.eval()
 
             # -- forward
-            logits: Tensor = self.mdl(batch_x)
+            logits: Tensor = self.model(batch_x)
             loss: Tensor = self.loss(logits)
             acc, = accuracy(logits, batch, reduction='acc_none')
             assert loss.size() == torch.Size([B]) == acc.size()

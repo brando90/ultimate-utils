@@ -21,7 +21,8 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace,
     # - get model the empty model from the hps for the cons for the model
     model_option: str = args.model_option if model_option is None else model_option  # if obj None, use ckpt value
     if model_option == '5CNN_opt_as_model_for_few_shot_sl':
-        args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict()
+        # args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict()
+        args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict(in_channels=1)
     elif 'resnet' in model_option and 'rfs' in model_option:
         raise NotImplementedError
     else:

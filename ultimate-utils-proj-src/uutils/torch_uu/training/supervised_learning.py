@@ -13,7 +13,6 @@ ref:
 from argparse import Namespace
 from typing import Any
 
-import progressbar
 from progressbar import ProgressBar
 from torch import nn, Tensor
 from torch.optim import Optimizer
@@ -24,14 +23,13 @@ from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_st
     log_train_val_stats_simple
 from uutils.torch_uu import AverageMeter
 from uutils.torch_uu.agents.common import Agent
-from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip, \
     ConvergenceMeter
 
 
 def train_agent_fit_single_batch(args: Namespace,
-                                 mdl: Agent,
+                                 model: Agent,
                                  dataloaders: dict,
                                  opt: Optimizer,
                                  scheduler: _LRScheduler,
@@ -42,7 +40,7 @@ def train_agent_fit_single_batch(args: Namespace,
     Train for a single batch
     """
     train_batch: Any = next(iter(dataloaders['train']))
-    val_batch: Any = next(iter(dataloaders['val']))
+    # val_batch: Any = next(iter(dataloaders['val']))
 
     # first batch
     args.it = 0  # training a single batch shouldn't need to use ckpts so this is ok
@@ -53,10 +51,10 @@ def train_agent_fit_single_batch(args: Namespace,
 
     # - train in epochs
     args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', patience=args.train_convergence_patience)
-    log_zeroth_step(args)
+    log_zeroth_step(args, model)
     halt: bool = False
     while halt:
-        train_loss, train_acc = mdl(train_batch, training=True)
+        train_loss, train_acc = model(train_batch, training=True)
         opt.zero_grad()
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
         opt.step()  # the right update is done since all procs have the right synced grads
@@ -78,7 +76,7 @@ def train_agent_fit_single_batch(args: Namespace,
 
 
 def train_agent_iterations(args: Namespace,
-                       mdl: Agent,
+                       model: Agent,
                        dataloaders: dict,
                        opt: Optimizer,
                        scheduler: _LRScheduler,
@@ -86,19 +84,19 @@ def train_agent_iterations(args: Namespace,
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
-    print_dist('Starting training...')
+    print_dist('Starting training...', args.rank)
 
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss.', patience=args.train_convergence_patience)
-    log_zeroth_step(args)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    log_zeroth_step(args, model)
     halt: bool = False
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
-            train_loss, train_acc = mdl(batch, training=True)
+            train_loss, train_acc = model(batch, training=True)
             opt.zero_grad()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
             opt.step()  # the right update is done since all procs have the right synced grads
@@ -129,7 +127,7 @@ def train_agent_iterations(args: Namespace,
 
 
 def train_agent_epochs(args: Namespace,
-                       mdl: Agent,
+                       model: Agent,
                        dataloaders: dict,
                        opt: Optimizer,
                        scheduler: _LRScheduler,
@@ -137,22 +135,22 @@ def train_agent_epochs(args: Namespace,
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
-    print_dist('Starting training...')
+    print_dist('Starting training...', args.rank)
     B: int = args.batch_size
 
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss.', patience=args.train_convergence_patience)
-    log_zeroth_step(args)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    log_zeroth_step(args, model)
     halt: bool = False
     while not halt:
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
-            train_loss, train_acc = mdl(batch, training=True)
+            train_loss, train_acc = model(batch, training=True)
             opt.zero_grad()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
             opt.step()  # the right update is done since all procs have the right synced grads
@@ -183,7 +181,7 @@ def train_agent_epochs(args: Namespace,
 # - quick evals
 
 # def eval(args: Namespace,
-#          mdl: nn.Module,
+#          model: nn.Module,
 #          training: bool = False,
 #          val_iterations: int = 0,
 #          split: str = 'val'
@@ -201,7 +199,7 @@ def train_agent_epochs(args: Namespace,
 #                                 f'if you want more precision increase (meta) batch size.'
 #     args.meta_learner.train() if training else args.meta_learner.eval()
 #     for batch_idx, eval_batch in enumerate(args.dataloaders[split]):
-#         eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci = mdl.eval_forward(eval_batch)
+#         eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci = model.eval_forward(eval_batch)
 #         if batch_idx >= val_iterations:
 #             break
 #     return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci

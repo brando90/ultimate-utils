@@ -79,9 +79,12 @@ def get_default_learner_and_hps_dict(image_size: int = 84,
                                      n_classes: int = 5,
                                      filter_size: int = 32,
                                      levels: Optional = None,
-                                     spp: bool = False) -> tuple[nn.Module, dict]:
+                                     spp: bool = False,
+                                     in_channels: int = 3
+                                     ) -> tuple[nn.Module, dict]:
     model_hps_for_cons_dict: dict = {'image_size': image_size, 'bn_eps': bn_eps, 'bn_momentum': bn_momentum,
-                                     'n_classes': n_classes, 'filter_size': filter_size, 'levels': levels, 'spp': spp}
+                                     'n_classes': n_classes, 'filter_size': filter_size, 'levels': levels,
+                                     'spp': spp, 'in_channels': in_channels}
     model: nn.Module = Learner(**model_hps_for_cons_dict)
     return model, model_hps_for_cons_dict
 
@@ -147,7 +150,8 @@ class Learner(nn.Module):
                  n_classes: int,
                  filter_size: int = 32,  # Meta-LSTM & MAML use 32 filters
                  levels: Optional = None,
-                 spp: bool = False
+                 spp: bool = False,
+                 in_channels: int = 3,
                  ):
         """[summary]
 
@@ -163,7 +167,7 @@ class Learner(nn.Module):
         self.spp = spp
         # - note: "model" is also a Module
         self.model = nn.ModuleDict({'features': nn.Sequential(OrderedDict([
-            ('conv1', nn.Conv2d(in_channels=3, out_channels=filter_size, kernel_size=3, padding=1)),
+            ('conv1', nn.Conv2d(in_channels=in_channels, out_channels=filter_size, kernel_size=3, padding=1)),
             ('norm1', nn.BatchNorm2d(filter_size, bn_eps, bn_momentum)),
             ('relu1', nn.ReLU(inplace=False)),
             ('pool1', nn.MaxPool2d(kernel_size=2)),

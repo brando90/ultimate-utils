@@ -23,14 +23,14 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
     # - training options
-    parser.add_argument('--training_mode', type=str, default='fit_until_convergence',
+    parser.add_argument('--training_mode', type=str, default='epochs_train_convergence',
                         help='valid/possible values: '
                              'fit_single_batch, '
                              'iterations,'
                              'epochs, '
                              'iterations_train_convergence,'
                              'epochs_train_convergence. '
-                             'Note: since the code checkpoints the best validation model anyway, it is already doing'
+                             '- Note: since the code checkpoints the best validation model anyway, it is already doing'
                              'early stopping, so early stopping criterion is not implemented. You can kill the job'
                              'if you see from the logs in wanbd that you are done.'
                         )
