@@ -37,6 +37,11 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
+    parser.add_argument('--train_convergence_patience', type=int, default=5, help='How long to wait for converge of'
+                                                                                  'training. Note this code should'
+                                                                                  'be saving the validation ckpt'
+                                                                                  'so you are automatically doing '
+                                                                                  'early stopping already.')
 
     # model & loss function options
     parser.add_argument('--model_option',
@@ -63,6 +68,9 @@ def parse_args_standard_sl() -> Namespace:
                                                                           'a good idea.')
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
     parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
+    parser.add_argument('--log_scheduler_freq', type=int, default=-1, help='default is to put the epochs or iterations '
+                                                                           'default either log every epoch or log ever '
+                                                                           '~100 iterations.')
 
     # - data set args
     parser.add_argument('--batch_size', type=int, default=128)
@@ -76,18 +84,14 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--not_augment_train', action='store_false', default=True)
     parser.add_argument('--augment_val', action='store_true', default=False)
     parser.add_argument('--augment_test', action='store_true', default=False)
-
     # parser.add_argument('--l2', type=float, default=0.0)
-    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
-    #                     help='the number of steps before reducing the learning rate \
-    #                     (only applicable when no_validation == True)')
-    # parser.add_argument('--lr_reduce_patience', type=int, default=10)
 
     # - checkpoint options
     parser.add_argument('--path_to_checkpoint', type=str, default=None, help='the path to the model checkpoint to '
                                                                              'resume training.'
                                                                              'e.g. path: '
                                                                              '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668/ckpt.pt')
+    parser.add_argument('--ckpt_freq', type=int, default=-1)
 
     # - miscellaneous arguments
     parser.add_argument('--log_freq', type=int, default=-1, help='default is to put the epochs or iterations default'

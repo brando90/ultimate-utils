@@ -14,8 +14,8 @@ from typing import Any
 import progressbar
 import transformers.optimization
 from progressbar import ProgressBar
-from torch import nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch import nn, Tensor
+from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 from transformers.optimization import AdafactorSchedule
 
 
@@ -46,7 +46,7 @@ def check_halt(args: Namespace) -> bool:
     """
     if args.training_mode == 'fit_single_batch':
         # halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
-        # return converge cirterion
+        halt: bool = args.convg_meter.check_converged()
     elif args.training_mode == 'iterations':
         #  idx + 1 == n, this means you've done n loops where idx = it or epoch_num
         halt: bool = args.it + 1 >= args.num_its
@@ -54,7 +54,9 @@ def check_halt(args: Namespace) -> bool:
         #  idx + 1 == n, this means you've done n loops where idx = it or epoch_num
         halt: bool = args.epoch_num + 1 >= args.num_epochs
     elif args.training_mode == 'iterations_train_convergence':
+        halt: bool = args.convg_meter.check_converged()
     elif args.training_mode == 'epochs_train_convergence':
+        halt: bool = args.convg_meter.check_converged()
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
     return halt
@@ -94,7 +96,14 @@ def gradient_clip(args, meta_opt):
                 raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
 
 
-def scheduler_step(args: Namespace):
+def scheduler_step(args: Namespace, scheduler: _LRScheduler):
+    """
+
+    Note:
+        - use the if i % log_freq outside. So it assumes you already decided how often to call this. With this setup it
+        means that when you do s.step(val_loss) the step will be with respect to a step/collection of its or epochs.
+    """
+    assert args.scheduler is scheduler
     if not hasattr(args, 'scheduler'):
         return
     else:
@@ -102,7 +111,6 @@ def scheduler_step(args: Namespace):
         if args.scheduler is None:
             return
         elif isinstance(args.scheduler, ReduceLROnPlateau):
-            # todo, get validaton loss, and give it to scheduler, make sure it make sense with the log_scheduler_freq
             val_batch: Any = next(iter(args.dataloaders['val']))
             val_loss, val_loss_ci, val_acc, val_acc_ci = args.mdl.eval_forward(val_batch)
             args.scheduler.step(val_loss)
@@ -112,11 +120,60 @@ def scheduler_step(args: Namespace):
         else:
             raise ValueError(f'Error, invalid Scheduler: the scheduler {args.scheduler=} is not supported.')
 
-# def should_we_call_scheduler(args: Namespace) -> bool:
-#     """"""
-#     # do not schedule on the first epoch, since the args.epoch_num +
-#     on_first_epocn: bool = args.it != 0
-#     call_scheduler: bool = (args.it % args.log_scheduler_freq == 0 and args.it != 0) or args.debug
-#     return call_scheduler
 
+# - meter
 
+class ConvergenceMeter:
+    """
+    Class that keeps track if you have converged or not. If you track val_loss this will be equivalent to
+    Early Stopping.
+    """
+
+    def __init__(self, name: str, convergence_patience: int = 5):
+        """
+
+        :param name:
+        :param patience: number of checks with no improvement after which training will be stopped. Note that the
+        intention is that the training code decides how often to call this, ideally in the if i % log_freq conditional.
+        """
+        self.name = name
+        self.current_lowest = 0
+        self.counts_bellow_current_lowest = 0
+        self.convergence_patience = convergence_patience
+        self.rest()
+
+    def reset(self, new_lowest: float = 0.0):
+        self.current_lowest = new_lowest
+        self.counts_bellow_current_lowest = 0
+
+    def update(self, val):
+        """
+        Give the current value to check and if it's lower than the current then reset the counting to check convergence.
+        If it is equal or greater than the current lowest, then increase counter by 1.
+        """
+        if val < self.current_lowest:
+            self.reset(new_lowest=val)
+        else:
+            self.counts_bellow_current_lowest += 1
+
+    def item(self):
+        if type(self.current_lowest) is Tensor:
+            return self.current_lowest.item()
+        else:
+            return float(self.current_lowest)
+
+    def check_converged(self) -> bool:
+        """
+        If the number of times (counts) we have seen the loss be bellow the current lowest, then we should halt.
+        If we have converged (i.e. the metric you are tracking has not decreased anymore) then halt - i.e. return
+        that you have converged.
+        """
+        return self.convergence_patience <= self.counts_bellow_current_lowest
+
+    def __str__(self):
+        """
+        ref:
+            - .__dict__ or vars( ) ? https://stackoverflow.com/questions/21297203/use-dict-or-vars
+        :return:
+        """
+        return f'ConvergenceMeter({vars(self)}'

@@ -6,7 +6,31 @@ from progressbar import ProgressBar
 import uutils
 from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
-from uutils.torch_uu.distributed import is_lead_worker
+from uutils.torch_uu.distributed import is_lead_worker, print_dist
+
+
+def log_train_val_stats_simple(it: int, train_loss: float, train_acc: float, bar: ProgressBar,
+                               save_val_ckpt: bool = True, force_log: bool = False):
+    # - get eval stats
+    val_loss, val_loss_ci, val_acc, val_acc_ci = mdl.eval_forward(val_batch)
+    if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
+        args.best_val_loss = float(val_loss)
+        save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
+
+    # - log ckpt
+    if it % 10 == 0 or force_log:
+        save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
+
+    # - save args
+    uutils.save_args(args, args_filename='args.json')
+
+    # - update progress bar at the end
+    bar.update(it)
+
+    # - print
+    print_dist(f"\n{it=}: {train_loss=} {train_acc=}")
+    print_dist(f"{it=}: {val_loss=} {val_acc=}")
+    # - for now no wandb for logging for one batch...perhaps change later
 
 
 def log_train_val_stats(args: Namespace,

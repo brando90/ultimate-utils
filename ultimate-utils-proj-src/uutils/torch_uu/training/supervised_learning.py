@@ -20,12 +20,14 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
-from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step
+from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step, \
+    log_train_val_stats_simple
 from uutils.torch_uu import AverageMeter
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
-from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip
+from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip, \
+    ConvergenceMeter
 
 
 def train_agent_fit_single_batch(args: Namespace,
@@ -34,36 +36,13 @@ def train_agent_fit_single_batch(args: Namespace,
                                  opt: Optimizer,
                                  scheduler: _LRScheduler,
                                  acc_tolerance: float = 1.0,
-                                 train_loss_tolerance: float = 0.01):
+                                 train_loss_tolerance: float = 0.01,
+                                 ):
     """
     Train for a single batch
     """
     train_batch: Any = next(iter(dataloaders['train']))
     val_batch: Any = next(iter(dataloaders['val']))
-
-    def log_train_val_stats_simple(it: int, train_loss: float, train_acc: float, bar: ProgressBar,
-                                   save_val_ckpt: bool = True, force_log: bool = False):
-        # - get eval stats
-        val_loss, val_loss_ci, val_acc, val_acc_ci = mdl.eval_forward(val_batch)
-        if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
-            args.best_val_loss = float(val_loss)
-            save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
-
-        # - log ckpt
-        if it % 10 == 0 or force_log:
-            save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
-
-        # - save args
-        uutils.save_args(args, args_filename='args.json')
-
-        # - update progress bar at the end
-        bar.update(it)
-
-        # - print
-        print_dist(f"\n{it=}: {train_loss=} {train_acc=}")
-        print_dist(f"{it=}: {val_loss=} {val_acc=}")
-
-        # - for now no wandb for logging for one batch...perhaps change later
 
     # first batch
     args.it = 0  # training a single batch shouldn't need to use ckpts so this is ok
@@ -73,6 +52,7 @@ def train_agent_fit_single_batch(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
+    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', patience=args.train_convergence_patience)
     log_zeroth_step(args)
     halt: bool = False
     while halt:
@@ -88,25 +68,72 @@ def train_agent_fit_single_batch(args: Namespace,
             log_train_val_stats_simple(args.it, train_loss, train_acc, args.bar)
 
         # - break
-        halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
+        # halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
         # halt: bool = check_halt(args)
+        halt: bool = check_halt(args) and (train_acc >= acc_tolerance and train_loss <= train_loss_tolerance)
         if halt:
             log_train_val_stats_simple(args.it, train_loss, train_acc, force_log=True)
             return train_loss, train_acc
         args.it += 1
 
 
-def train_agent_iterations():
-    pass
+def train_agent_iterations(args: Namespace,
+                       mdl: Agent,
+                       dataloaders: dict,
+                       opt: Optimizer,
+                       scheduler: _LRScheduler,
+                       ) -> tuple[Tensor, Tensor]:
+    """
+    Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
+    """
+    print_dist('Starting training...')
+
+    # - create progress bar
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
+
+    # - train in epochs
+    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss.', patience=args.train_convergence_patience)
+    log_zeroth_step(args)
+    halt: bool = False
+    while not halt:
+        # -- train for one epoch
+        for i, batch in enumerate(dataloaders['train']):
+            train_loss, train_acc = mdl(batch, training=True)
+            opt.zero_grad()
+            train_loss.backward()  # each process synchronizes its gradients in the backward pass
+            opt.step()  # the right update is done since all procs have the right synced grads
+            gradient_clip(args, opt)
+
+            # - scheduler, not in first/0th epoch though
+            if (args.it % args.log_scheduler_freq == 0 and args.it != 0) or args.debug:
+                scheduler_step(args, scheduler)
+
+            # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+            halt: bool = check_halt(args)
+
+            # - go to next it & before that check if we should halt
+            args.it += 1
+
+            # - log full epoch stats
+            # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+            if args.epoch_num % args.log_freq == 0 or halt:
+                step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+                log_train_val_stats(args, args.epoch_num, step_name, train_loss, train_acc)
+                args.convg_meter.update(train_loss)
+
+            # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
+            if halt:
+                break
+
+    return train_loss, train_acc
 
 
 def train_agent_epochs(args: Namespace,
-                                       mdl: Agent,
-                                       dataloaders: dict,
-                                       opt: Optimizer,
-                                       scheduler: _LRScheduler,
-                                       acc_tolerance: float = 1.0,
-                                       train_loss_tolerance: float = 0.01) -> tuple[Tensor, Tensor]:
+                       mdl: Agent,
+                       dataloaders: dict,
+                       opt: Optimizer,
+                       scheduler: _LRScheduler,
+                       ) -> tuple[Tensor, Tensor]:
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
@@ -117,13 +144,14 @@ def train_agent_epochs(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
+    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss.', patience=args.train_convergence_patience)
     log_zeroth_step(args)
     halt: bool = False
     while not halt:
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
-        for i, batch in enumerate(mdl.dataloaders['train']):
+        for i, batch in enumerate(dataloaders['train']):
             train_loss, train_acc = mdl(batch, training=True)
             opt.zero_grad()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
@@ -135,7 +163,7 @@ def train_agent_epochs(args: Namespace,
 
         # - scheduler, not in first/0th epoch though
         if (args.epoch_num % args.log_scheduler_freq == 0 and args.epoch_num != 0) or args.debug:
-            scheduler_step(args)
+            scheduler_step(args, scheduler)
 
         # convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
         halt: bool = check_halt(args)
@@ -148,9 +176,9 @@ def train_agent_epochs(args: Namespace,
         if args.epoch_num % args.log_freq == 0 or halt:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
             log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
+            args.convg_meter.update(avg_loss.item())
 
-    return avg_loss.item(), avg_acc.item()  #
-
+    return avg_loss.item(), avg_acc.item()
 
 # - quick evals
 
