@@ -90,6 +90,8 @@ def parse_args_standard_sl() -> Namespace:
                                                                              '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668/ckpt.pt')
 
     # - miscellaneous arguments
+    parser.add_argument('--log_freq', type=int, default=-1, help='default is to put the epochs or iterations default'
+                                                                 'either log every epoch or log ever ~100 iterations')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully deterministic')
@@ -108,6 +110,7 @@ def parse_args_standard_sl() -> Namespace:
                                                                                  "essential, likely over"
                                                                                  "optimizing. See:"
                                                                                  "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
+    parser.add_argument('--log_to_tb', action='store_true', help='store to weights and biases')
 
     # - wandb
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')

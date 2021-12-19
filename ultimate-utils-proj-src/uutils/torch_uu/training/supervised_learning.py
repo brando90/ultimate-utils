@@ -20,11 +20,12 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
-from uutils.torch_uu import AverageMeter, gradient_clip
+from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step
+from uutils.torch_uu import AverageMeter
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
-from uutils.torch_uu.training.common import get_trainer_progress_bar
+from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip
 
 
 def train_agent_fit_single_batch(args: Namespace,
@@ -40,8 +41,8 @@ def train_agent_fit_single_batch(args: Namespace,
     train_batch: Any = next(iter(dataloaders['train']))
     val_batch: Any = next(iter(dataloaders['val']))
 
-    def log_train_stats(it: int, train_loss: float, train_acc: float, bar: ProgressBar, save_val_ckpt: bool = True,
-                        force_log: bool = False):
+    def log_train_val_stats_simple(it: int, train_loss: float, train_acc: float, bar: ProgressBar,
+                                   save_val_ckpt: bool = True, force_log: bool = False):
         # - get eval stats
         val_loss, val_loss_ci, val_acc, val_acc_ci = mdl.eval_forward(val_batch)
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
@@ -67,12 +68,15 @@ def train_agent_fit_single_batch(args: Namespace,
     # first batch
     args.it = 0  # training a single batch shouldn't need to use ckpts so this is ok
     args.best_val_loss = float('inf')  # training a single batch shouldn't need to use ckpts so this is ok
-    avg_loss = AverageMeter('train loss')
-    avg_acc = AverageMeter('train accuracy')
-    bar: ProgressBar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
-    while True:
-        train_loss, train_acc = mdl(train_batch, training=True)
 
+    # - create progress bar
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
+
+    # - train in epochs
+    log_zeroth_step(args)
+    halt: bool = False
+    while halt:
+        train_loss, train_acc = mdl(train_batch, training=True)
         opt.zero_grad()
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
         opt.step()  # the right update is done since all procs have the right synced grads
@@ -81,13 +85,14 @@ def train_agent_fit_single_batch(args: Namespace,
             scheduler.step() if (scheduler is not None) else None
 
         if args.it % 10 == 0 and is_lead_worker(args):
-            log_train_stats(args.it, train_loss, train_acc, bar)
+            log_train_val_stats_simple(args.it, train_loss, train_acc, args.bar)
 
         # - break
         halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
+        # halt: bool = check_halt(args)
         if halt:
-            log_train_stats(args.it, train_loss, train_acc, force_log=True)
-            return avg_loss.item(), avg_acc.item()
+            log_train_val_stats_simple(args.it, train_loss, train_acc, force_log=True)
+            return train_loss, train_acc
         args.it += 1
 
 
@@ -109,10 +114,10 @@ def train_agent_epochs(args: Namespace,
     B: int = args.batch_size
 
     # - create progress bar
-    bar_epoch: ProgressBar = get_trainer_progress_bar(args)
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    train_loss, train_acc = float('inf'), 0.0
+    log_zeroth_step(args)
     halt: bool = False
     while not halt:
         # -- train for one epoch
@@ -127,43 +132,48 @@ def train_agent_epochs(args: Namespace,
 
             # - meter updates
             avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
-        # - scheduler
-        if (args.it % 500 == 0 and args.it != 0 and hasattr(args, 'scheduler')) or args.debug:
-            args.scheduler.step() if (args.scheduler is not None) else None
 
-        # - log full epoch stats
-        if log_condition():
-            self.log_train_stats(self.args.epoch_n, avg_loss.item(), avg_acc.item(), save_val_ckpt=True)
+        # - scheduler, not in first/0th epoch though
+        if (args.epoch_num % args.log_scheduler_freq == 0 and args.epoch_num != 0) or args.debug:
+            scheduler_step(args)
+
+        # convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+        halt: bool = check_halt(args)
 
         # - go to next it & before that check if we should halt
         args.epoch_num += 1
-        halt = check_halt(args)
+
+        # - log full epoch stats
+        # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+        if args.epoch_num % args.log_freq == 0 or halt:
+            step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+            log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
 
     return avg_loss.item(), avg_acc.item()  #
 
 
 # - quick evals
 
-def eval(args: Namespace,
-         mdl: nn.Module,
-         training: bool = False,
-         val_iterations: int = 0,
-         split: str = 'val'
-         ) -> tuple:
-    """
-
-    Note:
-        -  Training=True for eval only for meta-learning, here we do want .eval(), but then undo it
-
-    ref for BN/eval:
-        - For SL: do .train() for training and .eval() for eval in SL.
-        - For Meta-learning do train in both, see: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-    """
-    assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, ' \
-                                f'if you want more precision increase (meta) batch size.'
-    args.meta_learner.train() if training else args.meta_learner.eval()
-    for batch_idx, eval_batch in enumerate(args.dataloaders[split]):
-        eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci = mdl.eval_forward(eval_batch)
-        if batch_idx >= val_iterations:
-            break
-    return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci
+# def eval(args: Namespace,
+#          mdl: nn.Module,
+#          training: bool = False,
+#          val_iterations: int = 0,
+#          split: str = 'val'
+#          ) -> tuple:
+#     """
+#
+#     Note:
+#         -  Training=True for eval only for meta-learning, here we do want .eval(), but then undo it
+#
+#     ref for BN/eval:
+#         - For SL: do .train() for training and .eval() for eval in SL.
+#         - For Meta-learning do train in both, see: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
+#     """
+#     assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, ' \
+#                                 f'if you want more precision increase (meta) batch size.'
+#     args.meta_learner.train() if training else args.meta_learner.eval()
+#     for batch_idx, eval_batch in enumerate(args.dataloaders[split]):
+#         eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci = mdl.eval_forward(eval_batch)
+#         if batch_idx >= val_iterations:
+#             break
+#     return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci

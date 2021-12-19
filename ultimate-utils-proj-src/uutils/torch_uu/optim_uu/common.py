@@ -19,3 +19,4 @@ def get_scheduler(opt: Optimizer) -> _LRScheduler:
             # Note that step should be called after validate()
             scheduler.step(val_loss)
     """
+    pass

@@ -86,12 +86,18 @@ def setup_args_for_experiment(args: Namespace,
         if args.training_mode == 'fit_single_batch':
             args.log_freq = 15
             args.log_scheduler_freq = 1
-        elif args.training_mode == 'iterations':
+        elif 'iterations' in args.training_mode:
             args.log_freq = 100
-            args.log_scheduler_freq = 500
-        elif args.training_mode == 'epochs':
+            # similar to epochs, we don't want to anneal more often than what we plot, otherwise it will be harder to
+            # see if it was due to the scheduler or not, but when the scheduler is called we might see a dip in the
+            # learning curve - like with Qianli's plots
+            args.log_scheduler_freq = 3 * args.log_freq
+        elif 'epochs' in args.training_mode:
             args.log_freq = 5
-            args.log_scheduler_freq = 10
+            # same as log freq so that if you schedule more often than you log you might miss the scheduler decaying
+            # too quickly. It also approximates a scheduler of "on per epoch"
+            args.log_scheduler_freq = 1 * args.log_freq
+        args.ckpt_freq = args.log_freq
     # - annealing learning rate...
     # if (not args.no_validation) and (args.lr_reduce_steps is not None):
     #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')

@@ -1,4 +1,7 @@
 from argparse import Namespace
+from typing import Callable, Any
+
+from progressbar import ProgressBar
 
 import uutils
 from uutils.logging_uu.wandb_logging.common import log_2_wanbd
@@ -7,39 +10,55 @@ from uutils.torch_uu.distributed import is_lead_worker
 
 
 def log_train_val_stats(args: Namespace,
-                        it: int,
-
+                        step: int,
+                        step_name: str,
                         train_loss: float,
                         train_acc: float,
-
-                        valid,
-
-                        bar,
-
-                        log_freq: int = 10,
-                        ckpt_freq: int = 50,
-                        mdl_watch_log_freq: int = 50,
-                        force_log: bool = False,  # e.g. at the final it/epoch
-
-                        save_val_ckpt: bool = False,
-                        log_to_tb: bool = False,
-                        log_to_wandb: bool = False
+                        save_val_ckpt: bool = True,
                         ):
+    _log_train_val_stats(args=args,
+                         step=step,
+                         step_name=step_name,
+                         train_loss=train_loss,
+                         train_acc=train_acc,
+
+                         valid=args.mdl.eval_forward,
+
+                         bar=args.bar,
+
+                         ckpt_freq=getattr(args, 'ckpt_freq', args.log_freq),
+
+                         save_val_ckpt=save_val_ckpt,
+                         log_to_tb=getattr(args, 'log_to_tb', False),
+                         log_to_wandb=getattr(args, 'log_to_wandb', False),
+                         uu_logger_log=getattr(args, 'log_to_wandb', False)
+                         )
+
+
+def _log_train_val_stats(args: Namespace,
+                         step: int,
+                         step_name: str,
+
+                         train_loss: float,
+                         train_acc: float,
+
+                         valid: Callable,
+
+                         bar: ProgressBar,
+
+                         ckpt_freq: int,
+
+                         save_val_ckpt: bool = True,
+                         log_to_tb: bool = False,
+                         log_to_wandb: bool = False,
+                         uu_logger_log: bool = False,
+                         ):
     """
-    Log train and val stats where it is iteration or epoch step.
-
-    Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
+    Log train and val stats every step (where step is .epoch_num or .it)
     """
-    import wandb
-    from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
+    if is_lead_worker(args.rank):
+        from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
 
-    # - is it epoch or iteration
-    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
-
-    # if its
-    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
-
-    if (it % log_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
         # - get eval stats
         val_loss, val_loss_ci, val_acc, val_acc_ci = valid(args, split='val')
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
@@ -47,35 +66,39 @@ def log_train_val_stats(args: Namespace,
             save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
         # - log ckpt
-        if it % ckpt_freq == 0:
+        if step % ckpt_freq == 0:
             save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
 
         # - save args
         uutils.save_args(args, args_filename='args.json')
 
         # - update progress bar at the end
-        bar.update(it)
+        bar.update(step)
 
         # - print
         args.logger.log('\n')
-        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
-        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
-
-        print(f'{args.it=}')
-        print(f'{args.num_its=}')
+        args.logger.log(f"{step_name}={step}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"{step_name}={step}: {val_loss=}, {val_acc=}")
 
         # - record into stats collector
-        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
-        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
-        args.logger.save_experiment_stats_to_json_file()
-        args.logger.save_current_plots_and_stats()
+        if uu_logger_log:
+            args.logger.record_train_stats_stats_collector(step, train_loss, train_acc)
+            args.logger.record_val_stats_stats_collector(step, val_loss, val_acc)
+            args.logger.save_experiment_stats_to_json_file()
+            args.logger.save_current_plots_and_stats()
 
         # - log to wandb
         if log_to_wandb:
-            log_2_wanbd(it, train_loss, train_acc, val_loss, val_acc, it_or_epoch)
+            log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
 
         # - log to tensorboard
         if log_to_tb:
-            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
-            log_2_tb_supervisedlearning(args.tb, args, it, val_loss, val_acc, 'val')
+            log_2_tb_supervisedlearning(args.tb, args, step, train_loss, train_acc, 'train')
+            log_2_tb_supervisedlearning(args.tb, args, step, val_loss, val_acc, 'val')
 
+
+def log_zeroth_step(args: Namespace):
+    batch: Any = next(iter(args.dataloaders['train']))
+    train_loss, train_acc = args.mdl(batch, training=True)
+    step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+    log_train_val_stats(args, args.epoch_num, step_name, train_loss, train_acc)

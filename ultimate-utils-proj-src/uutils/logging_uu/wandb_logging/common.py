@@ -16,7 +16,7 @@ def log_2_wanbd(it: int,
         wandb.define_metric("train acc", step_metric=step_metric)
         wandb.define_metric("val loss", step_metric=step_metric)
         wandb.define_metric("val val", step_metric=step_metric)
-        # if mdl_watch_log_freq == -1:
+        # if wanbd_mdl_watch_log_freq == -1:
         #     wandb.watch(args.base_model, args.criterion, log="all", log_freq=mdl_watch_log_freq)
     # - log to wandb
     wandb.log(data={step_metric: it,
