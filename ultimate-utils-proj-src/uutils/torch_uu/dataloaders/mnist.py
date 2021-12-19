@@ -1,7 +1,6 @@
 """
 Inspired from:
-    - https://gist.github.com/MattKleinsmith/5226a94bad5dd12ed0b871aed98cb123
-    - https://www.geeksforgeeks.org/training-neural-networks-with-validation-using-pytorch/
+    - https://stackoverflow.com/questions/70400439/what-is-the-proper-way-to-create-training-validation-and-test-set-in-pytorch-or/70400448#70400448
 """
 from argparse import Namespace
 from pathlib import Path

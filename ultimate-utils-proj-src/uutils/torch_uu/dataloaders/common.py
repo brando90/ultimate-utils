@@ -1,5 +1,10 @@
 """
 
+# - creating data train, val, test data sets & data laoders
+
+ref:
+    - https://stackoverflow.com/questions/70400439/what-is-the-proper-way-to-create-training-validation-and-test-set-in-pytorch-or
+
 # - data augmentation
 Current belief is that augmenting the validation set should be fine, especially if you want to actually encourage
 generalization since it makes the val set harder and it allows you to make val split percentage slightly lower since

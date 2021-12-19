@@ -81,6 +81,17 @@ def setup_args_for_experiment(args: Namespace,
         args.it = -1
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
+    # - logging frequencies
+    if args.log_freq != -1:  # if log_freq is not set
+        if args.training_mode == 'fit_single_batch':
+            args.log_freq = 15
+            args.log_scheduler_freq = 1
+        elif args.training_mode == 'iterations':
+            args.log_freq = 100
+            args.log_scheduler_freq = 500
+        elif args.training_mode == 'epochs':
+            args.log_freq = 5
+            args.log_scheduler_freq = 10
     # - annealing learning rate...
     # if (not args.no_validation) and (args.lr_reduce_steps is not None):
     #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')

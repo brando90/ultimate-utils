@@ -460,6 +460,7 @@ def get_good_progressbar(max_value: Union[int, progressbar.UnknownLength, None] 
         - https://github.com/WoLpH/python-progressbar/discussions/253
         - https://stackoverflow.com/questions/30834730/how-to-print-iterations-per-second
         - https://github.com/tqdm/tqdm/discussions/1211
+    :rtype: object
     :return:
     """
     widgets = [

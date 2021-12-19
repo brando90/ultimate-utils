@@ -109,6 +109,8 @@ def torch_compute_confidence_interval(data: Tensor,
     ci = t_p * se
     return mean, ci
 
+# -
+
 def prob_of_truth_being_inside_when_using_ci_as_std():
     """
     what is the probability my statement mu_n +- std using the bare std holds. According to this analysis it says that

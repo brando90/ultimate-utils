@@ -24,12 +24,15 @@ def parse_args_standard_sl() -> Namespace:
 
     # - training options
     parser.add_argument('--training_mode', type=str, default='fit_until_convergence',
-                        help='valid values: '
+                        help='valid/possible values: '
                              'fit_single_batch, '
                              'iterations,'
                              'epochs, '
-                             'fit_until_convergence'
-                             'fit_until_perfect_train_accuracy, '
+                             'iterations_train_convergence,'
+                             'epochs_train_convergence. '
+                             'Note: since the code checkpoints the best validation model anyway, it is already doing'
+                             'early stopping, so early stopping criterion is not implemented. You can kill the job'
+                             'if you see from the logs in wanbd that you are done.'
                         )
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)

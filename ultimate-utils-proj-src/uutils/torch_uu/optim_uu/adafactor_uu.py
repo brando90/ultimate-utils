@@ -42,7 +42,7 @@ class _AdafactorSchedulerUU(LambdaLR):
 def get_hugging_face_adafactor_scheduler(optimizer, initial_lr: float = 0.0) -> _LRScheduler:
     from transformers.optimization import AdafactorSchedule
     # scheduler = AdafactorSchedule(optimizer)
-    scheduler = AdafactorSchedule(optimizer, initial_lr=initial_lr)
+    scheduler: _LRScheduler = AdafactorSchedule(optimizer, initial_lr=initial_lr)
     return scheduler
 
 

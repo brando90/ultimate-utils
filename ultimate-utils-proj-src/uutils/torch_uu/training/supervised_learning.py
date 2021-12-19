@@ -3,21 +3,28 @@
 To save time, debug, coding; have everything be in terms of iterations, but control the frequency of logging with
 the log frequency parameter. When calling the epochs function, automatically set that in that function,
 else set some defaults in the argparse.
+
+
+# - halt when converged
+ref:
+    - https://forums.pytorchlightning.ai/t/what-is-the-standard-way-to-halt-a-script-when-it-has-converged/1415
+    - https://stackoverflow.com/questions/70405985/what-is-the-standard-way-to-train-a-pytorch-script-until-convergence
 """
 from argparse import Namespace
 from typing import Any
 
 import progressbar
 from progressbar import ProgressBar
-from torch import nn
+from torch import nn, Tensor
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
-from uutils.torch_uu import AverageMeter
+from uutils.torch_uu import AverageMeter, gradient_clip
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
+from uutils.torch_uu.training.common import get_trainer_progress_bar
 
 
 def train_agent_fit_single_batch(args: Namespace,
@@ -69,6 +76,7 @@ def train_agent_fit_single_batch(args: Namespace,
         opt.zero_grad()
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
         opt.step()  # the right update is done since all procs have the right synced grads
+        gradient_clip(args, opt)
         if (args.it % 15 == 0 and args.it != 0) or args.debug:
             scheduler.step() if (scheduler is not None) else None
 
@@ -83,52 +91,55 @@ def train_agent_fit_single_batch(args: Namespace,
         args.it += 1
 
 
-def train_agent_fixed_number_of_iterations():
+def train_agent_iterations():
     pass
 
 
-def train_agent_fixed_number_of_epochs(args: Namespace,
-                                       mdl: nn.Module,
+def train_agent_epochs(args: Namespace,
+                                       mdl: Agent,
                                        dataloaders: dict,
                                        opt: Optimizer,
-                                       scheduler: _LRScheduler):
+                                       scheduler: _LRScheduler,
+                                       acc_tolerance: float = 1.0,
+                                       train_loss_tolerance: float = 0.01) -> tuple[Tensor, Tensor]:
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
     print_dist('Starting training...')
+    B: int = args.batch_size
 
-    bar_epoch = uutils.get_good_progressbar(max_value=args.num_epochs)
-    train_loss, train_acc = float('inf'), 0.0
-    epochs: iter = range(start_epoch, start_epoch + args.num_epochs)
-    assert len(epochs) == args.num_epochs
+    # - create progress bar
+    bar_epoch: ProgressBar = get_trainer_progress_bar(args)
+
     # - train in epochs
-    for epoch_num in range(start_epoch, start_epoch + args.num_epochs):
+    train_loss, train_acc = float('inf'), 0.0
+    halt: bool = False
+    while not halt:
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
-        for i, batch in enumerate(self.dataloaders['train']):
-            train_loss, train_acc = self.forward_one_batch(batch, training=True)
-            avg_loss.update(train_loss.item(), self.args.batch_size)
-            avg_acc.update(train_acc, self.args.batch_size)
-
-            self.optimizer.zero_grad()
+        for i, batch in enumerate(mdl.dataloaders['train']):
+            train_loss, train_acc = mdl(batch, training=True)
+            opt.zero_grad()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
-            self.optimizer.step()  # the right update is done since all procs have the right synced grads
+            opt.step()  # the right update is done since all procs have the right synced grads
+            gradient_clip(args, opt)
 
-            # - scheduler, annealing/decaying the learning rate
-            if (args.it % 500 == 0 and args.it != 0 and hasattr(args, 'scheduler')) or args.debug:
-                args.scheduler.step() if (args.scheduler is not None) else None
+            # - meter updates
+            avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
+        # - scheduler
+        if (args.it % 500 == 0 and args.it != 0 and hasattr(args, 'scheduler')) or args.debug:
+            args.scheduler.step() if (args.scheduler is not None) else None
 
-        # -- log full epoch stats
-        self.log_train_stats(self.args.epoch_n, avg_loss.item(), avg_acc.item(), save_val_ckpt=True)
+        # - log full epoch stats
+        if log_condition():
+            self.log_train_stats(self.args.epoch_n, avg_loss.item(), avg_acc.item(), save_val_ckpt=True)
+
+        # - go to next it & before that check if we should halt
         args.epoch_num += 1
+        halt = check_halt(args)
 
     return avg_loss.item(), avg_acc.item()  #
-
-
-def train_agent_fit_until_convergence(agent, args: Namespace, acc_tolerance: float = 1.0,
-                                      train_loss_tolerance: float = 0.001):
-    pass
 
 
 # - quick evals
