@@ -52,9 +52,13 @@ def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
 
 def plot(x: Array, y: Array, xlabel: str, ylabel: str,
          linewidth: float = 2.0, show: bool = False,
-         save_plot: bool = False, plot_filename: str = 'plot', title: Optional[str] = None, label: Optional[str] = None,
+         save_plot: bool = False, plot_filename: str = 'plot', title: Optional[str] = None,
+         label: Optional[str] = None,
          y_hline: Optional[float] = None, y_hline_label: Optional[str] = None,
-         x_hline: Optional[float] = None, x_hline_label: Optional[str] = None):
+         x_hline: Optional[float] = None, x_hline_label: Optional[str] = None,
+         new_plot: bool = False, marker: Optional = None, color: Optional = None,
+         tight_layout: bool = False
+         ):
     """
     Nice easy plot function to quickly plot x vs y and labeling the x and y.
 
@@ -65,13 +69,20 @@ def plot(x: Array, y: Array, xlabel: str, ylabel: str,
     Easiest use: plot(x, y, xlabel, ylabel)
     Easy recommended use: plost(x, y, xlabel, ylabel, save_plot=True, title=title)
     """
-    fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
-    axs.plot(x, y, marker='x', label=label, lw=linewidth, color=MDB)
-    axs.set_xlabel(xlabel)
-    axs.set_ylabel(ylabel)
-    axs.set_title(title)
+    if new_plot:
+        fig, axs = plt.subplots(nrows=1, ncols=1, sharex=True, tight_layout=True)
+        axs.set_xlabel(xlabel)
+        axs.set_ylabel(ylabel)
+        axs.set_title(title)
+    else:
+        axs = plt
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        axs.title(title)
+    axs.plot(x, y, marker=marker, label=label, lw=linewidth, color=color)
     axs.grid(True)  # adds nice grids instead of plot being white
-    plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area.
+    if tight_layout:
+        plt.tight_layout()  # automatically adjusts subplot params so that the subplot(s) fits in to the figure area.
     # - optionals
     if x_hline:  # horizontal sets a constant x value
         axs.axvline(x=x_hline, color='g', linestyle='--', label=x_hline_label)
@@ -652,6 +663,7 @@ def table_example():
     # print(df.to_latex(index=False, escape=False, column_format=column_format))
     # print(df.to_latex(index=False, escape=False, caption='caption goes here', label='label_goes_here'))
     print(get_latex_table_as_text_nice_default(df))
+
 
 # - tests
 
