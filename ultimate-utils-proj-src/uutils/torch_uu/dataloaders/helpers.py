@@ -23,6 +23,14 @@ def get_sl_dataloader(args: Namespace) -> dict:
         replace_final_layer(args, n_classes=10)
     elif 'cifar10' in path_to_data_set:
         raise NotImplementedError
+    elif path_to_data_set == 'cifar100':
+        from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_test_data_loader_helper_for_cifar100
+        args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
+        replace_final_layer(args, n_classes=100)
+    elif 'CIFAR-FS' in path_to_data_set:
+        from uutils.torch_uu.dataloaders.cifar100 import get_rfs_union_sl_dataloader_cifar100fs
+        args.dataloaders: dict = get_rfs_union_sl_dataloader_cifar100fs(args)
+        replace_final_layer(args, n_classes=args.n_cls)
     else:
         raise ValueError(f'Invalid data set: got {path_to_data_set=}')
     return args.dataloaders

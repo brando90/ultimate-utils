@@ -1,6 +1,6 @@
 """
-Inspired from:
-    - https://stackoverflow.com/questions/70400439/what-is-the-proper-way-to-create-training-validation-and-test-set-in-pytorch-or/70400448#70400448
+refs:
+    - inspired from: https://github.com/WangYueFt/rfs/blob/master/train_supervised.py
 """
 from argparse import Namespace
 from pathlib import Path
@@ -8,6 +8,7 @@ from typing import Optional, Callable
 
 import numpy as np
 import torch
+from PIL.Image import Image
 from torch.utils.data import random_split, DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
@@ -15,11 +16,13 @@ from torchvision.transforms import transforms
 from uutils.torch_uu.dataloaders.common import split_inidices, \
     get_serial_or_distributed_dataloaders
 
-# normalization for mnist
-NORMALIZE = transforms.Normalize((0.1307,), (0.3081,))  # MNIST
+# normalization for cifar100: https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/dataset/transform_cfg.py#L104
+mean = [0.5071, 0.4867, 0.4408]
+std = [0.2675, 0.2565, 0.2761]
+normalize_cifar100 = transforms.Normalize(mean=mean, std=std)
 
 
-def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
+def get_train_valid_test_data_loader_helper_for_cifar100(args: Namespace) -> dict:
     train_kwargs = {'path_to_data_set': args.path_to_data_set,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
@@ -49,15 +52,19 @@ def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
 def get_transform(augment: bool):
     if augment:
         transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
             transforms.RandomCrop(32, padding=4),
+            transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             transforms.RandomHorizontalFlip(),
+            lambda x: np.asarray(x),
             transforms.ToTensor(),
-            NORMALIZE
+            normalize_cifar100
         ])
     else:
         transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
             transforms.ToTensor(),
-            NORMALIZE
+            normalize_cifar100
         ])
     return transform
 
@@ -79,7 +86,7 @@ def get_train_valid_loader(path_to_data_set: Path,
                            ) -> tuple[DataLoader, DataLoader]:
     """
     Utility function for loading and returning train and valid
-    multi-process iterators over the MNIST dataset. A sample
+    multi-process iterators over the CIFAR100 dataset. A sample
     9x9 grid of the images can be optionally displayed.
     If using CUDA, num_workers should be set to 1 and pin_memory to True.
     """
@@ -91,9 +98,9 @@ def get_train_valid_loader(path_to_data_set: Path,
 
     # load the dataset
     path_to_data_set: str = str(Path(path_to_data_set).expanduser())
-    train_dataset = datasets.MNIST(root=path_to_data_set, train=True,
+    train_dataset = datasets.CIFAR100(root=path_to_data_set, train=True,
                                    download=True, transform=train_transform)
-    val_dataset = datasets.MNIST(root=path_to_data_set, train=True,
+    val_dataset = datasets.CIFAR100(root=path_to_data_set, train=True,
                                  download=True, transform=val_transform)
     indices = list(range(len(train_dataset)))
     train_indices, val_indices = split_inidices(indices, test_size=val_size, random_state=seed, shuffle=shuffle)
@@ -125,7 +132,7 @@ def get_test_loader(path_to_data_set,
                     ) -> DataLoader:
     """
     Utility function for loading and returning a multi-process
-    test iterator over the MNIST dataset.
+    test iterator over the CIFAR100 dataset.
     If using CUDA, num_workers should be set to 1 and pin_memory to True.
     Params
     ------
@@ -147,7 +154,7 @@ def get_test_loader(path_to_data_set,
 
     # load the dataset
     path_to_data_set: str = str(Path(path_to_data_set).expanduser())
-    test_dataset = datasets.MNIST(root=path_to_data_set,
+    test_dataset = datasets.CIFAR100(root=path_to_data_set,
                                   train=False,  # ensures its test set
                                   download=True,
                                   transform=test_transform)

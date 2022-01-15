@@ -1,6 +1,7 @@
 import os
 from argparse import Namespace
 from pathlib import Path
+from typing import Optional
 
 from uutils import find_free_port, load_cluster_jobids_to, try_to_get_git_revision_hash_short, \
     try_to_get_git_revision_hash_long
@@ -19,7 +20,7 @@ def create_default_log_root(args: Namespace):
     args.log_root.mkdir(parents=True, exist_ok=True)
 
 def setup_args_for_experiment(args: Namespace,
-                              num_workers: int = 0,
+                              num_workers: Optional[int] = 0,
                               use_tb: bool = False  # not needed anymore since wandb exists
                               ) -> Namespace:
     """
@@ -214,7 +215,7 @@ def setup_args_for_experiment(args: Namespace,
 
     # - to avoid pytorch multiprocessing issues with CUDA: https://pytorch.org/docs/stable/data.html
     args.pin_memory = False
-    args.num_workers = num_workers
+    args.num_workers = num_workers if num_workers is not None else args.num_workers
 
     # - return
     uutils.print_args(args)

@@ -1,5 +1,5 @@
 """
-Main script to set up meta-learning experiments
+Main script to set up supervised learning experiments
 """
 
 import torch
@@ -64,13 +64,12 @@ def load_args() -> Namespace:
         # NOP: since we are using args from terminal
         pass
     # -- Setup up remaining stuff for experiment
-    args: Namespace = setup_args_for_experiment(args, num_workers=4)
+    args: Namespace = setup_args_for_experiment(args)
     return args
 
 
 def main():
     """
-    train tree_nn in parallel
     Note: end-to-end ddp example on mnist: https://yangkky.github.io/2019/07/08/distributed-pytorch-tutorial.html
     :return:
     """
@@ -98,12 +97,12 @@ def train(rank, args):
     setup_process(args, rank, master_port=args.master_port, world_size=args.world_size)
     print(f'setup process done for rank={rank}')
 
-    # create the dataloaders, this goes first so you can select the mdl (e.g. final layer) based on task
-    args.dataloaders: dict = get_sl_dataloader(args)
-
     # create the (ddp) model, opt & scheduler
     get_and_create_model_opt_scheduler_first_time(args)
     print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}", args.rank)
+
+    # create the dataloaders, this goes first so you can select the mdl (e.g. final layer) based on task
+    args.dataloaders: dict = get_sl_dataloader(args)
 
     # Agent does everything, proving, training, evaluate etc.
     agent: Agent = ClassificationSLAgent(args, args.model)
@@ -119,6 +118,8 @@ def train(rank, args):
     elif 'epochs' in args.training_mode:
         # note train code will see training mode to determine halting criterion
         train_agent_epochs(args, agent, args.dataloaders, args.opt, args.scheduler)
+    # note: the other options do not appear directly since they are checked in
+    # the halting condition.
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
 

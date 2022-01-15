@@ -24,6 +24,9 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace,
         # args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict()
         args.model, args.model_hps_for_cons_dict = get_default_learner_and_hps_dict(in_channels=1)
     elif 'resnet' in model_option and 'rfs' in model_option:
+        # args.k_eval = 30
+        from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model
+        args.base_model = get_resnet_rfs_model(args.model_option)
         raise NotImplementedError
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')

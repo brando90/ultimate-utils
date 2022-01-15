@@ -246,3 +246,8 @@ def load_model_5CNN_opt_as_model_for_few_shot(model_hps_for_cons_dict: dict) -> 
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import Learner
     model: nn.Module = Learner(**model_hps_for_cons_dict)
     return model
+
+
+def replace_final_layer(args: Namespace, n_classes: int):
+    if hasattr(args.model, 'cls'):
+        args.model.cls = nn.Linear(args.model.cls.in_features, n_classes)

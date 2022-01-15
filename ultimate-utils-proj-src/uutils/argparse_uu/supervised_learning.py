@@ -46,8 +46,10 @@ def parse_args_standard_sl() -> Namespace:
     # model & loss function options
     parser.add_argument('--model_option',
                         type=str,
-                        default='5CNN_opt_as_model_for_few_shot_sl',
-                        help="Options: '5CNN_opt_as_model_for_few_shot_sl'"
+                        default="5CNN_opt_as_model_for_few_shot_sl",
+                        help="Options: "
+                             "5CNN_opt_as_model_for_few_shot_sl"
+                             "resnet12_rfs"
                         )
     parser.add_argument('--loss', type=str, help='loss/criterion', default=nn.CrossEntropyLoss())
 
@@ -75,7 +77,7 @@ def parse_args_standard_sl() -> Namespace:
     # - data set args
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--batch_size_eval', type=int, default=128)
-    parser.add_argument('--split', type=str, default='train', help="possiboe values: "
+    parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
     parser.add_argument('--path_to_data_set', type=str, default=Path('~/data/mnist/').expanduser(),
                         help='path to data set splits. The code will assume everything is saved in'
@@ -124,6 +126,9 @@ def parse_args_standard_sl() -> Namespace:
     # parser.add_argument('--wandb_log_freq', type=int, default=10)
     # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
     # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=-1)
+
+    # - manual loads
+    parser.add_argument('--manual_loads_name', type=str, default='cifar100')
 
     # - parse arguments
     args: Namespace = parser.parse_args()
