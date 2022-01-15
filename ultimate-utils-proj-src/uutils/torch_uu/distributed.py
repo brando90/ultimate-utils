@@ -68,6 +68,24 @@ def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     return x, y
 
 
+def process_batch_ddp_union_rfs(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
+    """
+    Make sure args has the gpu for each worker.
+
+    :param args:
+    :param batch:
+    :return:
+    """
+    if len(batch) == 3:
+        x, y, _ = batch
+    else:
+        # img, target, item, sample_idx = batch
+        x, y, item, sample_idx = batch
+        raise NotImplementedError
+    x = x.to(args.device)
+    y = y.to(args.device)
+    return x, y
+
 def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
     # temporary fix for backwards compatibility
     return move_model_to_ddp_gpu_via_dict_mutation(args, batch)

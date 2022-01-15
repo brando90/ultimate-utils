@@ -38,15 +38,6 @@ def get_train_valid_test_data_loader_helper_for_cifarfs(args: Namespace) -> dict
                     'world_size': args.world_size,
                     'merge': None
                     }
-    test_kwargs = {'path_to_data_set': args.path_to_data_set,
-                   'batch_size_eval': args.batch_size_eval,
-                   'augment_test': args.augment_train,
-                   'num_workers': args.num_workers,
-                   'pin_memory': args.pin_memory,
-                   'rank': args.rank,
-                   'world_size': args.world_size,
-                   'merge': None
-                   }
     dataloaders: dict = get_rfs_union_sl_dataloader_cifarfs(**train_kwargs)
     return dataloaders
 
