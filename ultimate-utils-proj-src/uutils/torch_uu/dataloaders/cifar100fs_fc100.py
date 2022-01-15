@@ -25,8 +25,9 @@ std = [0.2675, 0.2565, 0.2761]
 normalize_cifar100 = transforms.Normalize(mean=mean, std=std)
 
 
-def get_train_valid_test_data_loader_helper_for_cifar100(args: Namespace) -> dict:
-    train_kwargs = {'path_to_data_set': args.path_to_data_set,
+def get_train_valid_test_data_loader_helper_for_cifarfs(args: Namespace) -> dict:
+    train_kwargs = {'args': args,
+                    'path_to_data_set': args.path_to_data_set,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
                     'augment_train': args.augment_train,
@@ -46,9 +47,7 @@ def get_train_valid_test_data_loader_helper_for_cifar100(args: Namespace) -> dic
                    'world_size': args.world_size,
                    'merge': None
                    }
-    train_loader, val_loader = get_rfs_union_sl_dataloader_cifar100fs(**train_kwargs)
-    test_loader: None = get_test_loader(**test_kwargs)
-    dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    dataloaders: dict = get_rfs_union_sl_dataloader_cifarfs(**train_kwargs)
     return dataloaders
 
 
@@ -174,22 +173,18 @@ class CIFAR100(Dataset):
         return len(self.labels)
 
 
-def get_rfs_union_sl_dataloader_cifar100fs(path_to_data_set: Path,
-                                           batch_size: int = 128,
-                                           batch_size_eval: int = 64,
-                                           seed: Optional[int] = None,
-                                           augment_train: bool = True,
-                                           augment_val: bool = False,
-                                           val_size: Optional[float] = 0.2,
-                                           shuffle: bool = False,
-                                           # false for reproducibility, and any split is as good as any other.
-                                           num_workers: int = -1,
-                                           pin_memory: bool = False,
-
-                                           rank: int = -1,
-                                           world_size: int = 1,
-                                           merge: Optional[Callable] = None,
-                                           ) -> dict:
+def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
+                                        path_to_data_set: Path,
+                                        batch_size: int = 128,
+                                        batch_size_eval: int = 64,
+                                        augment_train: bool = True,
+                                        augment_val: bool = False,
+                                        num_workers: int = -1,
+                                        pin_memory: bool = False,
+                                        rank: int = -1,
+                                        world_size: int = 1,
+                                        merge: Optional[Callable] = None,
+                                        ) -> dict:
     """
     ref:
         - https://github.com/WangYueFt/rfs/blob/master/train_supervised.py
@@ -222,21 +217,6 @@ def get_rfs_union_sl_dataloader_cifar100fs(path_to_data_set: Path,
     # - return data loaders
     dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
     return dataloaders
-
-
-def get_test_loader(path_to_data_set,
-                    batch_size_eval: int = 64,
-                    shuffle: bool = True,
-                    augment_test: bool = False,
-                    num_workers: int = -1,
-                    pin_memory=False,
-
-                    rank: int = -1,
-                    world_size: int = 1,
-                    merge: Optional[Callable] = None,
-                    ) -> DataLoader:
-    #  no need for one since we are not evaluating on the union SL.
-    return None
 
 
 def get_rfs_union_sl_dataloader_fc100(args: Namespace) -> dict:

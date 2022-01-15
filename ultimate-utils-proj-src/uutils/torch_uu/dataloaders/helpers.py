@@ -16,7 +16,8 @@ def replace_final_layer(args: Namespace, n_classes: int):
 
 def get_sl_dataloader(args: Namespace) -> dict:
     args.path_to_data_set.expanduser()
-    path_to_data_set: str = str(args.path_to_data_set).lower()
+    path_to_data_set: str = str(args.path_to_data_set)
+    # path_to_data_set: str = str(args.path_to_data_set).lower()
     if 'mnist' in path_to_data_set:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
@@ -28,8 +29,8 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
         replace_final_layer(args, n_classes=100)
     elif 'CIFAR-FS' in path_to_data_set:
-        from uutils.torch_uu.dataloaders.cifar100 import get_rfs_union_sl_dataloader_cifar100fs
-        args.dataloaders: dict = get_rfs_union_sl_dataloader_cifar100fs(args)
+        from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
+        args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
         replace_final_layer(args, n_classes=args.n_cls)
     else:
         raise ValueError(f'Invalid data set: got {path_to_data_set=}')
