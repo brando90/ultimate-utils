@@ -1,3 +1,7 @@
+"""
+Design pattern: since each model has it's own data, we wrap each model in an agent class that can take care of the
+specifics of the data manipulation form a batch. e.g. if they are tensors, or symbolic objects or NL etc.
+"""
 from argparse import Namespace
 
 import torch
@@ -25,7 +29,7 @@ class ClassificationSLAgent(Agent):
         self.model.train() if training else self.model.eval()
         batch_x, batch_y = process_batch_ddp(self.args, batch)
         logits: Tensor = self.model(batch_x)
-        loss: Tensor = self.loss(logits)
+        loss: Tensor = self.loss(logits, batch_y)
         acc, = accuracy(logits, batch_y)
         assert loss.size() == torch.Size([]) == acc.size()
         return loss, acc
@@ -41,7 +45,7 @@ class ClassificationSLAgent(Agent):
 
             # -- forward
             logits: Tensor = self.model(batch_x)
-            loss: Tensor = self.loss(logits)
+            loss: Tensor = self.loss(logits, batch_y)
             acc, = accuracy(logits, batch, reduction='acc_none')
             assert loss.size() == torch.Size([B]) == acc.size()
 
@@ -87,13 +91,13 @@ class UnionClsSLAgent(Agent):
         self.model.train() if training else self.model.eval()
         batch_x, batch_y = process_batch_ddp_union_rfs(self.args, batch)
         logits: Tensor = self.model(batch_x)
-        loss: Tensor = self.loss(logits)
+        loss: Tensor = self.loss(logits, batch_y)
         acc, = accuracy(logits, batch_y)
         assert loss.size() == torch.Size([]) == acc.size()
         return loss, acc
 
     def eval_forward(self, batch: Tensor, training: bool = False) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-        batch_x, batch_y = process_batch_ddp(self.args, batch)
+        batch_x, batch_y = process_batch_ddp_union_rfs(self.args, batch)
         B: int = batch_x.size(0)
         with torch.no_grad():  # note, this might not be needed in meta-eval due to MAML using grads at eval
             # - to make sure we get the [B] tensor to compute confidence intervals/error bars
@@ -103,7 +107,7 @@ class UnionClsSLAgent(Agent):
 
             # -- forward
             logits: Tensor = self.model(batch_x)
-            loss: Tensor = self.loss(logits)
+            loss: Tensor = self.loss(logits, batch_y)
             acc, = accuracy(logits, batch, reduction='acc_none')
             assert loss.size() == torch.Size([B]) == acc.size()
 

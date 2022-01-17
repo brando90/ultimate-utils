@@ -122,7 +122,6 @@ def get_rfs_sl_dataloader(args: Namespace) -> dict:
     #     n_cls = 80
     # else:
     #     n_cls = 64
-    # - todo: fix SL code so that it handles the dictnote: does not return dict because it's code borrowed from rfs paper
     dataloaders: dict = {'train': train_sl_loader, 'val': val_sl_loader, 'test': meta_valloader}
     return dataloaders
 

@@ -106,7 +106,7 @@ def train(rank, args):
 
     # Agent does everything, proving, training, evaluate etc.
     agent: Agent = ClassificationSLAgent(args, args.model)
-    # args.agent = agent
+    args.agent = agent
 
     # -- Start Training Loop
     print_dist('====> about to start train loop', args.rank)

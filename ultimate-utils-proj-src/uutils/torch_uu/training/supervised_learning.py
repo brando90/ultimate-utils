@@ -76,11 +76,11 @@ def train_agent_fit_single_batch(args: Namespace,
 
 
 def train_agent_iterations(args: Namespace,
-                       model: Agent,
-                       dataloaders: dict,
-                       opt: Optimizer,
-                       scheduler: _LRScheduler,
-                       ) -> tuple[Tensor, Tensor]:
+                           model: Agent,
+                           dataloaders: dict,
+                           opt: Optimizer,
+                           scheduler: _LRScheduler,
+                           ) -> tuple[Tensor, Tensor]:
     """
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
@@ -178,28 +178,4 @@ def train_agent_epochs(args: Namespace,
 
     return avg_loss.item(), avg_acc.item()
 
-# - quick evals
 
-# def eval(args: Namespace,
-#          model: nn.Module,
-#          training: bool = False,
-#          val_iterations: int = 0,
-#          split: str = 'val'
-#          ) -> tuple:
-#     """
-#
-#     Note:
-#         -  Training=True for eval only for meta-learning, here we do want .eval(), but then undo it
-#
-#     ref for BN/eval:
-#         - For SL: do .train() for training and .eval() for eval in SL.
-#         - For Meta-learning do train in both, see: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-#     """
-#     assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, ' \
-#                                 f'if you want more precision increase (meta) batch size.'
-#     args.meta_learner.train() if training else args.meta_learner.eval()
-#     for batch_idx, eval_batch in enumerate(args.dataloaders[split]):
-#         eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci = model.eval_forward(eval_batch)
-#         if batch_idx >= val_iterations:
-#             break
-#     return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci

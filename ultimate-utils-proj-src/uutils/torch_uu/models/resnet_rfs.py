@@ -1,3 +1,6 @@
+"""
+Adapted from: https://github.com/WangYueFt/rfs
+"""
 from argparse import Namespace
 
 import torch.nn as nn

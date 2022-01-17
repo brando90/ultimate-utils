@@ -32,6 +32,10 @@ def get_sl_dataloader(args: Namespace) -> dict:
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
         replace_final_layer(args, n_classes=args.n_cls)
+    elif 'miniImageNet_rfs' in path_to_data_set:
+        from uutils.torch_uu.dataloaders.miniimagenet_rfs import get_train_valid_test_data_loader_miniimagenet_rfs
+        args.dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
+        replace_final_layer(args, n_classes=args.n_cls)
     else:
         raise ValueError(f'Invalid data set: got {path_to_data_set=}')
     return args.dataloaders
