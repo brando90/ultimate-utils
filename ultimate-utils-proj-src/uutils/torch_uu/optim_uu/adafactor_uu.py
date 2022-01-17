@@ -163,13 +163,7 @@ def get_uutils_default_adafactor_and_scheduler_from_huggingface(model: nn.Module
     return optimizer, scheduler
 
 
-def get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(mdl: nn.Module) \
-        -> tuple[Optimizer, _LRScheduler, dict, dict]:
-    """
-    Get the optimizer and scheduler objects for the current model and the hyperparameters (hps) that created it.
-    """
-
-    # - hps
+def get_default_adafactor_hps() -> tuple[dict, dict]:
     opt_hps: dict = dict(
         lr=None,
         eps=(1e-30, 1e-3),
@@ -184,23 +178,53 @@ def get_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(mdl: nn.Modu
     scheduler_hps: dict = dict(
         initial_lr=0.0
     )
+    return opt_hps, scheduler_hps
+
+
+def get_default_adafactor_opt_fairseq_and_hps_dict(mdl: nn.Module,
+                                                   lr=None,
+                                                   eps=(1e-30, 1e-3),
+                                                   clip_threshold=1.0,
+                                                   decay_rate=-0.8,
+                                                   beta1=None,
+                                                   weight_decay=0.0,
+                                                   scale_parameter=True,
+                                                   relative_step=True,
+                                                   warmup_init=False,
+                                                   ) -> tuple[Optimizer, dict]:
+    """
+    Get the optimizer and scheduler objects for the current model and the hyperparameters (hps) that created it.
+    """
+    # - hps
+    opt_hps: dict = dict(
+        lr=lr,
+        eps=eps,
+        clip_threshold=clip_threshold,
+        decay_rate=decay_rate,
+        beta1=beta1,
+        weight_decay=weight_decay,
+        scale_parameter=scale_parameter,
+        relative_step=relative_step,
+        warmup_init=warmup_init,
+    )
 
     # - get opt & scheduler from hps
-    optimizer, scheduler = load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(mdl, opt_hps, scheduler_hps)
-    return optimizer, scheduler, opt_hps, scheduler_hps
-
-
-def load_uutils_default_adafactor_and_scheduler_fairseq_and_hps_dict(mdl: nn.Module, opt_hps: dict, scheduler_hps: dict) \
-        -> tuple[Optimizer, _LRScheduler]:
-    """
-    Given a model create the adafactor optimizer and scheduler needed from a list of hyperparameters for both the
-    optimizer and scheduler. The model is needed to know what params to optimize. In the checkpointing case, you are
-    expected to load the state dicts of at least the optimizer later.
-    """
     from fairseq import optim
-    from transformers.optimization import AdafactorSchedule
-
-    # - get opt & scheduler from hps
     optimizer: Optimizer = optim.adafactor.Adafactor(params=mdl.parameters(), **opt_hps)
+    return optimizer, opt_hps
+
+
+def get_default_adafactor_scheduler_fairseq_and_hps_dict(optimizer: Optimizer,
+                                                         initial_lr=0.0,
+                                                         ) -> tuple[_LRScheduler, dict]:
+    """
+    Get the optimizer and scheduler objects for the current model and the hyperparameters (hps) that created it.
+    """
+    # - hps
+    scheduler_hps: dict = dict(
+        initial_lr=initial_lr
+    )
+    # - get opt & scheduler from hps
+    from transformers.optimization import AdafactorSchedule
     scheduler: _LRScheduler = AdafactorSchedule(optimizer, **scheduler_hps)
-    return optimizer, scheduler
+    return scheduler, scheduler_hps

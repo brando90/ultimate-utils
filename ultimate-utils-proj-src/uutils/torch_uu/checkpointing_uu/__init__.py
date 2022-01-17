@@ -21,6 +21,6 @@ def resume_from_checkpoint(args: Namespace) -> bool:
         # for backwards compatibility
         return False
     else:
-        # - check if some path to the ckpt is set, if yes then make it it as an expanded Path.
+        # - check if some path to the ckpt is set, if yes then make it as an expanded Path.
         resume: bool = args.path_to_checkpoint is not None
     return resume

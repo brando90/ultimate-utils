@@ -332,23 +332,33 @@ model_dict = {
 }
 
 
-def get_resnet_rfs_model(model_opt: str) -> nn.Module:
+def get_resnet_rfs_model(model_opt: str,
+                         avg_pool=True,
+                         drop_rate=0.1,
+                         dropblock_size=5,
+                         num_classes=64,
+                         ) -> tuple[nn.Module, dict]:
     """
     Get resnet_rfs model according to the string model_opt
         e.g. model_opt = resnet12
     :param model_opt:
     :return:
     """
-    model: nn.Module = model_dict[model_opt](avg_pool=True,
-                                             drop_rate=0.1,
-                                             dropblock_size=5,
-                                             num_classes=64)
-    return model
+    model_hps_for_cons_dict: dict = {'avg_pool': avg_pool,
+                                     'drop_rate': drop_rate,
+                                     'dropblock_size': dropblock_size,
+                                     'num_classes': num_classes}
+    model: nn.Module = model_dict[model_opt](avg_pool=avg_pool,
+                                             drop_rate=drop_rate,
+                                             dropblock_size=dropblock_size,
+                                             num_classes=num_classes)
+    return model, model_hps_for_cons_dict
 
 
 def replace_final_layer(args: Namespace, n_classes: int):
     args.model.classifier = nn.Linear(args.model.cls.in_features,
                                       n_classes)
+
 
 if __name__ == '__main__':
     from types import SimpleNamespace

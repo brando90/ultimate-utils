@@ -31,7 +31,8 @@ class ClassificationSLAgent(Agent):
         logits: Tensor = self.model(batch_x)
         loss: Tensor = self.loss(logits, batch_y)
         acc, = accuracy(logits, batch_y)
-        assert loss.size() == torch.Size([]) == acc.size()
+        assert loss.size() == torch.Size([])
+        assert acc.size() == torch.Size([])
         return loss, acc
 
     def eval_forward(self, batch: Tensor, training: bool = False) -> tuple[Tensor, Tensor, Tensor, Tensor]:
@@ -46,8 +47,9 @@ class ClassificationSLAgent(Agent):
             # -- forward
             logits: Tensor = self.model(batch_x)
             loss: Tensor = self.loss(logits, batch_y)
-            acc, = accuracy(logits, batch, reduction='acc_none')
-            assert loss.size() == torch.Size([B]) == acc.size()
+            acc, = accuracy(logits, batch_y, reduction='none')
+            assert loss.size() == torch.Size([B])
+            assert acc.size() == torch.Size([B])
 
             # - return loss to normal
             self.loss.reduction = original_reduction
@@ -93,7 +95,8 @@ class UnionClsSLAgent(Agent):
         logits: Tensor = self.model(batch_x)
         loss: Tensor = self.loss(logits, batch_y)
         acc, = accuracy(logits, batch_y)
-        assert loss.size() == torch.Size([]) == acc.size()
+        assert loss.size() == torch.Size([])
+        assert acc.size() == torch.Size([])
         return loss, acc
 
     def eval_forward(self, batch: Tensor, training: bool = False) -> tuple[Tensor, Tensor, Tensor, Tensor]:
@@ -108,8 +111,9 @@ class UnionClsSLAgent(Agent):
             # -- forward
             logits: Tensor = self.model(batch_x)
             loss: Tensor = self.loss(logits, batch_y)
-            acc, = accuracy(logits, batch, reduction='acc_none')
-            assert loss.size() == torch.Size([B]) == acc.size()
+            acc, = accuracy(logits, batch_y, reduction='none')
+            assert loss.size() == torch.Size([B])
+            assert acc.size() == torch.Size([B])
 
             # - return loss to normal
             self.loss.reduction = original_reduction
