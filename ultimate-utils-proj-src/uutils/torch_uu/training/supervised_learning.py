@@ -158,6 +158,8 @@ def train_agent_epochs(args: Namespace,
 
             # - meter updates
             avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
+            if args.debug:
+                print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
 
         # - scheduler, not in first/0th epoch though
         if (args.epoch_num % args.log_scheduler_freq == 0 and args.epoch_num != 0) or args.debug:

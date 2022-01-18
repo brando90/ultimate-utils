@@ -585,14 +585,33 @@ def make_args_pickable(args: Namespace) -> Namespace:
     note: implementation not tested against deep copying.
     ref:
         - https://stackoverflow.com/questions/70128335/what-is-the-proper-way-to-make-an-object-with-unpickable-fields-pickable
+        - pycharm halting all the time issues: https://stackoverflow.com/questions/70761481/how-to-stop-pycharms-break-stop-halt-feature-on-handled-exceptions-i-e-only-b
     """
     pickable_args = argparse.Namespace()
     # - go through fields in args, if they are not pickable make it a string else leave as it
     # The vars() function returns the __dict__ attribute of the given object.
     for field in vars(args):
         field_val: Any = getattr(args, field)
+        # - if current field value is not pickable, make it pickable by casting to string
+        from uutils.logger import Logger
         if not dill.pickles(field_val):
             field_val: str = str(field_val)
+
+        # - remove bellow once is_picklable works on pycharm
+        elif callable(field_val):
+            field_val: str = str(field_val)
+        elif isinstance(field_val, Logger):
+            field_val: str = str(field_val)
+        elif field == 'scheduler':
+            field_val: str = str(field_val)
+        elif field == 'dataloaders':
+            field_val: str = str(field_val)
+
+
+        # -
+        elif not is_picklable(field_val):
+            field_val: str = str(field_val)
+        # - after this line the invariant is that it should be pickable, so set it in the new args obj
         setattr(pickable_args, field, field_val)
     return pickable_args
 
@@ -600,6 +619,22 @@ def make_args_pickable(args: Namespace) -> Namespace:
 def make_opts_pickable(opts):
     """ Makes a namespace pickable """
     return make_args_pickable(opts)
+
+
+def is_picklable(obj: Any) -> bool:
+    """
+    Checks if somehting is pickable.
+
+    Ref:
+        - https://stackoverflow.com/questions/70128335/what-is-the-proper-way-to-make-an-object-with-unpickable-fields-pickable
+        - pycharm halting all the time issue: https://stackoverflow.com/questions/70761481/how-to-stop-pycharms-break-stop-halt-feature-on-handled-exceptions-i-e-only-b
+    """
+    import pickle
+    try:
+        pickle.dumps(obj)
+    except pickle.PicklingError:
+        return False
+    return True
 
 
 def xor(a: Any, b: Any) -> bool:

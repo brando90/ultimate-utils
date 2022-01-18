@@ -57,20 +57,18 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
                     'args_dict': vars(args_pickable),  # some versions of this might not have args!
 
                     'model_state_dict': get_model_from_ddp(args.model).state_dict(),
-                    # added later, to make it easier to check what optimizer was used
                     'model_str': str(args.model),  # added later, to make it easier to check what optimizer was used
-                    'model_hps_for_cons_dict': args.model_hps_for_cons_dict,
-                    # to create an empty new instance when loading model
+                    'model_hps': args.model_hps,
                     'model_option': args.model_option,
 
                     'opt_state_dict': args.opt.state_dict(),
                     'opt_str': str(args.opt),
-                    'opt_hps_for_cons_dict': args.opt_hps_for_cons_dict,
+                    'opt_hps': args.opt_hps,
                     'opt_option': args.opt_option,
 
                     'scheduler_str': str(args.scheduler),
                     'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler),
-                    'scheduler_hps_for_cons_dict': args.scheduler_hps_for_cons_dict,
+                    'scheduler_hps': args.scheduler_hps,
                     'scheduler_option': args.scheduler_option,
                     },
                    # pickle_module=dill,
@@ -107,8 +105,8 @@ def load_model_optimizer_scheduler_from_checkpoint_given_model_type(args: Namesp
     model_option: str = args.model_option if model_option is None else model_option  # if obj None, use ckpt value
     if model_option == '5CNN_opt_as_model_for_few_shot':
         from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import load_model_5CNN_opt_as_model_for_few_shot
-        model_hps_for_cons_dict: dict = ckpt['model_hps_for_cons_dict']
-        model: nn.Module = load_model_5CNN_opt_as_model_for_few_shot(model_hps_for_cons_dict)
+        model_hps: dict = ckpt['model_hps']
+        model: nn.Module = load_model_5CNN_opt_as_model_for_few_shot(model_hps)
     elif 'resnet' in model_option and 'rfs' in model_option:
         raise NotImplementedError
     else:
