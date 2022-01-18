@@ -10,8 +10,13 @@ from torch import nn
 
 
 def replace_final_layer(args: Namespace, n_classes: int):
-    if hasattr(args.model, 'cls'):
+    if hasattr(args.model, 'cls'):  # for resnet12
         args.model.cls = nn.Linear(args.model.cls.in_features, n_classes)
+    elif hasattr(args.model, 'model'):  # for 5CNN
+        args.model.model.cls = nn.Linear(args.model.model.cls.in_features, n_classes)
+    else:
+        raise ValueError(f'Given model does not have a final cls layer. Check that your model is in the right format:'
+                         f'{type(args.model)=} do print(args.model) to see what your arch is and fix the error.')
 
 
 def get_sl_dataloader(args: Namespace) -> dict:

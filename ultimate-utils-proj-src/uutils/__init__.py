@@ -319,13 +319,19 @@ def parse_args() -> Namespace:
 
 
 def args_hardcoded_in_script(args: Namespace) -> bool:
-    if hasattr(args, 'args_hardcoded_in_script'):  # common pattern for backwards compatability
-        # this flag is set to true from the user if they want to have a config file, or set the args within the script
-        args_hardcoded: bool = args.args_hardcoded_in_script
-        return args_hardcoded
-    else:
-        return False
+    """
+    Return true if we are using (hardcoded) manual args.
 
+    Npte: We detect if to use manual args if manual_loads_name is not None.
+    None means, do not use manual args.
+    """
+    # - if manual_loads_name is not given then params aren't manually given
+    if not hasattr(args, 'manual_loads_name'):
+        return False
+    else:
+        # - args are hardcoded if name is not None
+        args_hardcoded: bool = args.manual_loads_name != 'None'
+        return args_hardcoded
 
 def get_args_from_checkpoint_pickle_file(args: Namespace) -> Namespace:
     """
@@ -586,19 +592,21 @@ def make_args_pickable(args: Namespace) -> Namespace:
     ref:
         - https://stackoverflow.com/questions/70128335/what-is-the-proper-way-to-make-an-object-with-unpickable-fields-pickable
         - pycharm halting all the time issues: https://stackoverflow.com/questions/70761481/how-to-stop-pycharms-break-stop-halt-feature-on-handled-exceptions-i-e-only-b
+        - stop progressbar from printing progress when checking if it's pickable: https://stackoverflow.com/questions/70762899/how-does-one-stop-progressbar-from-printing-eta-progress-when-checking-if-the
     """
     pickable_args = argparse.Namespace()
     # - go through fields in args, if they are not pickable make it a string else leave as it
     # The vars() function returns the __dict__ attribute of the given object.
     for field in vars(args):
+        # print(f'-----{field}')
         field_val: Any = getattr(args, field)
         # - if current field value is not pickable, make it pickable by casting to string
         from uutils.logger import Logger
-        if not dill.pickles(field_val):
-            field_val: str = str(field_val)
+        # if not dill.pickles(field_val):
+        #     field_val: str = str(field_val)
 
         # - remove bellow once is_picklable works on pycharm
-        elif callable(field_val):
+        if callable(field_val):
             field_val: str = str(field_val)
         elif isinstance(field_val, Logger):
             field_val: str = str(field_val)
@@ -606,13 +614,21 @@ def make_args_pickable(args: Namespace) -> Namespace:
             field_val: str = str(field_val)
         elif field == 'dataloaders':
             field_val: str = str(field_val)
-
+        elif field == 'model':
+            field_val: str = str(field_val)
+        elif field == 'bar':
+            field_val: str = str(field_val)
+        # this is at the end so that progressbar ETA print happens only in an emergency,
+        # but the right way to fix this is to have pycharm only halt on unhandled exceptions
+        elif not dill.pickles(field_val):
+            field_val: str = str(field_val)
 
         # -
         elif not is_picklable(field_val):
             field_val: str = str(field_val)
         # - after this line the invariant is that it should be pickable, so set it in the new args obj
         setattr(pickable_args, field, field_val)
+        # print('f-----')
     return pickable_args
 
 

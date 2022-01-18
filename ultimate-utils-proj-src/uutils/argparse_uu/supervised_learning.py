@@ -25,11 +25,11 @@ def parse_args_standard_sl() -> Namespace:
     # - training options
     parser.add_argument('--training_mode', type=str, default='epochs_train_convergence',
                         help='valid/possible values: '
-                             'fit_single_batch, '
-                             'iterations,'
-                             'epochs, '
-                             'iterations_train_convergence,'
-                             'epochs_train_convergence. '
+                             'fit_single_batch'
+                             'iterations'
+                             'epochs'
+                             'iterations_train_convergence'
+                             'epochs_train_convergence'
                              '- Note: since the code checkpoints the best validation model anyway, it is already doing'
                              'early stopping, so early stopping criterion is not implemented. You can kill the job'
                              'if you see from the logs in wanbd that you are done.'
@@ -103,9 +103,6 @@ def parse_args_standard_sl() -> Namespace:
                         help='tries to make pytorch fully deterministic')
     parser.add_argument('--num_workers', type=int, default=-1,
                         help='the number of data_lib-loading threads (when running serially')
-    parser.add_argument('--args_hardcoded_in_script', action='store_true', default=False,
-                        help='If part of the args are '
-                             'hardcoded in the python script.')
     parser.add_argument('--pin_memory', action='store_true', default=False, help="Using pinning is an"
                                                                                  "advanced tip according to"
                                                                                  "pytorch docs, so will "
@@ -128,7 +125,7 @@ def parse_args_standard_sl() -> Namespace:
     # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=-1)
 
     # - manual loads
-    parser.add_argument('--manual_loads_name', type=str, default='cifar100')
+    parser.add_argument('--manual_loads_name', type=str, default='None')
 
     # - parse arguments
     args: Namespace = parser.parse_args()

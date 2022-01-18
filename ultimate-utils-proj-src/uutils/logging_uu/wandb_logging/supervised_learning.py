@@ -11,10 +11,12 @@ from uutils.torch_uu.distributed import is_lead_worker, print_dist
 from uutils.torch_uu.eval.eval_sl import eval_sl
 
 
-def log_train_val_stats_simple(it: int, train_loss: float, train_acc: float, bar: ProgressBar,
+def log_train_val_stats_simple(args: Namespace,
+                               it: int, train_loss: float, train_acc: float, bar: ProgressBar,
                                save_val_ckpt: bool = True, force_log: bool = False):
     # - get eval stats
-    val_loss, val_loss_ci, val_acc, val_acc_ci = mdl.eval_forward(val_batch)
+    val_batch: Any = next(iter(args.dataloaders['val']))
+    val_loss, val_loss_ci, val_acc, val_acc_ci = args.agent.eval_forward(val_batch)
     if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
         args.best_val_loss = float(val_loss)
         save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
@@ -30,9 +32,11 @@ def log_train_val_stats_simple(it: int, train_loss: float, train_acc: float, bar
     bar.update(it)
 
     # - print
-    print_dist(f"\n{it=}: {train_loss=} {train_acc=}")
-    print_dist(f"{it=}: {val_loss=} {val_acc=}")
+    print_dist(f"\n{it=}: {train_loss=} {train_acc=}", args.rank)
+    print_dist(f"{it=}: {val_loss=} {val_acc=}", args.rank)
+
     # - for now no wandb for logging for one batch...perhaps change later
+    pass
 
 
 def log_train_val_stats(args: Namespace,
@@ -40,6 +44,7 @@ def log_train_val_stats(args: Namespace,
                         step_name: str,
                         train_loss: float,
                         train_acc: float,
+
                         save_val_ckpt: bool = True,
                         ):
     _log_train_val_stats(args=args,
@@ -62,7 +67,6 @@ def log_train_val_stats(args: Namespace,
 def _log_train_val_stats(args: Namespace,
                          step: int,
                          step_name: str,
-
                          train_loss: float,
                          train_acc: float,
 
@@ -123,4 +127,4 @@ def log_zeroth_step(args: Namespace, model: Agent):
     batch: Any = next(iter(args.dataloaders['train']))
     train_loss, train_acc = model(batch, training=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-    log_train_val_stats(args, args.epoch_num, step_name, train_loss, train_acc)
+    log_train_val_stats(args, 0, step_name, train_loss, train_acc)

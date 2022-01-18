@@ -40,7 +40,6 @@ def train_agent_fit_single_batch(args: Namespace,
     Train for a single batch
     """
     train_batch: Any = next(iter(dataloaders['train']))
-    # val_batch: Any = next(iter(dataloaders['val']))
 
     # first batch
     args.it = 0  # training a single batch shouldn't need to use ckpts so this is ok
@@ -50,10 +49,10 @@ def train_agent_fit_single_batch(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', patience=args.train_convergence_patience)
+    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
-    while halt:
+    while not halt:
         train_loss, train_acc = model(train_batch, training=True)
         opt.zero_grad()
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
@@ -62,8 +61,8 @@ def train_agent_fit_single_batch(args: Namespace,
         if (args.it % 15 == 0 and args.it != 0) or args.debug:
             scheduler.step() if (scheduler is not None) else None
 
-        if args.it % 10 == 0 and is_lead_worker(args):
-            log_train_val_stats_simple(args.it, train_loss, train_acc, args.bar)
+        if args.it % 10 == 0 and is_lead_worker(args.rank) or args.debug:
+            log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar)
 
         # - break
         # halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
@@ -114,9 +113,9 @@ def train_agent_iterations(args: Namespace,
 
             # - log full epoch stats
             # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
-            if args.epoch_num % args.log_freq == 0 or halt:
+            if args.epoch_num % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-                log_train_val_stats(args, args.epoch_num, step_name, train_loss, train_acc)
+                log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
                 args.convg_meter.update(train_loss)
 
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
@@ -173,7 +172,7 @@ def train_agent_epochs(args: Namespace,
 
         # - log full epoch stats
         # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
-        if args.epoch_num % args.log_freq == 0 or halt:
+        if args.epoch_num % args.log_freq == 0 or halt or args.debug:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
             log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
             args.convg_meter.update(avg_loss.item())
