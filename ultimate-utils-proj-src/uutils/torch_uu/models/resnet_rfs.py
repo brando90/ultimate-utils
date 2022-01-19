@@ -320,6 +320,9 @@ def seresnet101(keep_prob=1.0, avg_pool=False, **kwargs):
 
 model_dict = {
     'resnet12_rfs': resnet12,
+    'resnet12_rfs_mi': resnet12,
+    'resnet12_rfs_cifarfs_fc100': resnet12,
+
     'resnet18_rfs': resnet18,
     'resnet24_rfs': resnet24,
     'resnet50_rfs': resnet50,
@@ -332,27 +335,49 @@ model_dict = {
 }
 
 
-def get_resnet_rfs_model(model_opt: str,
-                         avg_pool=True,
-                         drop_rate=0.1,
-                         dropblock_size=5,
-                         num_classes=64,
-                         ) -> tuple[nn.Module, dict]:
+def get_resnet_rfs_model_mi(model_opt: str,
+                            avg_pool=True,
+                            drop_rate=0.1,
+                            dropblock_size=5,
+                            num_classes=64,
+                            ) -> tuple[nn.Module, dict]:
     """
     Get resnet_rfs model according to the string model_opt
         e.g. model_opt = resnet12
-    :param model_opt:
-    :return:
+
+    ref:
+        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/models/util.py#L7
     """
-    model_hps_for_cons_dict: dict = {'avg_pool': avg_pool,
-                                     'drop_rate': drop_rate,
-                                     'dropblock_size': dropblock_size,
-                                     'num_classes': num_classes}
+    model_hps: dict = {'avg_pool': avg_pool,
+                       'drop_rate': drop_rate,
+                       'dropblock_size': dropblock_size,
+                       'num_classes': num_classes}
     model: nn.Module = model_dict[model_opt](avg_pool=avg_pool,
                                              drop_rate=drop_rate,
                                              dropblock_size=dropblock_size,
                                              num_classes=num_classes)
-    return model, model_hps_for_cons_dict
+    return model, model_hps
+
+
+def get_resnet_rfs_model_cifarfs_fc100(model_opt: str,
+                                       avg_pool=True,
+                                       drop_rate=0.1,
+                                       dropblock_size=2,
+                                       num_classes=64,
+                                       ) -> tuple[nn.Module, dict]:
+    """
+    ref:
+        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/models/util.py#L7
+    """
+    model_hps: dict = {'avg_pool': avg_pool,
+                       'drop_rate': drop_rate,
+                       'dropblock_size': dropblock_size,
+                       'num_classes': num_classes}
+    model: nn.Module = model_dict[model_opt](avg_pool=avg_pool,
+                                             drop_rate=drop_rate,
+                                             dropblock_size=dropblock_size,
+                                             num_classes=num_classes)
+    return model, model_hps
 
 
 def replace_final_layer(args: Namespace, n_classes: int):

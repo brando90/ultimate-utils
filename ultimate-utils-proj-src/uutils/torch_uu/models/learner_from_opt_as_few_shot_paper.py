@@ -82,11 +82,11 @@ def get_default_learner_and_hps_dict(image_size: int = 84,
                                      spp: bool = False,
                                      in_channels: int = 3
                                      ) -> tuple[nn.Module, dict]:
-    model_hps_for_cons_dict: dict = {'image_size': image_size, 'bn_eps': bn_eps, 'bn_momentum': bn_momentum,
+    model_hps: dict = {'image_size': image_size, 'bn_eps': bn_eps, 'bn_momentum': bn_momentum,
                                      'n_classes': n_classes, 'filter_size': filter_size, 'levels': levels,
                                      'spp': spp, 'in_channels': in_channels}
-    model: nn.Module = Learner(**model_hps_for_cons_dict)
-    return model, model_hps_for_cons_dict
+    model: nn.Module = Learner(**model_hps)
+    return model, model_hps
 
 
 def get_default_learner_from_default_args(args: Optional[Namespace] = None) -> nn.Module:
@@ -241,10 +241,10 @@ class Learner(nn.Module):
                 m.reset_running_stats()
 
 
-def load_model_5CNN_opt_as_model_for_few_shot(model_hps_for_cons_dict: dict) -> nn.Module:
+def load_model_5CNN_opt_as_model_for_few_shot(model_hps: dict) -> nn.Module:
     # - get the hps of the model & build the instance
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import Learner
-    model: nn.Module = Learner(**model_hps_for_cons_dict)
+    model: nn.Module = Learner(**model_hps)
     return model
 
 
