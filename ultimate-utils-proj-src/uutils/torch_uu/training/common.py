@@ -14,7 +14,7 @@ from typing import Any
 import progressbar
 import transformers.optimization
 from progressbar import ProgressBar
-from torch import nn, Tensor
+from torch import nn, Tensor, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 from transformers.optimization import AdafactorSchedule
 
@@ -103,6 +103,7 @@ def scheduler_step(args: Namespace, scheduler: _LRScheduler):
         - use the if i % log_freq outside. So it assumes you already decided how often to call this. With this setup it
         means that when you do s.step(val_loss) the step will be with respect to a step/collection of its or epochs.
     """
+    print('----> in scheduler_step')
     assert args.scheduler is scheduler
     if not hasattr(args, 'scheduler'):
         return
@@ -110,13 +111,22 @@ def scheduler_step(args: Namespace, scheduler: _LRScheduler):
         # args.scheduler.step() if (args.scheduler is not None) else None
         if args.scheduler is None:
             return
+        # -- ReduceLROnPlateu
         elif isinstance(args.scheduler, ReduceLROnPlateau):
             val_batch: Any = next(iter(args.dataloaders['val']))
             val_loss, val_loss_ci, val_acc, val_acc_ci = args.mdl.eval_forward(val_batch)
             args.scheduler.step(val_loss)
             raise NotImplementedError
+        # -- AdafactorSchedule transformers/hugging face
         elif isinstance(args.scheduler, transformers.optimization.AdafactorSchedule):
             args.scheduler.step()
+        # -- CosineAnnealingLR
+        # based: https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/train_supervised.py#L243
+        # rfs seems to call cosine scheduler every epoch, since cosine takes in max step, I assume it must be fine to
+        # call it every step, it probably decays with a cosine according to the step num they are on (epoch or it).
+        elif isinstance(args.scheduler, optim.lr_scheduler.CosineAnnealingLR):
+            args.scheduler.step()
+        # -- Error catcher
         else:
             raise ValueError(f'Error, invalid Scheduler: the scheduler {args.scheduler=} is not supported.')
 

@@ -291,7 +291,7 @@ def print_gpu_info():
         print(f'{nccl=}')
 
 
-def move_model_to_ddp(rank, args, model, force=False):
+def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool = False):
     """
     Moves the model to a ddp object.
 
@@ -319,10 +319,7 @@ def move_model_to_ddp(rank, args, model, force=False):
             model = DistributedDataParallel(model,
                                             find_unused_parameters=True)  # I think removing the devices ids should be fine...
     else:  # running serially
-        if torch.cuda.is_available():
-            # create model and move it to GPU with id rank
-            model = model.to(args.device)
-
+        model = model.to(args.device)
     return model
 
 # for backwards compatibility

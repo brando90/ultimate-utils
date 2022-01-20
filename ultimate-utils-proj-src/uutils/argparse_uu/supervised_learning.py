@@ -47,7 +47,7 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--model_option',
                         type=str,
                         default="5CNN_opt_as_model_for_few_shot_sl",
-                        help="Options: "
+                        help="Options: e.g."
                              "5CNN_opt_as_model_for_few_shot_sl"
                              "resnet12_rfs"
                         )

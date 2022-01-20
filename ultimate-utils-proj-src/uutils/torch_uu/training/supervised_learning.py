@@ -58,18 +58,17 @@ def train_agent_fit_single_batch(args: Namespace,
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
         opt.step()  # the right update is done since all procs have the right synced grads
         gradient_clip(args, opt)
-        if (args.it % 15 == 0 and args.it != 0) or args.debug:
-            scheduler.step() if (scheduler is not None) else None
+        if (args.it % 5 == 0 and args.it != 0) or args.debug:
+            scheduler_step(args, scheduler)
 
-        if args.it % 10 == 0 and is_lead_worker(args.rank) or args.debug:
+        if args.it % 5 == 0 and is_lead_worker(args.rank) or args.debug:
             log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar)
 
         # - break
-        # halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
-        # halt: bool = check_halt(args)
-        halt: bool = check_halt(args) and (train_acc >= acc_tolerance and train_loss <= train_loss_tolerance)
+        halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
+        # halt: bool = check_halt(args) or (train_acc >= acc_tolerance and train_loss <= train_loss_tolerance)
         if halt:
-            log_train_val_stats_simple(args.it, train_loss, train_acc, force_log=True)
+            log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar, force_log=True)
             return train_loss, train_acc
         args.it += 1
 

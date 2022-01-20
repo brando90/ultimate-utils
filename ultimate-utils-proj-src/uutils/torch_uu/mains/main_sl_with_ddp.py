@@ -3,9 +3,7 @@ Main script to set up supervised learning experiments
 """
 
 import torch
-import torch.nn as nn
 import torch.multiprocessing as mp
-# import torch.optim as optim
 
 from argparse import Namespace
 
@@ -18,12 +16,12 @@ from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
 from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
 from uutils.torch_uu.distributed import set_sharing_strategy, print_process_info, set_devices, setup_process, cleanup, \
     print_dist
-from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_first_time
+from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler
 from uutils.torch_uu.training.supervised_learning import train_agent_fit_single_batch, train_agent_iterations, \
     train_agent_epochs
 
 
-def manual_load(args) -> Namespace:
+def manual_load(args: Namespace) -> Namespace:
     """
     Warning: hardcoding the args can make it harder to reproduce later in a main.sh script with the
     arguments to the experiment.
@@ -40,6 +38,7 @@ def load_args() -> Namespace:
     # -- parse args from terminal
     args: Namespace = parse_args_standard_sl()
     args.wandb_project = 'playground'  # needed to log to wandb properly
+    # args.manual_loads_name = 'mi_demo'  # <- REMOVE to remove manual loads
 
     # - debug args
     args.experiment_name = f'debug'
@@ -98,7 +97,7 @@ def train(rank, args):
     print(f'setup process done for rank={rank}')
 
     # create the (ddp) model, opt & scheduler
-    get_and_create_model_opt_scheduler_first_time(args)
+    get_and_create_model_opt_scheduler(args)
     print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}", args.rank)
 
     # create the dataloaders, this goes first so you can select the mdl (e.g. final layer) based on task
