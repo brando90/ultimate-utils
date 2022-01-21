@@ -8,7 +8,7 @@ from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
-from uutils.torch_uu.eval.eval_sl import eval_sl
+from uutils.torch_uu.eval.eval import eval_sl
 
 
 def log_train_val_stats_simple(args: Namespace,
@@ -46,6 +46,8 @@ def log_train_val_stats(args: Namespace,
                         train_loss: float,
                         train_acc: float,
 
+                        training: bool = False,  # default for SL
+
                         save_val_ckpt: bool = True,
                         ):
     _log_train_val_stats(args=args,
@@ -57,6 +59,8 @@ def log_train_val_stats(args: Namespace,
                          bar=args.bar,
 
                          ckpt_freq=getattr(args, 'ckpt_freq', args.log_freq),
+
+                         training=training,
 
                          save_val_ckpt=save_val_ckpt,
                          log_to_tb=getattr(args, 'log_to_tb', False),
@@ -75,6 +79,8 @@ def _log_train_val_stats(args: Namespace,
 
                          ckpt_freq: int,
 
+                         training: bool,
+
                          save_val_ckpt: bool = True,
                          log_to_tb: bool = False,
                          log_to_wandb: bool = False,
@@ -87,7 +93,7 @@ def _log_train_val_stats(args: Namespace,
         from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
 
         # - get eval stats
-        val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders)
+        val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
             args.best_val_loss = float(val_loss)
             save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')

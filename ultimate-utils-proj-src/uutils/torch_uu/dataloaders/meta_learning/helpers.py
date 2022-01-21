@@ -20,11 +20,11 @@ def get_meta_learning_dataloader(args: Namespace) -> dict:
             from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import \
                 get_miniimagenet_dataloaders_torchmeta
             args.dataloaders = get_miniimagenet_dataloaders_torchmeta(args)
-            raise NotImplementedError
+            # raise NotImplementedError
         elif args.data_option == 'torchmeta_cifarfs':
             from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import \
-                get_cifarfs_datasets_torchmeta
-            args.dataloaders = get_cifarfs_datasets_torchmeta(args)
+                get_cifarfs_dataloaders_torchmeta
+            args.dataloaders = get_cifarfs_dataloaders_torchmeta(args)
         elif args.data_option == 'torchmeta_sinusoid':
             from uutils.torch_uu.dataloaders import get_torchmeta_sinusoid_dataloaders
             args.dataloaders = get_torchmeta_sinusoid_dataloaders(args)

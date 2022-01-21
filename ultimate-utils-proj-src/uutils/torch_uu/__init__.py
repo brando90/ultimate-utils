@@ -317,6 +317,17 @@ def get_device_from(mdl) -> torch.device:
     return device
 
 
+def get_device_from_model(mdl: nn.Module) -> torch.device:
+    return get_device_from(mdl)
+
+
+def get_device_from_args(args: Namespace) -> torch.device:
+    return get_device_from(args.model)
+
+
+def get_device_from_args2(args):
+    return next(args.model.parameters()).device
+
 def get_device(gpu_idx: int = 0) -> torch.device:
     """
     Get default gpu torch device.

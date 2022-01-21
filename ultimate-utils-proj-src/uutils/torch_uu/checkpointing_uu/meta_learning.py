@@ -10,10 +10,11 @@ import uutils
 from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
 from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
 
+
 def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
     """
     Warning:
-        - if you save with dill but save the actual objects, your this dill unpickling will likely
+        - if you save with dill but save the actual objects, this dill unpickling will likely
          needs to know the paths to the code to load the class correctly. So it's safer to load the data e.g.
          weights, biases, optimizer state and then load the data into the objects when YOU instantiate those objects.
 
@@ -21,55 +22,49 @@ def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
         - https://stackoverflow.com/questions/70129895/why-is-it-not-recommended-to-save-the-optimizer-model-etc-as-pickable-dillable
     """
     if is_lead_worker(args.rank):
-        import dill
         import pickle
         args.logger.save_current_plots_and_stats()
+
         # - ckpt
-        # assert uutils.xor(args.training_mode == 'epochs', args.training_mode == 'iterations')
-        f: nn.Module = get_model_from_ddp(args.base_model)
-        # pickle vs torch.save https://discuss.pytorch.org/t/advantages-disadvantages-of-using-pickle-module-to-save-models-vs-torch-save/79016
         args_pickable: Namespace = uutils.make_args_pickable(args)
         torch.save({'training_mode': args.training_mode,
                     'it': args.it,
                     'epoch_num': args.epoch_num,
 
-                    'args': args_pickable,  # some versions of this might not have args!
+                    # 'args': args_pickable,  # some versions of this might not have args!
+                    # decided only to save the dict version to avoid this ckpt not working, make it args when loading
+                    'args_dict': vars(args_pickable),  # some versions of this might not have args!
 
-                    # 'meta_learner': args.meta_learner,
-                    'meta_learner_str': str(args.meta_learner),
-                    # added later, to make it easier to check what optimizer was used
+                    'agent_type': type(args.agent),
 
-                    # 'f': f,
-                    'f_state_dict': f.state_dict(),  # added later, to make it easier to check what optimizer was used
-                    'f_str': str(f),  # added later, to make it easier to check what optimizer was used
-                    # 'f_modules': f._modules,
-                    # 'f_modules_str': str(f._modules),
+                    'model_state_dict': get_model_from_ddp(args.model).state_dict(),
+                    'model_str': str(args.model),  # added later, to make it easier to check what optimizer was used
+                    'model_hps': args.model_hps,
+                    'model_option': args.model_option,
 
-                    # 'outer_opt': args.outer_opt,  # added later, to make it easier to check what optimizer was used
-                    'outer_opt_state_dict': args.outer_opt.state_dict(),
-                    # added later, to make it easier to check what optimizer was used
-                    'outer_opt_str': str(args.outer_opt),
-                    # added later, to make it easier to check what optimizer was used
+                    'opt_state_dict': args.opt.state_dict(),
+                    'opt_str': str(args.opt),
+                    'opt_hps': args.opt_hps,
+                    'opt_option': args.opt_option,
 
                     'scheduler_str': str(args.scheduler),
-                    'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler)
-                    # 'scheduler': args.scheduler
+                    'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler),
+                    'scheduler_hps': args.scheduler_hps,
+                    'scheduler_option': args.scheduler_option,
                     },
-                   # pickle_module=dill,
                    pickle_module=pickle,
                    f=args.log_root / ckpt_filename)
 
 
-MetaLearner = object
-
+# --
 
 def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
                                                                 path2ckpt: str,
                                                                 filename: str,
                                                                 device: Optional[torch.device] = None,
                                                                 # precedence_to_args_checkpoint: bool = True,
-                                                                ) -> tuple[
-    nn.Module, optim.Optimizer, _LRScheduler, MetaLearner]:
+                                                                ) \
+        -> tuple[nn.Module, optim.Optimizer, _LRScheduler, object]:
     """
     Get the model, optimizer, meta_learner to resume training from checkpoint.
 
@@ -102,7 +97,7 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
             args.it = ckpt['it']  # note even if batch_idx is set, .it is the actual value to track the iteration num
 
     # - get meta-learner
-    meta_learner: MetaLearner = ckpt['meta_learner']
+    meta_learner = ckpt['meta_learner']
 
     # - get model
     model: nn.Module = meta_learner.base_model

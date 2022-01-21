@@ -18,7 +18,6 @@ from torch import nn, Tensor
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
-import uutils
 from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step, \
     log_train_val_stats_simple
 from uutils.torch_uu import AverageMeter
@@ -61,16 +60,22 @@ def train_agent_fit_single_batch(args: Namespace,
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
             scheduler_step(args, scheduler)
 
-        if args.it % args.log_freq == 0 or args.debug:
-            log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar)
-
         # - break
         halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
-        # halt: bool = check_halt(args) or (train_acc >= acc_tolerance and train_loss <= train_loss_tolerance)
-        if halt:
-            log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar, force_log=True)
-            return train_loss, train_acc
+        check_halt(args)  # for the sake of making sure check_halt runs
+
         args.it += 1
+
+        # - log full stats
+        # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+        if args.epoch_num % args.log_freq == 0 or halt or args.debug:
+            step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+            log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
+
+        if halt:
+            break
+
+    return train_loss, train_acc
 
 
 def train_agent_iterations(args: Namespace,

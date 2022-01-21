@@ -37,28 +37,20 @@ def load_args() -> Namespace:
     """
     # -- parse args from terminal
     args: Namespace = parse_args_standard_sl()
-    args.wandb_project = 'playground'  # needed to log to wandb properly
-    # args.manual_loads_name = 'mi_demo'  # <- REMOVE to remove manual loads
-
-    # - debug args
-    args.experiment_name = f'debug'
-    args.run_name = f'debug (Adafactor) : {args.jobid=}'
-    args.force_log = True
-    # args.log_to_wandb = True
-    args.log_to_wandb = False
-
-    # - real args
-    # args.experiment_name = f'Real experiment name (Real)'
-    # args.run_name = f'Real experiment run name: {args.jobid=}'
-    # args.force_log = False
-    # args.log_to_wandb = True
-    # #args.log_to_wandb = False
+    args.args_hardcoded_in_script = True  # <- REMOVE to remove manual loads
+    # args.manual_loads_name = 'resnet12_rfs_cifarfs'  # <- REMOVE to remove manual loads
+    # args.manual_loads_name = 'manual_load_cifarfs_resnet12rfs_train_until_convergence'  # <- REMOVE to remove manual loads
 
     # -- set remaining args values (e.g. hardcoded, checkpoint etc.)
     if resume_from_checkpoint(args):
         args: Namespace = make_args_from_supervised_learning_checkpoint(args=args, precedence_to_args_checkpoint=True)
     elif args_hardcoded_in_script(args):
-        args: Namespace = manual_load(args)
+        if args.manual_loads_name == 'resnet12_rfs_cifarfs':
+            args: Namespace = manual_load_cifarfs_resnet12rfs(args)
+        elif args.manual_loads_name == 'manual_load_cifarfs_resnet12rfs_train_until_convergence':
+            args: Namespace = manual_load_cifarfs_resnet12rfs_train_until_convergence(args)
+        else:
+            raise ValueError(f'Invalid value, got: {args.manual_loads_name=}')
     else:
         # NOP: since we are using args from terminal
         pass
@@ -104,19 +96,18 @@ def train(rank, args):
     args.dataloaders: dict = get_sl_dataloader(args)
 
     # Agent does everything, proving, training, evaluate etc.
-    agent: Agent = ClassificationSLAgent(args, args.model)
-    args.agent = agent
+    args.agent: Agent = UnionClsSLAgent(args, args.model)
 
     # -- Start Training Loop
     print_dist('====> about to start train loop', args.rank)
     if args.training_mode == 'fit_single_batch':
-        train_agent_fit_single_batch(args, agent, args.dataloaders, args.opt, args.scheduler)
+        train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
     elif 'iterations' in args.training_mode:
         # note train code will see training mode to determine halting criterion
-        train_agent_iterations(args, agent, args.dataloaders, args.opt, args.scheduler)
+        train_agent_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
     elif 'epochs' in args.training_mode:
         # note train code will see training mode to determine halting criterion
-        train_agent_epochs(args, agent, args.dataloaders, args.opt, args.scheduler)
+        train_agent_epochs(args, args.agent, args.dataloaders, args.opt, args.scheduler)
     # note: the other options do not appear directly since they are checked in
     # the halting condition.
     else:

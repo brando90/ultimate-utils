@@ -41,7 +41,6 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
         - DDP checkpointing: https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
     """
     if is_lead_worker(args.rank):
-        # import dill
         import pickle
         args.logger.save_current_plots_and_stats()
 
@@ -71,7 +70,6 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
                     'scheduler_hps': args.scheduler_hps,
                     'scheduler_option': args.scheduler_option,
                     },
-                   # pickle_module=dill,
                    pickle_module=pickle,
                    f=args.log_root / ckpt_filename)
 

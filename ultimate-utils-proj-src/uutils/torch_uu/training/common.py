@@ -95,7 +95,6 @@ def scheduler_step(args: Namespace, scheduler: _LRScheduler):
         - use the if i % log_freq outside. So it assumes you already decided how often to call this. With this setup it
         means that when you do s.step(val_loss) the step will be with respect to a step/collection of its or epochs.
     """
-    print('----> in scheduler_step')
     assert args.scheduler is scheduler
     if not hasattr(args, 'scheduler'):
         return

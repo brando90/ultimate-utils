@@ -155,7 +155,7 @@ def parse_args_meta_learning() -> Namespace:
 
     # - meta-learner specific
     parser.add_argument('--k_shots', type=int, default=5, help="")
-    parser.add_argument('--k_eval', type=int, default=100, help="")
+    parser.add_argument('--k_eval', type=int, default=15, help="")
     parser.add_argument('--n_classes', type=int, default=5, help="")
 
     # - parse arguments

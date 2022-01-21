@@ -42,3 +42,14 @@ def f3(arg, hp1, hp2, hp3, hp4):
 
 f3('arg', 1, 2, 3, 4)
 f3('arg', **{'hp1': 1, 'hp2': 2}, **{'hp3': 3, 'hp4': 4})
+
+# -
+
+def f(arg, hp1=None, hp2=None, hp3='default'):
+    print('-- in f')
+    print(arg)
+    print(hp1)
+    print(hp2)
+    print(hp3)
+
+f('arg', **{})

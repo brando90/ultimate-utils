@@ -130,6 +130,10 @@ class MAMLMetaLearner(nn.Module):
                                                                                                      call_backward)
         return meta_loss, meta_acc, meta_loss_std, meta_acc_std
 
+    def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
+        meta_loss, meta_acc, meta_loss_std, meta_acc_std = self.forward(batch, training, call_backward)
+        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+
     def eval(self):
         """
         Note: decision is to do .train() for all meta-train and .eval() for meta-eval.

@@ -12,7 +12,7 @@ from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learnin
 from uutils.torch_uu.distributed import is_lead_worker
 
 
-def log_train_val_stats(args: Namespace,
+def _log_train_val_stats(args: Namespace,
                         it: int,
 
                         train_loss: float,
