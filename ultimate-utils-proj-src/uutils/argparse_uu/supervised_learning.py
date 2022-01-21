@@ -55,7 +55,7 @@ def parse_args_standard_sl() -> Namespace:
 
     # optimization
     parser.add_argument('--opt_option', type=str, default='AdafactorDefaultFair')
-    parser.add_argument('--learning_rate', type=float, default=None, help='Warning: use a learning rate according to'
+    parser.add_argument('--lr', type=float, default=None, help='Warning: use a learning rate according to'
                                                                           'how previous work trains your model.'
                                                                           'Otherwise, tuning might be needed.'
                                                                           'Vision resnets usually use 1e-3'

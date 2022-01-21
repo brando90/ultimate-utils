@@ -37,6 +37,10 @@ def meta_train_fixed_iterations(args: Namespace, training: bool = True):
             gradient_clip(args, args.outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
             args.outer_opt.step()
 
+            # - scheduler, not in first/0th epoch though
+            if (args.it % args.log_scheduler_freq == 0 and args.it != 0) or args.debug:
+                scheduler_step(args, scheduler)
+
             # - scheduler
             if (args.it % 500 == 0 and args.it != 0 and hasattr(args, 'scheduler')) or args.debug:
                 args.scheduler.step() if (args.scheduler is not None) else None

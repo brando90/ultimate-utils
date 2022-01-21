@@ -4,7 +4,6 @@ Very small adaptation of pytorch and higher code are made.
 Mainly to be able to provide an API for higher that does not exist (as far as I know).
 Mainly to get an adapted model without a context loop.
 
-
 ## Licensing notes
 
 For heuristic (no professional laywer advice) see: 

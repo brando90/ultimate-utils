@@ -19,7 +19,7 @@ from torch import Tensor
 from torch.optim.optimizer import required
 
 from anatome.helper import LayerIdentifier, dist_data_set_per_layer
-from meta_learning.meta_learners.pretrain_convergence import get_adapted_according_to_ffl
+# from meta_learning.meta_learners.pretrain_convergence import get_adapted_according_to_ffl
 
 FuncModel = _MonkeyPatchBase
 
@@ -444,7 +444,7 @@ def meta_eval_no_context_manager(args: Namespace,
 
 def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y,
                                               training: bool = True
-                                              ) -> tuple[float, float]:
+                                              ) -> tuple[float, float, float, float]:
     """
     Returns the acc & loss on the meta-batch of query sets.
 
