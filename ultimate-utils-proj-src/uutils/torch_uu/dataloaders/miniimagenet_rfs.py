@@ -36,6 +36,20 @@ def get_train_valid_test_data_loader_miniimagenet_rfs(args: Namespace) -> dict:
     dataloaders: dict = get_mini_imagenet_rfs_sl_dataloader(**train_kwargs)
     return dataloaders
 
+# todo - fix later? did this padding=8 make a difference?
+# def get_transform_rfs():
+#     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+#     data_augmentation_transforms = transforms.Compose([
+#         transforms.RandomResizedCrop(84),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ColorJitter(
+#             brightness=0.4,
+#             contrast=0.4,
+#             saturation=0.4,
+#             hue=0.2),
+#         transforms.ToTensor(),
+#         normalize])
+#     return data_augmentation_transforms
 
 def get_transform(augment: bool):
     if augment:

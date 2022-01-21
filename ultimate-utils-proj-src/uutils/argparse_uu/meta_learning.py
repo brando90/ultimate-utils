@@ -1,6 +1,8 @@
 from argparse import Namespace
 from pathlib import Path
 
+from torch import nn
+
 from uutils import load_cluster_jobids_to
 
 def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
@@ -102,10 +104,13 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
     # warning: sl name is path_to_data_set here its data_path
-    parser.add_argument('--data_path', type=str, default=Path('~/data/mnist/').expanduser(),
-                        help='path to data set splits. The code will assume everything is saved in'
-                             'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
-                             'setup method and log_root.')
+    parser.add_argument('--data_option', type=str, default='None')
+    parser.add_argument('--data_path', type=str, default=None)
+    # parser.add_argument('--data_path', type=str, default='torchmeta_miniimagenet',
+    #                     help='path to data set splits. The code will assume everything is saved in'
+    #                          'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
+    #                          'setup method and log_root.')
+    # parser.add_argument('--path_to_data_set', type=str, default='None')
     parser.add_argument('--not_augment_train', action='store_false', default=True)
     parser.add_argument('--augment_val', action='store_true', default=False)
     parser.add_argument('--augment_test', action='store_true', default=False)

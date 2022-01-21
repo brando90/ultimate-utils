@@ -122,8 +122,6 @@ def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
     Note:
         - torchmeta considers the path to the data set the path to the folder where the folder containing the dataset
         is at. e.g. the folder miniimagenet/ is the ~/data/ folder is the data set.
-    :param args:
-    :return:
     """
     # - gets path where miniimagenet folder is since that's what torchmeta's helper function wants
     # - ~/data/miniimagenet -> ~/data/
@@ -145,6 +143,7 @@ def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
                                  transform=data_augmentation_transforms,
                                  ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
                                  meta_split='train', download=True)
+    #  transform for bellow: 'transform': Compose([Resize(84), ToTensor()])
     dataset_val = miniimagenet(data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
                                meta_split='val', download=True)
     dataset_test = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
@@ -199,7 +198,13 @@ def get_distributed_dataloader_miniimagenet_torchmeta(args: Namespace) -> dict:
     return dataloaders
 
 
-def get_transforms_mini_imagenet(args):
+def get_transforms_mini_imagenet_meta_lstm(args):
+    """
+    The mini-imagenet normalization according to the meta-lstm paper.
+
+    Note:
+        - it is not using the padding=8 that rfs is doing.
+    """
     # get transforms for images
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     train_transform = transforms.Compose([
@@ -306,6 +311,33 @@ def get_default_mini_imagenet():
 
 # -- cifarfs, fc100
 
+def get_cifarfs_transform_from_rfs(augment: bool):
+    """
+    Get cifarfs transform. Have rfs experiment match the torchmeta experiment.
+
+    Note: transform should be:
+    if augment:
+        transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
+            transforms.RandomCrop(32, padding=4),
+            transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            transforms.RandomHorizontalFlip(),
+            lambda x: np.asarray(x),
+            transforms.ToTensor(),
+            normalize_cifar100
+        ])
+    else:
+        transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
+            transforms.ToTensor(),
+            normalize_cifar100
+        ])
+    """
+    from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_transform
+    transform = get_transform(augment)
+    return transform
+
+
 def get_real_path_to_torchmeta_cifarfs(dummy_datapath: Path) -> Path:
     """
     """
@@ -321,28 +353,28 @@ def get_cifarfs_datasets_torchmeta(args: Namespace) -> dict:
     """
     # - gets path where miniimagenet folder is since that's what torchmeta's helper function wants
     # ~/data/miniimagenet -> ~/data/
-    data_path: Path = get_real_path_to_torchmeta_cifarfs(dummy_datapath=args.data_path)
+    # data_path: Path = get_real_path_to_torchmeta_cifarfs(dummy_datapath=args.data_path)
+    data_path = args.data_path
+
     # get the dataset splits
     from torchmeta.datasets.helpers import cifar_fs
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    data_augmentation_transforms = transforms.Compose([
-        transforms.RandomResizedCrop(84),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(
-            brightness=0.4,
-            contrast=0.4,
-            saturation=0.4,
-            hue=0.2),
-        transforms.ToTensor(),
-        normalize])
-    dataset_train = miniimagenet(data_path,
-                                 transform=data_augmentation_transforms,
-                                 ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
-                                 meta_split='train', download=True)
-    dataset_val = miniimagenet(data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
-                               meta_split='val', download=True)
-    dataset_test = miniimagenet(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
-                                meta_split='test', download=True)
+    train_trans = get_cifarfs_transform_from_rfs(args.augment_train)
+    dataset_train = cifar_fs(data_path,
+                             transform=train_trans,
+                             ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                             meta_split='train', download=True)
+    # - note: this is not what I did for MI did but this is what I am doing to have it match rfs & more likely be the
+    # same to what other papers would have done.
+    val_trans = get_cifarfs_transform_from_rfs(args.augment_val)
+    dataset_val = cifar_fs(data_path,
+                           transform=val_trans,
+                           ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                           meta_split='val', download=True)
+    test_trans = get_cifarfs_transform_from_rfs(args.augment_val)
+    dataset_test = cifar_fs(args.data_path,
+                            transform=test_trans,
+                            ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,
+                            meta_split='test', download=True)
     # - return data sets
     datasets = {'train': dataset_train, 'val': dataset_val, 'test': dataset_test}
     return datasets

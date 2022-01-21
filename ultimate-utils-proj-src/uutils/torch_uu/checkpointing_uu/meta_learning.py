@@ -7,7 +7,6 @@ from torch import nn, optim
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
-from uutils.torch_uu import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
 from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
 from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
 
@@ -137,6 +136,8 @@ def get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args: Namespace,
     # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-3, scheduler_opt=scheduler_opt)
     # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-4, scheduler_opt=scheduler_opt)
     # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=1e-5, scheduler_opt=scheduler_opt)
+
+    from uutils.torch_uu import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
 
     scheduler_opt = 'adafactor_scheduler_from_huggingface'
     # outer_opt, scheduler = get_default_uu_adafactor_optimizer_and_scheduler_fairseq(mdl=model, lr=None, scheduler_opt=scheduler_opt)
