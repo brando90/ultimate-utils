@@ -13,7 +13,7 @@ from higher.optim import _GroupedGradsType
 
 import uutils
 from uutils.torch_uu import functional_diff_norm, ned_torch, r2_score_from_torch, calc_accuracy_from_logits, \
-    normalize_matrix_for_similarity
+    normalize_matrix_for_similarity, process_meta_batch
 from uutils.torch_uu import tensorify
 
 import numpy as np
@@ -107,8 +107,9 @@ class MAMLMetaLearner(nn.Module):
 
         self.target_type = target_type
 
-    def forward(self, spt_x, spt_y, qry_x, qry_y, training: bool = True):
-        """Does L(A(theta,S), Q) = sum^N_{t=1} L(A(theta,S_t),Q_t) where A(theta,S) is the inner-adaptation loop.
+    def forward(self, batch, training: bool = True, call_backward: bool = False):
+        """
+        Does L(A(theta,S), Q) = sum^N_{t=1} L(A(theta,S_t),Q_t) where A(theta,S) is the inner-adaptation loop.
         It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
 
         Decision for BN/eval:
@@ -119,18 +120,14 @@ class MAMLMetaLearner(nn.Module):
         ref for BN/eval:
             - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
             - https://github.com/tristandeleu/pytorch-maml/issues/19
-
-        Args:
-            spt_x ([type]): x's for support set. Example shape [N,k_shot,D] D=1 or D=[C,H,W]
-            spt_y ([type]): y's/target value for support set. Example shape [N,k_eval] or [N,k_eval,D]
-            qry_x ([type]): x's for query set. Example shape [N,C,D] D=1 or D=[C,H,W]
-            qry_y ([type]): y's/target value for query set. Example shape [N,k_eval] or [N,k_eval,D]
         """
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
             meta_learner_forward_adapt_batch_of_tasks
         meta_loss, meta_acc, meta_loss_std, meta_acc_std = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
                                                                                                      qry_x, qry_y,
-                                                                                                     training)
+                                                                                                     training,
+                                                                                                     call_backward)
         return meta_loss, meta_acc, meta_loss_std, meta_acc_std
 
     def eval(self):

@@ -80,6 +80,7 @@ def log_train_val_stats(args: Namespace,
             log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
             log_2_tb_supervisedlearning(args.tb, args, it, val_loss, val_acc, 'val')
 
+
 # - tests
 
 def get_args() -> Namespace:

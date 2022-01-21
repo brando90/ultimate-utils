@@ -68,6 +68,7 @@ def parse_args_standard_sl() -> Namespace:
                                                                           '1(1-beta_2)^-1=2000 iterations.'
                                                                           'Doing a hp search with with wanbd'
                                                                           'a good idea.')
+    parser.add_argument('--grad_clip_mode', type=str, default=None)
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
     parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
     parser.add_argument('--log_scheduler_freq', type=int, default=-1, help='default is to put the epochs or iterations '

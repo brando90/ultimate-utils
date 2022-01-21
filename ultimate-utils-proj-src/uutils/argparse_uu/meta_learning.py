@@ -7,16 +7,10 @@ from uutils import load_cluster_jobids_to
 
 def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
     args.meta_batch_size_train = args.batch_size
-    args.meta_batch_size_eval = args.batch_size
+    args.meta_batch_size_eval = args.batch_size_eval
 
-    # args.log_train_freq = 100 if not args.debug else 1
     args.log_train_freq = args.log_freq
-    args.log_val_freq = 100 if not args.debug else 1  # for hyperparam tuning. note: lower the quicker the code.
-
-    args.grad_clip_rate = None  # does no gradient clipping if None
-    # args.grad_clip_mode = None  # more specific setting of the crad clipping split
-    # args.grad_clip_rate = 0.25  # does no gradient clipping if None, meta-lstm used 0.25
-    # args.grad_clip_mode = 'clip_all_together'  # clip all params together/the same way
+    args.log_val_freq = args.log_freq
 
     # - unsure if to remove
     args.eval_iters = 1
@@ -95,6 +89,7 @@ def parse_args_meta_learning() -> Namespace:
                                                                           '1(1-beta_2)^-1=2000 iterations.'
                                                                           'Doing a hp search with with wanbd'
                                                                           'a good idea.')
+    parser.add_argument('--grad_clip_mode', type=str, default=None)
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
     parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
     parser.add_argument('--log_scheduler_freq', type=int, default=-1, help='default is to put the epochs or iterations '

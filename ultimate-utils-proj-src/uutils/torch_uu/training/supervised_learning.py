@@ -53,15 +53,15 @@ def train_agent_fit_single_batch(args: Namespace,
     log_zeroth_step(args, model)
     halt: bool = False
     while not halt:
-        train_loss, train_acc = model(train_batch, training=True)
         opt.zero_grad()
+        train_loss, train_acc = model(train_batch, training=True)
         train_loss.backward()  # each process synchronizes its gradients in the backward pass
-        opt.step()  # the right update is done since all procs have the right synced grads
         gradient_clip(args, opt)
-        if (args.it % 5 == 0 and args.it != 0) or args.debug:
+        opt.step()  # the right update is done since all procs have the right synced grads
+        if (args.it % args.log_scheduler_freq == 0) or args.debug:
             scheduler_step(args, scheduler)
 
-        if args.it % 5 == 0 and is_lead_worker(args.rank) or args.debug:
+        if args.it % args.log_freq == 0 or args.debug:
             log_train_val_stats_simple(args, args.it, train_loss, train_acc, args.bar)
 
         # - break
@@ -94,14 +94,14 @@ def train_agent_iterations(args: Namespace,
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
-            train_loss, train_acc = model(batch, training=True)
             opt.zero_grad()
+            train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
-            opt.step()  # the right update is done since all procs have the right synced grads
             gradient_clip(args, opt)
+            opt.step()  # the right update is done since all procs have the right synced grads
 
-            # - scheduler, not in first/0th epoch though
-            if (args.it % args.log_scheduler_freq == 0 and args.it != 0) or args.debug:
+            # - scheduler
+            if (args.it % args.log_scheduler_freq == 0) or args.debug:
                 scheduler_step(args, scheduler)
 
             # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
@@ -110,7 +110,7 @@ def train_agent_iterations(args: Namespace,
             # - go to next it & before that check if we should halt
             args.it += 1
 
-            # - log full epoch stats
+            # - log full stats
             # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
             if args.epoch_num % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
@@ -148,11 +148,11 @@ def train_agent_epochs(args: Namespace,
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
-            train_loss, train_acc = model(batch, training=True)
             opt.zero_grad()
+            train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
-            opt.step()  # the right update is done since all procs have the right synced grads
             gradient_clip(args, opt)
+            opt.step()  # the right update is done since all procs have the right synced grads
 
             # - meter updates
             avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
@@ -160,7 +160,7 @@ def train_agent_epochs(args: Namespace,
                 print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
 
         # - scheduler, not in first/0th epoch though
-        if (args.epoch_num % args.log_scheduler_freq == 0 and args.epoch_num != 0) or args.debug:
+        if (args.epoch_num % args.log_scheduler_freq == 0) or args.debug:
             scheduler_step(args, scheduler)
 
         # convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).

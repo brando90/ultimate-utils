@@ -2,14 +2,22 @@
 """
 from argparse import Namespace
 
+from torch import Tensor
+
 import uutils
 from uutils.logging_uu.wandb_logging.meta_learning import log_train_val_stats
 from uutils.torch_uu import process_meta_batch
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
-from uutils.torch_uu.training.common import gradient_clip
+from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt
 
 
-def meta_train_fixed_iterations(args: Namespace, training: bool = True):
+def meta_train_fixed_iterations(args: Namespace,
+                                meta_learner,
+                                dataloaders,
+                                outer_opt,
+                                scheduler,
+                                training: bool = True
+                                ) -> tuple[Tensor, Tensor]:
     """
     Train using the meta-training (e.g. episodic training) over batches of tasks using a fixed number of iterations
     assuming the number of tasks is small i.e. one epoch is doable and not infinite/super exponential
@@ -20,53 +28,50 @@ def meta_train_fixed_iterations(args: Namespace, training: bool = True):
     """
     print('Starting training!')
 
-    # bar_it = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
-    bar_it = uutils.get_good_progressbar(max_value=args.num_its)
-    args.meta_learner.train() if training else args.meta_learner.eval()
-    while True:
-        for batch_idx, batch in enumerate(args.dataloaders['train']):
-            spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
-
-            # - clean gradients, especially before meta-learner is ran since it uses gradients
-            args.outer_opt.zero_grad()
-
-            # - forward pass A(f)(x)
-            train_loss, train_acc, train_loss_std, train_acc_std = args.meta_learner(spt_x, spt_y, qry_x, qry_y)
-
-            # - outer_opt step
-            gradient_clip(args, args.outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-            args.outer_opt.step()
-
-            # - scheduler, not in first/0th epoch though
-            if (args.it % args.log_scheduler_freq == 0 and args.it != 0) or args.debug:
-                scheduler_step(args, scheduler)
+    # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+    args.bar = uutils.get_good_progressbar(max_value=args.num_its)
+    meta_learner.train() if training else meta_learner.eval()
+    halt: bool = False
+    while not halt:
+        for batch_idx, batch in enumerate(dataloaders['train']):
+            outer_opt.zero_grad()
+            train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(batch, call_backward=True)
+            # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
+            gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
+            outer_opt.step()
 
             # - scheduler
-            if (args.it % 500 == 0 and args.it != 0 and hasattr(args, 'scheduler')) or args.debug:
-                args.scheduler.step() if (args.scheduler is not None) else None
+            if (args.it % args.log_scheduler_freq == 0) or args.debug:
+                scheduler_step(args, scheduler)
 
-            # -- log it stats
-            log_train_val_stats(args, args.it, train_loss, train_acc, valid=meta_eval, bar=bar_it,
-                                log_freq=100, ckpt_freq=100,
-                                save_val_ckpt=True, log_to_wandb=args.log_to_wandb,
-                                force_log=args.force_log)
-            # log_sim_to_check_presence_of_feature_reuse(args, args.it,
-            #                                            spt_x, spt_y, qry_x, qry_y,
-            #                                            log_freq_for_detection_of_feature_reuse=int(args.num_its//3)
-            #                                            , parallel=False)
+            # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+            halt: bool = check_halt(args)
 
-            # - break
-            halt: bool = args.it >= args.num_its - 1
-            if halt:
-                return train_loss, train_acc
-
+            # - go to next it & before that check if we should halt
             args.it += 1
+
+            # - log full stats
+            # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+            if args.it % args.log_freq == 0 or halt or args.debug:
+                step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+                log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
+                args.convg_meter.update(train_loss)
+
+            # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
+            if halt:
+                break
+
+    return train_loss, train_acc
 
 
 # - evaluation code
 
-def meta_eval(args: Namespace, training: bool = True, val_iterations: int = 0, save_val_ckpt: bool = True,
-              split: str = 'val') -> tuple:
+def meta_eval(args: Namespace,
+              training: bool = True,
+              val_iterations: int = 0,
+              save_val_ckpt: bool = True,
+              split: str = 'val',
+              ) -> tuple:
     """
     Evaluates the meta-learner on the given meta-set.
 
@@ -96,4 +101,3 @@ def meta_eval(args: Namespace, training: bool = True, val_iterations: int = 0, s
         args.best_val_loss = float(eval_loss)
         save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
     return eval_loss, eval_acc, eval_loss_std, eval_acc_std
-    # return eval_loss, eval_acc

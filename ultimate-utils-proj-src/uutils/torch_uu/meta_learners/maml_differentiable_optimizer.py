@@ -443,13 +443,19 @@ def meta_eval_no_context_manager(args: Namespace,
 
 
 def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y,
-                                              training: bool = True
+                                              training: bool = True,  # always true to avoid .eval()
+                                              call_backward: bool = False,  # not needed during testing/inference
                                               ) -> tuple[float, float, float, float]:
     """
     Returns the acc & loss on the meta-batch of query sets.
 
-    Note: crucially, this code uses the code that does not use the context manager from higher. This is so to
-    test that code that is later use to compare models using ultimate-anatome.
+    Note:
+        - training true ensures .eval() is never called (due to BN, we always want batch stats)
+        - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option
+        to call it or not.
+        - crucially, this code uses the code that does not use the context manager from higher. This is so to
+        test that code that is later use to compare models using ultimate-anatome.
+
     """
     # - get inner opt
     inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.lr_inner)
@@ -477,7 +483,8 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
 
         # Accumulate gradients wrt meta-params for each task: https://github.com/facebookresearch/higher/issues/104
         # note this is more mem efficient (removes intermediate data needed since backward has already been called)
-        # (qry_loss_t / meta_batch_size).backward()
+        if call_backward:
+            (qry_loss_t / meta_batch_size).backward()
 
         # get accuracy
         if meta_learner.target_type == 'classification':
