@@ -13,24 +13,24 @@ from uutils.torch_uu.distributed import is_lead_worker
 
 
 def _log_train_val_stats(args: Namespace,
-                        it: int,
+                         it: int,
 
-                        train_loss: float,
-                        train_acc: float,
+                         train_loss: float,
+                         train_acc: float,
 
-                        valid,
+                         valid,
 
-                        bar,
+                         bar,
 
-                        log_freq: int = 10,
-                        ckpt_freq: int = 50,
-                        mdl_watch_log_freq: int = 50,
-                        force_log: bool = False,  # e.g. at the final it/epoch
+                         log_freq: int = 10,
+                         ckpt_freq: int = 50,
+                         mdl_watch_log_freq: int = 50,
+                         force_log: bool = False,  # e.g. at the final it/epoch
 
-                        save_val_ckpt: bool = False,
-                        log_to_tb: bool = False,
-                        log_to_wandb: bool = False
-                        ):
+                         save_val_ckpt: bool = False,
+                         log_to_tb: bool = False,
+                         log_to_wandb: bool = False
+                         ):
     """
     Log train and val stats where it is iteration or epoch step.
 
@@ -119,7 +119,7 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
         scheduler.step()
 
         if it % 2 == 0 and is_lead_worker(args.rank):
-            log_train_val_stats(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
+            _log_train_val_stats(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
             if it % 10 == 0:
                 # save_ckpt(args, args.mdl, args.optimizer)
                 pass
