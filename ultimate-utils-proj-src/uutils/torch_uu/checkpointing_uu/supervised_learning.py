@@ -19,7 +19,10 @@ from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
 from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp, is_running_parallel, move_to_ddp
 
 
-def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
+def save_for_supervised_learning(args: Namespace,
+                                 ckpt_filename: str = 'ckpt.pt',
+                                 ignore_logger: bool = False,
+                                 ):
     """
     Save a model checkpoint now (if we are the lead process).
 
@@ -42,7 +45,8 @@ def save_for_supervised_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'
     """
     if is_lead_worker(args.rank):
         import pickle
-        args.logger.save_current_plots_and_stats()
+        if not ignore_logger:
+            args.logger.save_current_plots_and_stats() if hasattr(args, 'logger') else None
 
         # - ckpt
         args_pickable: Namespace = uutils.make_args_pickable(args)

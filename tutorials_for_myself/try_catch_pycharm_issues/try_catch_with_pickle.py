@@ -55,6 +55,7 @@ def make_args_pickable(args: Namespace) -> Namespace:
         # print('f-----')
     return pickable_args
 
+
 def is_picklable(obj: Any) -> bool:
     """
     Checks if somehting is pickable.
@@ -66,9 +67,10 @@ def is_picklable(obj: Any) -> bool:
     import pickle
     try:
         pickle.dumps(obj)
-    except pickle.PicklingError:
+    except:
         return False
     return True
+
 
 def invoke_handled_exception_brandos_pickle_version():
     mdl: nn.Module = nn.Linear(4, 3)
@@ -77,6 +79,7 @@ def invoke_handled_exception_brandos_pickle_version():
     args: Namespace = Namespace(scheduler=scheduler, optimizer=optimizer, model=mdl)
     make_args_pickable(args)
     print('Success if this line printed! Args was made into a pickable args without error')
+
 
 # -- tests
 invoke_handled_exception()

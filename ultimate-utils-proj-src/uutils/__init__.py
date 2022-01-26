@@ -331,6 +331,7 @@ def _parse_basic_meta_learning_args_from_terminal() -> Namespace:
     load_cluster_jobids_to(args)
     return args
 
+
 def parse_args() -> Namespace:
     """
         Parses command line arguments
@@ -413,6 +414,7 @@ def args_hardcoded_in_script(args: Namespace) -> bool:
         # - args are hardcoded if name is not None
         args_hardcoded: bool = args.manual_loads_name != 'None'
         return args_hardcoded
+
 
 def get_args_from_checkpoint_pickle_file(args: Namespace) -> Namespace:
     """
@@ -729,7 +731,7 @@ def is_picklable(obj: Any) -> bool:
     import pickle
     try:
         pickle.dumps(obj)
-    except pickle.PicklingError:
+    except:
         return False
     return True
 

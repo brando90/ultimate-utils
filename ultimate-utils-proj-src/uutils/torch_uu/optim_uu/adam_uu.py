@@ -1,7 +1,11 @@
+from argparse import Namespace
+
 from torch import nn, optim
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
+
+# - cifarfs
 
 def get_opt_adam_rfs_cifarfs(mdl: nn.Module,
                              lr=1e-4,  # note original rfs did: 0.05
@@ -21,10 +25,10 @@ def get_opt_adam_rfs_cifarfs(mdl: nn.Module,
 
 
 def get_cosine_scheduler_adam_rfs_cifarfs(optimizer: Optimizer,
-                                     lr=1e-4,  # note original rfs did: 0.05
-                                     lr_decay_rate=0.1,
-                                     epochs=90
-                                     ) -> tuple[_LRScheduler, dict]:
+                                          lr=1e-4,  # note original rfs did: 0.05
+                                          lr_decay_rate=0.1,
+                                          epochs=90
+                                          ) -> tuple[_LRScheduler, dict]:
     scheduler_hps: dict = dict(
         lr=lr,
         lr_decay_rate=lr_decay_rate,
@@ -33,3 +37,25 @@ def get_cosine_scheduler_adam_rfs_cifarfs(optimizer: Optimizer,
     eta_min = lr * (lr_decay_rate ** 3)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min, -1)
     return scheduler, scheduler_hps
+
+
+# - old MI
+
+def get_opt_adam_rfs_mi(mdl: nn.Module,
+                        lr=1e-3,
+                        weight_decay=0.0,
+                        ) -> tuple[Optimizer, dict]:
+    opt_hps: dict = dict(
+        lr=lr,
+        weight_decay=weight_decay
+    )
+    optimizer: Optimizer = optim.Adam(mdl.parameters(), lr=lr, weight_decay=weight_decay)
+    return optimizer, opt_hps
+
+
+def get_opt_hps_adam_resnet_rfs_old_mi(args: Namespace):
+    opt_hps: dict = dict(
+        lr=args.outer_lr,
+        weight_decay=args.outer_opt.state_dict()['param_groups'][0]['weight_decay']
+    )
+    return opt_hps

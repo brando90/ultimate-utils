@@ -11,7 +11,10 @@ from uutils.torch_uu.checkpointing_uu import try_to_get_scheduler_state_dict
 from uutils.torch_uu.distributed import is_lead_worker, get_model_from_ddp
 
 
-def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
+def save_for_meta_learning(args: Namespace,
+                           ckpt_filename: str = 'ckpt.pt',
+                           ignore_logger: bool = False,
+                           ):
     """
     Warning:
         - if you save with dill but save the actual objects, this dill unpickling will likely
@@ -23,7 +26,8 @@ def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
     """
     if is_lead_worker(args.rank):
         import pickle
-        args.logger.save_current_plots_and_stats()
+        if not ignore_logger:
+            args.logger.save_current_plots_and_stats() if hasattr(args, 'logger') else None
 
         # - ckpt
         args_pickable: Namespace = uutils.make_args_pickable(args)
@@ -47,8 +51,8 @@ def save_for_meta_learning(args: Namespace, ckpt_filename: str = 'ckpt.pt'):
                     'opt_hps': args.opt_hps,
                     'opt_option': args.opt_option,
 
-                    'scheduler_str': str(args.scheduler),
                     'scheduler_state_dict': try_to_get_scheduler_state_dict(args.scheduler),
+                    'scheduler_str': str(args.scheduler),
                     'scheduler_hps': args.scheduler_hps,
                     'scheduler_option': args.scheduler_option,
                     },
