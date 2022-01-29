@@ -12292,3 +12292,6 @@ def is_float(element: Any) -> bool:
         return float(element)
     except ValueError:
         return False
+
+#%%
+
