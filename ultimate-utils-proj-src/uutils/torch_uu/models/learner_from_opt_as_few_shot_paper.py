@@ -251,3 +251,31 @@ def load_model_5CNN_opt_as_model_for_few_shot(model_hps: dict) -> nn.Module:
 def replace_final_layer(args: Namespace, n_classes: int):
     if hasattr(args.model, 'cls'):
         args.model.cls = nn.Linear(args.model.cls.in_features, n_classes)
+
+
+# -- tests
+
+def pass_cifarfs_data_through_5cnn_model_test():
+    """
+    shape is torch.Size([3, 32, 32])
+    :return:
+    """
+    # args = Namespace()
+    # args.data_root = Path('~/data/CIFAR-FS/').expanduser()
+    # args.data_aug = True
+    # imagenet = CIFAR100(args.data_root, args.data_aug, 'train')
+    # print(len(imagenet))
+    # print(imagenet.__getitem__(500)[0].shape)
+
+    B = 4
+    CHW = [3, 32, 32]
+    x = torch.randn([B] + CHW)
+
+    mdl = get_default_learner()
+    y = mdl(x)
+    print(y.shape)
+
+
+if __name__ == '__main__':
+    pass_cifarfs_data_through_5cnn_model_test()
+    print('Done!\a')

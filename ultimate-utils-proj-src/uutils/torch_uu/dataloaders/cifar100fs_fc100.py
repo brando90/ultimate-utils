@@ -215,7 +215,8 @@ def get_rfs_union_sl_dataloader_fc100(args: Namespace) -> dict:
 
 
 if __name__ == '__main__':
-    args = lambda x: None
+    args = Namespace()
+    # args = lambda x: None
     # args.n_ways = 5
     # args.n_shots = 1
     # args.n_queries = 12
@@ -224,7 +225,7 @@ if __name__ == '__main__':
     args.data_aug = True
     # args.n_test_runs = 5
     # args.n_aug_support_samples = 1
-    imagenet = CIFAR100(args, 'train')
+    imagenet = CIFAR100(args.data_root, args.data_aug, 'train')
     print(len(imagenet))
     print(imagenet.__getitem__(500)[0].shape)
 
