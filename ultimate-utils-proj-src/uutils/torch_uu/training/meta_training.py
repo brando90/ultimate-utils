@@ -37,6 +37,8 @@ def meta_train_fixed_iterations(args: Namespace,
             outer_opt.zero_grad()
             train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(batch, call_backward=True)
             # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
+            print(args.fo)
+            assert outer_opt.param_groups[0]['params'][0].grad is not None
             gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
             outer_opt.step()
 
