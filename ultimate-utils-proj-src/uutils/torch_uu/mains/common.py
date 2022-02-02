@@ -119,13 +119,16 @@ def get_and_create_model_opt_scheduler(args: Namespace,
     elif opt_option == 'Adam_rfs_cifarfs':
         from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_rfs_cifarfs
         args.opt, args.opt_hps = get_opt_adam_rfs_cifarfs(args.model, **opt_hps)
+    elif opt_option == 'Adam_default':
+        from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
+        args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 
     # - get scheduler
     scheduler_option: str = args.scheduler_option if scheduler_option is None else scheduler_option
     if scheduler_option == 'None':  # None != 'None', obj None means use the ckpt value
-        args.scheduler = None
+        args.scheduler, args.scheduler_hps = None, None
     elif scheduler_option == 'AdafactorSchedule':
         args.scheduler, args.scheduler_hps = get_default_adafactor_scheduler_fairseq_and_hps_dict(args.opt,
                                                                                                   **scheduler_hps)

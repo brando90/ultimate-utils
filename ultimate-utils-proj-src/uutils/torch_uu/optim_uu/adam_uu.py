@@ -7,6 +7,23 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 # - cifarfs
 
+def get_opt_adam_default(mdl: nn.Module,
+                         lr=1e-3,  # note original rfs did: 0.05
+                         weight_decay=0.0,
+                         ) -> tuple[Optimizer, dict]:
+    """
+
+    Note: because my rfs code uses lr 1e-4 we are using a 1e-4 learning rate for now. Perhaps change later if
+    experiments don't work out well.
+    """
+    opt_hps: dict = dict(
+        lr=lr,
+        weight_decay=weight_decay
+    )
+    optimizer: Optimizer = optim.Adam(mdl.parameters(), lr=lr, weight_decay=weight_decay)
+    return optimizer, opt_hps
+
+
 def get_opt_adam_rfs_cifarfs(mdl: nn.Module,
                              lr=1e-4,  # note original rfs did: 0.05
                              weight_decay=0.0005,
