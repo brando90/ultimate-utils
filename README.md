@@ -67,13 +67,36 @@ hello from torch_uu __init__.py in:
 
 ```
 
-To test pytorch do:
+To test (any) pytorch do:
 ```
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 ```
-To test if pytorch works with gpu do (it should fail if no gpus are available):
+output:
+```
+(meta_learning_a100) [miranda9@hal-dgx diversity-for-predictive-success-of-meta-learning]$ python -c "import uutils; uutils.torch_uu.gpu_test()"
+device name: A100-SXM4-40GB
+Success, no Cuda errors means it worked see:
+out=tensor([[ 0.5877],
+        [-3.0269]], device='cuda:0')
+(meta_learning_a100) [miranda9@hal-dgx diversity-for-predictive-success-of-meta-learning]$ python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+device name: A100-SXM4-40GB
+Success, torch works with whatever device is shown in the output tensor:
+out=tensor([[-1.9061],
+        [ 1.3525]], device='cuda:0')
+
+```
+
+GPU TEST: To test if pytorch works with gpu do (it should fail if no gpus are available):
 ```
 python -c "import uutils; uutils.torch_uu.gpu_test()"
+```
+output should be something like this:
+```
+(meta_learning_a100) [miranda9@hal-dgx diversity-for-predictive-success-of-meta-learning]$ python -c "import uutils; uutils.torch_uu.gpu_test()"
+device name: A100-SXM4-40GB
+Success, no Cuda errors means it worked see:
+out=tensor([[ 0.5877],
+        [-3.0269]], device='cuda:0')
 ```
 
 ### [Adavanced] If using pygraphviz functions 

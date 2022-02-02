@@ -145,6 +145,8 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
     parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
     parser.add_argument('--wandb_entity', type=str, default='brando')
+    # parser.add_argument('--wandb_project', type=str, default='test-project')
+    # parser.add_argument('--wandb_entity', type=str, default='brando-uiuc')
     parser.add_argument('--wandb_group', type=str, default='experiment_debug', help='helps grouping experiment runs')
     # parser.add_argument('--wandb_log_freq', type=int, default=10)
     # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)

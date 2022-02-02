@@ -27,7 +27,7 @@ def get_opt_adam_rfs_cifarfs(mdl: nn.Module,
 def get_cosine_scheduler_adam_rfs_cifarfs(optimizer: Optimizer,
                                           lr=1e-4,  # note original rfs did: 0.05
                                           lr_decay_rate=0.1,
-                                          epochs=90
+                                          epochs=100
                                           ) -> tuple[_LRScheduler, dict]:
     scheduler_hps: dict = dict(
         lr=lr,
