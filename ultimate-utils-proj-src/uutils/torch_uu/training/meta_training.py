@@ -1,15 +1,74 @@
 """
 """
 from argparse import Namespace
+from typing import Any
 
+from progressbar import ProgressBar
 from torch import Tensor
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
 from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
-from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt
+from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt, get_trainer_progress_bar, \
+    ConvergenceMeter
 
 from pdb import set_trace as st
+
+
+def meta_train_agent_fit_single_batch(args: Namespace,
+                                 meta_learner,
+                                 dataloaders: dict,
+                                 opt: Optimizer,
+                                 scheduler: _LRScheduler,
+                                 acc_tolerance: float = 1.0,
+                                 train_loss_tolerance: float = 0.01,
+                                 ):
+    """
+    Train for a single batch
+    """
+    train_batch: Any = next(iter(dataloaders['train']))
+
+    # first batch
+    args.it = 0  # training a single batch shouldn't need to use ckpts so this is ok
+    args.best_val_loss = float('inf')  # training a single batch shouldn't need to use ckpts so this is ok
+
+    # - create progress bar
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
+
+    # - train in epochs
+    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss',
+                                                          convergence_patience=args.train_convergence_patience)
+    # log_zeroth_step(args, model)
+    halt: bool = False
+    while not halt:
+        opt.zero_grad()
+        train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(train_batch, call_backward=True)
+        # train_loss.backward()  # each process synchronizes its gradients in the backward pass
+        assert opt.param_groups[0]['params'][0].grad is not None
+        gradient_clip(args, opt)
+        opt.step()  # the right update is done since all procs have the right synced grads
+        if (args.it % args.log_scheduler_freq == 0) or args.debug:
+            scheduler_step(args, scheduler)
+
+        # - break
+        halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
+        check_halt(args)  # for the sake of making sure check_halt runs
+
+        args.it += 1
+
+        # - log full stats
+        # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+        if args.epoch_num % args.log_freq == 0 or halt or args.debug:
+            step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+            log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
+
+        if halt:
+            break
+
+    return train_loss, train_acc
+
 
 def meta_train_fixed_iterations(args: Namespace,
                                 meta_learner,
@@ -63,4 +122,3 @@ def meta_train_fixed_iterations(args: Namespace,
                 break
 
     return train_loss, train_acc
-

@@ -21,7 +21,7 @@ from transformers.optimization import AdafactorSchedule
 
 def get_trainer_progress_bar(args: Namespace) -> ProgressBar:
     import uutils
-    if args.training_mode == 'fit_single_batch':
+    if args.training_mode == 'fit_single_batch' or args.training_mode == 'meta_train_agent_fit_single_batch':
         bar: ProgressBar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     elif args.training_mode == 'iterations':
         bar: ProgressBar = uutils.get_good_progressbar(max_value=args.num_its)
@@ -44,7 +44,7 @@ def check_halt(args: Namespace) -> bool:
     If idx + 1 >= n then we are done. idx is zero index, so after the end of the 0th loop's actual logic (e.g. train_step)
     we have done 1 step although the index is zero. So we need to only check for idx + 1 >= n.
     """
-    if args.training_mode == 'fit_single_batch':
+    if args.training_mode == 'fit_single_batch' or args.training_mode == 'meta_train_agent_fit_single_batch':
         # halt: bool = train_acc >= acc_tolerance and train_loss <= train_loss_tolerance
         halt: bool = args.convg_meter.check_converged()
     elif args.training_mode == 'iterations':
