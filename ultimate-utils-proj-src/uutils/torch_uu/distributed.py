@@ -179,7 +179,7 @@ def find_free_port():
         return str(s.getsockname()[1])
 
 
-def setup_process(args, rank, world_size, master_port, backend='gloo'):
+def setup_process(args, rank, world_size, master_port, init_method=None, backend='gloo'):
     """
     Initialize the distributed environment (for each process).
 
@@ -188,6 +188,14 @@ def setup_process(args, rank, world_size, master_port, backend='gloo'):
 
     export NCCL_SOCKET_IFNAME=eth0
     export NCCL_IB_DISABLE=1
+
+    init_method:
+    In your training program, you are supposed to call the following function at the beginning to start
+    the distributed backend. It is strongly recommended that
+        init_method=env://
+    Other init methods (e.g. tcp://) may
+    work, but env:// is the one that is officially supported by this module. https://pytorch.org/docs/stable/distributed.html#launch-utility
+
 
     https://stackoverflow.com/questions/61075390/about-pytorch-nccl-error-unhandled-system-error-nccl-version-2-4-8
 
@@ -215,7 +223,7 @@ def setup_process(args, rank, world_size, master_port, backend='gloo'):
             torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
         print(f'---> {backend=}')
         # Initializes the default distributed process group, and this will also initialize the distributed package.
-        dist.init_process_group(backend, rank=rank, world_size=world_size)
+        dist.init_process_group(backend, init_method=init_method, rank=rank, world_size=world_size)
         print(f'----> done setting up rank={rank}')
         torch.distributed.barrier()
 

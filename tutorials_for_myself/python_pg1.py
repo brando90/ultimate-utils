@@ -12295,3 +12295,14 @@ def is_float(element: Any) -> bool:
 
 #%%
 
+# hypothesis: if 0 false if >= 1 True
+
+if 0:
+    assert False
+
+if 1:
+    assert True
+if 2:
+    assert True
+
+print(' If this prints then yes, 0 is false and >=1 is True')
