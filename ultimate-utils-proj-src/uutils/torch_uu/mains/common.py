@@ -20,22 +20,38 @@ from uutils.torch_uu.optim_uu.adafactor_uu import get_default_adafactor_opt_fair
 from pdb import set_trace as st
 
 
-def get_and_create_model_opt_scheduler(args: Namespace) -> tuple[nn.Module, Optimizer, _LRScheduler]:
+def get_and_create_model_opt_scheduler_for_run(args: Namespace) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     if resume_from_checkpoint(args):
-        load_model_optimizer_scheduler_from_ckpt(args)
+        model, opt, scheduler = load_model_optimizer_scheduler_from_ckpt(args)
     else:
         model, opt, scheduler = get_and_create_model_opt_scheduler_first_time(args)
     return model, opt, scheduler
 
 
 def get_and_create_model_opt_scheduler_first_time(args: Namespace) -> tuple[nn.Module, Optimizer, _LRScheduler]:
-    # note: hps are empty dicts, so it uses defaults
-    model, opt, scheduler = get_and_create_model_opt_scheduler(args)
-    return model, opt, scheduler
+    model_option: str = args.model_option
+    model_hps = args.model_hps if hasattr(args, 'model_hps') else {}
+
+    opt_option = args.opt_option
+    opt_hps = args.opt_hps if hasattr(args, 'opt_hps') else {}
+
+    scheduler_option = args.scheduler_option
+    scheduler_hps = args.scheduler_hps if hasattr(args, 'scheduler_hps') else {}
+
+    _get_and_create_model_opt_scheduler(args,
+                                       model_option,
+                                       model_hps,
+
+                                       opt_option,
+                                       opt_hps,
+
+                                       scheduler_option,
+                                       scheduler_hps,
+                                       )
+    return args.model, args.opt, args.scheduler
 
 
-def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[
-    nn.Module, Optimizer, _LRScheduler]:
+def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Load the most important things: model, optimizer, scheduler.
 
@@ -53,7 +69,7 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[
 
     scheduler_option = ckpt['scheduler_option']
     scheduler_hps = ckpt['scheduler_hps']
-    get_and_create_model_opt_scheduler(args,
+    _get_and_create_model_opt_scheduler(args,
                                        model_option,
                                        model_hps,
 
@@ -83,7 +99,7 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[
     return args.model, args.opt, args.scheduler
 
 
-def get_and_create_model_opt_scheduler(args: Namespace,
+def _get_and_create_model_opt_scheduler(args: Namespace,
 
                                        model_option: Optional[str] = None,
                                        model_hps: dict = {},
@@ -99,7 +115,6 @@ def get_and_create_model_opt_scheduler(args: Namespace,
     Creates for the first time the model, opt, scheduler needed for the experiment run in main.
     """
     # - get model the empty model from the hps for the cons for the model
-    model_option: str = args.model_option if model_option is None else model_option  # if obj None, use ckpt value
     if model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs':  # resnet12_rfs for backward compat

@@ -16,7 +16,7 @@ from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
 from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
 from uutils.torch_uu.distributed import set_sharing_strategy, print_process_info, set_devices, setup_process, cleanup, \
     print_dist
-from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler
+from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
 from uutils.torch_uu.training.supervised_learning import train_agent_fit_single_batch, train_agent_iterations, \
     train_agent_epochs
 
@@ -89,7 +89,7 @@ def train(rank, args):
     print(f'setup process done for rank={rank}')
 
     # create the (ddp) model, opt & scheduler
-    get_and_create_model_opt_scheduler(args)
+    get_and_create_model_opt_scheduler_for_run(args)
     print_dist(f"{args.model=}\n{args.opt=}\n{args.scheduler=}", args.rank)
 
     # create the dataloaders, this goes first so you can select the mdl (e.g. final layer) based on task
