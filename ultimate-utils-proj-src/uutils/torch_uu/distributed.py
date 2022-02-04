@@ -81,9 +81,10 @@ def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, c
         print(args.rank, ':', args.device)
 
     # - set seed
-    from random import random
+    import random
     import numpy as np
 
+    seed: int = args.seed if seed is None else seed
     random.seed(seed)
     np.random.seed(seed)
     if cuda and torch.cuda.device_count():
@@ -262,12 +263,14 @@ def setup_process(args, rank, world_size, master_port, init_method=None, backend
         os.environ['MASTER_ADDR'] = MASTER_ADDR
         print(f"---> {MASTER_ADDR=}")
         os.environ['MASTER_PORT'] = MASTER_PORT
-        print(f"---> {MASTER_PORT}")
+        print(f"---> {MASTER_PORT=}")
 
         # - use NCCL if you are using gpus: https://pytorch.org/tutorials/intermediate/dist_tuto.html#communication-backends
         if torch.cuda.is_available():
-            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
             backend = 'nccl'
+            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
+            torch.cuda.set_device(
+                args.device)  # is this right if we do parallel cpu? # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
         print(f'---> {backend=}')
 
         # Initializes the default distributed process group, and this will also initialize the distributed package.
@@ -277,6 +280,38 @@ def setup_process(args, rank, world_size, master_port, init_method=None, backend
         dist.init_process_group(backend, init_method=init_method, rank=rank, world_size=world_size)
         print(f'----> done setting up rank={rank}')
         torch.distributed.barrier()
+
+
+def setup_process_l2l(args, local_rank, world_size, init_method=None, backend='gloo'):
+    """
+    based on
+
+    WORLD_SIZE = 2
+
+    import os
+    local_rank = int(os.environ["LOCAL_RANK"])
+    print(f'{local_rank=}\n')
+
+    torch.distributed.init_process_group(
+        'gloo',
+        init_method=None,
+        rank=local_rank,
+        world_size=WORLD_SIZE,
+    )
+
+    rank = torch.distributed.get_rank()
+    print(f'{rank=}\n')
+    """
+    if is_running_parallel(local_rank):
+        if torch.cuda.is_available():
+            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
+            backend = 'nccl'
+        torch.distributed.init_process_group(
+            backend,
+            init_method=init_method,
+            rank=local_rank,
+            world_size=world_size,
+        )
 
 
 def cleanup(rank):

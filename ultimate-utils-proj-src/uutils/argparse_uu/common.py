@@ -226,6 +226,6 @@ def setup_args_for_experiment(args: Namespace,
     args.num_workers = num_workers if num_workers is not None else args.num_workers
 
     # - return
-    uutils.print_args(args)
-    uutils.save_args(args)
+    # uutils.print_args(args)
+    # uutils.save_args(args)
     return args
