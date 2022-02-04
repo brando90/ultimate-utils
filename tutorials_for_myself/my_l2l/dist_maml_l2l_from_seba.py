@@ -19,7 +19,6 @@ import cherry
 import learn2learn as l2l
 
 
-
 def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
     data, labels = batch
     data, labels = data.to(device), labels.to(device)
@@ -30,6 +29,9 @@ def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
         labels=labels,
         shots=shots,
     )
+    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} ' \
+                                                 f'but got {support_data.size(0)}'
+    assert support_labels.size() == torch.Size([shots * ways])
 
     # Adapt the model
     for step in range(adaptation_steps):
@@ -70,16 +72,18 @@ def main(
 
     # Create Tasksets using the benchmark interface
     tasksets = l2l.vision.benchmarks.get_tasksets(
-        'mini-imagenet',
-        train_samples=2*shots,
+        'cifarfs',
+        # 'mini-imagenet',
+        train_samples=2 * shots,
         train_ways=ways,
-        test_samples=2*shots,
+        test_samples=2 * shots,
         test_ways=ways,
         root='~/data/l2l_data/',
     )
 
     # Create model
-    model = l2l.vision.models.MiniImagenetCNN(ways)
+    # model = l2l.vision.models.MiniImagenetCNN(ways)
+    model = l2l.vision.models.CNN4(output_size=ways, hidden_size=64, embedding_size=64 * 4, )
     model.to(device)
 
     maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
@@ -141,8 +145,6 @@ def main(
             p.grad.data.mul_(1.0 / meta_batch_size)
         opt.step()  # averages gradients across all workers
 
-
-
     meta_test_error = 0.0
     meta_test_accuracy = 0.0
     for task in range(meta_batch_size):
@@ -187,12 +189,12 @@ python -m torch.distributed.launch --nproc_per_node=1 ~/ultimate-utils/tutorials
 
     rank = torch.distributed.get_rank()
     print(f'{rank=}\n')
-    # main(
-    #     seed=42 + rank,
-    #     rank=rank,
-    #     world_size=WORLD_SIZE,
-    #     meta_batch_size=32 // WORLD_SIZE,
-    # )
+    main(
+        seed=42 + rank,
+        rank=rank,
+        world_size=WORLD_SIZE,
+        meta_batch_size=32 // WORLD_SIZE,
+    )
 
 
 if __name__ == '__main__':

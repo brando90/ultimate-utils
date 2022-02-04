@@ -123,11 +123,14 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == 'resnet12_rfs_cifarfs_fc100':
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_cifarfs_fc100
         args.model, args.model_hps = get_resnet_rfs_model_cifarfs_fc100(args.model_option, **model_hps)
-    elif model_option == '5CNN_l2l':
+    elif model_option == '5CNN_l2l_mi':
         import learn2learn
         model_hps: dict = dict(n_classes=args.n_classes)  # ways or n_classes is the hp
         args.model, args.model_hps = learn2learn.vision.models.MiniImagenetCNN(args.n_classes), model_hps
         raise NotImplementedError
+    elif model_option == '4CNN_l2l_cifarfs':
+        from uutils.torch_uu.models.l2l_models import cnn4_cifarsfs
+        args.model, args.model_hps = cnn4_cifarsfs(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)

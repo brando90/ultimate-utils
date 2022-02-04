@@ -22,6 +22,9 @@ def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
     )
     print(support_data.size())
     print(query_data.size())
+    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} ' \
+                                                 f'but got {support_data.size(0)}'
+    assert support_labels.size() == torch.Size([shots * ways])
 
     # Adapt the model
     for step in range(adaptation_steps):
@@ -63,9 +66,9 @@ def main(
     # Create Tasksets using the benchmark interface
     tasksets = l2l.vision.benchmarks.get_tasksets(
         'mini-imagenet',
-        train_samples=4*shots,  # 1 + 3 <=> 5 + 15 when givin 5 shots to partition_task
+        train_samples=4 * shots,  # 1 + 3 <=> 5 + 15 when givin 5 shots to partition_task
         train_ways=ways,
-        test_samples=4*shots,
+        test_samples=4 * shots,
         test_ways=ways,
         root='~/data/l2l_data/',
     )

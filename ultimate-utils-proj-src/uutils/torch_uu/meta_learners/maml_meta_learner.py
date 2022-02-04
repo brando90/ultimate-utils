@@ -255,7 +255,8 @@ def fast_adapt(args: Namespace,
         labels=labels,
         shots=shots,
     )
-    assert support_data.size(0) == torch.Size([shots * ways])
+    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} ' \
+                                                 f'but got {support_data.size(0)}'
     assert support_labels.size() == torch.Size([shots * ways])
 
     # Adapt the model
@@ -312,9 +313,9 @@ def forward(meta_learner,
             args=args,
             task_data=task_data,
             learner=learner,
-            loss=args.criterion,
+            loss=args.loss,
             adaptation_steps=args.nb_inner_train_steps,
-            shots=args.k_shot,
+            shots=args.k_shots,
             ways=args.n_classes,
             device=args.device,
         )
