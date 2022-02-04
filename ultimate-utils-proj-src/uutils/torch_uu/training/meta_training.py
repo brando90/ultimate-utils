@@ -3,6 +3,7 @@
 from argparse import Namespace
 from typing import Any
 
+from learn2learn.data import TaskDataset
 from progressbar import ProgressBar
 from torch import Tensor
 from torch.optim import Optimizer
@@ -76,7 +77,7 @@ def meta_train_fixed_iterations(args: Namespace,
                                 outer_opt,
                                 scheduler,
                                 training: bool = True
-                                ) -> tuple[Tensor, Tensor]:
+                                ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
     Train using the meta-training (e.g. episodic training) over batches of tasks using a fixed number of iterations
     assuming the number of tasks is small i.e. one epoch is doable and not infinite/super exponential
@@ -121,33 +122,38 @@ def meta_train_fixed_iterations(args: Namespace,
             if halt:
                 break
 
-    return train_loss, train_acc
+    return train_loss, train_acc, train_loss_std, train_acc_std
 
 
 def meta_train_iterations_ala_l2l(args: Namespace,
                                   meta_learner,
-                                  dataloaders,
                                   outer_opt,
                                   scheduler,
 
                                   training: bool = True
                                   ):
-    # -
-
+    """"""
     print('Starting training!')
-
+    meta_batch_size: int = max(args.batch_size // args.world_size, 2)
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
     while not halt:
         outer_opt.zero_grad()
+
         # - forward pass. Since the data fetching is different for l2l we do it this way
-        train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(args)
+        task_dataset: TaskDataset = args.tasksets.train
+        train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(task_dataset, call_backward=True)
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
+
+        # - Average the accumulated gradients and optimize
+        # outer_opt.step()
         gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-        outer_opt.step()
+        for p in meta_learner.parameters():
+            p.grad.data.mul_(1.0 / meta_batch_size)
+        outer_opt.step()  # averages gradients across all workers
 
         # - scheduler
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
@@ -169,55 +175,4 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
         if halt:
             break
-
-    for iteration in range(num_iterations):
-        opt.zero_grad()
-        meta_train_error = 0.0
-        meta_train_accuracy = 0.0
-        meta_valid_error = 0.0
-        meta_valid_accuracy = 0.0
-        for task in range(meta_batch_size):
-            # Compute meta-training loss
-            learner = maml.clone()
-            batch = tasksets.train.sample()
-            evaluation_error, evaluation_accuracy = fast_adapt(
-                batch,
-                learner,
-                loss,
-                adaptation_steps,
-                shots,
-                ways,
-                device,
-            )
-            evaluation_error.backward()
-            meta_train_error += evaluation_error.item()
-            meta_train_accuracy += evaluation_accuracy.item()
-
-            # Compute meta-validation loss
-            learner = maml.clone()
-            batch = tasksets.validation.sample()
-            evaluation_error, evaluation_accuracy = fast_adapt(
-                batch,
-                learner,
-                loss,
-                adaptation_steps,
-                shots,
-                ways,
-                device,
-            )
-            meta_valid_error += evaluation_error.item()
-            meta_valid_accuracy += evaluation_accuracy.item()
-
-        # Print some metrics
-        if rank == 0:
-            print('\n')
-            print('Iteration', iteration)
-            print('Meta Train Error', meta_train_error / meta_batch_size)
-            print('Meta Train Accuracy', meta_train_accuracy / meta_batch_size)
-            print('Meta Valid Error', meta_valid_error / meta_batch_size)
-            print('Meta Valid Accuracy', meta_valid_accuracy / meta_batch_size)
-
-        # Average the accumulated gradients and optimize
-        for p in maml.parameters():
-            p.grad.data.mul_(1.0 / meta_batch_size)
-        opt.step()  # averages gradients across all workers
+    return train_loss, train_acc, train_loss_std, train_acc_std

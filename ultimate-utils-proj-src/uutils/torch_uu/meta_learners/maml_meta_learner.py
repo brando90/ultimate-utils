@@ -5,6 +5,7 @@ from typing import Callable
 import learn2learn
 import torch
 import torch.nn as nn
+from learn2learn.data import TaskDataset
 from torch import Tensor
 from torch.multiprocessing import Pool
 from torch.optim.optimizer import required
@@ -242,7 +243,9 @@ class MAMLMetaLearner(nn.Module):
 
 # - l2l
 
-def fast_adapt(task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
+def fast_adapt(args: Namespace,
+               task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
+    """"""
     data, labels = task_data
     data, labels = data.to(device), labels.to(device)
 
@@ -252,8 +255,8 @@ def fast_adapt(task_data, learner, loss, adaptation_steps, shots, ways, device) 
         labels=labels,
         shots=shots,
     )
-    assert support_data.size(0) == torch.Size([shots*ways])
-    assert support_labels.size() == torch.Size([shots*ways])
+    assert support_data.size(0) == torch.Size([shots * ways])
+    assert support_labels.size() == torch.Size([shots * ways])
 
     # Adapt the model
     for step in range(adaptation_steps):
@@ -264,49 +267,68 @@ def fast_adapt(task_data, learner, loss, adaptation_steps, shots, ways, device) 
     # Evaluate the adapted model
     predictions: Tensor = learner(query_data)
     evaluation_error: Tensor = loss(predictions, query_labels)
-    evaluation_accuracy: Tensor = learn2learn.utils.accuracy(predictions, query_labels)
+
+    # get accuracy
+    if args.agent.target_type == 'classification':
+        evaluation_accuracy: Tensor = learn2learn.utils.accuracy(predictions, query_labels)
+    else:
+        from uutils.torch_uu import r2_score_from_torch
+        evaluation_accuracy = r2_score_from_torch(query_labels, predictions)
+        raise NotImplementedError
     return evaluation_error, evaluation_accuracy
 
 
-def forward(self, args: Namespace):
-    assert args is self.args
-    assert args.meta_learner is self
+def forward(meta_learner,
+            args: Namespace,
+            task_dataset: TaskDataset,  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+            meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
 
-    # -
-    meta_batch_size = max(args.batch_size // args.world_size, 1)
+            training: bool = True,  # always true to avoid .eval()
+            call_backward: bool = False,  # not needed during testing/inference
+            ):
+    """
+    Returns the acc & loss on the meta-batch from the task in task_dataset.
 
+    Note:
+    - training true ensures .eval() is never called (due to BN, we always want batch stats)
+    - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option
+    to call it or not.
+    """
+    assert args is meta_learner.args
+    assert args.meta_learner is meta_learner
+    assert args.agent is meta_learner
+
+    # - adapt
+    meta_learner.base_model.train() if training else meta_learner.base_model.eval()
+    meta_losses, meta_accs = [], []
     for task in range(meta_batch_size):
-        # Compute meta-training loss
-        learner = self.maml.clone()
-        task_data = args.tasksets.train.sample()
-        train_loss, train_acc = fast_adapt(
+        # - Sample (train, val, test) task as a data set (later create the spt, qry from it)
+        # task_data = args.tasksets.train.sample()
+        task_data: list = task_dataset.sample()  # data, labels
+
+        # -- Inner Loop Adaptation
+        learner = meta_learner.maml.clone()
+        loss, acc = fast_adapt(
+            args=args,
             task_data=task_data,
             learner=learner,
             loss=args.criterion,
             adaptation_steps=args.nb_inner_train_steps,
             shots=args.k_shot,
+            ways=args.n_classes,
             device=args.device,
         )
-        train_loss.backward()
-        meta_train_error += evaluation_error.item()
-        meta_train_accuracy += evaluation_accuracy.item()
-
-        # Compute meta-validation loss
-        # learner = maml.clone()
-        # batch = tasksets.validation.sample()
-        # evaluation_error, evaluation_accuracy = fast_adapt(
-        #     batch,
-        #     learner,
-        #     loss,
-        #     adaptation_steps,
-        #     shots,
-        #     ways,
-        #     device,
-        # )
-        # meta_valid_error += evaluation_error.item()
-        # meta_valid_accuracy += evaluation_accuracy.item()
-
-    return meta_loss, meta_acc, meta_loss_std, meta_acc_st
+        if call_backward:
+            loss.backward()
+        # collect losses & accs
+        meta_losses.append(loss)
+        meta_accs.append(acc)
+    assert len(meta_losses) == meta_batch_size
+    meta_loss = torch.mean(tensorify(meta_losses))
+    meta_acc = torch.mean(tensorify(meta_accs))
+    meta_loss_std = torch.std(tensorify(meta_losses))
+    meta_acc_std = torch.std(tensorify(meta_accs))
+    return meta_loss, meta_acc, meta_loss_std, meta_acc_std
 
 
 class MAMLMetaLearnerL2L(nn.Module):
@@ -315,11 +337,13 @@ class MAMLMetaLearnerL2L(nn.Module):
             args,
             base_model,
 
-            target_type='classification'
+            target_type='classification',
+            min_batch_size=1,
     ):
         super().__init__()
         self.args = args  # args for experiment
         self.base_model = base_model
+        assert args is self.args
         assert base_model is args.model
         self.maml = learn2learn.algorithms.MAML(args.model, lr=args.inner_lr, first_order=False)
         # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
@@ -327,8 +351,9 @@ class MAMLMetaLearnerL2L(nn.Module):
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
 
         self.target_type = target_type
+        self.min_batch_size = min_batch_size
 
-    def forward(self, args: Namespace):
+    def forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
         """
         Does a forward pass ala l2l.
 
@@ -341,10 +366,27 @@ class MAMLMetaLearnerL2L(nn.Module):
             - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
             - https://github.com/tristandeleu/pytorch-maml/issues/19
         """
-        return
+        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, self.min_batch_size)
+        meta_loss, meta_acc, meta_loss_std, meta_acc_std = forward(meta_learner=self,
+                                                                   args=self.args,
+                                                                   task_dataset=task_dataset,  # eg args.tasksets.train
+                                                                   training=training,  # always true to avoid .eval()
+                                                                   meta_batch_size=meta_batch_size,
 
-    def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = self.forward(batch, training, call_backward)
+                                                                   call_backward=call_backward,  # False for val/test
+                                                                   )
+        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+
+    def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+        meta_batch_size: int = max(self.args.batch_size_eval // self.args.world_size, self.min_batch_size)
+        meta_loss, meta_acc, meta_loss_std, meta_acc_std = forward(meta_learner=self,
+                                                                   args=self.args,
+                                                                   task_dataset=task_dataset,  # eg args.tasksets.train
+                                                                   training=training,  # always true to avoid .eval()
+                                                                   meta_batch_size=meta_batch_size,
+
+                                                                   call_backward=call_backward,  # False for val/test
+                                                                   )
         return meta_loss, meta_acc, meta_loss_std, meta_acc_std
 
     def eval(self):
@@ -356,7 +398,9 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model.eval()
 
     def parameters(self):
-        return self.base_model.parameters()
+        # return self.base_model.parameters()
+        # todo would be nice to check if self.maml.parameters() and self.base_model.parameters() are the same
+        return self.maml.parameters()
 
     def regression(self):
         self.target_type = 'regression'

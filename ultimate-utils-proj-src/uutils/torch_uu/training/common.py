@@ -15,6 +15,7 @@ import progressbar
 import transformers.optimization
 from progressbar import ProgressBar
 from torch import nn, Tensor, optim
+from torch.optim import Optimizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 from transformers.optimization import AdafactorSchedule
 
@@ -86,6 +87,19 @@ def gradient_clip(args, meta_opt):
             nn.utils.clip_grad_norm_(all_params, args.grad_clip_rate)
         else:
             raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
+
+def optimizer_step(args: Namespace, optimizer, meta_batch_size: int = None):
+    raise NotImplementedError
+    import cherry
+    if isinstance(optimizer, Optimizer):
+        optimizer.step()
+    elif isinstance(optimizer, cherry.optim.Distributed):
+        # Average the accumulated gradients and optimize
+        for p in args.agent.parameters():
+            p.grad.data.mul_(1.0 / meta_batch_size)
+        optimizer.step()  # averages gradients across all workers
+    else:
+        raise  ValueError(f'Optimizer {optimizer=} is not supported when trying to do its optimizer step.')
 
 
 def scheduler_step(args: Namespace, scheduler: _LRScheduler):

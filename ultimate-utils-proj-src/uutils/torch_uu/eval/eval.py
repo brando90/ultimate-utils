@@ -22,8 +22,15 @@ def eval_sl(args: Namespace,
         - Note, we don't need to loop through the data loader, we can get confidence intervals for the mean error
         from 1 batch - since we are estimating the mean loss from the eval set.
     """
-    batch: Any = next(iter(dataloaders[split]))
-    val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
+    if isinstance(dataloaders, 'dict'):
+        batch: Any = next(iter(dataloaders[split]))
+        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
+    else:
+        # hack for l2l
+        from learn2learn.data import TaskDataset
+        split: str = 'validation' if split == 'val' else split
+        task_dataset: TaskDataset = getattr(args.tasksets, split)
+        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
     return val_loss, val_loss_ci, val_acc, val_acc_ci
 
 # # - evaluation code
