@@ -18,7 +18,6 @@ import torch
 import cherry
 import learn2learn as l2l
 
-WORLD_SIZE = 2
 
 
 def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
@@ -167,18 +166,17 @@ def main(
 
 def distributed_main():
     """
+python -m torch.distributed.run --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
 
-python -m torch.distributed.launch --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
 python -m torch.distributed.launch --nproc_per_node=1 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
 
-torchrun --nnodes=1 --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
+####torchrun --nnodes=1 --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
     """
-    # import argparse
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--local_rank", type=int)
-    # args = parser.parse_args()
+    WORLD_SIZE = 2
+
     import os
     local_rank = int(os.environ["LOCAL_RANK"])
+    print(f'{local_rank=}\n')
 
     torch.distributed.init_process_group(
         'gloo',
@@ -188,12 +186,13 @@ torchrun --nnodes=1 --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_
     )
 
     rank = torch.distributed.get_rank()
-    main(
-        seed=42 + rank,
-        rank=rank,
-        world_size=WORLD_SIZE,
-        meta_batch_size=32 // WORLD_SIZE,
-    )
+    print(f'{rank=}\n')
+    # main(
+    #     seed=42 + rank,
+    #     rank=rank,
+    #     world_size=WORLD_SIZE,
+    #     meta_batch_size=32 // WORLD_SIZE,
+    # )
 
 
 if __name__ == '__main__':

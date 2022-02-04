@@ -5,7 +5,7 @@ For code used in distributed training.
 import time
 from argparse import Namespace
 from pathlib import Path
-from typing import Tuple, Union, Callable, Any
+from typing import Tuple, Union, Callable, Any, Optional
 
 import torch
 import torch.distributed as dist
@@ -49,20 +49,52 @@ def set_devices(args):
     else:
         args.device = args.rank
 
+    # todo - I'm not sure if the code bellow should be here...
+    if is_running_parallel(args.rank):
+        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
+            torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
 
-def set_devices_l2l(args: Namespace, cuda: bool = True) -> torch.device:
+
+def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, cuda: bool = True) -> torch.device:
+    """
+    original code:
+
+    print(rank)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    device = torch.device('cpu')
+    if cuda and torch.cuda.device_count():
+        torch.cuda.manual_seed(seed)
+        device_id = rank % torch.cuda.device_count()
+        device = torch.device('cuda:' + str(device_id))
+    print(rank, ':', device)
+    """
+    # - set device
     if is_running_serially(args.rank):
         args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
-        # random.seed(seed)
-        # np.random.seed(seed)
-        # torch.manual_seed(seed)
         args.device = torch.device('cpu')
         if cuda and torch.cuda.device_count():
-            # torch.cuda.manual_seed(seed)
             device_id = args.rank % torch.cuda.device_count()
             args.device = torch.device('cuda:' + str(device_id))
-        print_dist(args.rank, ':', args.device)
+        print(args.rank, ':', args.device)
+
+    # - set seed
+    from random import random
+    import numpy as np
+
+    random.seed(seed)
+    np.random.seed(seed)
+    if cuda and torch.cuda.device_count():
+        torch.manual_seed(seed)
+        # sebas code doesn't have this so I am leaving it out.
+        # if is_running_parallel(args.rank):
+        #     if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
+        #         torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
+
+
+# torch.cuda.manual_seed(seed)
 
 
 def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
@@ -236,9 +268,12 @@ def setup_process(args, rank, world_size, master_port, init_method=None, backend
         if torch.cuda.is_available():
             # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
             backend = 'nccl'
-            torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
         print(f'---> {backend=}')
+
         # Initializes the default distributed process group, and this will also initialize the distributed package.
+        print(f'About to call: init_process_group('
+              f'{backend}, {init_method=}, {rank=}, {world_size=})'
+              f'')
         dist.init_process_group(backend, init_method=init_method, rank=rank, world_size=world_size)
         print(f'----> done setting up rank={rank}')
         torch.distributed.barrier()
