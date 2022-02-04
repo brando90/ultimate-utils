@@ -348,12 +348,13 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
 
 
 def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model: nn.Module, force: bool = False):
-    if not hasattr(args, 'dist_option'):
+    if not hasattr(args, 'dist_option'):  # for backwards compatibility, default try to do ddp or just serial to device
         model = move_model_to_ddp(rank, args, model, force)
     else:
         if args.dist_option == 'ddp':
             model = move_model_to_ddp(rank, args, model, force)
         elif args.dist_option == 'l2l_dist':
+            # based on https://github.com/learnables/learn2learn/issues/263
             model = model.to(args.device)
         else:
             raise ValueError(f'Not a valid way to move a model to (dist) device: {args.dist_option=}')

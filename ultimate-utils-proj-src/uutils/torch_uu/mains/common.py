@@ -39,15 +39,15 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace) -> tuple[nn.M
     scheduler_hps = args.scheduler_hps if hasattr(args, 'scheduler_hps') else {}
 
     _get_and_create_model_opt_scheduler(args,
-                                       model_option,
-                                       model_hps,
+                                        model_option,
+                                        model_hps,
 
-                                       opt_option,
-                                       opt_hps,
+                                        opt_option,
+                                        opt_hps,
 
-                                       scheduler_option,
-                                       scheduler_hps,
-                                       )
+                                        scheduler_option,
+                                        scheduler_hps,
+                                        )
     return args.model, args.opt, args.scheduler
 
 
@@ -70,15 +70,15 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[nn.Module
     scheduler_option = ckpt['scheduler_option']
     scheduler_hps = ckpt['scheduler_hps']
     _get_and_create_model_opt_scheduler(args,
-                                       model_option,
-                                       model_hps,
+                                        model_option,
+                                        model_hps,
 
-                                       opt_option,
-                                       opt_hps,
+                                        opt_option,
+                                        opt_hps,
 
-                                       scheduler_option,
-                                       scheduler_hps,
-                                       )
+                                        scheduler_option,
+                                        scheduler_hps,
+                                        )
 
     # - load state dicts
     model_state_dict: dict = ckpt['model_state_dict']
@@ -101,16 +101,16 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[nn.Module
 
 def _get_and_create_model_opt_scheduler(args: Namespace,
 
-                                       model_option: Optional[str] = None,
-                                       model_hps: dict = {},
+                                        model_option: Optional[str] = None,
+                                        model_hps: dict = {},
 
-                                       opt_option: Optional[str] = None,
-                                       opt_hps: dict = {},
+                                        opt_option: Optional[str] = None,
+                                        opt_hps: dict = {},
 
-                                       scheduler_option: Optional[str] = None,
-                                       scheduler_hps: dict = {},
+                                        scheduler_option: Optional[str] = None,
+                                        scheduler_hps: dict = {},
 
-                                       ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
+                                        ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Creates for the first time the model, opt, scheduler needed for the experiment run in main.
     """
@@ -123,6 +123,11 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == 'resnet12_rfs_cifarfs_fc100':
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_cifarfs_fc100
         args.model, args.model_hps = get_resnet_rfs_model_cifarfs_fc100(args.model_option, **model_hps)
+    elif model_option == '5CNN_l2l':
+        import learn2learn
+        model_hps: dict = dict(n_classes=args.n_classes)  # ways or n_classes is the hp
+        args.model, args.model_hps = learn2learn.vision.models.MiniImagenetCNN(args.n_classes), model_hps
+        raise NotImplementedError
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)

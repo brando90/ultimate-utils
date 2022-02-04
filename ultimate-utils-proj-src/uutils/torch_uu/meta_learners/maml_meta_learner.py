@@ -1,8 +1,11 @@
 import logging
+from argparse import Namespace
+from typing import Callable
 
 import learn2learn
 import torch
 import torch.nn as nn
+from torch import Tensor
 from torch.multiprocessing import Pool
 from torch.optim.optimizer import required
 from torch.optim import Optimizer as Optimizer
@@ -239,62 +242,71 @@ class MAMLMetaLearner(nn.Module):
 
 # - l2l
 
-
-def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
-    data, labels = batch
+def fast_adapt(task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
+    data, labels = task_data
     data, labels = data.to(device), labels.to(device)
 
     # Separate data into adaptation/evalutation sets
-    (support_data, support_labels), (query_data, query_labels) = l2l.data.partition_task(
+    (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
         data=data,
         labels=labels,
         shots=shots,
     )
+    assert support_data.size(0) == torch.Size([shots*ways])
+    assert support_labels.size() == torch.Size([shots*ways])
 
     # Adapt the model
     for step in range(adaptation_steps):
+        # - note the loss is usually in the final layer for my models
         adaptation_error = loss(learner(support_data), support_labels)
         learner.adapt(adaptation_error)
 
     # Evaluate the adapted model
-    predictions = learner(query_data)
-    evaluation_error = loss(predictions, query_labels)
-    evaluation_accuracy = learn2learn.utils.accuracy(predictions, query_labels)
+    predictions: Tensor = learner(query_data)
+    evaluation_error: Tensor = loss(predictions, query_labels)
+    evaluation_accuracy: Tensor = learn2learn.utils.accuracy(predictions, query_labels)
     return evaluation_error, evaluation_accuracy
 
 
-def forward():
+def forward(self, args: Namespace):
+    assert args is self.args
+    assert args.meta_learner is self
+
+    # -
+    meta_batch_size = max(args.batch_size // args.world_size, 1)
+
     for task in range(meta_batch_size):
         # Compute meta-training loss
-        learner = maml.clone()
-        batch = tasksets.train.sample()
-        evaluation_error, evaluation_accuracy = fast_adapt(
-            batch,
-            learner,
-            loss,
-            adaptation_steps,
-            shots,
-            ways,
-            device,
+        learner = self.maml.clone()
+        task_data = args.tasksets.train.sample()
+        train_loss, train_acc = fast_adapt(
+            task_data=task_data,
+            learner=learner,
+            loss=args.criterion,
+            adaptation_steps=args.nb_inner_train_steps,
+            shots=args.k_shot,
+            device=args.device,
         )
-        evaluation_error.backward()
+        train_loss.backward()
         meta_train_error += evaluation_error.item()
         meta_train_accuracy += evaluation_accuracy.item()
 
         # Compute meta-validation loss
-        learner = maml.clone()
-        batch = tasksets.validation.sample()
-        evaluation_error, evaluation_accuracy = fast_adapt(
-            batch,
-            learner,
-            loss,
-            adaptation_steps,
-            shots,
-            ways,
-            device,
-        )
-        meta_valid_error += evaluation_error.item()
-        meta_valid_accuracy += evaluation_accuracy.item()
+        # learner = maml.clone()
+        # batch = tasksets.validation.sample()
+        # evaluation_error, evaluation_accuracy = fast_adapt(
+        #     batch,
+        #     learner,
+        #     loss,
+        #     adaptation_steps,
+        #     shots,
+        #     ways,
+        #     device,
+        # )
+        # meta_valid_error += evaluation_error.item()
+        # meta_valid_accuracy += evaluation_accuracy.item()
+
+    return meta_loss, meta_acc, meta_loss_std, meta_acc_st
 
 
 class MAMLMetaLearnerL2L(nn.Module):
@@ -310,32 +322,30 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model = base_model
         assert base_model is args.model
         self.maml = learn2learn.algorithms.MAML(args.model, lr=args.inner_lr, first_order=False)
+        # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
+        # opt = torch.optim.Adam(maml.parameters(), meta_lr)
+        # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
 
         self.target_type = target_type
 
-
-    def forward(self, batch, training: bool = True, call_backward: bool = False):
+    def forward(self, args: Namespace):
         """
-        Does L(A(theta,S), Q) = sum^N_{t=1} L(A(theta,S_t),Q_t) where A(theta,S) is the inner-adaptation loop.
-        It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
+        Does a forward pass ala l2l.
 
         Decision for BN/eval:
-        - during training always use .train().
-        During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
-        Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
+            - during training always use .train().
+            During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
+            Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
 
         ref for BN/eval:
             - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
             - https://github.com/tristandeleu/pytorch-maml/issues/19
         """
-
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
-
+        return
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
         meta_loss, meta_acc, meta_loss_std, meta_acc_std = self.forward(batch, training, call_backward)
         return meta_loss, meta_acc, meta_loss_std, meta_acc_std
-
 
     def eval(self):
         """
@@ -345,20 +355,16 @@ class MAMLMetaLearnerL2L(nn.Module):
         logging.warning('Calling MAML.eval(). You sure you want to do that?')
         self.base_model.eval()
 
-
     def parameters(self):
         return self.base_model.parameters()
-
 
     def regression(self):
         self.target_type = 'regression'
         self.args.target_type = 'regression'
 
-
     def classification(self):
         self.target_type = 'classification'
         self.args.target_type = 'classification'
-
 
     def cuda(self):
         self.base_model.cuda()

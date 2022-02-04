@@ -20,6 +20,8 @@ def fast_adapt(batch, learner, loss, adaptation_steps, shots, ways, device):
         labels=labels,
         shots=shots,
     )
+    print(support_data.size())
+    print(query_data.size())
 
     # Adapt the model
     for step in range(adaptation_steps):
@@ -61,9 +63,9 @@ def main(
     # Create Tasksets using the benchmark interface
     tasksets = l2l.vision.benchmarks.get_tasksets(
         'mini-imagenet',
-        train_samples=shots,
+        train_samples=4*shots,  # 1 + 3 <=> 5 + 15 when givin 5 shots to partition_task
         train_ways=ways,
-        test_samples=3*shots,
+        test_samples=4*shots,
         test_ways=ways,
         root='~/data/l2l_data/',
     )
@@ -88,7 +90,7 @@ def main(
             # Compute meta-training loss
             learner = maml.clone()
             batch = tasksets.train.sample()  # gets a single support set for a task e.g. [25, 3, 84, 84] for MI
-            assert batch[0].size() == shots*ways
+            # assert batch[0].size() == shots*ways
             evaluation_error, evaluation_accuracy = fast_adapt(
                 batch,
                 learner,
