@@ -82,6 +82,7 @@ def main(
     # Create model
     model = l2l.vision.models.MiniImagenetCNN(ways)
     model.to(device)
+
     maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
     opt = torch.optim.Adam(maml.parameters(), meta_lr)
     opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
@@ -140,6 +141,8 @@ def main(
         for p in maml.parameters():
             p.grad.data.mul_(1.0 / meta_batch_size)
         opt.step()  # averages gradients across all workers
+
+
 
     meta_test_error = 0.0
     meta_test_accuracy = 0.0

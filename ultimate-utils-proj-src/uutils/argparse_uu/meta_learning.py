@@ -97,8 +97,8 @@ def parse_args_meta_learning() -> Namespace:
                                                                            '~100 iterations.')
 
     # - data set args
-    parser.add_argument('--batch_size', type=int, default=8)
-    parser.add_argument('--batch_size_eval', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size_eval', type=int, default=2)
     parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
     # warning: sl name is path_to_data_set here its data_path

@@ -122,3 +122,75 @@ def meta_train_fixed_iterations(args: Namespace,
                 break
 
     return train_loss, train_acc
+
+
+def meta_train_iterations_ala_l2l(args: Namespace,
+
+                              ):
+
+
+    # -
+    meta_batch_size = 32 // args.world_size,
+
+    # Create model
+    model = l2l.vision.models.MiniImagenetCNN(ways)
+    model.to(device)
+    maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
+    opt = torch.optim.Adam(maml.parameters(), meta_lr)
+    opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
+    opt.sync_parameters()
+    loss = torch.nn.CrossEntropyLoss(reduction='mean')
+    print(rank, ':', device)
+
+    for iteration in range(num_iterations):
+        opt.zero_grad()
+        meta_train_error = 0.0
+        meta_train_accuracy = 0.0
+        meta_valid_error = 0.0
+        meta_valid_accuracy = 0.0
+        for task in range(meta_batch_size):
+            # Compute meta-training loss
+            learner = maml.clone()
+            batch = tasksets.train.sample()
+            evaluation_error, evaluation_accuracy = fast_adapt(
+                batch,
+                learner,
+                loss,
+                adaptation_steps,
+                shots,
+                ways,
+                device,
+            )
+            evaluation_error.backward()
+            meta_train_error += evaluation_error.item()
+            meta_train_accuracy += evaluation_accuracy.item()
+
+            # Compute meta-validation loss
+            learner = maml.clone()
+            batch = tasksets.validation.sample()
+            evaluation_error, evaluation_accuracy = fast_adapt(
+                batch,
+                learner,
+                loss,
+                adaptation_steps,
+                shots,
+                ways,
+                device,
+            )
+            meta_valid_error += evaluation_error.item()
+            meta_valid_accuracy += evaluation_accuracy.item()
+
+        # Print some metrics
+        if rank == 0:
+            print('\n')
+            print('Iteration', iteration)
+            print('Meta Train Error', meta_train_error / meta_batch_size)
+            print('Meta Train Accuracy', meta_train_accuracy / meta_batch_size)
+            print('Meta Valid Error', meta_valid_error / meta_batch_size)
+            print('Meta Valid Accuracy', meta_valid_accuracy / meta_batch_size)
+
+        # Average the accumulated gradients and optimize
+        for p in maml.parameters():
+            p.grad.data.mul_(1.0 / meta_batch_size)
+        opt.step()  # averages gradients across all workers
+

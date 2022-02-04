@@ -50,6 +50,21 @@ def set_devices(args):
         args.device = args.rank
 
 
+def set_devices_l2l(args: Namespace, cuda: bool = True) -> torch.device:
+    if is_running_serially(args.rank):
+        args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        # random.seed(seed)
+        # np.random.seed(seed)
+        # torch.manual_seed(seed)
+        args.device = torch.device('cpu')
+        if cuda and torch.cuda.device_count():
+            # torch.cuda.manual_seed(seed)
+            device_id = args.rank % torch.cuda.device_count()
+            args.device = torch.device('cuda:' + str(device_id))
+        print_dist(args.rank, ':', args.device)
+
+
 def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     """
     Make sure args has the gpu for each worker.
@@ -85,6 +100,7 @@ def process_batch_ddp_union_rfs(args: Namespace, batch: Any) -> tuple[Tensor, Te
     x = x.to(args.device)
     y = y.to(args.device)
     return x, y
+
 
 def move_to_ddp_gpu_via_dict_mutation(args: Namespace, batch: dict) -> dict:
     # temporary fix for backwards compatibility
@@ -330,8 +346,30 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
         model = model.to(args.device)
     return model
 
+
+def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model: nn.Module, force: bool = False):
+    if not hasattr(args, 'dist_option'):
+        model = move_model_to_ddp(rank, args, model, force)
+    else:
+        if args.dist_option == 'ddp':
+            model = move_model_to_ddp(rank, args, model, force)
+        elif args.dist_option == 'l2l_dist':
+            model = model.to(args.device)
+        else:
+            raise ValueError(f'Not a valid way to move a model to (dist) device: {args.dist_option=}')
+    return model
+
+
 # for backwards compatibility
 move_to_ddp = move_model_to_ddp
+
+
+def move_opt_to_cherry_opt_and_sync_params(args: Namespace, syn: int = 1):
+    import cherry
+    args.opt = cherry.optim.Distributed(args.model.parameters(), opt=args.opt, sync=syn)
+    args.opt.sync_parameters()
+    return args.opt
+
 
 def create_distributed_data_loader_from_datasets(args: Namespace,
                                                  rank: int,

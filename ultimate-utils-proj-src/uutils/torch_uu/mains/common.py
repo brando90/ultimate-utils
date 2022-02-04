@@ -12,7 +12,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
-from uutils.torch_uu.distributed import move_to_ddp
+from uutils.torch_uu.distributed import move_to_ddp, move_model_to_dist_device_or_serial_device
 from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
 from uutils.torch_uu.optim_uu.adafactor_uu import get_default_adafactor_opt_fairseq_and_hps_dict, \
     get_default_adafactor_scheduler_fairseq_and_hps_dict
@@ -125,7 +125,7 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         args.model, args.model_hps = get_resnet_rfs_model_cifarfs_fc100(args.model_option, **model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
-    args.model = move_to_ddp(args.rank, args, args.model)
+    args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)
 
     # - get optimizer
     opt_option: str = args.opt_option if opt_option is None else opt_option

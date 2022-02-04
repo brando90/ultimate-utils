@@ -61,9 +61,9 @@ def main(
     # Create Tasksets using the benchmark interface
     tasksets = l2l.vision.benchmarks.get_tasksets(
         'mini-imagenet',
-        train_samples=2*shots,
+        train_samples=shots,
         train_ways=ways,
-        test_samples=2*shots,
+        test_samples=3*shots,
         test_ways=ways,
         root='~/data/l2l_data/',
     )
@@ -87,7 +87,8 @@ def main(
         for task in range(meta_batch_size):
             # Compute meta-training loss
             learner = maml.clone()
-            batch = tasksets.train.sample()
+            batch = tasksets.train.sample()  # gets a single support set for a task e.g. [25, 3, 84, 84] for MI
+            assert batch[0].size() == shots*ways
             evaluation_error, evaluation_accuracy = fast_adapt(
                 batch,
                 learner,
