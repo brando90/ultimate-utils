@@ -8,6 +8,7 @@ from uutils import find_free_port, load_cluster_jobids_to, try_to_get_git_revisi
 
 from datetime import datetime
 
+
 def create_default_log_root(args: Namespace):
     """
     Create the default place where we save things to.
@@ -18,6 +19,7 @@ def create_default_log_root(args: Namespace):
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
     args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
     args.log_root.mkdir(parents=True, exist_ok=True)
+
 
 def setup_args_for_experiment(args: Namespace,
                               num_workers: Optional[int] = 0,
@@ -85,26 +87,25 @@ def setup_args_for_experiment(args: Namespace,
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
     # - logging frequencies
-    if args.log_freq == -1:  # if log_freq is not set
-        if 'iterations' in args.training_mode:
-            args.log_freq = 100
-            # similar to epochs, we don't want to anneal more often than what we plot, otherwise it will be harder to
-            # see if it was due to the scheduler or not, but when the scheduler is called we might see a dip in the
-            # learning curve - like with Qianli's plots
-            log_scheduler_freq = 20 * args.log_freq
-            ckpt_freq = args.log_freq
-        elif 'epochs' in args.training_mode:
-            args.log_freq = 1
-            # same as log freq so that if you schedule more often than you log you might miss the scheduler decaying
-            # too quickly. It also approximates a scheduler of "on per epoch"
-            log_scheduler_freq = 1 * args.log_freq
-            ckpt_freq = args.log_freq
-        elif args.training_mode == 'fit_single_batch' or args.training_mode == 'meta_train_agent_fit_single_batch':
-            args.log_freq = 5
-            log_scheduler_freq = 1
-            ckpt_freq = args.log_freq
-        else:
-            raise ValueError(f'Invalid training mode: {args.training_mode}')
+    if 'iterations' in args.training_mode:
+        args.log_freq = 100 if args.log_freq == -1 else args.log_freq
+        # similar to epochs, we don't want to anneal more often than what we plot, otherwise it will be harder to
+        # see if it was due to the scheduler or not, but when the scheduler is called we might see a dip in the
+        # learning curve - like with Qianli's plots
+        log_scheduler_freq = 20 * args.log_freq
+        ckpt_freq = args.log_freq
+    elif 'epochs' in args.training_mode:
+        args.log_freq = 1 if args.log_freq == -1 else args.log_freq
+        # same as log freq so that if you schedule more often than you log you might miss the scheduler decaying
+        # too quickly. It also approximates a scheduler of "on per epoch"
+        log_scheduler_freq = 1 * args.log_freq
+        ckpt_freq = args.log_freq
+    elif args.training_mode == 'fit_single_batch' or args.training_mode == 'meta_train_agent_fit_single_batch':
+        args.log_freq = 5 if args.log_freq == -1 else args.log_freq
+        log_scheduler_freq = 1
+        ckpt_freq = args.log_freq
+    else:
+        raise ValueError(f'Invalid training mode: {args.training_mode}')
     if hasattr(args, 'log_scheduler_freq'):  # if log_scheduler_freq exists, then replace it by the user or the default
         args.log_scheduler_freq = log_scheduler_freq if args.log_scheduler_freq == -1 else args.log_scheduler_freq
     if hasattr(args, 'ckpt_freq'):  # if ckpt_freq exists, then replace it by the user or the default
