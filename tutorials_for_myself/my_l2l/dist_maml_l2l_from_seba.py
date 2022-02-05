@@ -181,9 +181,11 @@ python -m torch.distributed.launch --nproc_per_node=1 ~/ultimate-utils/tutorials
 
 
 python -m torch.distributed.run --nproc_per_node=8 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
+
+python -m torch.distributed.run --nproc_per_node=8 --master_addr="127.0.0.1" --master_port=$RANDOM ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
     """
-    WORLD_SIZE = 2
-    # WORLD_SIZE = 8
+    # WORLD_SIZE = 2
+    WORLD_SIZE = 8
 
     import os
     local_rank = int(os.environ["LOCAL_RANK"])

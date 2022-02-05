@@ -5,6 +5,7 @@ from torch import nn
 
 from uutils import load_cluster_jobids_to
 
+
 def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
     args.meta_batch_size_train = args.batch_size
     args.meta_batch_size_eval = args.batch_size_eval
@@ -77,18 +78,18 @@ def parse_args_meta_learning() -> Namespace:
     # optimization
     parser.add_argument('--opt_option', type=str, default='AdafactorDefaultFair')
     parser.add_argument('--lr', type=float, default=None, help='Warning: use a learning rate according to'
-                                                                          'how previous work trains your model.'
-                                                                          'Otherwise, tuning might be needed.'
-                                                                          'Vision resnets usually use 1e-3'
-                                                                          'and transformers have a smaller'
-                                                                          'learning 1e-4 or 1e-5.'
-                                                                          'It might be a good start to have the'
-                                                                          'Adafactor optimizer with lr=None and'
-                                                                          'a its defualt scheduler called'
-                                                                          'every epoch or every '
-                                                                          '1(1-beta_2)^-1=2000 iterations.'
-                                                                          'Doing a hp search with with wanbd'
-                                                                          'a good idea.')
+                                                               'how previous work trains your model.'
+                                                               'Otherwise, tuning might be needed.'
+                                                               'Vision resnets usually use 1e-3'
+                                                               'and transformers have a smaller'
+                                                               'learning 1e-4 or 1e-5.'
+                                                               'It might be a good start to have the'
+                                                               'Adafactor optimizer with lr=None and'
+                                                               'a its defualt scheduler called'
+                                                               'every epoch or every '
+                                                               '1(1-beta_2)^-1=2000 iterations.'
+                                                               'Doing a hp search with with wanbd'
+                                                               'a good idea.')
     parser.add_argument('--grad_clip_mode', type=str, default=None)
     parser.add_argument('--num_warmup_steps', type=int, default=-1)
     parser.add_argument('--scheduler_option', type=str, default='AdafactorSchedule', help='Its strongly recommended')
@@ -120,6 +121,9 @@ def parse_args_meta_learning() -> Namespace:
                                                                              'e.g. path: '
                                                                              '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668/ckpt.pt')
     parser.add_argument('--ckpt_freq', type=int, default=-1)
+
+    # - dist/distributed options
+    parser.add_argument('--init_method', type=str, default=None)
 
     # - miscellaneous arguments
     parser.add_argument('--log_freq', type=int, default=-1, help='default is to put the epochs or iterations default'

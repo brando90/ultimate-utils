@@ -146,7 +146,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
 
         # - forward pass. Since the data fetching is different for l2l we do it this way
         task_dataset: TaskDataset = args.tasksets.train
-        train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(task_dataset, call_backward=True)
+        train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, call_backward=True)
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
 

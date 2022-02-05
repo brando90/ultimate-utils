@@ -85,6 +85,8 @@ def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, c
     import numpy as np
 
     seed: int = args.seed if seed is None else seed
+    # rank: int = torch.distributed.get_rank()
+    seed += args.rank
     random.seed(seed)
     np.random.seed(seed)
     if cuda and torch.cuda.device_count():
@@ -282,7 +284,7 @@ def setup_process(args, rank, world_size, master_port, init_method=None, backend
         torch.distributed.barrier()
 
 
-def setup_process_l2l(args, local_rank, world_size, init_method=None, backend='gloo'):
+def init_process_group_l2l(args, local_rank, world_size, init_method=None, backend='gloo'):
     """
     based on
 
@@ -302,16 +304,24 @@ def setup_process_l2l(args, local_rank, world_size, init_method=None, backend='g
     rank = torch.distributed.get_rank()
     print(f'{rank=}\n')
     """
-    if is_running_parallel(local_rank):
-        if torch.cuda.is_available():
-            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
-            backend = 'nccl'
-        torch.distributed.init_process_group(
-            backend,
-            init_method=init_method,
-            rank=local_rank,
-            world_size=world_size,
-        )
+    # if is_running_parallel(local_rank):
+    if torch.cuda.is_available():
+        # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
+        backend = 'nccl'
+    torch.distributed.init_process_group(
+        backend,
+        init_method=init_method,
+        rank=local_rank,
+        world_size=world_size,
+    )
+        # torch.distributed.init_process_group(
+        #     backend,
+        #     init_method=None,
+        #     rank=local_rank,
+        #     world_size=world_size,
+        # )
+        # dist.init_process_group(backend=backend, init_method="env://")
+        # dist.init_process_group(backend=backend, init_method=None)
 
 
 def cleanup(rank):
