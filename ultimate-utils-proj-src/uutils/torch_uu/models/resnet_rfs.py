@@ -42,7 +42,8 @@ class DropBlock(nn.Module):
         # self.bernouli = Bernoulli(gamma)
 
     def forward(self, x, gamma):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = x.device
         # shape: (bsize, channels, height, width)
 
         if self.training:
@@ -60,7 +61,8 @@ class DropBlock(nn.Module):
             return x
 
     def _compute_block_mask(self, mask):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = mask.device
 
         left_padding = int((self.block_size - 1) / 2)
         right_padding = int(self.block_size / 2)

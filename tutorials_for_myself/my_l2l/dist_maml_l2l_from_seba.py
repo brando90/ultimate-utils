@@ -68,7 +68,8 @@ def main(
         torch.cuda.manual_seed(seed)
         device_id = rank % torch.cuda.device_count()
         device = torch.device('cuda:' + str(device_id))
-    print(rank, ':', device)
+    print(f'\n-->{rank}:{device}<--\n')
+    torch.distributed.barrier()
 
     # Create Tasksets using the benchmark interface
     tasksets = l2l.vision.benchmarks.get_tasksets(
@@ -83,7 +84,9 @@ def main(
 
     # Create model
     # model = l2l.vision.models.MiniImagenetCNN(ways)
-    model = l2l.vision.models.CNN4(output_size=ways, hidden_size=64, embedding_size=64 * 4, )
+    # model = l2l.vision.models.CNN4(output_size=ways, hidden_size=64, embedding_size=64 * 4, )
+    from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_cifarfs_fc100
+    model, _ = get_resnet_rfs_model_cifarfs_fc100('resnet12_rfs_cifarfs_fc100')
     model.to(device)
 
     maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
@@ -91,8 +94,10 @@ def main(
     opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
     opt.sync_parameters()
     loss = torch.nn.CrossEntropyLoss(reduction='mean')
-    print(rank, ':', device)
+    print(f'\n-->{rank}:{device}<--\n')
+    torch.distributed.barrier()
 
+    print('-- about to to train...')
     for iteration in range(num_iterations):
         opt.zero_grad()
         meta_train_error = 0.0
@@ -173,8 +178,12 @@ python -m torch.distributed.run --nproc_per_node=2 ~/ultimate-utils/tutorials_fo
 python -m torch.distributed.launch --nproc_per_node=1 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
 
 ####torchrun --nnodes=1 --nproc_per_node=2 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
+
+
+python -m torch.distributed.run --nproc_per_node=8 ~/ultimate-utils/tutorials_for_myself/my_l2l/dist_maml_l2l_from_seba.py
     """
     WORLD_SIZE = 2
+    # WORLD_SIZE = 8
 
     import os
     local_rank = int(os.environ["LOCAL_RANK"])

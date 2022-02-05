@@ -129,15 +129,15 @@ class MAMLMetaLearner(nn.Module):
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
             meta_learner_forward_adapt_batch_of_tasks
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
                                                                                                      qry_x, qry_y,
                                                                                                      training,
                                                                                                      call_backward)
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = self.forward(batch, training, call_backward)
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training, call_backward)
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval(self):
         """
@@ -208,15 +208,15 @@ class MAMLMetaLearner(nn.Module):
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
             meta_learner_forward_adapt_batch_of_tasks
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
                                                                                                      qry_x, qry_y,
                                                                                                      training,
                                                                                                      call_backward)
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = self.forward(batch, training, call_backward)
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training, call_backward)
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval(self):
         """
@@ -326,10 +326,10 @@ def forward(meta_learner,
         meta_accs.append(acc)
     assert len(meta_losses) == meta_batch_size
     meta_loss = torch.mean(tensorify(meta_losses))
-    meta_acc = torch.mean(tensorify(meta_accs))
     meta_loss_std = torch.std(tensorify(meta_losses))
+    meta_acc = torch.mean(tensorify(meta_accs))
     meta_acc_std = torch.std(tensorify(meta_accs))
-    return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+    return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
 
 class MAMLMetaLearnerL2L(nn.Module):
@@ -346,7 +346,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model = base_model
         assert args is self.args
         assert base_model is args.model
-        self.maml = learn2learn.algorithms.MAML(args.model, lr=args.inner_lr, first_order=False)
+        self.maml = learn2learn.algorithms.MAML(args.model, lr=args.inner_lr, first_order=args.first_order)
         # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
         # opt = torch.optim.Adam(maml.parameters(), meta_lr)
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
@@ -368,7 +368,7 @@ class MAMLMetaLearnerL2L(nn.Module):
             - https://github.com/tristandeleu/pytorch-maml/issues/19
         """
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, self.min_batch_size)
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = forward(meta_learner=self,
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = forward(meta_learner=self,
                                                                    args=self.args,
                                                                    task_dataset=task_dataset,  # eg args.tasksets.train
                                                                    training=training,  # always true to avoid .eval()
@@ -376,11 +376,11 @@ class MAMLMetaLearnerL2L(nn.Module):
 
                                                                    call_backward=call_backward,  # False for val/test
                                                                    )
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
         meta_batch_size: int = max(self.args.batch_size_eval // self.args.world_size, self.min_batch_size)
-        meta_loss, meta_acc, meta_loss_std, meta_acc_std = forward(meta_learner=self,
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = forward(meta_learner=self,
                                                                    args=self.args,
                                                                    task_dataset=task_dataset,  # eg args.tasksets.train
                                                                    training=training,  # always true to avoid .eval()
@@ -388,7 +388,7 @@ class MAMLMetaLearnerL2L(nn.Module):
 
                                                                    call_backward=call_backward,  # False for val/test
                                                                    )
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def eval(self):
         """

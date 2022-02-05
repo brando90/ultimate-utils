@@ -152,7 +152,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
 
         # - Average the accumulated gradients and optimize
         # outer_opt.step()
-        # gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
+        gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
         for p in meta_learner.parameters():
             p.grad.data.mul_(1.0 / meta_batch_size)
         outer_opt.step()  # averages gradients across all workers
