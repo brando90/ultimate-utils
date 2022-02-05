@@ -35,14 +35,30 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
-    args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
-        args.data_option,
-        train_samples=args.k_shots + args.k_eval,
-        train_ways=args.n_classes,
-        test_samples=args.k_shots + args.k_eval,
-        test_ways=args.n_classes,
-        root=args.data_path,
-    )
+    if args.data_option == 'cifarfs':
+        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_classes,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_classes,
+            root=args.data_path,
+        )
+        assert False
+    elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
+        # args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+        from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
+        args.tasksets: BenchmarkTasksets = get_tasksets(
+            args.data_option.split('_')[0],  # returns cifarfs or fc100 string
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_classes,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_classes,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    else:
+        raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
 
 

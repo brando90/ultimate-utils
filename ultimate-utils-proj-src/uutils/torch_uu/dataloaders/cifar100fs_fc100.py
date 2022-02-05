@@ -214,6 +214,337 @@ def get_rfs_union_sl_dataloader_fc100(args: Namespace) -> dict:
     n_cls = 60
 
 
+# -
+
+def cifarfs_tasksets(
+        train_ways=5,
+        train_samples=10,
+        test_ways=5,
+        test_samples=10,
+        root='~/data',
+        data_augmentation=None,
+        device=None,
+        **kwargs,
+):
+    import torchvision as tv
+    import learn2learn as l2l
+
+    from learn2learn.data.transforms import NWays, KShots, LoadData, RemapLabels, ConsecutiveLabels
+
+    from torchvision.transforms import (Compose, ToPILImage, ToTensor, RandomCrop, RandomHorizontalFlip,
+                                        ColorJitter, Normalize)
+    """Tasksets for CIFAR-FS benchmarks."""
+    if data_augmentation is None:
+        train_data_transforms = tv.transforms.ToTensor()
+        test_data_transforms = tv.transforms.ToTensor()
+    elif data_augmentation == 'normalize':
+        train_data_transforms = Compose([
+            lambda x: x / 255.0,
+        ])
+        test_data_transforms = train_data_transforms
+    elif data_augmentation == 'rfs2020':
+        # original rfs transform
+        # if augment:
+        #     transform = transforms.Compose([
+        #         lambda x: Image.fromarray(x),
+        #         transforms.RandomCrop(32, padding=4),
+        #         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        #         transforms.RandomHorizontalFlip(),
+        #         lambda x: np.asarray(x),
+        #         transforms.ToTensor(),
+        #         normalize_cifar100
+        #     ])
+        # else:
+        #     transform = transforms.Compose([
+        #         lambda x: Image.fromarray(x),
+        #         transforms.ToTensor(),
+        #         normalize_cifar100
+        #     ])
+        # return transform
+        mean = [0.5071, 0.4867, 0.4408]
+        std = [0.2675, 0.2565, 0.2761]
+        normalize = Normalize(mean=mean, std=std)
+        train_data_transforms = Compose([
+            RandomCrop(32, padding=4),
+            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            RandomHorizontalFlip(),
+            ToTensor(),
+            normalize,
+        ])
+        test_data_transforms = Compose([
+            ToTensor(),
+            normalize,
+        ])
+    else:
+        raise ('Invalid data_augmentation argument.')
+
+    train_dataset = l2l.vision.datasets.CIFARFS(root=root,
+                                                transform=train_data_transforms,
+                                                mode='train',
+                                                download=True)
+    valid_dataset = l2l.vision.datasets.CIFARFS(root=root,
+                                                transform=train_data_transforms,
+                                                mode='validation',
+                                                download=True)
+    test_dataset = l2l.vision.datasets.CIFARFS(root=root,
+                                               transform=test_data_transforms,
+                                               mode='test',
+                                               download=True)
+    if device is not None:
+        train_dataset = l2l.data.OnDeviceDataset(
+            dataset=train_dataset,
+            device=device,
+        )
+        valid_dataset = l2l.data.OnDeviceDataset(
+            dataset=valid_dataset,
+            device=device,
+        )
+        test_dataset = l2l.data.OnDeviceDataset(
+            dataset=test_dataset,
+            device=device,
+        )
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    valid_dataset = l2l.data.MetaDataset(valid_dataset)
+    test_dataset = l2l.data.MetaDataset(test_dataset)
+
+    train_transforms = [
+        NWays(train_dataset, train_ways),
+        KShots(train_dataset, train_samples),
+        LoadData(train_dataset),
+        RemapLabels(train_dataset),
+        ConsecutiveLabels(train_dataset),
+    ]
+    valid_transforms = [
+        NWays(valid_dataset, test_ways),
+        KShots(valid_dataset, test_samples),
+        LoadData(valid_dataset),
+        ConsecutiveLabels(valid_dataset),
+        RemapLabels(valid_dataset),
+    ]
+    test_transforms = [
+        NWays(test_dataset, test_ways),
+        KShots(test_dataset, test_samples),
+        LoadData(test_dataset),
+        RemapLabels(test_dataset),
+        ConsecutiveLabels(test_dataset),
+    ]
+
+    _datasets = (train_dataset, valid_dataset, test_dataset)
+    _transforms = (train_transforms, valid_transforms, test_transforms)
+    return _datasets, _transforms
+
+
+def fc100_tasksets(
+        train_ways=5,
+        train_samples=10,
+        test_ways=5,
+        test_samples=10,
+        root='~/data',
+        data_augmentation=None,
+        device=None,
+        **kwargs,
+):
+    import torchvision as tv
+    import learn2learn as l2l
+
+    from learn2learn.data.transforms import NWays, KShots, LoadData, RemapLabels, ConsecutiveLabels
+
+    from torchvision.transforms import (Compose, ToPILImage, ToTensor, RandomCrop, RandomHorizontalFlip,
+                                        ColorJitter, Normalize)
+    """Tasksets for FC100 benchmarks."""
+    if data_augmentation is None:
+        train_data_transforms = tv.transforms.ToTensor()
+        test_data_transforms = tv.transforms.ToTensor()
+    elif data_augmentation == 'normalize':
+        train_data_transforms = Compose([
+            lambda x: x / 255.0,
+        ])
+        test_data_transforms = train_data_transforms
+    elif data_augmentation == 'rfs2020':
+        # original rfs transform
+        # if augment:
+        #     transform = transforms.Compose([
+        #         lambda x: Image.fromarray(x),
+        #         transforms.RandomCrop(32, padding=4),
+        #         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        #         transforms.RandomHorizontalFlip(),
+        #         lambda x: np.asarray(x),
+        #         transforms.ToTensor(),
+        #         normalize_cifar100
+        #     ])
+        # else:
+        #     transform = transforms.Compose([
+        #         lambda x: Image.fromarray(x),
+        #         transforms.ToTensor(),
+        #         normalize_cifar100
+        #     ])
+        # return transform
+        mean = [0.5071, 0.4867, 0.4408]
+        std = [0.2675, 0.2565, 0.2761]
+        normalize = Normalize(mean=mean, std=std)
+        train_data_transforms = Compose([
+            RandomCrop(32, padding=4),
+            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            RandomHorizontalFlip(),
+            ToTensor(),
+            normalize,
+        ])
+        test_data_transforms = Compose([
+            ToTensor(),
+            normalize,
+        ])
+    else:
+        raise ('Invalid data_augmentation argument.')
+
+    train_dataset = l2l.vision.datasets.FC100(root=root,
+                                              transform=train_data_transforms,
+                                              mode='train',
+                                              download=True)
+    valid_dataset = l2l.vision.datasets.FC100(root=root,
+                                              transform=train_data_transforms,
+                                              mode='validation',
+                                              download=True)
+    test_dataset = l2l.vision.datasets.FC100(root=root,
+                                             transform=test_data_transforms,
+                                             mode='test',
+                                             download=True)
+    if device is not None:
+        train_dataset = l2l.data.OnDeviceDataset(
+            dataset=train_dataset,
+            device=device,
+        )
+        valid_dataset = l2l.data.OnDeviceDataset(
+            dataset=valid_dataset,
+            device=device,
+        )
+        test_dataset = l2l.data.OnDeviceDataset(
+            dataset=test_dataset,
+            device=device,
+        )
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    valid_dataset = l2l.data.MetaDataset(valid_dataset)
+    test_dataset = l2l.data.MetaDataset(test_dataset)
+
+    train_transforms = [
+        NWays(train_dataset, train_ways),
+        KShots(train_dataset, train_samples),
+        LoadData(train_dataset),
+        RemapLabels(train_dataset),
+        ConsecutiveLabels(train_dataset),
+    ]
+    valid_transforms = [
+        NWays(valid_dataset, test_ways),
+        KShots(valid_dataset, test_samples),
+        LoadData(valid_dataset),
+        ConsecutiveLabels(valid_dataset),
+        RemapLabels(valid_dataset),
+    ]
+    test_transforms = [
+        NWays(test_dataset, test_ways),
+        KShots(test_dataset, test_samples),
+        LoadData(test_dataset),
+        RemapLabels(test_dataset),
+        ConsecutiveLabels(test_dataset),
+    ]
+
+    _datasets = (train_dataset, valid_dataset, test_dataset)
+    _transforms = (train_transforms, valid_transforms, test_transforms)
+    return _datasets, _transforms
+
+
+_TASKSETS = {
+    # 'omniglot': omniglot_tasksets,
+    # 'mini-imagenet': mini_imagenet_tasksets,
+    # 'tiered-imagenet': tiered_imagenet_tasksets,
+    'fc100': fc100_tasksets,
+    'cifarfs': cifarfs_tasksets,
+}
+
+
+def get_tasksets(
+        name,
+        train_ways=5,
+        train_samples=10,
+        test_ways=5,
+        test_samples=10,
+        num_tasks=-1,
+        root='~/data',
+        data_augmentation=None,
+        device=None,
+        **kwargs,
+):
+    """
+    [[Source]](https://github.com/learnables/learn2learn/blob/master/learn2learn/vision/benchmarks/)
+
+    **Description**
+
+    Returns the tasksets for a particular benchmark, using literature standard data and task transformations.
+
+    The returned object is a namedtuple with attributes `train`, `validation`, `test` which
+    correspond to their respective TaskDatasets.
+    See `examples/vision/maml_miniimagenet.py` for an example.
+
+    **Arguments**
+
+    * **name** (str) - The name of the benchmark. Full list in `list_tasksets()`.
+    * **train_ways** (int, *optional*, default=5) - The number of classes per train tasks.
+    * **train_samples** (int, *optional*, default=10) - The number of samples per train tasks.
+    * **test_ways** (int, *optional*, default=5) - The number of classes per test tasks. Also used for validation tasks.
+    * **test_samples** (int, *optional*, default=10) - The number of samples per test tasks. Also used for validation tasks.
+    * **num_tasks** (int, *optional*, default=-1) - The number of tasks in each TaskDataset.
+    * **device** (torch.Device, *optional*, default=None) - If not None, tasksets are loaded as Tensors on `device`.
+    * **root** (str, *optional*, default='~/data') - Where the data is stored.
+
+    **Example**
+    ~~~python
+    train_tasks, validation_tasks, test_tasks = l2l.vision.benchmarks.get_tasksets('omniglot')
+    batch = train_tasks.sample()
+
+    or:
+
+    tasksets = l2l.vision.benchmarks.get_tasksets('omniglot')
+    batch = tasksets.train.sample()
+    ~~~
+    """
+    import learn2learn as l2l
+
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    # - unchanged l2l code, what I changed is what _TASKSETS has
+    root = os.path.expanduser(root)
+
+    # Load task-specific data and transforms
+    datasets, transforms = _TASKSETS[name](train_ways=train_ways,
+                                           train_samples=train_samples,
+                                           test_ways=test_ways,
+                                           test_samples=test_samples,
+                                           root=root,
+                                           data_augmentation=data_augmentation,
+                                           device=device,
+                                           **kwargs)
+    train_dataset, validation_dataset, test_dataset = datasets
+    train_transforms, validation_transforms, test_transforms = transforms
+
+    # Instantiate the tasksets
+    train_tasks = l2l.data.TaskDataset(
+        dataset=train_dataset,
+        task_transforms=train_transforms,
+        num_tasks=num_tasks,
+    )
+    validation_tasks = l2l.data.TaskDataset(
+        dataset=validation_dataset,
+        task_transforms=validation_transforms,
+        num_tasks=num_tasks,
+    )
+    test_tasks = l2l.data.TaskDataset(
+        dataset=test_dataset,
+        task_transforms=test_transforms,
+        num_tasks=num_tasks,
+    )
+    return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
+
+
+# -
+
 if __name__ == '__main__':
     args = Namespace()
     # args = lambda x: None

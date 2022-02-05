@@ -110,6 +110,7 @@ def parse_args_meta_learning() -> Namespace:
     #                          'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
     #                          'setup method and log_root.')
     # parser.add_argument('--path_to_data_set', type=str, default='None')
+    parser.add_argument('--data_augmentation', type=str, default=None)
     parser.add_argument('--not_augment_train', action='store_false', default=True)
     parser.add_argument('--augment_val', action='store_true', default=False)
     parser.add_argument('--augment_test', action='store_true', default=False)
