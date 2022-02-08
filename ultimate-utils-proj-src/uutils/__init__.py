@@ -1383,7 +1383,7 @@ def merge_args_safe(args1: Namespace, args2: Namespace) -> Namespace:
 
 def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     """
-    Starts from base starting args and then adds the remaining key/fields values from updater replacing the values from
+    Starts from base starting_args and then adds the remaining key/fields values from updater replacing the values from
     the first starting args with the second updater args.
     Thus, the update_args has precedence as it updates and replaces the values from the first if there is a collision.
 
