@@ -10,6 +10,8 @@ from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_superv
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
 from uutils.torch_uu.eval.eval import eval_sl
 
+from pdb import set_trace as st
+
 
 def log_train_val_stats_simple(args: Namespace,
                                it: int, train_loss: float, train_acc: float, bar: ProgressBar,

@@ -51,7 +51,9 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace) -> tuple[nn.M
     return args.model, args.opt, args.scheduler
 
 
-def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[nn.Module, Optimizer, _LRScheduler]:
+def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
+                                             path_to_checkpoint: Optional[str] = None,
+                                             ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Load the most important things: model, optimizer, scheduler.
 
@@ -60,7 +62,8 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace) -> tuple[nn.Module
     """
     # - prepare args from ckpt
     # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
-    ckpt: dict = torch.load(args.path_to_checkpoint, map_location=args.device)
+    path_to_checkpoint = args.path_to_checkpoint if path_to_checkpoint is None else path_to_checkpoint
+    ckpt: dict = torch.load(path_to_checkpoint, map_location=args.device)
     model_option = ckpt['model_option']
     model_hps = ckpt['model_hps']
 
@@ -161,3 +164,29 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     else:
         raise ValueError(f'Scheduler option is invalid: got {scheduler_option=}')
     return args.model, args.opt, args.scheduler
+
+
+def meta_learning_type(args: Namespace) -> bool:
+    """
+    Since we didn't save the agent stuff excplicitly, can't remember if this is a bug or not...
+    anyway, you can get the
+    """
+    return args.ckpt['args_dict']['agent']
+
+
+def _get_agent(args: Namespace, agent_hps: dict = {}):
+    """
+
+    Note:
+        - some of these functions might assume you've already loaded .model correct in args.
+    """
+    if args.agent_opt == 'MAMLMetaLearnerL2L_default':
+        from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+        agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
+    elif args.agent_opt == 'MAMLMetaLearner_default':
+        from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
+        agent = MAMLMetaLearner(args, args.model, **agent_hps)
+    else:
+        raise ValueError(f'Invalid meta-learning type, got {meta_learning_type(args)}')
+    args.agent = agent
+    return args.agent

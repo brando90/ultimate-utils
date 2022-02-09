@@ -382,10 +382,58 @@ def get_resnet_rfs_model_cifarfs_fc100(model_opt: str,
     return model, model_hps
 
 
-def replace_final_layer(args: Namespace, n_classes: int):
-    args.model.classifier = nn.Linear(args.model.cls.in_features,
-                                      n_classes)
+def get_recommended_batch_size_cifarfs_resnet12rfs_body(safety_margin: int = 10):
+    """
+    Loop through all the layers and computing the largest B recommnded. Most likely the H*W that is
+    smallest will win but formally just compute B_l for each layer that your computing sims/dists and then choose
+    the largest B_l. That ceil(B_l) satisfies B*H*W >= s*C for all l since it's the largest.
 
+        recommended_meta_batch_size = ceil( max([s*C_l/H_l*W_l for l in 1...L]) )
+
+    Note: if the cls is present then we need B >= s*D since the output for it has shape
+    [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
+    s being used for B = 13 is
+        s_cls = B/n_c = 13/5 =
+        s_cls = B/n_c = 26/5 =
+    """
+    # todo - WARNING: these numbers are for MI and 5CNN
+    if safety_margin == 10:
+        # -- satisfies B >= (10*32)/(5**2) = 12.8 for this specific 5CNN model
+        return 13
+    elif safety_margin == 20:
+        # -- satisfies B >= (20*32)/(5**2) = 25.6 for this specific 5CNN model
+        return 26
+    else:
+        raise ValueError(f'Not implemented for value: {safety_margin=}')
+
+
+def get_recommended_batch_size_cifarfs_resnet12rfs_head(safety_margin: int = 10):
+    """
+    The cls/head is present then we need B >= s*D since the output for it has shape
+    [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
+    s being used for B = 13 is
+        s_cls = B/n_c = 13/5 = 2.6
+        s_cls = B/n_c = 26/5 = 5.2
+    """
+    # todo - WARNING: these numbers are for MI and 5CNN
+    if safety_margin == 10:
+        # -- satisfies B >= (10*32)/(5**2) = 12.8 for this specific 5CNN model
+        return 50
+    elif safety_margin == 20:
+        # -- satisfies B >= (20*32)/(5**2) = 25.6 for this specific 5CNN model
+        return 100
+    else:
+        raise ValueError(f'Not implemented for value: {safety_margin=}')
+
+
+def get_feature_extractor_conv_layers(L: int = 4, include_cls: bool = False) -> list[str]:
+    """
+    how to deal with: getattr(args.model.layer1, '0').conv1
+    """
+    layers: list[str] = [f'layer{i}.{i}.conv{i}' for i in range(1, L + 1)]
+    if include_cls:
+        layers: list[str] = layers + ['model.cls']
+    return layers
 
 if __name__ == '__main__':
     from types import SimpleNamespace

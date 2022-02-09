@@ -383,7 +383,7 @@ def get_cifarfs_datasets_torchmeta(args: Namespace) -> dict:
 def get_cifarfs_dataloaders_torchmeta(args: Namespace) -> dict:
     args.criterion = nn.CrossEntropyLoss()
     # - get data sets
-    datasets = get_miniimagenet_datasets_torchmeta(args)
+    datasets = get_cifarfs_datasets_torchmeta(args)
 
     # - get dataloaders
     meta_train_dataloader = BatchMetaDataLoader(datasets['train'],

@@ -304,16 +304,16 @@ def init_process_group_l2l(args, local_rank, world_size, init_method=None, backe
     rank = torch.distributed.get_rank()
     print(f'{rank=}\n')
     """
-    # if is_running_parallel(local_rank):
-    if torch.cuda.is_available():
-        # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
-        backend = 'nccl'
-    torch.distributed.init_process_group(
-        backend,
-        init_method=init_method,
-        rank=local_rank,
-        world_size=world_size,
-    )
+    if is_running_parallel(local_rank):
+        if torch.cuda.is_available():
+            # You need to call torch_uu.cuda.set_device(rank) before init_process_group is called. https://github.com/pytorch/pytorch/issues/54550
+            backend = 'nccl'
+        torch.distributed.init_process_group(
+            backend,
+            init_method=init_method,
+            rank=local_rank,
+            world_size=world_size,
+        )
         # torch.distributed.init_process_group(
         #     backend,
         #     init_method=None,
@@ -446,9 +446,10 @@ move_to_ddp = move_model_to_ddp
 
 
 def move_opt_to_cherry_opt_and_sync_params(args: Namespace, syn: int = 1):
-    import cherry
-    args.opt = cherry.optim.Distributed(args.model.parameters(), opt=args.opt, sync=syn)
-    args.opt.sync_parameters()
+    if is_running_parallel(args.rank):
+        import cherry
+        args.opt = cherry.optim.Distributed(args.model.parameters(), opt=args.opt, sync=syn)
+        args.opt.sync_parameters()
     return args.opt
 
 
