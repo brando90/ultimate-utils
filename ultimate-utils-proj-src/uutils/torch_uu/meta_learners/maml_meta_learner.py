@@ -180,8 +180,12 @@ class MAMLMetaLearner(nn.Module):
         self.target_type = target_type
 
     @property
-    def lr_inner(self):
+    def lr_inner(self) -> float:
         return self.args.inner_lr
+
+    @lr_inner.setter
+    def lr_inner(self, new_val: float):
+        self.args.inner_lr = new_val
 
     @property
     def fo(self):

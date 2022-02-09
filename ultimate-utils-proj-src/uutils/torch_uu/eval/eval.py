@@ -1,5 +1,5 @@
 from argparse import Namespace
-from typing import Any
+from typing import Any, Optional
 
 from torch import Tensor
 
@@ -8,7 +8,7 @@ from uutils.torch_uu.agents.common import Agent
 
 def eval_sl(args: Namespace,
             model: Agent,
-            dataloaders: dict,
+            dataloaders,
             split: str = 'val',
             training: bool = False,
             ) -> tuple[Tensor, Tensor, Tensor, Tensor]:

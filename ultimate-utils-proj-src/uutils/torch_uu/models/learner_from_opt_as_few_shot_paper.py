@@ -197,6 +197,14 @@ class Learner(nn.Module):
             self.model.update({'cls': nn.Linear(filter_size * clr_in * clr_in, n_classes)})
         # self.criterion = nn.CrossEntropyLoss()
 
+    @property
+    def cls(self):
+        return self.mode.cls
+
+    @cls.setter
+    def cls(self, new_cls):
+        self.mode.cls = new_cls
+
     def forward(self, x):
         out = self.model.features(x)
         if self.spp:

@@ -45,17 +45,17 @@ def get_train_valid_test_data_loader_helper_for_cifarfs(args: Namespace) -> dict
 def get_transform(augment: bool):
     if augment:
         transform = transforms.Compose([
-            lambda x: Image.fromarray(x),
+            # lambda x: Image.fromarray(x),
             transforms.RandomCrop(32, padding=4),
             transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             transforms.RandomHorizontalFlip(),
-            lambda x: np.asarray(x),
+            # lambda x: np.asarray(x),
             transforms.ToTensor(),
             normalize_cifar100
         ])
     else:
         transform = transforms.Compose([
-            lambda x: Image.fromarray(x),
+            # lambda x: Image.fromarray(x),
             transforms.ToTensor(),
             normalize_cifar100
         ])
