@@ -36,6 +36,7 @@ def get_train_valid_test_data_loader_miniimagenet_rfs(args: Namespace) -> dict:
     dataloaders: dict = get_mini_imagenet_rfs_sl_dataloader(**train_kwargs)
     return dataloaders
 
+
 # todo - fix later? did this padding=8 make a difference?
 # def get_transform_rfs():
 #     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -100,7 +101,12 @@ def get_mini_imagenet_rfs_sl_dataloader(args: Namespace,
                                      transform=val_trans),
                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
                             num_workers=num_workers)
-    test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
+    # test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
+    test_trans = get_transform(augment=False)
+    test_loader = DataLoader(ImageNet(data_root=path_to_data_set, data_aug=test_trans, partition='test',
+                                      transform=val_trans),
+                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
+                             num_workers=num_workers)
 
     # if opt.use_trainval:
     #     n_cls = 80

@@ -99,9 +99,9 @@ def get_train_valid_loader(path_to_data_set: Path,
     # load the dataset
     path_to_data_set: str = str(Path(path_to_data_set).expanduser())
     train_dataset = datasets.CIFAR100(root=path_to_data_set, train=True,
-                                   download=True, transform=train_transform)
+                                      download=True, transform=train_transform)
     val_dataset = datasets.CIFAR100(root=path_to_data_set, train=True,
-                                 download=True, transform=val_transform)
+                                    download=True, transform=val_transform)
     indices = list(range(len(train_dataset)))
     train_indices, val_indices = split_inidices(indices, test_size=val_size, random_state=seed, shuffle=shuffle)
     train_dataset = torch.utils.data.Subset(train_dataset, train_indices)
@@ -155,17 +155,17 @@ def get_test_loader(path_to_data_set,
     # load the dataset
     path_to_data_set: str = str(Path(path_to_data_set).expanduser())
     test_dataset = datasets.CIFAR100(root=path_to_data_set,
-                                  train=False,  # ensures its test set
-                                  download=True,
-                                  transform=test_transform)
+                                     train=False,  # ensures its test set
+                                     download=True,
+                                     transform=test_transform)
     _, test_loader = get_serial_or_distributed_dataloaders(test_dataset,
-                                                            test_dataset,
-                                                            batch_size_eval,
-                                                            batch_size_eval,
-                                                            rank,
-                                                            world_size,
-                                                            merge,
-                                                            num_workers,
-                                                            pin_memory,
-                                                            )
+                                                           test_dataset,
+                                                           batch_size_eval,
+                                                           batch_size_eval,
+                                                           rank,
+                                                           world_size,
+                                                           merge,
+                                                           num_workers,
+                                                           pin_memory,
+                                                           )
     return test_loader

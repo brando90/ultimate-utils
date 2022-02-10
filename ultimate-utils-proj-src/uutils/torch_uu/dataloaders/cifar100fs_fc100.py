@@ -9,7 +9,7 @@ from typing import Optional, Callable
 
 from PIL.Image import Image
 from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
+from torchvision.transforms import transforms, Compose
 
 import os
 import pickle
@@ -220,7 +220,12 @@ def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
                                      transform=val_trans),
                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
                             num_workers=num_workers)
-    test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
+    # test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
+    test_trans = get_transform_rfs(False)
+    test_loader = DataLoader(CIFAR100(data_root=path_to_data_set, data_aug=test_trans, partition='test',
+                                      transform=val_trans),
+                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
+                             num_workers=num_workers)
 
     # -- get meta-dataloaders
     # not needed, we will not evaluate while running the model the meta-test error, that is done seperately.
@@ -266,38 +271,8 @@ def cifarfs_tasksets(
         ])
         test_data_transforms = train_data_transforms
     elif data_augmentation == 'rfs2020':
-        # original rfs transform
-        # if augment:
-        #     transform = transforms.Compose([
-        #         lambda x: Image.fromarray(x),
-        #         transforms.RandomCrop(32, padding=4),
-        #         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-        #         transforms.RandomHorizontalFlip(),
-        #         lambda x: np.asarray(x),
-        #         transforms.ToTensor(),
-        #         normalize_cifar100
-        #     ])
-        # else:
-        #     transform = transforms.Compose([
-        #         lambda x: Image.fromarray(x),
-        #         transforms.ToTensor(),
-        #         normalize_cifar100
-        #     ])
-        # return transform
-        mean = [0.5071, 0.4867, 0.4408]
-        std = [0.2675, 0.2565, 0.2761]
-        normalize = Normalize(mean=mean, std=std)
-        train_data_transforms = Compose([
-            RandomCrop(32, padding=4),
-            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-            RandomHorizontalFlip(),
-            ToTensor(),
-            normalize,
-        ])
-        test_data_transforms = Compose([
-            ToTensor(),
-            normalize,
-        ])
+        train_data_transforms = get_transform(True)
+        test_data_transforms = get_transform(False)
     else:
         raise ('Invalid data_augmentation argument.')
 
@@ -384,38 +359,8 @@ def fc100_tasksets(
         ])
         test_data_transforms = train_data_transforms
     elif data_augmentation == 'rfs2020':
-        # original rfs transform
-        # if augment:
-        #     transform = transforms.Compose([
-        #         lambda x: Image.fromarray(x),
-        #         transforms.RandomCrop(32, padding=4),
-        #         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-        #         transforms.RandomHorizontalFlip(),
-        #         lambda x: np.asarray(x),
-        #         transforms.ToTensor(),
-        #         normalize_cifar100
-        #     ])
-        # else:
-        #     transform = transforms.Compose([
-        #         lambda x: Image.fromarray(x),
-        #         transforms.ToTensor(),
-        #         normalize_cifar100
-        #     ])
-        # return transform
-        mean = [0.5071, 0.4867, 0.4408]
-        std = [0.2675, 0.2565, 0.2761]
-        normalize = Normalize(mean=mean, std=std)
-        train_data_transforms = Compose([
-            RandomCrop(32, padding=4),
-            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-            RandomHorizontalFlip(),
-            ToTensor(),
-            normalize,
-        ])
-        test_data_transforms = Compose([
-            ToTensor(),
-            normalize,
-        ])
+        train_data_transforms = get_transform(True)
+        test_data_transforms = get_transform(False)
     else:
         raise ('Invalid data_augmentation argument.')
 
@@ -566,9 +511,100 @@ def get_tasksets(
     return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
 
 
-# -
+# - get SL from l2l
 
-if __name__ == '__main__':
+def get_sl_l2l_datasets(root,
+                        data_augmentation: str = 'rfs2020',
+                        device=None
+                        ) -> tuple:
+    if data_augmentation is None:
+        train_data_transforms = transforms.ToTensor()
+        test_data_transforms = transforms.ToTensor()
+    elif data_augmentation == 'normalize':
+        train_data_transforms = Compose([
+            lambda x: x / 255.0,
+        ])
+        test_data_transforms = train_data_transforms
+    elif data_augmentation == 'rfs2020':
+        train_data_transforms = get_transform(True)
+        test_data_transforms = get_transform(False)
+    else:
+        raise ('Invalid data_augmentation argument.')
+
+    import learn2learn
+    train_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
+                                                transform=train_data_transforms,
+                                                mode='train',
+                                                download=True)
+    valid_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
+                                                transform=train_data_transforms,
+                                                mode='validation',
+                                                download=True)
+    test_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
+                                               transform=test_data_transforms,
+                                               mode='test',
+                                               download=True)
+    if device is not None:
+        train_dataset = learn2learn.data.OnDeviceDataset(
+            dataset=train_dataset,
+            device=device,
+        )
+        valid_dataset = learn2learn.data.OnDeviceDataset(
+            dataset=valid_dataset,
+            device=device,
+        )
+        test_dataset = learn2learn.data.OnDeviceDataset(
+            dataset=test_dataset,
+            device=device,
+        )
+    return train_dataset, valid_dataset, test_dataset
+
+
+def get_sl_l2l_cifarfs_dataloader(args: Namespace) -> dict:
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    # import learn2learn
+
+    train_dataset, valid_dataset, test_dataset = get_sl_l2l_datasets(root)
+
+    tasksets: BenchmarkTasksets = get_tasksets(
+        args.data_option.split('_')[0],  # returns cifarfs or fc100 string
+        train_samples=args.k_shots + args.k_eval,
+        train_ways=args.n_classes,
+        test_samples=args.k_shots + args.k_eval,
+        test_ways=args.n_classes,
+        root=args.data_path,
+        data_augmentation=args.data_augmentation,
+    )
+
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    #
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=tasksets.train.dataset,
+        val_dataset=tasksets.validation.dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    _, test_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=tasksets.test.dataset,
+        val_dataset=tasksets.test.dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    return dataloaders
+
+
+# - tests
+
+def l2l_sl_dl():
+    get_sl_l2l_cifarfs_dataloader(args)
+
+
+def rfs_test():
     args = Namespace()
     # args = lambda x: None
     # args.n_ways = 5
@@ -589,3 +625,7 @@ if __name__ == '__main__':
     # print(metaimagenet.__getitem__(500)[1].shape)
     # print(metaimagenet.__getitem__(500)[2].size())
     # print(metaimagenet.__getitem__(500)[3].shape)
+
+
+if __name__ == '__main__':
+    print('Done!\a\n')

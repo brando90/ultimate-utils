@@ -24,6 +24,7 @@ def eval_sl(args: Namespace,
     """
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))
+        # batch: Any = next(iter(dataloaders['test']))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
     else:
         # hack for l2l
