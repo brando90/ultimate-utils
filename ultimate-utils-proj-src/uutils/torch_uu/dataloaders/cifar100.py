@@ -45,6 +45,7 @@ def get_train_valid_test_data_loader_helper_for_cifar100(args: Namespace) -> dic
                    }
     train_loader, val_loader = get_train_valid_loader(**train_kwargs)
     test_loader: DataLoader = get_test_loader(**test_kwargs)
+    args.n_cls = 100  # all splits share same # classes
     dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
     return dataloaders
 

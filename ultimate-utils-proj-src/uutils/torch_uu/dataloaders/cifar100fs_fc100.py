@@ -581,6 +581,8 @@ def get_sl_l2l_cifarfs_dataloaders(args: Namespace) -> dict:
         rank=args.rank,
         world_size=args.world_size
     )
+
+    args.n_cls = 64
     dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
     return dataloaders
 

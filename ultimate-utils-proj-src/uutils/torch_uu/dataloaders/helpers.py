@@ -28,13 +28,15 @@ def get_sl_dataloader(args: Namespace) -> dict:
     if 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
-        replace_final_layer(args, n_classes=10)
+        replace_final_layer(args, n_classes=args.n_cls)
+        assert args.n_cls == 10
     elif 'cifar10' in data_path:
         raise NotImplementedError
     elif data_path == 'cifar100':
         from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_test_data_loader_helper_for_cifar100
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
-        replace_final_layer(args, n_classes=100)
+        replace_final_layer(args, n_classes=args.n_cls)
+        assert args.n_cls == 100
     elif 'CIFAR-FS' in data_path:
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
@@ -47,6 +49,7 @@ def get_sl_dataloader(args: Namespace) -> dict:
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
             args.dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
+            replace_final_layer(args, n_classes=args.n_cls)
         else:
             raise ValueError(f'Invalid data set: got {data_path=} or wrong data option: {args.data_option}')
     else:
