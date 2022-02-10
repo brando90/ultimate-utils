@@ -20,7 +20,7 @@ NORMALIZE = transforms.Normalize((0.1307,), (0.3081,))  # MNIST
 
 
 def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
-    train_kwargs = {'path_to_data_set': args.path_to_data_set,
+    train_kwargs = {'data_path': args.data_path,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
                     'augment_train': args.augment_train,
@@ -31,7 +31,7 @@ def get_train_valid_test_data_loader_helper_for_mnist(args: Namespace) -> dict:
                     'world_size': args.world_size,
                     'merge': None
                     }
-    test_kwargs = {'path_to_data_set': args.path_to_data_set,
+    test_kwargs = {'data_path': args.data_path,
                    'batch_size_eval': args.batch_size_eval,
                    'augment_test': args.augment_train,
                    'num_workers': args.num_workers,
@@ -62,7 +62,7 @@ def get_transform(augment: bool):
     return transform
 
 
-def get_train_valid_loader(path_to_data_set: Path,
+def get_train_valid_loader(data_path: Path,
                            batch_size: int = 128,
                            batch_size_eval: int = 64,
                            seed: Optional[int] = None,
@@ -90,10 +90,10 @@ def get_train_valid_loader(path_to_data_set: Path,
     val_transform = get_transform(augment_val)
 
     # load the dataset
-    path_to_data_set: str = str(Path(path_to_data_set).expanduser())
-    train_dataset = datasets.MNIST(root=path_to_data_set, train=True,
+    data_path: str = str(Path(data_path).expanduser())
+    train_dataset = datasets.MNIST(root=data_path, train=True,
                                    download=True, transform=train_transform)
-    val_dataset = datasets.MNIST(root=path_to_data_set, train=True,
+    val_dataset = datasets.MNIST(root=data_path, train=True,
                                  download=True, transform=val_transform)
     indices = list(range(len(train_dataset)))
     train_indices, val_indices = split_inidices(indices, test_size=val_size, random_state=seed, shuffle=shuffle)
@@ -112,7 +112,7 @@ def get_train_valid_loader(path_to_data_set: Path,
     return train_loader, val_loader
 
 
-def get_test_loader(path_to_data_set,
+def get_test_loader(data_path,
                     batch_size_eval: int = 64,
                     shuffle: bool = True,
                     augment_test: bool = False,
@@ -129,7 +129,7 @@ def get_test_loader(path_to_data_set,
     If using CUDA, num_workers should be set to 1 and pin_memory to True.
     Params
     ------
-    - path_to_data_set: path directory to the dataset.
+    - data_path: path directory to the dataset.
     - batch_size: how many samples per batch to load.
     - shuffle: whether to shuffle the dataset after every epoch.
     - num_workers: number of subprocesses to use when loading the dataset.
@@ -146,8 +146,8 @@ def get_test_loader(path_to_data_set,
     test_transform = get_transform(augment_test)
 
     # load the dataset
-    path_to_data_set: str = str(Path(path_to_data_set).expanduser())
-    test_dataset = datasets.MNIST(root=path_to_data_set,
+    data_path: str = str(Path(data_path).expanduser())
+    test_dataset = datasets.MNIST(root=data_path,
                                   train=False,  # ensures its test set
                                   download=True,
                                   transform=test_transform)

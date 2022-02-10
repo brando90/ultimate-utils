@@ -22,7 +22,7 @@ normalize = transforms.Normalize(mean=mean, std=std)
 
 def get_train_valid_test_data_loader_miniimagenet_rfs(args: Namespace) -> dict:
     train_kwargs = {'args': args,
-                    'path_to_data_set': args.path_to_data_set,
+                    'data_path': args.data_path,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
                     'augment_train': args.augment_train,
@@ -73,7 +73,7 @@ def get_transform(augment: bool):
 
 
 def get_mini_imagenet_rfs_sl_dataloader(args: Namespace,
-                                        path_to_data_set: Path,
+                                        data_path: Path,
                                         batch_size: int = 128,
                                         batch_size_eval: int = 64,
                                         augment_train: bool = True,
@@ -89,7 +89,7 @@ def get_mini_imagenet_rfs_sl_dataloader(args: Namespace,
     # args.num_workers = 2 if args.num_workers is None else args.num_workers
     # args.target_type = 'classification'
     # args.data_aug = True
-    data_root: str = str(path_to_data_set)
+    data_root: str = str(data_path)
 
     # -- get SL dataloaders
     train_trans, val_trans = get_transform(augment_train), get_transform(augment_val)
@@ -97,13 +97,13 @@ def get_mini_imagenet_rfs_sl_dataloader(args: Namespace,
                                        transform=train_trans),
                               batch_size=batch_size, shuffle=True, drop_last=True,
                               num_workers=num_workers)
-    val_loader = DataLoader(ImageNet(data_root=path_to_data_set, data_aug=augment_val, partition='val',
+    val_loader = DataLoader(ImageNet(data_root=data_path, data_aug=augment_val, partition='val',
                                      transform=val_trans),
                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
                             num_workers=num_workers)
     # test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
     test_trans = get_transform(augment=False)
-    test_loader = DataLoader(ImageNet(data_root=path_to_data_set, data_aug=test_trans, partition='test',
+    test_loader = DataLoader(ImageNet(data_root=data_path, data_aug=test_trans, partition='test',
                                       transform=val_trans),
                              batch_size=batch_size_eval, shuffle=True, drop_last=False,
                              num_workers=num_workers)

@@ -23,28 +23,32 @@ def replace_final_layer(args: Namespace, n_classes: int):
 
 
 def get_sl_dataloader(args: Namespace) -> dict:
-    args.path_to_data_set.expanduser()
-    path_to_data_set: str = str(args.path_to_data_set)
-    # path_to_data_set: str = str(args.path_to_data_set).lower()
-    if 'mnist' in path_to_data_set:
+    args.data_path.expanduser()
+    data_path: str = str(args.data_path)
+    if 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
         replace_final_layer(args, n_classes=10)
-    elif 'cifar10' in path_to_data_set:
+    elif 'cifar10' in data_path:
         raise NotImplementedError
-    elif path_to_data_set == 'cifar100':
+    elif data_path == 'cifar100':
         from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_test_data_loader_helper_for_cifar100
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
         replace_final_layer(args, n_classes=100)
-    elif 'CIFAR-FS' in path_to_data_set:
+    elif 'CIFAR-FS' in data_path:
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
         replace_final_layer(args, n_classes=args.n_cls)
-    elif 'miniImageNet_rfs' in path_to_data_set:
+    elif 'miniImageNet_rfs' in data_path:
         from uutils.torch_uu.dataloaders.miniimagenet_rfs import get_train_valid_test_data_loader_miniimagenet_rfs
         args.dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
         replace_final_layer(args, n_classes=args.n_cls)
-
+    elif 'l2l' in data_path:
+        if args.data_option == 'cifarfs_l2l_sl':
+            from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
+            args.dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
+        else:
+            raise ValueError(f'Invalid data set: got {data_path=} or wrong data option: {args.data_option}')
     else:
-        raise ValueError(f'Invalid data set: got {path_to_data_set=}')
+        raise ValueError(f'Invalid data set: got {data_path=}')
     return args.dataloaders

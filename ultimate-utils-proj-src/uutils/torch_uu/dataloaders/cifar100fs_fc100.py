@@ -7,6 +7,7 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Optional, Callable
 
+import torch
 from PIL.Image import Image
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms, Compose
@@ -27,7 +28,7 @@ normalize_cifar100 = transforms.Normalize(mean=mean, std=std)
 
 def get_train_valid_test_data_loader_helper_for_cifarfs(args: Namespace) -> dict:
     train_kwargs = {'args': args,
-                    'path_to_data_set': args.path_to_data_set,
+                    'data_path': args.data_path,
                     'batch_size': args.batch_size,
                     'batch_size_eval': args.batch_size_eval,
                     'augment_train': args.augment_train,
@@ -188,7 +189,7 @@ class CIFAR100(Dataset):
 
 
 def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
-                                        path_to_data_set: Path,
+                                        data_path: Path,
                                         batch_size: int = 128,
                                         batch_size_eval: int = 64,
                                         augment_train: bool = True,
@@ -208,7 +209,7 @@ def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
     # args.num_workers = 2 if args.num_workers is None else args.num_workers
     # args.target_type = 'classification'
     # args.data_aug = True
-    data_root: str = str(path_to_data_set)
+    data_root: str = str(data_path)
 
     # -- get SL dataloaders
     train_trans, val_trans = get_transform_rfs(augment_train), get_transform_rfs(augment_val)
@@ -216,13 +217,13 @@ def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
                                        transform=train_trans),
                               batch_size=batch_size, shuffle=True, drop_last=True,
                               num_workers=num_workers)
-    val_loader = DataLoader(CIFAR100(data_root=path_to_data_set, data_aug=augment_val, partition='val',
+    val_loader = DataLoader(CIFAR100(data_root=data_path, data_aug=augment_val, partition='val',
                                      transform=val_trans),
                             batch_size=batch_size_eval, shuffle=True, drop_last=False,
                             num_workers=num_workers)
     # test_loader = None  # note: since we are evaluating with meta-learning not SL it doesn't need to have this
     test_trans = get_transform_rfs(False)
-    test_loader = DataLoader(CIFAR100(data_root=path_to_data_set, data_aug=test_trans, partition='test',
+    test_loader = DataLoader(CIFAR100(data_root=data_path, data_aug=test_trans, partition='test',
                                       transform=val_trans),
                              batch_size=batch_size_eval, shuffle=True, drop_last=False,
                              num_workers=num_workers)
@@ -533,17 +534,17 @@ def get_sl_l2l_datasets(root,
 
     import learn2learn
     train_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
-                                                transform=train_data_transforms,
-                                                mode='train',
-                                                download=True)
+                                                        transform=train_data_transforms,
+                                                        mode='train',
+                                                        download=True)
     valid_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
-                                                transform=train_data_transforms,
-                                                mode='validation',
-                                                download=True)
+                                                        transform=train_data_transforms,
+                                                        mode='validation',
+                                                        download=True)
     test_dataset = learn2learn.vision.datasets.CIFARFS(root=root,
-                                               transform=test_data_transforms,
-                                               mode='test',
-                                               download=True)
+                                                       transform=test_data_transforms,
+                                                       mode='test',
+                                                       download=True)
     if device is not None:
         train_dataset = learn2learn.data.OnDeviceDataset(
             dataset=train_dataset,
@@ -560,35 +561,21 @@ def get_sl_l2l_datasets(root,
     return train_dataset, valid_dataset, test_dataset
 
 
-def get_sl_l2l_cifarfs_dataloader(args: Namespace) -> dict:
-    from learn2learn.vision.benchmarks import BenchmarkTasksets
-    # import learn2learn
-
-    train_dataset, valid_dataset, test_dataset = get_sl_l2l_datasets(root)
-
-    tasksets: BenchmarkTasksets = get_tasksets(
-        args.data_option.split('_')[0],  # returns cifarfs or fc100 string
-        train_samples=args.k_shots + args.k_eval,
-        train_ways=args.n_classes,
-        test_samples=args.k_shots + args.k_eval,
-        test_ways=args.n_classes,
-        root=args.data_path,
-        data_augmentation=args.data_augmentation,
-    )
+def get_sl_l2l_cifarfs_dataloaders(args: Namespace) -> dict:
+    train_dataset, valid_dataset, test_dataset = get_sl_l2l_datasets(root=args.data_path)
 
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
-    #
     train_loader, val_loader = get_serial_or_distributed_dataloaders(
-        train_dataset=tasksets.train.dataset,
-        val_dataset=tasksets.validation.dataset,
+        train_dataset=train_dataset,
+        val_dataset=valid_dataset,
         batch_size=args.batch_size,
         batch_size_eval=args.batch_size_eval,
         rank=args.rank,
         world_size=args.world_size
     )
     _, test_loader = get_serial_or_distributed_dataloaders(
-        train_dataset=tasksets.test.dataset,
-        val_dataset=tasksets.test.dataset,
+        train_dataset=test_dataset,
+        val_dataset=test_dataset,
         batch_size=args.batch_size,
         batch_size_eval=args.batch_size_eval,
         rank=args.rank,
@@ -601,7 +588,41 @@ def get_sl_l2l_cifarfs_dataloader(args: Namespace) -> dict:
 # - tests
 
 def l2l_sl_dl():
-    get_sl_l2l_cifarfs_dataloader(args)
+    print('starting...')
+    args = Namespace(data_path='~/data/l2l_data/', batch_size=8, batch_size_eval=2, rank=-1, world_size=1)
+    args.data_path = Path('~/data/l2l_data/').expanduser()
+    dataloaders = get_sl_l2l_cifarfs_dataloaders(args)
+    max_val = torch.tensor(-1)
+    for i, batch in enumerate(dataloaders['train']):
+        # print(batch[1])
+        # print(batch[0])
+        max_val = max(list(batch[1]) + [max_val])
+        # print(f'{max_val}')
+        # if 63 in batch[1]:
+        #     break
+    print(f'--> TRAIN FINAL: {max_val=}')
+    assert max_val == len(dataloaders['train'].dataset)
+
+    max_val = torch.tensor(-1)
+    for i, batch in enumerate(dataloaders['val']):
+        # print(batch[1])
+        max_val = max(list(batch[1]) + [max_val])
+        # print(f'{max_val}')
+        # if 15 in batch[1]:
+        #     break
+    print(f'--> VAL FINAL: {max_val=}')
+    assert max_val == len(dataloaders['val'].dataset)
+
+    max_val = torch.tensor(-1)
+    for i, batch in enumerate(dataloaders['test']):
+        # print(batch[1])
+        max_val = max(list(batch[1]) + [max_val])
+        # print(f'{max_val}')
+        # if 19 in batch[1]:
+        #     break
+    print(f'--> TEST FINAL: {max_val=}')
+
+    assert max_val == len(dataloaders['test'].dataset)
 
 
 def rfs_test():
@@ -628,4 +649,5 @@ def rfs_test():
 
 
 if __name__ == '__main__':
+    l2l_sl_dl()
     print('Done!\a\n')
