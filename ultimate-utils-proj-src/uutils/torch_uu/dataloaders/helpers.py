@@ -14,6 +14,9 @@ def replace_final_layer(args: Namespace, n_classes: int):
         args.model.cls = nn.Linear(args.model.cls.in_features, n_classes).to(args.device)
     elif hasattr(args.model, 'model'):  # for 5CNN
         args.model.model.cls = nn.Linear(args.model.model.cls.in_features, n_classes).to(args.device)
+    elif "CNN4" in str(args.model):  # for l2l CNNs
+        args.model.classifier = nn.Linear(args.model.classifier.in_features, n_classes).to(args.device)
+        args.model.cls = args.model.classifier
     else:
         raise ValueError(f'Given model does not have a final cls layer. Check that your model is in the right format:'
                          f'{type(args.model)=} do print(args.model) to see what your arch is and fix the error.')

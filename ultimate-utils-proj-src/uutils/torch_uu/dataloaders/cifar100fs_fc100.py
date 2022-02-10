@@ -62,6 +62,29 @@ def get_transform(augment: bool):
     return transform
 
 
+def get_transform_rfs(augment: bool):
+    """
+    this won't work for l2l data sets.
+    """
+    if augment:
+        transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
+            transforms.RandomCrop(32, padding=4),
+            transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            transforms.RandomHorizontalFlip(),
+            lambda x: np.asarray(x),
+            transforms.ToTensor(),
+            normalize_cifar100
+        ])
+    else:
+        transform = transforms.Compose([
+            lambda x: Image.fromarray(x),
+            transforms.ToTensor(),
+            normalize_cifar100
+        ])
+    return transform
+
+
 class CIFAR100(Dataset):
     """support FC100 and CIFAR-FS"""
 
@@ -188,7 +211,7 @@ def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
     data_root: str = str(path_to_data_set)
 
     # -- get SL dataloaders
-    train_trans, val_trans = get_transform(augment_train), get_transform(augment_val)
+    train_trans, val_trans = get_transform_rfs(augment_train), get_transform_rfs(augment_val)
     train_loader = DataLoader(CIFAR100(data_root=data_root, data_aug=augment_train, partition='train',
                                        transform=train_trans),
                               batch_size=batch_size, shuffle=True, drop_last=True,

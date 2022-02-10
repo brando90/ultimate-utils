@@ -128,6 +128,8 @@ def process_batch_ddp_union_rfs(args: Namespace, batch: Any) -> tuple[Tensor, Te
     """
     if len(batch) == 3:
         x, y, _ = batch
+    elif len(batch) == 2:
+        x, y = batch
     else:
         # img, target, item, sample_idx = batch
         x, y, item, sample_idx = batch

@@ -12306,3 +12306,38 @@ if 2:
     assert True
 
 print(' If this prints then yes, 0 is false and >=1 is True')
+
+
+#%%
+
+from copy import deepcopy
+
+
+s1 = 'a'
+s2 = 'a'
+print(s1 is s2)
+
+s1 = 'a'
+s2 = deepcopy('a')
+print(s1 is s2)
+
+
+s1 = 'hello brando'
+s2 = 'hello brando'
+print(s1 is s2)
+
+s1 = 'hello brando'
+s2 = deepcopy('hello brando')
+print(s1 is s2)
+
+#%%
+
+val = 'a'
+
+original_val = val
+assert original_val == 'a'
+print(f'{val=}{original_val=}')
+
+val = 'b'
+assert original_val == 'a'
+print(f'{val=}{original_val=}')

@@ -201,6 +201,8 @@ def reset_all_weights(model: nn.Module) -> None:
         reset_parameters = getattr(m, "reset_parameters", None)
         if callable(reset_parameters):
             m.reset_parameters()
+        # else:
+        #     raise ValueError(f'Warning: Module {m=} is not resetable!')
 
     # Applies fn recursively to every submodule see: https://pytorch.org/docs/stable/generated/torch.nn.Module.html
     model.apply(fn=weight_reset)

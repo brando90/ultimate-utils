@@ -106,7 +106,9 @@ class UnionClsSLAgent(Agent):
         with torch.no_grad():  # note, this might not be needed in meta-eval due to MAML using grads at eval
             # - to make sure we get the [B] tensor to compute confidence intervals/error bars
             original_reduction: str = self.loss.reduction
+            assert original_reduction == self.loss.reduction
             self.loss.reduction = 'none'
+            assert original_reduction != self.loss.reduction
             self.model.train() if training else self.model.eval()
 
             # -- forward

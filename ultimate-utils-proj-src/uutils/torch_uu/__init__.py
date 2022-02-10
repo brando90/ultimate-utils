@@ -328,6 +328,7 @@ def get_device_from_args(args: Namespace) -> torch.device:
 def get_device_from_args2(args):
     return next(args.model.parameters()).device
 
+
 def get_device(gpu_idx: int = 0) -> torch.device:
     """
     Get default gpu torch device.
@@ -445,9 +446,17 @@ def get_init_hidden(batch_size, hidden_size, nb_layers, bidirectional, device=No
     return hidden
 
 
-def lp_norm(mdl: nn.Module, p: int = 2) -> Tensor:
-    lp_norms = [w.norm(p) for name, w in mdl.named_parameters()]
+def lp_norm(mdl: nn.Module, p: int = 2, detach: bool = False) -> Tensor:
+    if detach:
+        lp_norms = [w.detach().norm(p) for name, w in mdl.named_parameters()]
+    else:
+        lp_norms = [w.norm(p) for name, w in mdl.named_parameters()]
     return sum(lp_norms)
+
+
+def norm(f: nn.Module, l: int = 2, detach: bool = False):
+    # return sum([w.detach().norm(l) for w in f.parameters()])
+    return lp_norm(f, p=l, detach=detach)
 
 
 def check_two_models_equal(model1, model2):

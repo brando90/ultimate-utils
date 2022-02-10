@@ -86,7 +86,7 @@ def parse_args_standard_sl() -> Namespace:
                              'setup method and log_root.')
     parser.add_argument('--data_augmentation', type=str, default=None)
     parser.add_argument('--not_augment_train', action='store_false', default=True)
-    parser.add_argument('--augment_val', action='store_true', default=False)
+    parser.add_argument('--augment_val', action='store_true', default=True)
     parser.add_argument('--augment_test', action='store_true', default=False)
     # parser.add_argument('--l2', type=float, default=0.0)
 

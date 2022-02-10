@@ -37,6 +37,10 @@ def train_agent_fit_single_batch(args: Namespace,
                                  ):
     """
     Train for a single batch
+
+    Note:
+        - eval_sl always chooses a different val set. So the val set should be stuck at ~0 if the model is only
+        fitting 1 batch (as this code does).
     """
     train_batch: Any = next(iter(dataloaders['train']))
 
