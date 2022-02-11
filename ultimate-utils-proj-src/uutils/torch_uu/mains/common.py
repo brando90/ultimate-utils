@@ -148,6 +148,10 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif opt_option == 'Adam_default':
         from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
         args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
+    elif opt_option == 'adam_mi_old_resnet12_rfs':
+        # from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_rfs_cifarfs
+        # args.opt, args.opt_hps = get_opt_adam_rfs_cifarfs(args.model, **opt_hps)
+        return None, None
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 

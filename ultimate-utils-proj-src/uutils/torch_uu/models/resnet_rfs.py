@@ -430,7 +430,7 @@ def get_feature_extractor_conv_layers(L: int = 4, include_cls: bool = False) -> 
     """
     how to deal with: getattr(args.model.layer1, '0').conv1
     """
-    layers: list[str] = [f'layer{i}.{i}.conv{i}' for i in range(1, L + 1)]
+    layers: list[str] = [f'layer{i}.0.conv1' for i in range(1, L + 1)]
     if include_cls:
         layers: list[str] = layers + ['model.cls']
     return layers
