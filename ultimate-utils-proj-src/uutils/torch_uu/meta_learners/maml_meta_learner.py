@@ -174,7 +174,7 @@ class MAMLMetaLearner(nn.Module):
         super().__init__()
         self.args = args  # args for experiment
         self.base_model = base_model
-        assert base_model is args.model
+        # assert base_model is args.model
 
         self.inner_debug = inner_debug
         self.target_type = target_type

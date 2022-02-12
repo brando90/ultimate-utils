@@ -19,7 +19,7 @@ from uutils.logger import Logger
 # import automl.child_models.learner_from_opt_as_few_shot_paper.Learner
 
 # https://github.com/WangYueFt/rfs/blob/master/eval/meta_eval.py
-from uutils.torch_uu import r2_score_from_torch
+from uutils.torch_uu import r2_score_from_torch, process_meta_batch
 from uutils.torch_uu.models import getattr_model
 
 
@@ -36,7 +36,11 @@ class FitFinalLayer(nn.Module):
         self.target_type = target_type
         self.classifier = classifier
 
-    def forward(self, spt_x, spt_y, qry_x, qry_y, training: bool = True):
+    def forward(self, batch, training: bool = True):
+        """
+        training true since we want BN to use batch statistics (and not cheat, etc)
+        """
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         # Accumulate gradient of meta-loss wrt fmodel.param(t=0)
         meta_batch_size = spt_x.size(0)
         meta_losses, meta_accs = [], []
@@ -93,11 +97,17 @@ class FitFinalLayer(nn.Module):
         # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
         assert (len(meta_losses) == meta_batch_size)
         meta_loss = np.mean(meta_losses)
-        meta_acc = np.mean(meta_accs)
         meta_loss_std = np.std(meta_losses)
+        meta_acc = np.mean(meta_accs)
         meta_acc_std = np.std(meta_accs)
-        return meta_loss, meta_acc, meta_loss_std, meta_acc_std
-        # return meta_loss, meta_accs
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+
+    def eval_forward(self, batch, training: bool = True):
+        """
+        training true since we want BN to use batch statistics (and not cheat, etc)
+        """
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training)
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
     def get_embedding(self, x: Tensor, base_model: nn.Module) -> Tensor:
         return get_embedding(x=x, base_model=base_model)
@@ -187,6 +197,7 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
         raise ValueError(f'Not implement: {target_type}')
     return base_model
 
+
 def get_embedding(x: Tensor, base_model: nn.Module) -> Tensor:
     """ apply f until the last layer, instead return that as the embedding """
     out = x
@@ -210,6 +221,7 @@ def get_embedding(x: Tensor, base_model: nn.Module) -> Tensor:
         out = m(out)
     raise ValueError(
         'Your model does not have an explicit point where the embedding starts (i.e. the word final) or other bug in model')
+
 
 def NN(support, support_ys, query):
     """nearest classifier"""
