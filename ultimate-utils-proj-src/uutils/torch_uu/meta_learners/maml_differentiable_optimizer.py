@@ -433,6 +433,7 @@ def meta_eval_no_context_manager(args: Namespace,
 
         # Forward pass
         # eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
+        import meta_learning
         meta_loss, meta_loss_std, meta_acc, meta_acc_std = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
 
         # store eval info
