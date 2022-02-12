@@ -44,12 +44,25 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             test_ways=args.n_classes,
             root=args.data_path,
         )
-        assert False
+        assert False, 'Doesnt use data augmentation, dont use! Its here just to demo how to use l2l.'
+        raise NotImplemented
     elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
         # args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
         args.tasksets: BenchmarkTasksets = get_tasksets(
             args.data_option.split('_')[0],  # returns cifarfs or fc100 string
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_classes,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_classes,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'mini-imagenet' or args.data_option == 'tiered-imagenet':
+        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
+        from uutils.torch_uu.dataloaders.meta_learning.l2l_mini_imagenet_mi import get_tasksets
+        args.tasksets: BenchmarkTasksets = get_tasksets(
+            args.data_option,
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_classes,
             test_samples=args.k_shots + args.k_eval,
