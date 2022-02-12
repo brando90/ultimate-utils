@@ -521,11 +521,13 @@ def get_sl_l2l_datasets(root,
     if data_augmentation is None:
         train_data_transforms = transforms.ToTensor()
         test_data_transforms = transforms.ToTensor()
+        raise ValueError('only rfs2020 augmentation allowed')
     elif data_augmentation == 'normalize':
         train_data_transforms = Compose([
             lambda x: x / 255.0,
         ])
         test_data_transforms = train_data_transforms
+        raise ValueError('only rfs2020 augmentation allowed')
     elif data_augmentation == 'rfs2020':
         train_data_transforms = get_transform(True)
         test_data_transforms = get_transform(False)

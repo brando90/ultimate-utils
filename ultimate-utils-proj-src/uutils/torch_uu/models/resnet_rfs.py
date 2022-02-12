@@ -362,10 +362,10 @@ def get_resnet_rfs_model_mi(model_opt: str,
 
 
 def get_resnet_rfs_model_cifarfs_fc100(model_opt: str,
+                                       num_classes,
                                        avg_pool=True,
                                        drop_rate=0.1,
                                        dropblock_size=2,
-                                       num_classes=64,
                                        ) -> tuple[nn.Module, dict]:
     """
     ref:

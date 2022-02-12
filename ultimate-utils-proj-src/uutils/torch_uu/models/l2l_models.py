@@ -5,7 +5,7 @@ import learn2learn
 from torch import nn
 
 
-def cnn4_cifarsfs(ways: int = 5,
+def cnn4_cifarsfs(ways: int,
                   hidden_size=64,
                   embedding_size=64 * 4,
                   ) -> tuple[nn.Module, dict]:

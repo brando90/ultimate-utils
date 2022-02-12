@@ -3,6 +3,8 @@ from argparse import Namespace
 import time
 from pathlib import Path
 
+from torchvision.transforms import RandomCrop
+
 import uutils.torch_uu
 
 import torch
@@ -130,7 +132,8 @@ def get_miniimagenet_datasets_torchmeta(args: Namespace) -> dict:
     from torchmeta.datasets.helpers import miniimagenet
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     data_augmentation_transforms = transforms.Compose([
-        transforms.RandomResizedCrop(84),
+        # transforms.RandomResizedCrop(84),
+        RandomCrop(84, padding=8),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(
             brightness=0.4,
