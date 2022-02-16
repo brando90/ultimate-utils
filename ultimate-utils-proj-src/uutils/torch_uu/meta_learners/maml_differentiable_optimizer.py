@@ -430,11 +430,11 @@ def meta_eval_no_context_manager(args: Namespace,
     # - evaluate model
     args.meta_learner.train() if training else args.meta_learner.eval()
     for batch_idx, batch in enumerate(args.dataloaders[split]):
-        spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+        # spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
 
         # Forward pass
-        # eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
+        # meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
+        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = args.meta_learner(batch, training=True)
 
         # store eval info
         if batch_idx >= val_iterations:
