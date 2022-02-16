@@ -45,35 +45,58 @@ todo:
     of the time). Drawback, interval doesn't shrink as we have more data. But this analysis makes the entire net
     analysis harder, perhaps try CI only on entire net analysis to see what happens.
 """
+import numpy
 import scipy
 import torch
 from torch import Tensor
 import scipy.stats
-
 
 # P_CI = {0.90: 1.64,
 #         0.95: 1.96,
 #         0.98: 2.33,
 #         0.99: 2.58,
 #         }
+# t_p=1.6991270265334972 at n=30
+# t_p=2.045229642132703 at n=30
+# t_p=2.4620213601503833 at n=30
+# t_p=2.756385903670335 at n=30
+#
+# t_p=1.6603911559963895 at n=100
+# t_p=1.9842169515086827 at n=100
+# t_p=2.3646058614359737 at n=100
+# t_p=2.6264054563851857 at n=100
+"""
+Conclusion: yes, using t(p) raises the multiplier of the ci in ci=t(p)*std/sqrt(n). 
+"""
 
 
-def _mean_confidence_interval_rfs(data, confidence: float = 0.95):
+def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, numpy.ndarray]:
     """
-    Computes the confidence interval for a given survey of a data set a la rfs.
+    Returns (tuple of) the mean and confidence interval for given data.
+    Data is a np.arrayable iterable.
 
     ref:
         - https://stackoverflow.com/a/15034143/1601580
         - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/eval/meta_eval.py#L19
     """
     import scipy.stats
+    import numpy as np
 
-    a = 1.0 * data
-    n = len(a)
+    a: np.ndarray = 1.0 * np.array(data)
+    n: int = len(a)
+    if n == 1:
+        import logging
+        logging.warning('The first dimension of your data is 1, perhaps you meant to transpose your data? or remove the'
+                        'singleton dimension?')
     m, se = a.mean(), scipy.stats.sem(a)
-    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
-    # return m, m - h, m + h
+    tp = scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
+    h = se * tp
     return m, h
+
+
+# def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, float]:
+#     m, ci = mean_confidence_interval(data, confidence=confidence)
+#     return m, ci[0]
 
 
 def torch_compute_confidence_interval_classification(data: Tensor,
@@ -101,7 +124,7 @@ def torch_compute_confidence_interval(data: Tensor,
     """
     Computes the confidence interval for a given survey of a data set.
     """
-    n = len(data)
+    n: int = len(data)
     mean: Tensor = data.mean()
     # se: Tensor = scipy.stats.sem(data)  # compute standard error
     # se, mean: Tensor = torch.std_mean(data, unbiased=True)  # compute standard error
@@ -189,8 +212,56 @@ def ci_test_regression():
     print(f'{ci_95_torch=}')
 
 
+def print_tps():
+    def print_tp(confidence: float, n: int):
+        t_p: float = float(scipy.stats.t.ppf((1 + confidence) / 2., n - 1))
+        print(f'{t_p=} at {n=}')
+
+    n = 30
+    print_tp(0.9, n)
+    print_tp(0.95, n)
+    print_tp(0.98, n)
+    print_tp(0.99, n)
+    n = 100
+    print_tp(0.9, n)
+    print_tp(0.95, n)
+    print_tp(0.98, n)
+    print_tp(0.99, n)
+
+
+def ci_test_float():
+    import numpy as np
+    # - one WRONG data set of size 1 by N
+    data = np.random.randn(1, 30)  # gives an error becuase len sets n=1, so not this shape!
+    m, ci = mean_confidence_interval(data)
+    print('-- you should get a mean and a list of nan ci (since data is in wrong format, it thinks its 30 data sets of '
+          'length 1.')
+    print(m, ci)
+
+    # right data as N by 1
+    data = np.random.randn(30, 1)
+    m, ci = mean_confidence_interval(data)
+    print('-- gives a mean and a list of length 1 for a single CI (since it thinks you have a single dat aset)')
+    print(m, ci)
+
+    # right data as N by 1
+    data = list(np.random.randn(30, 1))
+    m, ci = mean_confidence_interval(data)
+    print('-- LIST! gives a mean and a list of length 1 for a single CI (since it thinks you have a single dat aset)')
+    print(m, ci)
+
+    # multiple data sets (7) of size N (=30)
+    data = np.random.randn(30, 7)
+    print('-- gives 7 CIs for the 7 data sets of length 30. 30 is the number ud want large if you were using z(p)'
+          'due to the CLT.')
+    m, ci = mean_confidence_interval(data)
+    print(m, ci)
+
+
 if __name__ == '__main__':
-    ci_test()
-    ci_test_regression()
-    prob_of_truth_being_inside_when_using_ci_as_std()
+    # ci_test()
+    # ci_test_regression()
+    # prob_of_truth_being_inside_when_using_ci_as_std()
+    # print_tps()
+    ci_test_float()
     print('Done, success! \a')

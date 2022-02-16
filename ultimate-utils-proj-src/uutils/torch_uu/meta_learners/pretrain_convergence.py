@@ -20,7 +20,8 @@ from uutils.logger import Logger
 
 # https://github.com/WangYueFt/rfs/blob/master/eval/meta_eval.py
 from uutils.torch_uu import r2_score_from_torch, process_meta_batch, tensorify
-from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
+from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval, \
+    mean_confidence_interval
 from uutils.torch_uu.models import getattr_model
 
 
@@ -91,14 +92,15 @@ class FitFinalLayer(nn.Module):
                 raise ValueError(f'Not implement: {self.target_type}')
 
             # collect losses & accs for logging/debugging
-            meta_losses.append(qry_loss_t)
+            meta_losses.append(qry_loss_t.item())
+            # meta_losses.append(qry_loss_t)
             meta_accs.append(qry_acc_t)
 
         # Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
         # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
         assert (len(meta_losses) == meta_batch_size)
-        meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
-        meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+        meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
+        meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
     def eval_forward(self, batch, training: bool = True):

@@ -24,7 +24,8 @@ from anatome.helper import LayerIdentifier, dist_data_set_per_layer
 from pdb import set_trace as st
 
 from uutils.torch_uu import tensorify
-from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
+from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval, \
+    mean_confidence_interval
 
 FuncModel = _MonkeyPatchBase
 
@@ -498,12 +499,14 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
             qry_acc_t = calc_accuracy_from_logits(y_logits=qry_logits_t, y=qry_y_t)
         else:
             from uutils.torch_uu import r2_score_from_torch
-            qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
+            qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t).item()
 
         # collect losses & accs
-        meta_losses.append(qry_loss_t)
+        meta_losses.append(qry_loss_t.item())
+        # meta_losses.append(qry_loss_t)
         meta_accs.append(qry_acc_t)
+
     assert len(meta_losses) == meta_batch_size
-    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
-    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+    meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
+    meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
