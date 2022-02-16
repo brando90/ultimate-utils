@@ -19,7 +19,8 @@ from uutils.logger import Logger
 # import automl.child_models.learner_from_opt_as_few_shot_paper.Learner
 
 # https://github.com/WangYueFt/rfs/blob/master/eval/meta_eval.py
-from uutils.torch_uu import r2_score_from_torch, process_meta_batch
+from uutils.torch_uu import r2_score_from_torch, process_meta_batch, tensorify
+from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 from uutils.torch_uu.models import getattr_model
 
 
@@ -84,7 +85,7 @@ class FitFinalLayer(nn.Module):
                 mdl = LinearRegression().fit(spt_embeddings_t, spt_y_t)
                 # Predict using adapted final layer with qrt set
                 query_y_pred_t = torch.Tensor(mdl.predict(qry_embeddings_t))
-                qry_loss_t = self.args.criterion(query_y_pred_t, qry_y_t).item()
+                qry_loss_t = self.args.criterion(query_y_pred_t, qry_y_t)
                 qry_acc_t = r2_score_from_torch(qry_y_t, query_y_pred_t)
             else:
                 raise ValueError(f'Not implement: {self.target_type}')
@@ -96,11 +97,9 @@ class FitFinalLayer(nn.Module):
         # Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
         # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
         assert (len(meta_losses) == meta_batch_size)
-        meta_loss = np.mean(meta_losses)
-        meta_loss_std = np.std(meta_losses)
-        meta_acc = np.mean(meta_accs)
-        meta_acc_std = np.std(meta_accs)
-        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+        meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
+        meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
     def eval_forward(self, batch, training: bool = True):
         """
@@ -190,7 +189,7 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
         # mdl = LinearRegression().fit(spt_embeddings_t, spt_y_t)
         # # Predict using adapted final layer with qrt set
         # query_y_pred_t = torch.Tensor(mdl.predict(qry_embeddings_t))
-        # qry_loss_t = args.criterion(query_y_pred_t, qry_y_t).item()
+        # qry_loss_t = args.criterion(query_y_pred_t, qry_y_t)
         # qry_acc_t = r2_score_from_torch(qry_y_t, query_y_pred_t)
         assert False
     else:
@@ -262,60 +261,6 @@ def setup_and_get_logger(args):
     # make logger
     logger = Logger(args)  # logs to file & console
     return logger
-
-
-def f_rand_is_worse_than_f_avg_test():
-    """
-    check that f_avg > f_rand (is better) in meta-test
-    """
-    import copy
-
-    from meta_learning.training.meta_training import meta_eval
-    from meta_learning.datasets.rand_fnn import RandFNN
-
-    from torchmeta.utils.data import BatchMetaDataLoader
-    from torchmeta.transforms import ClassSplitter
-
-    # experiment args
-    args = SimpleNamespace()
-    args.k_shots = 5
-    args.k_eval = 5
-    args.meta_batch_size_eval = 16
-    args.num_workers = 4
-    args.split = 'val'
-    args.data_path = Path('~/data/LS/fully_connected_NN_mu1_0.05_std1_0.1_mu2_0.05_std2_0.025/').expanduser()
-    args.criterion = nn.MSELoss()
-    args.epochs_eval = 2
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    args.logger = setup_and_get_logger(args)
-    args.debug_test = False
-
-    # get meta-sets dataloaders
-    dataset_val = RandFNN(args.data_path, 'val')
-    metaset_val = ClassSplitter(dataset_val, num_train_per_class=args.k_shots,
-                                num_test_per_class=args.k_eval,
-                                shuffle=True)
-    meta_val_dataloader = BatchMetaDataLoader(metaset_val,
-                                              batch_size=args.meta_batch_size_eval,
-                                              num_workers=args.num_workers)
-    # initial model
-    db = torch.load(args.data_path / args.split / 'f_avg')
-    f_avg = db['f_avg']
-    f_rand = copy.deepcopy(f_avg)
-    [layer.reset_parameters() for layer in f_rand.children() if hasattr(layer, 'reset_parameters')]
-
-    # get meta learner
-    meta_learner_f_avg = FitFinalLayer(args, f_avg)
-    meta_learner_f_avg.regression()
-    meta_learner_f_rand = FitFinalLayer(args, f_rand)
-    meta_learner_f_rand.regression()
-
-    acc_mean_f_avg, acc_std, loss_mean_f_avg, loss_std = meta_eval(args, meta_learner_f_avg, meta_val_dataloader)
-    acc_mean_f_rand, acc_std, loss_mean_f_rand, loss_std = meta_eval(args, meta_learner_f_rand, meta_val_dataloader)
-
-    print(f'loss_mean_f_avg = {loss_mean_f_avg}')
-    print(f'loss_mean_f_avg = {loss_mean_f_rand}')
-    assert (loss_mean_f_avg < loss_mean_f_rand)  # f_avg error better than f_rand
 
 
 if __name__ == '__main__':

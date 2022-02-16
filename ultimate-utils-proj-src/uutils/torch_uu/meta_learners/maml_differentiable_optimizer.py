@@ -24,6 +24,7 @@ from anatome.helper import LayerIdentifier, dist_data_set_per_layer
 from pdb import set_trace as st
 
 from uutils.torch_uu import tensorify
+from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 
 FuncModel = _MonkeyPatchBase
 
@@ -433,8 +434,7 @@ def meta_eval_no_context_manager(args: Namespace,
 
         # Forward pass
         # eval_loss, eval_acc, eval_loss_std, eval_acc_std = meta_learner_forward_adapt_batch_of_tasks(args.meta_learner, spt_x, spt_y, qry_x, qry_y, training=True)
-        import meta_learning
-        meta_loss, meta_loss_std, meta_acc, meta_acc_std = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
+        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = args.meta_learner(spt_x, spt_y, qry_x, qry_y, training=True)
 
         # store eval info
         if batch_idx >= val_iterations:
@@ -442,9 +442,10 @@ def meta_eval_no_context_manager(args: Namespace,
 
     if float(meta_loss) < float(args.best_val_loss) and save_val_ckpt:
         args.best_val_loss = float(meta_loss)
+        import meta_learning
         from meta_learning.training.meta_training import save_for_meta_learning
         save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
-    return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
 def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y,
@@ -500,11 +501,9 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
             qry_acc_t = r2_score_from_torch(qry_y_t, qry_logits_t)
 
         # collect losses & accs
-        meta_losses.append(qry_loss_t.item())
+        meta_losses.append(qry_loss_t)
         meta_accs.append(qry_acc_t)
     assert len(meta_losses) == meta_batch_size
-    meta_loss = np.mean(meta_losses)
-    meta_loss_std = np.std(meta_losses)
-    meta_acc = np.mean(meta_accs)
-    meta_acc_std = np.std(meta_accs)
-    return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
+    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci

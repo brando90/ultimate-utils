@@ -50,6 +50,7 @@ import torch
 from torch import Tensor
 import scipy.stats
 
+
 # P_CI = {0.90: 1.64,
 #         0.95: 1.96,
 #         0.98: 2.33,
@@ -57,9 +58,9 @@ import scipy.stats
 #         }
 
 
-def mean_confidence_interval(data, confidence: float = 0.95):
+def _mean_confidence_interval_rfs(data, confidence: float = 0.95):
     """
-    Computes the confidence interval for a given survey of a data set.
+    Computes the confidence interval for a given survey of a data set a la rfs.
 
     ref:
         - https://stackoverflow.com/a/15034143/1601580
@@ -95,8 +96,8 @@ def torch_compute_confidence_interval_classification(data: Tensor,
 
 
 def torch_compute_confidence_interval(data: Tensor,
-                                           confidence: float = 0.95
-                                           ) -> Tensor:
+                                      confidence: float = 0.95
+                                      ) -> Tensor:
     """
     Computes the confidence interval for a given survey of a data set.
     """
@@ -104,10 +105,11 @@ def torch_compute_confidence_interval(data: Tensor,
     mean: Tensor = data.mean()
     # se: Tensor = scipy.stats.sem(data)  # compute standard error
     # se, mean: Tensor = torch.std_mean(data, unbiased=True)  # compute standard error
-    se: Tensor = data.std(unbiased=True) / (n**0.5)
+    se: Tensor = data.std(unbiased=True) / (n ** 0.5)
     t_p: float = float(scipy.stats.t.ppf((1 + confidence) / 2., n - 1))
     ci = t_p * se
     return mean, ci
+
 
 # -
 
@@ -128,7 +130,8 @@ def prob_of_truth_being_inside_when_using_ci_as_std():
     # mean, std = 0.0, 1.0
     # mean, std = 0.0, 1/5.4772255
     n = 25
-    mean, std = 0.0, 1/(n**0.5)
+    mean, std = 0.0, 1 / (n ** 0.5)
+
     def normal_distribution_function(x):
         import scipy.stats
         value = scipy.stats.norm.pdf(x, mean, std)
@@ -143,6 +146,7 @@ def prob_of_truth_being_inside_when_using_ci_as_std():
 
     print('\nNormal Distribution (mean,std):', mean, std)
     print('Integration bewteen {} and {} --> '.format(x1, x2), res)
+
 
 # - tests
 

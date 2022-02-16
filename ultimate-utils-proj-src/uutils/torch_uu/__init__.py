@@ -1504,7 +1504,7 @@ def normalize_matrix_for_distance(X: Tensor, dim: int = 0) -> Tensor:
 def tensorify(lst):
     """
     List must be nested list of tensors (with no varying lengths within a dimension).
-    Nested list of nested lengths [D1, D2, ... DN] -> tensor([D1, D2, ..., DN)
+    Nested list of nested lengths [D1, D2, ... DN] -> tensor([D1, D2, ..., DN])
 
     :return: nested list D
     """
