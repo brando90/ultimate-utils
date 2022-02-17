@@ -199,7 +199,7 @@ class Learner(nn.Module):
 
     @property
     def cls(self):
-        return self.mode.cls
+        return self.model.cls
 
     @cls.setter
     def cls(self, new_cls):

@@ -206,6 +206,10 @@ def get_embedding(x: Tensor, base_model: nn.Module) -> Tensor:
     if hasattr(base_model, 'get_embedding'):
         out = base_model.get_embedding(x)
         return out
+    # for l2l
+    if hasattr(base_model, 'features'):
+        out = base_model.features(x)
+        return out
     # for handling base_models with self.model.features self.model.cls format
     if hasattr(base_model, 'model'):
         out = base_model.model.features(x)
