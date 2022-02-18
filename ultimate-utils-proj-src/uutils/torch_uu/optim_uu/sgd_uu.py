@@ -3,12 +3,19 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 
-def get_opt_sgd_rfs_cifarfs(mdl: nn.Module,
-                            lr=1e-4,  # note original rfs did: 0.05
-                            weight_decay=0.0005,
-                            ) -> tuple[Optimizer, dict]:
+def _get_opt_hps_sgd_rfs() -> dict:
+    opt_hps: dict = dict(lr=5e-2, momentum=0.9, weight_decay=5e-4)
+    return opt_hps
+
+
+def get_opt_sgd_rfs(mdl: nn.Module,
+                    lr,  # rfs 5e-2
+                    momentum,  # rfs 0.9
+                    weight_decay,  # rfs 5e-4
+                    ) -> tuple[Optimizer, dict]:
     """
 
+    From rfs:
     We use SGD optimizer with a momentum of 0.9 and a weight decay of 5e−4. Each batch
     consists of 64 samples. The learning rate is initialized as
     0.05 and decayed with a factor of 0.1 by three times for
@@ -21,23 +28,20 @@ def get_opt_sgd_rfs_cifarfs(mdl: nn.Module,
     ref:
         - rfs paper: https://arxiv.org/abs/2003.11539
     """
-    # args.outer_opt = optim.SGD(args.base_model.parameters(), lr=args.outer_lr, momentum=0.9, weight_decay=5e-4)
-
-    # opt_hps: dict = dict(
-    #     lr=lr,
-    #     weight_decay=weight_decay
-    # )
-    # optimizer: Optimizer = optim.Adam(mdl.parameters(), lr=lr, weight_decay=0.0005)
-    # return optimizer, opt_hps
-    pass
+    optimizer: Optimizer = optim.SGD(mdl.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+    opt_hps: dict = dict(lr=lr, momentum=momentum, weight_decay=weight_decay)
+    return optimizer, opt_hps
 
 
-def get_cosine_scheduler_sgd_rfs_cifarfs(optimizer: Optimizer,
-                                         lr=1e-4,
-                                         lr_decay_rate=0.1,
-                                         epochs=90
-                                         ) -> tuple[_LRScheduler, dict]:
+def get_cosine_scheduler_sgd_rfs(optimizer: Optimizer,
+                                 T_max,  # args.num_epochs // args.log_scheduler_freq, times to decay basically
+                                 lr,  # rfs 5e-2
+                                 lr_decay_rate,  # rfs 0.1
+                                 ) -> tuple[_LRScheduler, dict]:
     """
+    This scheduler is a smooth implementation to their "decay three times by 0.1" by using a cosine scheduler.
+
+    From rfs:
     The learning rate is initialized as
     0.05 and decayed with a factor of 0.1 by three times for
     all datasets, except for miniImageNet where we only decay
@@ -48,12 +52,27 @@ def get_cosine_scheduler_sgd_rfs_cifarfs(optimizer: Optimizer,
     ref:
         - rfs paper: https://arxiv.org/abs/2003.11539
     """
-    # scheduler_hps: dict = dict(
-    #     lr=1e-4,
-    #     lr_decay_rate=0.1,
-    #     epochs=90
-    # )
-    # eta_min = lr * (lr_decay_rate ** 3)
-    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min, -1)
-    # return scheduler, scheduler_hps
-    pass
+    eta_min = lr * (lr_decay_rate ** 3)  # note, MAML++ uses 1e-5, if you calc it seems rfs uses 5e-5
+    scheduler_hps: dict = dict(T_max=T_max, lr_decay_rate=lr_decay_rate)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max, eta_min)
+    return scheduler, scheduler_hps
+
+
+def _adjust_learning_rate_rfs(epoch, opt, optimizer):
+    """
+    Sets the learning rate to the initial LR decayed by decay rate every steep step.
+
+    Note:
+        - that they also have a smooth version of this using the cosine annealing rate. We have it too, use it to
+        reproduce rfs.
+
+    ref:
+        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/util.py#L61
+    """
+    import numpy as np
+
+    steps = np.sum(epoch > np.asarray(opt.lr_decay_epochs))
+    if steps > 0:
+        new_lr = opt.learning_rate * (opt.lr_decay_rate ** steps)
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = new_lr

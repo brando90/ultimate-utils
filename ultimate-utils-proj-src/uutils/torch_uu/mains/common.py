@@ -152,6 +152,9 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         # from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_rfs_cifarfs
         # args.opt, args.opt_hps = get_opt_adam_rfs_cifarfs(args.model, **opt_hps)
         return None, None
+    elif opt_option == 'Sgd_rfs':
+        from uutils.torch_uu.optim_uu.sgd_uu import get_opt_sgd_rfs
+        args.opt, args.opt_hps = get_opt_sgd_rfs(args.model, **opt_hps)
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 
@@ -165,6 +168,9 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif scheduler_option == 'Adam_cosine_scheduler_rfs_cifarfs':
         from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
         args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
+    elif scheduler_option == 'Cosine_scheduler_sgd_rfs':
+        from uutils.torch_uu.optim_uu.sgd_uu import get_cosine_scheduler_sgd_rfs
+        args.scheduler, args.scheduler_hps = get_cosine_scheduler_sgd_rfs(args.opt, **scheduler_hps)
     else:
         raise ValueError(f'Scheduler option is invalid: got {scheduler_option=}')
     return args.model, args.opt, args.scheduler
