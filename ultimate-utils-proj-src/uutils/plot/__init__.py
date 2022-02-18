@@ -434,14 +434,78 @@ def data_frame_to_latex_with_backslashes(data_frame) -> str:
 
 # - bar graph with error bars
 
-def bar_graph_with_error_using_pandas():
-    """
-    """
+def bar_graph_with_error_using_pandas(group_row_names: list,  # input to index. Usual good name is "groups"
+                                      columns: list,
+                                      rows: list[list],
+                                      val_names: list[str],
+                                      error_bar_names: list[str],
+                                      title: str,
+                                      xlabel: str,
+                                      ylabel: str,
 
-    pass
+                                      linestyle='--',
+                                      tight_layout=False,
+                                      rotation_rows_group_names=0,
+                                      show=False,
+                                      kind='bar',
+                                      alpha=0.7, capsize=2.5, width=0.15
+                                      ):
+    """
+    """
+    import pandas as pd
+
+    assert len(group_row_names) == len(rows), f'One name for each row, so they must have same size. But got: ' \
+                                              f'{len(group_row_names)=},{len(rows)=}'
+    # create data matrix, size [# rows, # columns]
+    for row in rows:
+        assert len(row) == len(columns), f'each value for a row corresponds to a column. So they need to match in size' \
+                                         f'But got {len(row)=},{len(columns)=}.'
+    data = rows
+
+    #
+    df = pd.DataFrame(data, columns=columns, index=group_row_names)
+
+    #
+    yerr = df[error_bar_names].to_numpy().T  # e.g. yerr = df[['MAML5 ci', 'MAML10 ci', 'USL ci']].to_numpy().T
+
+    df[val_names].plot(kind=kind, yerr=yerr, alpha=alpha, capsize=capsize, width=width)
+    plt.grid(linestyle=linestyle)
+    plt.tight_layout() if tight_layout else None
+    plt.xticks(rotation=rotation_rows_group_names)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # plt.legend(loc='best')
+    # plt.legend(loc="upper left", bbox_to_anchor=(0.5, 1.15), ncol=2)
+    # plt.legend(loc="lower left", bbox_to_anchor=(0.5, -0.15), ncol=2)
+
+    plt.show() if show else None
 
 
 # - examples
+
+def bar_graph_with_eroror_bars_full_example():
+    groups = ['MI, 5CNN', 'MI, 5CNN', 'MI, 5CNN', 'MI 5CNN']  # the rows of a df
+    adapted_models = ['MAML5', 'MAML10', 'USL', 'MAML5 ci', 'MAML10 ci', 'USL ci']  # columns of a df
+    meta_test_acc = [62.4, 62.3, 60.1]
+    meta_test_ci = [1.64, 1.5, 1.37]
+    row1 = meta_test_acc + meta_test_ci
+    row2 = meta_test_acc + meta_test_ci
+    row3 = meta_test_acc + meta_test_ci
+    row4 = meta_test_acc + meta_test_ci
+    data = [row1, row2, row3, row4]
+
+    bar_graph_with_error_using_pandas(group_row_names=groups,
+                                      columns=adapted_models,
+                                      rows=data,
+                                      val_names=adapted_models[0:3],
+                                      error_bar_names=adapted_models[3:],
+                                      title='Performance Comparsion MAML vs TL',
+                                      xlabel='Dataset, Architecture',
+                                      ylabel='Meta-Test Accuracy'
+                                      )
+    plt.show()
+
 
 def bar_graph_with_error_bars():
     import pandas as pd
@@ -459,6 +523,7 @@ def bar_graph_with_error_bars():
 
     df[['mean1', 'mean2']].plot(kind='bar', yerr=yerr, alpha=0.5, error_kw=dict(ecolor='k'), capsize=5.0)
     plt.show()
+
 
 def bar_graph_with_error_bars1():
     import pandas as pd
@@ -481,6 +546,37 @@ def bar_graph_with_error_bars1():
 
     # df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.5, error_kw=dict(ecolor='k'), capsize=5.0)
     df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.7, capsize=5.0, width=0.08)
+    # plt.grid(True)
+    plt.grid(linestyle='--')
+    plt.tight_layout()
+    plt.xticks(rotation=0)
+    plt.show()
+
+
+def bar_graph_with_error_bars2():
+    # %%
+
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    groups = ['MI 5CNN', 'MI 5CNN 2']  # the rows of a df
+    adapted_models = ['MAML5', 'MAML10', 'USL', 'MAML5 ci', 'MAML10 ci', 'USL ci']  # columns of a df
+    meta_test_acc = [62.4, 62.3, 60.1]
+    meta_test_ci = [1.64, 1.5, 1.37]
+    row1 = meta_test_acc + meta_test_ci
+    row2 = meta_test_acc + meta_test_ci
+    data = [row1, row2]
+    print(data)
+
+    df = pd.DataFrame(data, columns=adapted_models, index=groups)
+    print(df)
+
+    # convert the std columns to an array
+    yerr = df[['MAML5 ci', 'MAML10 ci', 'USL ci']].to_numpy().T
+    print(yerr)
+
+    # df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.5, error_kw=dict(ecolor='k'), capsize=5.0)
+    df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.7, capsize=2.5, width=0.15)
     # plt.grid(True)
     plt.grid(linestyle='--')
     plt.tight_layout()
@@ -830,20 +926,11 @@ def plot_with_error_bands_xticks_test():
     plt.show()
 
 
-def plot_bar_graph_test():
-    fig = plt.figure()
-    # ax = fig.add_axes([0, 0, 1])
-    adapted_models = ['MAML5', 'MAML10', 'USL (TL)']
-    meta_test_acc = [62.4, 62.3, 60.1]
-    meta_test_ci = [1.64, 1.5, 1.37]
-    ax.bar(adapted_models, meta_test_acc)
-    plt.show()
-
-
 if __name__ == '__main__':
     # save_plot_test()
     # default_seabron_example()
     # plot_seaborn_curve_with_x_values_y_values_test()
     # plot_with_error_bands_test()
-    plot_with_error_bands_xticks_test()
+    # plot_with_error_bands_xticks_test()
+    bar_graph_with_eroror_bars_full_example()
     print('Done, success! \a')
