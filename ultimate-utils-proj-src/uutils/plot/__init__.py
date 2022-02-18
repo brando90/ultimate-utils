@@ -432,7 +432,61 @@ def data_frame_to_latex_with_backslashes(data_frame) -> str:
     return data_frame.to_latex(index=False, escape=False)
 
 
+# - bar graph with error bars
+
+def bar_graph_with_error_using_pandas():
+    """
+    """
+
+    pass
+
+
 # - examples
+
+def bar_graph_with_error_bars():
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from numpy import array
+
+    df = pd.DataFrame([[4, 6, 1, 3], [5, 7, 5, 2]], columns=['mean1', 'mean2', 'std1', 'std2'], index=['A', 'B'])
+
+    # convert the std columns to an array
+    yerr = df[['std1', 'std2']].to_numpy().T
+
+    # print(yerr)
+    array([[1, 5],
+           [3, 2]], dtype=int)
+
+    df[['mean1', 'mean2']].plot(kind='bar', yerr=yerr, alpha=0.5, error_kw=dict(ecolor='k'), capsize=5.0)
+    plt.show()
+
+def bar_graph_with_error_bars1():
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from numpy import array
+
+    groups = ['MI 5CNN']
+    adapted_models = ['MAML5', 'MAML10', 'USL', 'MAML5 ci', 'MAML10 ci', 'USL ci']
+    meta_test_acc = [62.4, 62.3, 60.1]
+    meta_test_ci = [1.64, 1.5, 1.37]
+    row1 = array([meta_test_acc + meta_test_ci])
+    data = row1
+
+    df = pd.DataFrame(data, columns=adapted_models, index=groups)
+    print(df)
+
+    # convert the std columns to an array
+    yerr = df[['MAML5 ci', 'MAML10 ci', 'USL ci']].to_numpy().T
+    print(yerr)
+
+    # df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.5, error_kw=dict(ecolor='k'), capsize=5.0)
+    df[['MAML5', 'MAML10', 'USL']].plot(kind='bar', yerr=yerr, alpha=0.7, capsize=5.0, width=0.08)
+    # plt.grid(True)
+    plt.grid(linestyle='--')
+    plt.tight_layout()
+    plt.xticks(rotation=0)
+    plt.show()
+
 
 def my_example_seaborn_error_bands_example():
     """
@@ -773,6 +827,16 @@ def plot_with_error_bands_xticks_test():
                           x_vals_as_symbols=x_vals_as_symbols)
     plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn',
                           x_vals_as_symbols=x_vals_as_symbols)
+    plt.show()
+
+
+def plot_bar_graph_test():
+    fig = plt.figure()
+    # ax = fig.add_axes([0, 0, 1])
+    adapted_models = ['MAML5', 'MAML10', 'USL (TL)']
+    meta_test_acc = [62.4, 62.3, 60.1]
+    meta_test_ci = [1.64, 1.5, 1.37]
+    ax.bar(adapted_models, meta_test_acc)
     plt.show()
 
 
