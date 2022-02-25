@@ -448,9 +448,12 @@ def bar_graph_with_error_using_pandas(group_row_names: list,  # input to index. 
                                       rotation_rows_group_names=0,
                                       show=False,
                                       kind='bar',
-                                      alpha=0.7, capsize=2.5, width=0.15
+                                      alpha=0.7, capsize=2.5, width=0.15,
+                                      loc='best',
                                       ):
     """
+    ref:
+        - https://stackoverflow.com/questions/23144784/plotting-error-bars-on-grouped-bars-in-pandas/71179448#71179448
     """
     import pandas as pd
 
@@ -475,9 +478,13 @@ def bar_graph_with_error_using_pandas(group_row_names: list,  # input to index. 
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.ylim([0, 100.0])
     # plt.legend(loc='best')
     # plt.legend(loc="upper left", bbox_to_anchor=(0.5, 1.15), ncol=2)
     # plt.legend(loc="lower left", bbox_to_anchor=(0.5, -0.15), ncol=2)
+    # plot.legend(loc=2, prop={'size': 10000})
+    # plt.legend(fontsize="x-small")
+    plt.legend(loc=loc)
 
     plt.show() if show else None
 
