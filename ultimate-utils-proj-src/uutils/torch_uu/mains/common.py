@@ -4,7 +4,7 @@ Note:
     - the move_to_dpp moves things .to(device)
 """
 from argparse import Namespace
-from typing import Optional
+from typing import Optional, Any
 
 import torch
 from torch import nn
@@ -53,6 +53,9 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace) -> tuple[nn.M
 
 def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
                                              path_to_checkpoint: Optional[str] = None,
+                                             load_model: bool = True,
+                                             load_opt: bool = True,
+                                             load_scheduler: bool = True,
                                              ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Load the most important things: model, optimizer, scheduler.
@@ -64,14 +67,27 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
     # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
     path_to_checkpoint = args.path_to_checkpoint if path_to_checkpoint is None else path_to_checkpoint
     ckpt: dict = torch.load(path_to_checkpoint, map_location=args.device)
-    model_option = ckpt['model_option']
-    model_hps = ckpt['model_hps']
+    if load_model:
+        model_option = ckpt['model_option']
+        model_hps = ckpt['model_hps']
+    else:
+        model_option = 'None'
+        model_hps = 'None'
 
-    opt_option = ckpt['opt_option']
-    opt_hps = ckpt['opt_hps']
+    if load_opt:
+        opt_option = ckpt['opt_option']
+        opt_hps = ckpt['opt_hps']
+    else:
+        opt_option = "None"
+        opt_hps = "None"
 
-    scheduler_option = ckpt['scheduler_option']
-    scheduler_hps = ckpt['scheduler_hps']
+    if load_scheduler:
+        scheduler_option = ckpt['scheduler_option']
+        scheduler_hps = ckpt['scheduler_hps']
+    else:
+        scheduler_option = "None"
+        scheduler_hps = "None"
+
     _get_and_create_model_opt_scheduler(args,
                                         model_option,
                                         model_hps,
@@ -84,13 +100,24 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
                                         )
 
     # - load state dicts
-    model_state_dict: dict = ckpt['model_state_dict']
-    args.model.load_state_dict(model_state_dict)
-    opt_state_dict: dict = ckpt['opt_state_dict']
-    args.opt.load_state_dict(opt_state_dict)
-    if hasattr(args.scheduler, 'load_state_dict'):
-        scheduler_state_dict: dict = ckpt['scheduler_state_dict']
-        args.scheduler.load_state_dict(scheduler_state_dict)
+    if load_model:
+        model_state_dict: dict = ckpt['model_state_dict']
+        args.model.load_state_dict(model_state_dict)
+    else:
+        assert args.model is None
+
+    if load_opt:
+        opt_state_dict: dict = ckpt['opt_state_dict']
+        args.opt.load_state_dict(opt_state_dict)
+    else:
+        assert args.opt is None
+
+    if load_scheduler:
+        if hasattr(args.scheduler, 'load_state_dict'):
+            scheduler_state_dict: dict = ckpt['scheduler_state_dict']
+            args.scheduler.load_state_dict(scheduler_state_dict)
+    else:
+        assert args.scheduler is None
 
     # - load last step (it or epoch_num)
     args_from_ckpt = Namespace(**ckpt['args_dict'])
@@ -104,21 +131,30 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
 
 def _get_and_create_model_opt_scheduler(args: Namespace,
 
-                                        model_option: Optional[str] = None,
+                                        model_option: Optional[str] = None,  # if None use args else "None" pass
                                         model_hps: dict = {},
 
-                                        opt_option: Optional[str] = None,
+                                        opt_option: Optional[str] = None,  # if None use args else "None" pass
                                         opt_hps: dict = {},
 
-                                        scheduler_option: Optional[str] = None,
+                                        scheduler_option: Optional[str] = None,  # if None use args else "None" pass
                                         scheduler_hps: dict = {},
 
                                         ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Creates for the first time the model, opt, scheduler needed for the experiment run in main.
+
+    Note:
+        - if you don't want to use something, pass "None" to the corresponding option e.g. _option arg.
+        E.g. it is useful to pass "None" for the optimizer and scheduler to only get the model.
+        - The default is that if it's None then return values from the args field.
     """
     # - get model the empty model from the hps for the cons for the model
-    if model_option == '5CNN_opt_as_model_for_few_shot_sl':
+    model_option: str = args.model_option if model_option is None else model_option
+    if model_option == "None":
+        # pass
+        args.model, args.model_hps = None, None
+    elif model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs':  # resnet12_rfs for backward compat
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
@@ -136,11 +172,15 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         args.model, args.model_hps = cnn4_cifarsfs(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
-    args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)
+    if model_option is not None:
+        args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)
 
     # - get optimizer
     opt_option: str = args.opt_option if opt_option is None else opt_option
-    if opt_option == 'AdafactorDefaultFair':
+    if opt_option == 'None':
+        # pass
+        args.opt, args.opt_hps = None, None
+    elif opt_option == 'AdafactorDefaultFair':
         args.opt, args.opt_hps = get_default_adafactor_opt_fairseq_and_hps_dict(args.model, **opt_hps)
     elif opt_option == 'Adam_rfs_cifarfs':
         from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_rfs_cifarfs
@@ -174,6 +214,17 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     else:
         raise ValueError(f'Scheduler option is invalid: got {scheduler_option=}')
     return args.model, args.opt, args.scheduler
+
+
+def load_model_ckpt(args: Namespace,
+                    path_to_checkpoint: Optional[str] = None,
+                    ) -> nn.Module:
+    base_model, _, _ = load_model_optimizer_scheduler_from_ckpt(args, path_to_checkpoint,
+                                                                load_model=True,
+                                                                load_opt=False,
+                                                                load_scheduler=False)
+    assert args.model is base_model
+    return base_model
 
 
 def meta_learning_type(args: Namespace) -> bool:
