@@ -171,3 +171,64 @@ def parse_args_meta_learning() -> Namespace:
     # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
     load_cluster_jobids_to(args)
     return args
+
+
+# def parse_option_rfs():
+#     """
+#
+#     ref: https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/eval_fewshot.py#L24
+#     """
+#     from models import model_dict, model_pool
+#     from models.util import create_model
+#
+#     hostname = socket.gethostname()
+#
+#     parser = argparse.ArgumentParser('argument for training')
+#
+#     # load pretrained model
+#     parser.add_argument('--model', type=str, default='resnet12', choices=model_pool)
+#     parser.add_argument('--model_path', type=str, default=None, help='absolute path to .pth model')
+#
+#     # dataset
+#     parser.add_argument('--dataset', type=str, default='miniImageNet', choices=['miniImageNet', 'tieredImageNet',
+#                                                                                 'CIFAR-FS', 'FC100'])
+#     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
+#
+#     # meta setting
+#     parser.add_argument('--n_test_runs', type=int, default=600, metavar='N',
+#                         help='Number of test runs')
+#     parser.add_argument('--n_ways', type=int, default=5, metavar='N',
+#                         help='Number of classes for doing each classification run')
+#     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
+#                         help='Number of shots in test')
+#     parser.add_argument('--n_queries', type=int, default=15, metavar='N',
+#                         help='Number of query in test')
+#     parser.add_argument('--n_aug_support_samples', default=5, type=int,
+#                         help='The number of augmented samples for each meta test sample')
+#     parser.add_argument('--data_root', type=str, default='data', metavar='N',
+#                         help='Root dataset')
+#     parser.add_argument('--num_workers', type=int, default=3, metavar='N',
+#                         help='Number of workers for dataloader')
+#     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
+#                         help='Size of test batch)')
+#
+#     opt = parser.parse_args()
+#
+#     if 'trainval' in opt.model_path:
+#         opt.use_trainval = True
+#     else:
+#         opt.use_trainval = False
+#
+#     # set the path according to the environment
+#     if hostname.startswith('visiongpu'):
+#         opt.data_root = '/data/vision/phillipi/rep-learn/{}'.format(opt.dataset)
+#         opt.data_aug = True
+#     elif hostname.startswith('instance'):
+#         opt.data_root = '/mnt/globalssd/fewshot/{}'.format(opt.dataset)
+#         opt.data_aug = True
+#     elif opt.data_root != 'data':
+#         opt.data_aug = True
+#     else:
+#         raise NotImplementedError('server invalid: {}'.format(hostname))
+#
+#     return opt

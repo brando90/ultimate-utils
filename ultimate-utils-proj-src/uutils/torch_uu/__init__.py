@@ -459,6 +459,16 @@ def norm(f: nn.Module, l: int = 2, detach: bool = False):
     return lp_norm(f, p=l, detach=detach)
 
 
+def normalize(x: Tensor) -> Tensor:
+    """
+    Normalizes to unit circle.
+
+    From rfs: original code: https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/eval/meta_eval.py#L27
+    """
+    norm = x.pow(2).sum(1, keepdim=True).pow(1. / 2)
+    out = x.div(norm)
+    return out
+
 def check_two_models_equal(model1, model2):
     '''
     Checks if two models are equal.

@@ -19,11 +19,20 @@ from uutils.logger import Logger
 # import automl.child_models.learner_from_opt_as_few_shot_paper.Learner
 
 # https://github.com/WangYueFt/rfs/blob/master/eval/meta_eval.py
-from uutils.torch_uu import r2_score_from_torch, process_meta_batch, tensorify
+from uutils.torch_uu import r2_score_from_torch, process_meta_batch, tensorify, normalize
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval, \
     mean_confidence_interval
 from uutils.torch_uu.models import getattr_model
 
+# import torch
+# from sklearn import metrics
+# from sklearn.svm import SVC, LinearSVC
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.ensemble import RandomForestClassifier
+#
+# from sklearn.pipeline import make_pipeline
+# from sklearn.preprocessing import StandardScaler
 
 class FitFinalLayer(nn.Module):
 
@@ -38,7 +47,10 @@ class FitFinalLayer(nn.Module):
         self.target_type = target_type
         self.classifier = classifier
 
-    def forward(self, batch, training: bool = True):
+    def forward(self, batch,
+                training: bool = True,
+                is_norm: bool = False,
+                ):
         """
         training true since we want BN to use batch statistics (and not cheat, etc)
         """
@@ -52,6 +64,11 @@ class FitFinalLayer(nn.Module):
             self.base_model.train() if training else self.base_model.eval()
             spt_embeddings_t = self.get_embedding(spt_x_t, self.base_model).detach()
             qry_embeddings_t = self.get_embedding(qry_x_t, self.base_model).detach()
+
+            if is_norm:
+                spt_embeddings_t = normalize(spt_embeddings_t)
+                qry_embeddings_t = normalize(qry_embeddings_t)
+
             if self.target_type == 'classification':
                 spt_embeddings_t = spt_embeddings_t.view(spt_embeddings_t.size(0), -1).cpu().numpy()
                 qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
@@ -67,17 +84,38 @@ class FitFinalLayer(nn.Module):
 
                 # Predict using adapted final layer with qrt set
                 if self.classifier == 'LR':
-                    clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000,
+                    # note C=1.0 **IS** the defualt, same with penalty
+                    # clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000,
+                    #                          multi_class='multinomial')
+                    # original rfs (using original incase API changes defaults)
+                    clf = LogisticRegression(penalty='l2',
+                                             random_state=0,
+                                             C=1.0,
+                                             solver='lbfgs',
+                                             max_iter=1000,
                                              multi_class='multinomial')
                     clf.fit(spt_embeddings_t, spt_y_t)
                     query_y_pred_t = clf.predict(qry_embeddings_t)
                     query_y_probs_t = clf.predict_proba(qry_embeddings_t)
+                elif self.classifier == 'SVM':
+                    # clf = make_pipeline(StandardScaler(), SVC(gamma='auto',
+                    #                                           C=1,
+                    #                                           kernel='linear',
+                    #                                           decision_function_shape='ovr'))
+                    # clf.fit(support_features, support_ys)
+                    # query_ys_pred = clf.predict(query_features)
+                    raise ValueError(f'Not tested {self.classifier}')
                 elif self.classifier == 'NN':
                     query_y_pred_t = NN(spt_embeddings_t, spt_y_t, qry_embeddings_t)
                     raise ValueError(f'Not tested {self.classifier}')
                 elif self.classifier == 'Cosine':
                     query_y_pred_t = Cosine(spt_embeddings_t, spt_y_t, qry_embeddings_t)
                     raise ValueError(f'Not tested {self.classifier}')
+                elif self.classifier == 'Proto':
+                    # query_ys_pred = Proto(support_features, support_ys, query_features, opt)
+                    raise ValueError(f'Not tested {self.classifier}')
+                else:
+                    raise NotImplementedError(f'classifier not supported: {self.classifier}')
                 # acc
                 qry_loss_t = log_loss(qry_y_t, query_y_probs_t)
                 qry_acc_t = metrics.accuracy_score(query_y_pred_t, qry_y_t)
@@ -252,6 +290,17 @@ def Cosine(support, support_ys, query):
     pred = [support_ys[idx] for idx in max_idx]
     return pred
 
+def Proto(support, support_ys, query, opt):
+    """Protonet classifier"""
+    nc = support.shape[-1]
+    support = np.reshape(support, (-1, 1, opt.n_ways, opt.n_shots, nc))
+    support = support.mean(axis=3)
+    batch_size = support.shape[0]
+    query = np.reshape(query, (batch_size, -1, 1, nc))
+    logits = - ((query - support) ** 2).sum(-1)
+    pred = np.argmax(logits, axis=-1)
+    pred = np.reshape(pred, (-1,))
+    return pred
 
 # - tests
 
