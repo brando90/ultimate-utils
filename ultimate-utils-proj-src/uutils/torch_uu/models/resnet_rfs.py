@@ -192,19 +192,19 @@ class ResNet(nn.Module):
         self.num_classes = num_classes
         if self.num_classes > 0:
             self.cls = nn.Linear(640, self.num_classes)
-            self.classifier = self.cls
-
-    @property
-    def classifier(self):
-        assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
-        return self.cls
-
-    @classifier.setter
-    def classifier(self, new_classifier):
-        assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
-        self.cls = new_classifier
-        self.classifier = new_classifier
-        assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
+    #         self.classifier = self.cls
+    #
+    # @property
+    # def classifier(self):
+    #     assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
+    #     return self.cls
+    #
+    # @classifier.setter
+    # def classifier(self, new_classifier):
+    #     assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
+    #     self.cls = new_classifier
+    #     self.classifier = new_classifier
+    #     assert self.cls is self.classifier, f'The classifier and cls layer should be the same object!'
 
     def _make_layer(self, block, n_block, planes, stride=1, drop_rate=0.0, drop_block=False, block_size=1):
         downsample = None
