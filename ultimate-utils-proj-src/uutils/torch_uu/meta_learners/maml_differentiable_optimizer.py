@@ -474,6 +474,7 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
     for t in range(meta_batch_size):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         # - Inner Loop Adaptation
+        # st()
         fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(meta_learner.base_model,
                                                                         inner_opt,
                                                                         spt_x_t, spt_y_t,

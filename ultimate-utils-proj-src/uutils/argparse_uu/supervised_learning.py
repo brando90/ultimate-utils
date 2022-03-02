@@ -136,6 +136,8 @@ def parse_args_standard_sl() -> Namespace:
 
     # - parse arguments
     args: Namespace = parser.parse_args()
+    args.criterion = args.loss
+    assert args.criterion is args.loss
     # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
     load_cluster_jobids_to(args)
     return args

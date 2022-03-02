@@ -30,7 +30,9 @@ def get_meta_learning_dataloader(args: Namespace) -> dict:
             args.dataloaders = get_torchmeta_sinusoid_dataloaders(args)
             raise NotImplementedError
         elif args.data_option == 'rfs_meta_learning_miniimagenet':
-
+            from uutils.torch_uu.dataloaders.meta_learning.rfs_meta_learning_data_loaders import \
+                get_rfs_meta_learning_mi_dataloader
+            args.dataloaders = get_rfs_meta_learning_mi_dataloader(args)
         else:
             raise ValueError(f'Not such task: {args.data_path}')
         return args.dataloaders

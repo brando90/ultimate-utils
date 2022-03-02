@@ -34,6 +34,9 @@ from uutils.torch_uu.models import getattr_model
 # from sklearn.pipeline import make_pipeline
 # from sklearn.preprocessing import StandardScaler
 
+from pdb import set_trace as st, set_trace
+
+
 class FitFinalLayer(nn.Module):
 
     def __init__(self,
@@ -74,6 +77,8 @@ class FitFinalLayer(nn.Module):
                 qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
                 spt_y_t = spt_y_t.view(-1).cpu().numpy()
                 qry_y_t = qry_y_t.view(-1).cpu().numpy()
+                set_trace()
+                print(f'{spt_embeddings_t.size()=}')
 
                 # Inner-Adapt final layer with spt set
                 mdl = LogisticRegression(random_state=0,

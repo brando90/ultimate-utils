@@ -165,9 +165,13 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--k_shots', type=int, default=5, help="")
     parser.add_argument('--k_eval', type=int, default=15, help="")
     parser.add_argument('--n_cls', type=int, default=5, help="")
+    parser.add_argument('--n_aug_support_samples', type=int, default=1,
+                        help="The puzzling rfs increase in support examples")
 
     # - parse arguments
     args = parser.parse_args()
+    args.criterion = args.loss
+    assert args.criterion is args.loss
     # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
     load_cluster_jobids_to(args)
     return args
