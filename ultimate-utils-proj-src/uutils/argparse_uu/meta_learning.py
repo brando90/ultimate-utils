@@ -164,7 +164,7 @@ def parse_args_meta_learning() -> Namespace:
     # - meta-learner specific
     parser.add_argument('--k_shots', type=int, default=5, help="")
     parser.add_argument('--k_eval', type=int, default=15, help="")
-    parser.add_argument('--n_cls', type=int, default=5, help="")
+    parser.add_argument('--n_cls', type=int, default=5, help="")  # n_ways
     parser.add_argument('--n_aug_support_samples', type=int, default=1,
                         help="The puzzling rfs increase in support examples")
 

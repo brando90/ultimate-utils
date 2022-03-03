@@ -12,7 +12,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
-from uutils.torch_uu.distributed import move_to_ddp, move_model_to_dist_device_or_serial_device
+from uutils.torch_uu.distributed import move_model_to_dist_device_or_serial_device
 from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
 from uutils.torch_uu.optim_uu.adafactor_uu import get_default_adafactor_opt_fairseq_and_hps_dict, \
     get_default_adafactor_scheduler_fairseq_and_hps_dict

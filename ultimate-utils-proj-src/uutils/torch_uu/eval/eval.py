@@ -54,8 +54,8 @@ def meta_eval(args: Namespace,
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
     # rfs meta-loader
-    import uutils
-    if isinstance(dataloaders['val'].dataset, uutils.torch_uu.dataset.rfs_mini_imagenet.MetaImageNet):
+    from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
+    if isinstance(dataloaders['val'].dataset, MetaImageNet):
         eval_loader = dataloaders[split]
         if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
             return tensor(-1), tensor(-1), tensor(-1), tensor(-1)
@@ -65,6 +65,7 @@ def meta_eval(args: Namespace,
     # else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))
+        # print(batch['train'][0].size())
         # batch: Any = next(iter(dataloaders['test']))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci

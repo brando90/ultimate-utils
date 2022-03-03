@@ -430,14 +430,17 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
 
 
 def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model: nn.Module, force: bool = False):
-    if not hasattr(args, 'dist_option'):  # for backwards compatibility, default try to do ddp or just serial to device
+    if not hasattr(args, 'dist_option'):
+        # for backwards compatibility, default try to do ddp or just serial to device
         model = move_model_to_ddp(rank, args, model, force)
     else:
         if args.dist_option == 'ddp':
             model = move_model_to_ddp(rank, args, model, force)
         elif args.dist_option == 'l2l_dist':
             # based on https://github.com/learnables/learn2learn/issues/263
-            model = model.to(args.device)
+            model = model.to(args.device)  # this works for serial and parallel (my guess, just moves to proc's device)
+        elif is_running_serially(args.rank):
+            model = move_model_to_ddp(rank, args, model, force)
         else:
             raise ValueError(f'Not a valid way to move a model to (dist) device: {args.dist_option=}')
     return model
@@ -578,6 +581,14 @@ def get_model_from_ddp(mdl: Union[nn.Module, DistributedDataParallel]) -> nn.Mod
         return mdl.module
     else:
         return mdl
+
+
+def get_local_rank() -> int:
+    try:
+        local_rank: int = int(os.environ["LOCAL_RANK"])
+    except:
+        local_rank: int = -1
+    return local_rank
 
 
 # -- tests

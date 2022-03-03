@@ -76,6 +76,7 @@ def save_for_supervised_learning(args: Namespace,
                     },
                    pickle_module=pickle,
                    f=args.log_root / ckpt_filename)
+    return
 
 # todo - make a folder for it in models uutils and put this at the bottom
 # def load_model_resnet12_rfs(args: Namespace) -> nn.Module:

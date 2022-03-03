@@ -195,6 +195,7 @@ def _meta_eval_test():
     args: Namespace = Namespace(num_workers=0)
     args.data_root = '~/data/miniImageNet_rfs/miniImageNet'
     args.data_root = Path(args.data_root).expanduser()
+    args.data_path = args.data_root
     args.data_aug = True
     args.n_ways = 5
     args.n_shots = 5
@@ -203,6 +204,11 @@ def _meta_eval_test():
     args.n_test_runs = 600  # <- this value might be the reason their CI are smaller than mine, though root grow is slow
     args.n_aug_support_samples = 1
     # args.n_aug_support_samples = 5
+
+    args.n_cls = args.n_ways
+    args.k_shots = args.n_shots
+    args.k_eval = args.n_queries
+    args.batch_size_eval = args.n_test_runs
 
     # - get rfs meta-loaders
     metaloaders: dict = get_rfs_meta_learning_mi_dataloader(args)

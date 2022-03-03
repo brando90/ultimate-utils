@@ -136,7 +136,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     """"""
     # torch.autograd.set_detect_anomaly(True)
     print('Starting training!')
-    meta_batch_size: int = max(args.batch_size // args.world_size, 2)
+    meta_batch_size: int = args.batch_size // args.world_size
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
     meta_learner.train() if training else meta_learner.eval()
@@ -150,18 +150,21 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
 
-        # - Average the accumulated gradients and optimize
-        # outer_opt.step()
+        # - Grad clip  (optional)
         gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-        for p in meta_learner.parameters():
-            p.grad.data.mul_(1.0 / meta_batch_size)
+
+        # - Opt Step - Average the accumulated gradients and optimize
+        from uutils.torch_uu.distributed import is_running_parallel
+        if is_running_parallel(args.rank):
+            for p in meta_learner.parameters():
+                p.grad.data.mul_(1.0 / meta_batch_size)
         outer_opt.step()  # averages gradients across all workers
 
-        # - scheduler
+        # - Scheduler
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
             scheduler_step(args, scheduler)
 
-        # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+        # - Convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
         halt: bool = check_halt(args)
 
         # - go to next it & before that check if we should halt

@@ -156,6 +156,8 @@ class MetaImageNet(ImageNet):
 
         support_xs = support_xs.reshape((-1, height, width, channel))
         if self.n_aug_support_samples > 1:
+            # Construct an array by repeating A the number of times given by reps. https://numpy.org/doc/stable/reference/generated/numpy.tile.html
+            # really puzzling....why is this here? to help LR optimize (giving more examples but the labels are the same...)
             support_xs = np.tile(support_xs, (self.n_aug_support_samples, 1, 1, 1))
             support_ys = np.tile(support_ys.reshape((-1,)), (self.n_aug_support_samples))
         support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
