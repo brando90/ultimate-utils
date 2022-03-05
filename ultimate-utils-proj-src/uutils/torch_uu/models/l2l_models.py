@@ -62,7 +62,7 @@ class CNN4(torch.nn.Module):
             max_pool=True,
             embedding_size=None,
     ):
-        super(CNN4, self).__init__()
+        super().__init__()
         if embedding_size is None:
             embedding_size = 25 * hidden_size
         self.features = CNN4Backbone(
@@ -95,6 +95,7 @@ class CNN4(torch.nn.Module):
     def cls(self, new_cls):
         self.classifier = new_cls
 
+
 # - tests
 
 def wider_net_test():
@@ -106,6 +107,20 @@ def wider_net_test():
     print(y.size())
 
 
+def _reproduce_bug():
+    model, _ = cnn4_cifarsfs(ways=64, hidden_size=1024, embedding_size=1024 * 4)
+    model.cls = model.classifier
+    print(model)
+
+    x = torch.randn(8, 3, 32, 32)
+    y = model(x)
+    print(y)
+    print(y.size())
+    y.sum().backward()
+    print()
+
+
 if __name__ == '__main__':
-    wider_net_test()
+    # wider_net_test()
+    _reproduce_bug()
     print('Done\a')
