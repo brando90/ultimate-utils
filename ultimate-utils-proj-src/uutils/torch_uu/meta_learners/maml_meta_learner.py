@@ -331,6 +331,7 @@ def forward(meta_learner,
         meta_losses.append(loss)
         meta_accs.append(acc)
     assert len(meta_losses) == meta_batch_size
+    assert len(meta_accs) == meta_batch_size
     meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
     meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
@@ -371,7 +372,7 @@ class MAMLMetaLearnerL2L(nn.Module):
             - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
             - https://github.com/tristandeleu/pytorch-maml/issues/19
         """
-        meta_batch_size: int = self.args.batch_size // self.args.world_size
+        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
                                                                  args=self.args,
                                                                  task_dataset=task_dataset,  # eg args.tasksets.train
@@ -383,7 +384,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
     def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
-        meta_batch_size: int = self.args.batch_size_eval // self.args.world_size
+        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
                                                                  args=self.args,
                                                                  task_dataset=task_dataset,  # eg args.tasksets.train
