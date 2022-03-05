@@ -1518,6 +1518,9 @@ def tensorify(lst):
 
     :return: nested list D
     """
+    # nothing to be done if it's already a tensor
+    if type(lst) == torch.Tensor:
+        return lst
     # base case, if the current list is not nested anymore, make it into tensor
     if type(lst) != list:
         # if it's a float or a tensor already (the single element)
