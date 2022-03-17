@@ -70,6 +70,17 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option =='n_way_gaussians' :
+        from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import get_tasksets
+        args.tasksets: BenchmarkTasksets = get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval, #k shots for meta-train, k eval for meta-validaton/eval
+            train_ways=args.n_classes,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_classes,
+            #root=args.data_path, #No need for datafile
+            #data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
+        )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
