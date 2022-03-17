@@ -6,7 +6,6 @@ import torch
 from learn2learn.vision.models import CNN4Backbone, maml_init_
 from torch import nn
 
-
 def cnn4_cifarsfs(ways: int,
                   hidden_size=64,
                   embedding_size=64 * 4,
@@ -27,8 +26,8 @@ class CNN4(torch.nn.Module):
 
     **Description**
 
-    The convolutional network commonly used for MiniImagenet, as described by Ravi et Larochelle, 2017.
 
+    The convolutional network commonly used for MiniImagenet, as described by Ravi et Larochelle, 2017.
     This network assumes inputs of shapes (3, 84, 84).
 
     Instantiate `CNN4Backbone` if you only need the feature extractor.
@@ -76,8 +75,8 @@ class CNN4(torch.nn.Module):
             embedding_size,
             output_size,
             bias=True,
-        )
-        maml_init_(self.classifier)
+        )#is this for the transfer learning stuff/probing the second-to-last layer?
+        maml_init_(self.classifier)#random xaiver uniform initialization
         self.hidden_size = hidden_size
 
     def forward(self, x):
