@@ -249,7 +249,7 @@ class MiniGaussiannet(data.Dataset):
             classes = 16
 
         # Rho controls the spread of the class distribution (usually <1)
-        rho = 0.3
+        rho = 0.1
 
         # Sample distribution of class from N(mu_B, sigma_B)
         task_dist = dist.Normal(mu_B * torch.ones(classes), sigma_B * torch.ones(classes))
@@ -257,11 +257,16 @@ class MiniGaussiannet(data.Dataset):
         class_mus = task_dist.sample()
         class_sigmas = torch.abs(rho * task_dist.sample())
 
-        for c in range(classes):
+        #Add a permutation to the classes, e.g. [0,1,2,3,4] => [4,0,1,2,3]
+        for c in np.random.permutation(classes):#range(classes):
+            class_dist = dist.Normal(class_mus[c], class_sigmas[c])
             for sample in range(samples_per_class):
-                self.y.append(c)
+                self.y.append(float(c))
+                self.x.append(class_dist.sample().numpy().reshape(-1,1,1))
+
+                #self.y.append(float(c))
                 # Sample from N(mu_class, sigma_class)
-                self.x.append(np.random.normal(class_mus[c], class_sigmas[c]))
+                #self.x.append(np.random.normal(class_mus[c], class_sigmas[c]))
 
         self.x = np.array(self.x)
         self.y = np.array(self.y)

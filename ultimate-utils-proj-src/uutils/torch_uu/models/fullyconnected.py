@@ -37,11 +37,12 @@ class FNN3(torch.nn.Module):
         )'''
 
         self.features = nn.Sequential(
+            nn.Flatten(),
             nn.Linear(input_size, hidden_layer1),
-            # nn.BatchNorm1d(hidden_layer1),
+            nn.BatchNorm1d(hidden_layer1),
             nn.ReLU(),
             nn.Linear(hidden_layer1, hidden_layer2),
-            # nn.BatchNorm1d(hidden_layer2),
+            nn.BatchNorm1d(hidden_layer2),
             nn.ReLU(),
         )
         self.classifier = nn.Linear(hidden_layer2, output_size)
@@ -49,7 +50,7 @@ class FNN3(torch.nn.Module):
 
 
     def forward(self, x):
-        x = x.view(-1,1).float()
+        #x = x.view(-1,1).float()
         x = self.features(x)
         x = self.classifier(x)
         return x#.float()
