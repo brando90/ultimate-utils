@@ -56,12 +56,16 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
                                              load_model: bool = True,
                                              load_opt: bool = True,
                                              load_scheduler: bool = True,
+
                                              ) -> tuple[nn.Module, Optimizer, _LRScheduler]:
     """
     Load the most important things: model, optimizer, scheduler.
 
     Ref:
         - standard way: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+
+    Horrrible hack comment:
+    - I accidentally did .cls = new_cls in SL code
     """
     # - prepare args from ckpt
     # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))

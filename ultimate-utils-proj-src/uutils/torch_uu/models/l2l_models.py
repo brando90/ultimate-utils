@@ -88,7 +88,6 @@ class CNN4(torch.nn.Module):
             bias=True,
         )
         maml_init_(self.classifier)
-        # self.cls = self.classifier
         self.hidden_size = hidden_size
         assert self.cls is self.classifier
 
@@ -104,16 +103,11 @@ class CNN4(torch.nn.Module):
     # think there are parameters not being trained, although self.cls is self.classifier should return True
     @property
     def cls(self):
-        # assert getattr(self, 'cls') is self.classifier  # idk why this one goes into a recursion death but the other doesn't
         return self.classifier
 
     @cls.setter
     def cls(self, new_cls):
-        # assert getattr(self, 'cls') is self.classifier
         self.classifier = new_cls
-        # setattr(self, 'cls', self.classifier)
-        # self.cls = self.classifier  # CALLS THIS FUNCTION RECURSIVELY AND KILLS YOUR PROGRAM
-        # assert getattr(self, 'cls') is self.classifier
 
 
 # - tests
