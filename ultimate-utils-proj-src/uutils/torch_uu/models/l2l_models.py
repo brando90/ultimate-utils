@@ -1,5 +1,15 @@
 """
 learn2learn examples: https://github.com/learnables/learn2learn/tree/master/examples/vision
+
+4CNN l2l hack:
+- since SL needs to have 64 output units, I unfortuantely, hardcoded mdl.cls = nn.Linear(...,64).
+doing the setter does change the .classifier to point to the right thing (see the setter decorator, also, I asserted
+the pointer to be the same and the weight norms, they are the same even print(self.model) shows a mismatch in out_features)
+and doing .X = Y in pytorch populates the modules. So now all models will have a .classifier and .cls modules. This
+means that the state_dict of the model will have both. So when you create the model you will either need to make sure
+to repalce_final_layer so that .model.cls = nn.Linear(...) is set and thus when you load the checkpoint both the
+cls and classifier layer will be registered by pytorch.
+Or (which is the solution I choose) is to have self.cls = self.classifier in the init so that it always has both modules.
 """
 import learn2learn
 import torch
@@ -78,22 +88,32 @@ class CNN4(torch.nn.Module):
             bias=True,
         )
         maml_init_(self.classifier)
+        # self.cls = self.classifier
         self.hidden_size = hidden_size
+        assert self.cls is self.classifier
 
     def forward(self, x):
+        assert self.cls is self.classifier  # this just makes sure that we are running final layer we want
         x = self.features(x)
         x = self.classifier(x)
+        assert self.cls is self.classifier  # this just makes sure that we are running final layer we want
         return x
 
+    # https://stackoverflow.com/questions/71654047/how-does-one-get-the-object-in-a-python-object-inside-a-decorated-function-witho
     # unfortuantely needed, otherwise pytorch seems to add it to the modules and then if it does a backwards pass it
     # think there are parameters not being trained, although self.cls is self.classifier should return True
     @property
     def cls(self):
+        # assert getattr(self, 'cls') is self.classifier  # idk why this one goes into a recursion death but the other doesn't
         return self.classifier
 
     @cls.setter
     def cls(self, new_cls):
+        # assert getattr(self, 'cls') is self.classifier
         self.classifier = new_cls
+        # setattr(self, 'cls', self.classifier)
+        # self.cls = self.classifier  # CALLS THIS FUNCTION RECURSIVELY AND KILLS YOUR PROGRAM
+        # assert getattr(self, 'cls') is self.classifier
 
 
 # - tests
