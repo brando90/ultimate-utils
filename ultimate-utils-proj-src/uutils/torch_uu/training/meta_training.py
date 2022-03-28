@@ -137,6 +137,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     # torch.autograd.set_detect_anomaly(True)
     print('Starting training!')
     meta_batch_size: int = args.batch_size // args.world_size
+    #print(args.batch_size, meta_batch_size, "args and Meta BatchSize")
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
     meta_learner.train() if training else meta_learner.eval()
