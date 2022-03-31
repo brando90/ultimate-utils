@@ -31,8 +31,10 @@ def gaussian_1d_tasksets(
         train_samples=10,
         test_ways=5,
         test_samples=10,
-        mu_B = 10,
-        sigma_B = 10,
+        mu_m_B = 10,
+        sigma_m_B = 10,
+        mu_s_B = 3,
+        sigma_s_B = 1,
         root='~/data',
         data_augmentation=None,
         device=None,
@@ -61,9 +63,9 @@ def gaussian_1d_tasksets(
         download=True,
     )'''
 
-    train_dataset = MiniGaussiannet(mode = 'train', mu_B = mu_B, sigma_B=sigma_B)
-    valid_dataset = MiniGaussiannet(mode='validation',mu_B = mu_B, sigma_B=sigma_B)
-    test_dataset = MiniGaussiannet(mode='test',mu_B = mu_B, sigma_B=sigma_B)
+    train_dataset = MiniGaussiannet(mode = 'train', mu_m_B = mu_m_B, sigma_m_B=sigma_m_B, mu_s_B = mu_s_B, sigma_s_B = sigma_s_B)
+    valid_dataset = MiniGaussiannet(mode='validation',mu_m_B = mu_m_B, sigma_m_B=sigma_m_B, mu_s_B = mu_s_B, sigma_s_B = sigma_s_B)
+    test_dataset = MiniGaussiannet(mode='test',mu_m_B = mu_m_B, sigma_m_B=sigma_m_B,mu_s_B = mu_s_B,  sigma_s_B = sigma_s_B)
 
     if device is None:
         train_dataset.transform = train_data_transforms
@@ -156,8 +158,10 @@ def get_tasksets(
         train_samples=10,
         test_ways=5,
         test_samples=10,
-        mu_B = 10,
-        sigma_B = 10,
+        mu_m_B=10,
+        sigma_m_B=10,
+        mu_s_B=3,
+        sigma_s_B=1,
         num_tasks=-1,
         #root='~/data',
         device=None,
@@ -203,8 +207,10 @@ def get_tasksets(
                                            train_samples=train_samples,
                                            test_ways=test_ways,
                                            test_samples=test_samples,
-                                           mu_B = mu_B,
-                                           sigma_B = sigma_B,
+                                           mu_m_B=mu_m_B,
+                                           sigma_m_B=sigma_m_B,
+                                           mu_s_B=mu_s_B,
+                                           sigma_s_B=sigma_s_B,
                                            #root=root,
                                            device=device,
                                            **kwargs)
@@ -230,7 +236,7 @@ def get_tasksets(
     return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
 
 class MiniGaussiannet(data.Dataset):
-    def __init__(self, mode='train', mu_B=10, sigma_B=10):
+    def __init__(self, mode='train', mu_m_B=10, sigma_m_B=10, mu_s_B=3, sigma_s_B=1):
         """
         Create the three datasets based on mode
         If mode = train, we want to create 64 classes * 600 samples/class
@@ -240,22 +246,22 @@ class MiniGaussiannet(data.Dataset):
         self.x = []
         self.y = []
 
-        samples_per_class = 600
+        #3/30 changed to 1000 samples/class, 100/100/100 class split
+        #TODO: need to save into pickle file. But is it feasible to do so (maybe pick a few (mu_m_B, sigma_m_B, mu_s_B, sigma_s_B) ordered quadruples to do so?)
+        samples_per_class = 1000
         if (mode == 'train'):
-            classes = 64
+            classes = 100#64
         elif (mode == 'test'):
-            classes = 20
+            classes = 100#20
         else:
-            classes = 16
+            classes = 100#16
 
-        # Rho controls the spread of the class distribution (usually <1)
-        rho = 0.1
+        # Sample mu_class ~ N(mu_m_B, sigma_m_B), sigma_class ~ N(mu_s_B, sigma_s_B)
+        task_mu_dist = dist.Normal(mu_m_B * torch.ones(classes), sigma_m_B * torch.ones(classes))
+        task_sigma_dist = dist.Normal(mu_s_B * torch.ones(classes), sigma_s_B * torch.ones(classes))
 
-        # Sample distribution of class from N(mu_B, sigma_B)
-        task_dist = dist.Normal(mu_B * torch.ones(classes), sigma_B * torch.ones(classes))
-
-        class_mus = task_dist.sample()
-        class_sigmas = torch.abs(rho * task_dist.sample())
+        class_mus = task_mu_dist.sample()
+        class_sigmas = torch.abs(task_sigma_dist.sample()) #torch.abs(rho * task_dist.sample())
 
         #Add a permutation to the classes, e.g. [0,1,2,3,4] => [4,0,1,2,3]
         for c in np.random.permutation(classes):#range(classes):
