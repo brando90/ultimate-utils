@@ -37,7 +37,7 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--num_epochs', type=int, default=-1)
     parser.add_argument('--num_its', type=int, default=-1)
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
-    parser.add_argument('--train_convergence_patience', type=int, default=5, help='How long to wait for converge of'
+    parser.add_argument('--train_convergence_patience', type=int, default=10, help='How long to wait for converge of'
                                                                                   'training. Note this code should'
                                                                                   'be saving the validation ckpt'
                                                                                   'so you are automatically doing '
