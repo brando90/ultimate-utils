@@ -15,6 +15,7 @@ For a more fine-grained control over tasks and data, we recommend directly using
 import os
 import numpy as np
 import learn2learn as l2l
+import pickle
 
 from collections import namedtuple
 
@@ -31,8 +32,10 @@ def gaussian_1d_tasksets(
         train_samples=10,
         test_ways=5,
         test_samples=10,
-        mu_B = 10,
-        sigma_B = 10,
+        mu_m_B = 10,
+        sigma_m_B = 10,
+        mu_s_B = 3,
+        sigma_s_B = 1,
         root='~/data',
         data_augmentation=None,
         device=None,
@@ -61,9 +64,9 @@ def gaussian_1d_tasksets(
         download=True,
     )'''
 
-    train_dataset = MiniGaussiannet(mode = 'train', mu_B = mu_B, sigma_B=sigma_B)
-    valid_dataset = MiniGaussiannet(mode='validation',mu_B = mu_B, sigma_B=sigma_B)
-    test_dataset = MiniGaussiannet(mode='test',mu_B = mu_B, sigma_B=sigma_B)
+    train_dataset = MiniGaussiannet(mode = 'train', mu_m_B = mu_m_B, sigma_m_B=sigma_m_B, mu_s_B = mu_s_B, sigma_s_B = sigma_s_B)
+    valid_dataset = MiniGaussiannet(mode='validation',mu_m_B = mu_m_B, sigma_m_B=sigma_m_B, mu_s_B = mu_s_B, sigma_s_B = sigma_s_B)
+    test_dataset = MiniGaussiannet(mode='test',mu_m_B = mu_m_B, sigma_m_B=sigma_m_B,mu_s_B = mu_s_B,  sigma_s_B = sigma_s_B)
 
     if device is None:
         train_dataset.transform = train_data_transforms
@@ -156,8 +159,10 @@ def get_tasksets(
         train_samples=10,
         test_ways=5,
         test_samples=10,
-        mu_B = 10,
-        sigma_B = 10,
+        mu_m_B=10,
+        sigma_m_B=10,
+        mu_s_B=3,
+        sigma_s_B=1,
         num_tasks=-1,
         #root='~/data',
         device=None,
@@ -203,8 +208,10 @@ def get_tasksets(
                                            train_samples=train_samples,
                                            test_ways=test_ways,
                                            test_samples=test_samples,
-                                           mu_B = mu_B,
-                                           sigma_B = sigma_B,
+                                           mu_m_B=mu_m_B,
+                                           sigma_m_B=sigma_m_B,
+                                           mu_s_B=mu_s_B,
+                                           sigma_s_B=sigma_s_B,
                                            #root=root,
                                            device=device,
                                            **kwargs)
@@ -230,48 +237,50 @@ def get_tasksets(
     return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
 
 class MiniGaussiannet(data.Dataset):
-    def __init__(self, mode='train', mu_B=10, sigma_B=10):
+    def __init__(self, mode='train', mu_m_B=10, sigma_m_B=10, mu_s_B=3, sigma_s_B=1):
         """
-        Create the three datasets based on mode
-        If mode = train, we want to create 64 classes * 600 samples/class
-        If mode = test, we create  20 classes * 600 samples/class
-        If mode = val, we create 16 classes * 600 samples/class
+        Create the three datasets, each datasets have 100 classes and 1000 samples perclass
         """
-        self.x = []
-        self.y = []
 
-        samples_per_class = 600
-        if (mode == 'train'):
-            classes = 64
-        elif (mode == 'test'):
-            classes = 20
-        else:
-            classes = 16
+        #4/5 added pickle functionality
+        dataset_filename = os.path.join(os.path.expanduser('~'),"1d_gaussian_datasets/1d_gaussian_%s_%s_%s_%s.pkl" % (mu_m_B,sigma_m_B,mu_s_B,sigma_s_B))
+        print("Trying to find pickled 1d gaussian dataset for current benchmark...")
+        try:
+            self.x, self.y = pickle.load(open(dataset_filename,"rb"))
+            print("Found pickled dataset for benchmark!")
+        except (OSError, IOError) as e:
+            print("Didn't find pickled dataset for benchmark. Creating one...")
+            self.x = []
+            self.y = []
 
-        # Rho controls the spread of the class distribution (usually <1)
-        rho = 0.1
+            #3/30 changed to 1000 samples/class, 100/100/100 class split
+            samples_per_class = 1000#600#1000
+            if (mode == 'train'):
+                classes = 100#64#100#
+            elif (mode == 'test'):
+                classes = 100#20#100#
+            else:
+                classes = 100#16 ##
 
-        # Sample distribution of class from N(mu_B, sigma_B)
-        task_dist = dist.Normal(mu_B * torch.ones(classes), sigma_B * torch.ones(classes))
+            # Sample mu_class ~ N(mu_m_B, sigma_m_B), sigma_class ~ N(mu_s_B, sigma_s_B)
+            task_mu_dist = dist.Normal(mu_m_B * torch.ones(classes), sigma_m_B * torch.ones(classes))
+            task_sigma_dist = dist.Normal(mu_s_B * torch.ones(classes), sigma_s_B * torch.ones(classes))
 
-        class_mus = task_dist.sample()
-        class_sigmas = torch.abs(rho * task_dist.sample())
+            class_mus = task_mu_dist.sample()
+            class_sigmas = torch.abs(task_sigma_dist.sample()) #torch.abs(rho * task_dist.sample())
 
-        #Add a permutation to the classes, e.g. [0,1,2,3,4] => [4,0,1,2,3]
-        for c in np.random.permutation(classes):#range(classes):
-            class_dist = dist.Normal(class_mus[c], class_sigmas[c])
-            for sample in range(samples_per_class):
-                self.y.append(float(c))
-                self.x.append(class_dist.sample().numpy().reshape(-1,1,1))
+            #Add a permutation to the classes, e.g. [0,1,2,3,4] => [4,0,1,2,3]
+            for c in np.random.permutation(classes):#range(classes):
+                class_dist = dist.Normal(class_mus[c], class_sigmas[c])
+                for sample in range(samples_per_class):
+                    self.y.append(float(c))
+                    self.x.append(class_dist.sample().numpy().reshape(-1,1,1))
 
-                #self.y.append(float(c))
-                # Sample from N(mu_class, sigma_class)
-                #self.x.append(np.random.normal(class_mus[c], class_sigmas[c]))
+            self.x = np.array(self.x)
+            self.y = np.array(self.y)
+            pickle.dump((self.x, self.y), open(dataset_filename,"wb"))
+            print("Sucessfully created pickled dataset for benchmark!")
 
-        self.x = np.array(self.x)
-        self.y = np.array(self.y)
-        #print(self.x)
-        #print(self.y)
 
     def __getitem__(self, idx):
         data = self.x[idx]

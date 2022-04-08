@@ -78,8 +78,10 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             train_ways=args.n_classes,
             test_samples=args.k_shots + args.k_eval,
             test_ways=args.n_classes,
-            mu_B=args.mu_B,
-            sigma_B=args.sigma_B
+            mu_m_B=args.mu_m_B,
+            sigma_m_B=args.sigma_m_B,
+            mu_s_B=args.mu_s_B,
+            sigma_s_B=args.sigma_s_B,
             #root=args.data_path, #No need for datafile
             #data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
