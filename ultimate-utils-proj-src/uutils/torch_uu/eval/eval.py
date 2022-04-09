@@ -1,3 +1,4 @@
+import logging
 from argparse import Namespace
 from typing import Any, Optional
 
@@ -39,19 +40,25 @@ def meta_eval(args: Namespace,
               model: Agent,
               dataloaders,
               split: str = 'val',
+              # training: bool = True,
               training: bool = False,
               ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
 
     assumption: your agent has the .forward interface needed
     """
+    if training == False:
+        print(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
+        logging.warning(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
     # - hack for l2l using other maml for 5CNN1024
     from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
     if isinstance(dataloaders[split], TorchMetaDLforL2L):
         # dl needs to be in "torchmeta format"
         batch: any = next(iter(dataloaders[split]))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
+        # val_loss, val_loss_ci, val_acc, val_acc_ci = model(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
+    # assert False
     # - l2l
     if hasattr(args, 'tasksets'):
         # hack for l2l
