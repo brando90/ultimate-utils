@@ -252,17 +252,20 @@ class MAMLMetaLearner(nn.Module):
 def fast_adapt(args: Namespace,
                task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
     """"""
+    # [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
     data, labels = task_data
     data, labels = data.to(device), labels.to(device)
 
     # Separate data into adaptation/evalutation sets
+    # [n*(k+k_eval), C, H, W] -> [n*k, C, H, W] and [n*k_eval, C, H, W]
     (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
         data=data,
         labels=labels,
-        shots=shots,
+        shots=shots,  # shots to separate to two data sets of size shots and k_eval
     )
-    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} ' \
-                                                 f'but got {support_data.size(0)}'
+    # checks coordinate 0 of size() [n*(k + k_eval), C, H, W]
+    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} but got {support_data.size(0)}'
+    # checks [n*k] since these are the labels
     assert support_labels.size() == torch.Size([shots * ways])
 
     # Adapt the model
@@ -309,8 +312,7 @@ def forward(meta_learner,
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
     meta_losses, meta_accs = [], []
     for task in range(meta_batch_size):
-        # - Sample (train, val, test) task as a data set (later create the spt, qry from it)
-        # task_data = args.tasksets.train.sample()
+        # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
         task_data: list = task_dataset.sample()  # data, labels
 
         # -- Inner Loop Adaptation

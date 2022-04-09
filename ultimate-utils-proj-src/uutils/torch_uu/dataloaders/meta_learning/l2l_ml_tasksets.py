@@ -70,7 +70,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
-    elif args.data_option =='n_way_gaussians' :
+    elif args.data_option == 'n_way_gaussians':
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import get_tasksets
         args.tasksets: BenchmarkTasksets = get_tasksets(
             args.data_option,

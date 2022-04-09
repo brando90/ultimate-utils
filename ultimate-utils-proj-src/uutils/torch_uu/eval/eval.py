@@ -45,6 +45,15 @@ def meta_eval(args: Namespace,
 
     assumption: your agent has the .forward interface needed
     """
+    # hack for l2l using other maml for 5CNN1024
+    if hasattr(args, 'force_l2l_dataset_but_use_torchmeta_dl_format'):
+        # dl needs to be in "torchmeta format"
+        from uutils.torch_uu.dataloaders.meta_learning.common import get_batch_from_l2l_into_torchmeta_format
+        split: str = 'validation' if split == 'val' else split
+        task_dataset: TaskDataset = getattr(args.tasksets, split)
+        batch: any = get_batch_from_l2l_into_torchmeta_format()
+        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
+        return val_loss, val_loss_ci, val_acc, val_acc_ci
     # l2l
     if hasattr(args, 'tasksets'):
         # hack for l2l
@@ -59,7 +68,7 @@ def meta_eval(args: Namespace,
         eval_loader = dataloaders[split]
         if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
             return tensor(-1), tensor(-1), tensor(-1), tensor(-1)
-        batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batrch_from_rfs_metaloader(eval_loader)
+        batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
     # else normal data loader (so torchmeta, or normal pytorch data loaders)
@@ -74,7 +83,7 @@ def meta_eval(args: Namespace,
                          f'dict or something else (perhaps train, val, test loader type objects).')
 
 
-def get_meta_batrch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+def get_meta_batch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
     notes:
     - you don't need to call cuda here cuz the agents/meta-learners should be doing that on their own.
