@@ -403,6 +403,8 @@ def get_recommended_batch_size_cifarfs_resnet12rfs_body(safety_margin: int = 10)
 
         recommended_meta_batch_size = ceil( max([s*C_l/H_l*W_l for l in 1...L]) )
 
+    but really it's better just to choose one layer and do it for that layer. I recommend rep layer.
+
     Note: if the cls is present then we need B >= s*D since the output for it has shape
     [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
     s being used for B = 13 is
