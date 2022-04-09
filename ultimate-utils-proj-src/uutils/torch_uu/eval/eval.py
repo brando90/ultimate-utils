@@ -45,16 +45,14 @@ def meta_eval(args: Namespace,
 
     assumption: your agent has the .forward interface needed
     """
-    # hack for l2l using other maml for 5CNN1024
-    if hasattr(args, 'force_l2l_dataset_but_use_torchmeta_dl_format'):
+    # - hack for l2l using other maml for 5CNN1024
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
+    if isinstance(dataloaders[split], TorchMetaDLforL2L):
         # dl needs to be in "torchmeta format"
-        from uutils.torch_uu.dataloaders.meta_learning.common import get_batch_from_l2l_into_torchmeta_format
-        split: str = 'validation' if split == 'val' else split
-        task_dataset: TaskDataset = getattr(args.tasksets, split)
-        batch: any = get_batch_from_l2l_into_torchmeta_format()
+        batch: any = next(iter(dataloaders[split]))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
-    # l2l
+    # - l2l
     if hasattr(args, 'tasksets'):
         # hack for l2l
         from learn2learn.data import TaskDataset
@@ -62,7 +60,7 @@ def meta_eval(args: Namespace,
         task_dataset: TaskDataset = getattr(args.tasksets, split)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
-    # rfs meta-loader
+    # - rfs meta-loader
     from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
     if isinstance(dataloaders['val'].dataset, MetaImageNet):
         eval_loader = dataloaders[split]
@@ -71,7 +69,7 @@ def meta_eval(args: Namespace,
         batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
-    # else normal data loader (so torchmeta, or normal pytorch data loaders)
+    # - else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))
         # print(batch['train'][0].size())

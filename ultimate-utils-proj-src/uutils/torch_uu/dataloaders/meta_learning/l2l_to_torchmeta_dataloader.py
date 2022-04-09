@@ -17,6 +17,8 @@ from uutils.torch_uu import tensorify
 from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
 
 from learn2learn.vision.benchmarks import BenchmarkTasksets
+import learn2learn
+from learn2learn.data import TaskDataset
 
 
 def get_standard_pytorch_dataset_from_l2l_taskdatasets(tasksets: BenchmarkTasksets, split: str) -> Dataset:
@@ -87,8 +89,6 @@ class TorchMetaDLforL2L:
             - recall a task is a "mini (spt) classification data set" e.g. with n classes and k shots (and it's qry set too)
             - torchmeta example: https://tristandeleu.github.io/pytorch-meta/
         """
-        import learn2learn
-        from learn2learn.data import TaskDataset
 
         shots = self.args.k_shots
         ways = self.args.n_classes
