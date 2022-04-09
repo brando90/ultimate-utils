@@ -74,6 +74,9 @@ def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, num
     """
     Returns (tuple of) the mean and confidence interval for given data.
     Data is a np.arrayable iterable.
+    e.g.
+        - list of floats [1.0, 1.3, ...]
+        - tensor of size [B]
 
     ref:
         - https://stackoverflow.com/a/15034143/1601580
@@ -120,7 +123,7 @@ def torch_compute_confidence_interval_classification(data: Tensor,
 
 def torch_compute_confidence_interval(data: Tensor,
                                       confidence: float = 0.95
-                                      ) -> Tensor:
+                                      ) -> tuple[Tensor, Tensor]:
     """
     Computes the confidence interval for a given survey of a data set.
     """

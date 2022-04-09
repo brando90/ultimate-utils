@@ -256,6 +256,7 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
     else:
         raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
     # invariant: we have spt_x, spt_y, qry_x, qry_y after here
+    # assert len(spt_x.size()) == 4, f'Expected [B,n*k, C,H,W]}'  cant actually put this due to regression tasks :(
 
     # - convert to float32 single float, somehow the ckpts seem to need this for sinusoid
     if hasattr(args, 'to_single_float_float32'):
