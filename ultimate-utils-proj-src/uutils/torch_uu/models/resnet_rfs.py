@@ -394,6 +394,57 @@ def get_resnet_rfs_model_cifarfs_fc100(model_opt: str,
                                              num_classes=num_classes)
     return model, model_hps
 
+def get_recommended_batch_size_mi_resnet12rfs_body(safety_margin: int = 10):
+    """
+    Loop through all the layers and computing the largest B recommnded. Most likely the H*W that is
+    smallest will win but formally just compute B_l for each layer that your computing sims/dists and then choose
+    the largest B_l. That ceil(B_l) satisfies B*H*W >= s*C for all l since it's the largest.
+
+        recommended_meta_batch_size = ceil( max([s*C_l/H_l*W_l for l in 1...L]) )
+
+    but really it's better just to choose one layer and do it for that layer. I recommend rep layer.
+
+    Note: if the cls is present then we need B >= s*D since the output for it has shape
+    [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
+    s being used for B = 13 is
+        s_cls = B/n_c = 13/5 =
+        s_cls = B/n_c = 26/5 =
+    """
+    # todo - WARNING: these numbers are for MI and 5CNN
+    if safety_margin == 10:
+        # -- satisfies B >= (10*32)/(5**2) = 12.8 for this specific 5CNN model
+        return 13
+    elif safety_margin == 20:
+        # -- satisfies B >= (20*32)/(5**2) = 25.6 for this specific 5CNN model
+        return 26
+    else:
+        raise ValueError(f'Not implemented for value: {safety_margin=}')
+
+
+def get_recommended_batch_size_mi_resnet12rfs_head(safety_margin: int = 10):
+    """
+    The cls/head is present then we need B >= s*D since the output for it has shape
+    [B, n_c] where n_c so we need, B >= 10*5 = 50 for example.
+    s being used for B = 13 is
+        s_cls = B/n_c = 13/5 = 2.6
+        s_cls = B/n_c = 26/5 = 5.2
+    note:
+        - for meta-learning we have [B, M, n_cls] and the meta-batch dim is not part of this calculation
+        since the distance is calculate per task (i.e. per [M, n_cls] layer_matrix). So we use M in the
+        previous reasoning for B. So we do:
+            s(M, n_cls) = M/n_cls
+        and we want to choose M s.t. s(M, n_cls) >= 5, 10 or 20.
+    """
+    # todo - WARNING: these numbers are for MI and 5CNN
+    if safety_margin == 10:
+        # -- satisfies B >= (10*32)/(5**2) = 12.8 for this specific 5CNN model
+        return 50
+    elif safety_margin == 20:
+        # -- satisfies B >= (20*32)/(5**2) = 25.6 for this specific 5CNN model
+        return 100
+    else:
+        raise ValueError(f'Not implemented for value: {safety_margin=}')
+
 
 def get_recommended_batch_size_cifarfs_resnet12rfs_body(safety_margin: int = 10):
     """
@@ -429,6 +480,12 @@ def get_recommended_batch_size_cifarfs_resnet12rfs_head(safety_margin: int = 10)
     s being used for B = 13 is
         s_cls = B/n_c = 13/5 = 2.6
         s_cls = B/n_c = 26/5 = 5.2
+    note:
+        - for meta-learning we have [B, M, n_cls] and the meta-batch dim is not part of this calculation
+        since the distance is calculate per task (i.e. per [M, n_cls] layer_matrix). So we use M in the
+        previous reasoning for B. So we do:
+            s(M, n_cls) = M/n_cls
+        and we want to choose M s.t. s(M, n_cls) >= 5, 10 or 20.
     """
     # todo - WARNING: these numbers are for MI and 5CNN
     if safety_margin == 10:
