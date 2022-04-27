@@ -37,7 +37,12 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 def get_sl_dataloader(args: Namespace) -> dict:
     args.data_path.expanduser()
     data_path: str = str(args.data_path)
-    if 'mnist' in data_path:
+    if args.data_option == 'n_way_gaussians_sl':  # next 3 lines added by Patrick 4/26/22. Everything else shouldn't have changed
+        from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import \
+            get_train_valid_test_data_loader_1d_gaussian
+        args.dataloaders: dict = get_train_valid_test_data_loader_1d_gaussian(args)
+        print("Got n_way_gaussians_sl as dataset")
+    elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
         assert args.n_cls == 10

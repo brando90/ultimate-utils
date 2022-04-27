@@ -4,10 +4,10 @@ from torchvision.transforms import (Compose, ToPILImage, ToTensor, RandomCrop, R
 import torch
 import torch.distributions as dist
 import torch.utils.data as data
+from argparse import Namespace
 """
 The benchmark modules provides a convenient interface to standardized benchmarks in the literature.
 It provides train/validation/test TaskDatasets and TaskTransforms for pre-defined datasets.
-
 This utility is useful for researchers to compare new algorithms against existing benchmarks.
 For a more fine-grained control over tasks and data, we recommend directly using `l2l.data.TaskDataset` and `l2l.data.TaskTransforms`.
 """
@@ -138,11 +138,8 @@ _TASKSETS = {
 def list_tasksets():
     """
     [[Source]](https://github.com/learnables/learn2learn/blob/master/learn2learn/vision/benchmarks/)
-
     **Description**
-
     Returns a list of all available benchmarks.
-
     **Example**
     ~~~python
     for name in l2l.vision.benchmarks.list_tasksets():
@@ -170,17 +167,12 @@ def get_tasksets(
 ):
     """
     [[Source]](https://github.com/learnables/learn2learn/blob/master/learn2learn/vision/benchmarks/)
-
     **Description**
-
     Returns the tasksets for a particular benchmark, using literature standard data and task transformations.
-
     The returned object is a namedtuple with attributes `train`, `validation`, `test` which
     correspond to their respective TaskDatasets.
     See `examples/vision/maml_miniimagenet.py` for an example.
-
     **Arguments**
-
     * **name** (str) - The name of the benchmark. Full list in `list_tasksets()`.
     * **train_ways** (int, *optional*, default=5) - The number of classes per train tasks.
     * **train_samples** (int, *optional*, default=10) - The number of samples per train tasks.
@@ -189,14 +181,11 @@ def get_tasksets(
     * **num_tasks** (int, *optional*, default=-1) - The number of tasks in each TaskDataset.
     * **device** (torch.Device, *optional*, default=None) - If not None, tasksets are loaded as Tensors on `device`.
     * **root** (str, *optional*, default='~/data') - Where the data is stored.
-
     **Example**
     ~~~python
     train_tasks, validation_tasks, test_tasks = l2l.vision.benchmarks.get_tasksets('omniglot')
     batch = train_tasks.sample()
-
     or:
-
     tasksets = l2l.vision.benchmarks.get_tasksets('omniglot')
     batch = tasksets.train.sample()
     ~~~
@@ -236,6 +225,76 @@ def get_tasksets(
     )
     return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
 
+# See https://github.com/learnables/learn2learn/issues/301
+'''
+def get_train_valid_test_data_loader_1d_gaussian(args: Namespace) -> dict:
+    """
+    Trying to do:
+        type(args.tasksets.train.dataset.dataset)
+        <class 'learn2learn.vision.datasets.cifarfs.CIFARFS'>
+
+    :param tasksets:
+    :param split:
+    :return:
+    """
+    tasksets =   get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval, #k shots for meta-train, k eval for meta-validaton/eval
+            train_ways=args.n_classes,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_classes,
+            mu_m_B=args.mu_m_B,
+            sigma_m_B=args.sigma_m_B,
+            mu_s_B=args.mu_s_B,
+            sigma_s_B=args.sigma_s_B,
+            #root=args.data_path, #No need for datafile
+            #data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
+        )
+
+    # trying to do something like: args.tasksets.train
+    taskset: TaskDataset = getattr(tasksets, split)
+    # trying to do: type(args.tasksets.train.dataset.dataset)
+    dataset: MetaDataset = taskset.dataset
+    dataset: Dataset = dataset.dataset
+    # assert isinstance(args.tasksets.train.dataset.dataset, Dataset)
+    # asser isinstance(tasksets.train.dataset.dataset, Dataset)
+    assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
+    return dataset
+'''
+
+def get_train_valid_test_data_loader_1d_gaussian(args: Namespace) -> dict:
+    train_dataset = MiniGaussiannet(mode='train', mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B,
+                                    sigma_s_B=args.sigma_s_B)
+    valid_dataset = MiniGaussiannet(mode='validation', mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B,
+                                    sigma_s_B=args.sigma_s_B)
+    test_dataset = MiniGaussiannet(mode='test', mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B, sigma_s_B=args.sigma_s_B)
+
+    #---DEBUG---#
+    #from torch.utils.data import RandomSampler
+    #train_sampler = RandomSampler(train_dataset)
+    #print(train_sampler)
+    #----------#
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=train_dataset,
+        val_dataset=valid_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    _, test_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=test_dataset,
+        val_dataset=test_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    print(dataloaders)
+    return dataloaders
+
 class MiniGaussiannet(data.Dataset):
     def __init__(self, mode='train', mu_m_B=10, sigma_m_B=10, mu_s_B=3, sigma_s_B=1):
         """
@@ -243,7 +302,8 @@ class MiniGaussiannet(data.Dataset):
         """
 
         #4/5 added pickle functionality
-        dataset_filename = os.path.join(os.path.expanduser('~'),"1d_gaussian_datasets/1d_gaussian_%s_%s_%s_%s.pkl" % (mu_m_B,sigma_m_B,mu_s_B,sigma_s_B))
+        #TODO: Tell brando I made a HUGE HUGE realization - forgot to specify the mode! so basically we were training/testing/validating on the SAME dataset?!?!?!
+        dataset_filename = os.path.join(os.path.expanduser('~'),"1d_gaussian_datasets/1d_gaussian_%s_%s_%s_%s_%s.pkl" % (mode, mu_m_B,sigma_m_B,mu_s_B,sigma_s_B))
         print("Trying to find pickled 1d gaussian dataset for current benchmark...")
         try:
             self.x, self.y = pickle.load(open(dataset_filename,"rb"))
@@ -254,13 +314,13 @@ class MiniGaussiannet(data.Dataset):
             self.y = []
 
             #3/30 changed to 1000 samples/class, 100/100/100 class split
-            samples_per_class = 1000#600#1000
+            samples_per_class = 1000#10#1000#600#1000
             if (mode == 'train'):
-                classes = 100#64#100#
+                classes = 100#10#100#64#100#
             elif (mode == 'test'):
-                classes = 100#20#100#
+                classes = 100#10#100#20#100#
             else:
-                classes = 100#16 ##
+                classes = 100#10#100#16 ##
 
             # Sample mu_class ~ N(mu_m_B, sigma_m_B), sigma_class ~ N(mu_s_B, sigma_s_B)
             task_mu_dist = dist.Normal(mu_m_B * torch.ones(classes), sigma_m_B * torch.ones(classes))
@@ -273,11 +333,12 @@ class MiniGaussiannet(data.Dataset):
             for c in np.random.permutation(classes):#range(classes):
                 class_dist = dist.Normal(class_mus[c], class_sigmas[c])
                 for sample in range(samples_per_class):
-                    self.y.append(float(c))
+                    self.y.append(c) #float(c) previously
                     self.x.append(class_dist.sample().numpy().reshape(-1,1,1))
 
             self.x = np.array(self.x)
-            self.y = np.array(self.y)
+            self.y = np.array(self.y,dtype=np.int64)
+            print("self.y", self.y)
             pickle.dump((self.x, self.y), open(dataset_filename,"wb"))
             print("Sucessfully created pickled dataset for benchmark!")
 
@@ -300,6 +361,14 @@ def gaussian_taskset_test():
 
     args = Namespace(k_shots=5, k_eval=15, n_classes=5)
     args.data_option = 'n_way_gaussians'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
+    args.mu_m_B = 0 #doesn't matter
+    args.sigma_m_B = 10
+    args.mu_s_B = 2
+    args.sigma_s_B = 1
+    args.batch_size = 8  # 256 #TODO: How to make learning rates fair comparison with MAML?
+    args.batch_size_eval = 8  # TODO: WHat is this?
+    args.world_size = 1
+    args.rank = -1
     #args.data_path = Path('~/data/l2l_data/').expanduser()
     #args.data_augmentation = 'lee2019'
 
@@ -309,6 +378,10 @@ def gaussian_taskset_test():
         train_ways=args.n_classes,
         test_samples=args.k_shots + args.k_eval,
         test_ways=args.n_classes,
+        mu_m_B=args.mu_m_B,
+        sigma_m_B=args.sigma_m_B,
+        mu_s_B=args.mu_s_B,
+        sigma_s_B=args.sigma_s_B
         #root=args.data_path,
         #data_augmentation=args.data_augmentation,
     )
@@ -317,6 +390,13 @@ def gaussian_taskset_test():
     print(args.tasksets.train.sample())
     print(args.tasksets.test.sample())
     print(args.tasksets.validation.sample())
+
+    #Try sampling from the USL dataloader
+    usl_1d_gaussian_tasks = get_train_valid_test_data_loader_1d_gaussian(args)
+    #Need to make this not float!
+    print(next(iter(usl_1d_gaussian_tasks['train'])))
+    print(next(iter(usl_1d_gaussian_tasks['test'])))
+    print(next(iter(usl_1d_gaussian_tasks['val'])))
 
 
 if __name__ == '__main__':
