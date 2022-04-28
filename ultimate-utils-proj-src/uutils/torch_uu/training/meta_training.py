@@ -30,6 +30,16 @@ def meta_train_agent_fit_single_batch(args: Namespace,
     """
     Train for a single batch
     """
+    # get one fixed meta-batch
+    # if hasattr(args, 'tasksets'):
+    #    # hack for l2l
+    #    from learn2learn.data import TaskDataset
+    #    split: str = 'validation' if split == 'val' else split
+    #    task_dataset: TaskDataset = getattr(args.tasksets, split)
+    #    assert self.args.batch_size >= 1
+    #    train_batch = : list = [task_dataset.sample() for task_num in range(self.args.batch_size)]
+    #    # train_batch = task_dataset
+    # else:  # torchmeta which has same api as pytorch dataloader
     train_batch: Any = next(iter(dataloaders['train']))
 
     # first batch
