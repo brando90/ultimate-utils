@@ -46,6 +46,7 @@ from typing import Union, Any, Optional
 
 import progressbar
 
+from uutils.logging_uu.wandb_logging.common import setup_wand
 from uutils.torch_uu.distributed import find_free_port
 
 
@@ -212,30 +213,7 @@ def setup_args_for_experiment(args: Namespace,
 
     # - wandb
     if hasattr(args, 'log_to_wandb'):
-        if args.log_to_wandb:
-            # os.environ['WANDB_MODE'] = 'offline'
-            import wandb
-            print(f'{wandb=}')
-
-            # - set run name
-            run_name = None
-            # if in cluster use the cluster jobid
-            if hasattr(args, 'jobid'):
-                # if jobid is actually set to something, use that as the run name in ui
-                if args.jobid is not None and args.jobid != -1 and str(args.jobid) != '-1':
-                    run_name: str = f'jobid={str(args.jobid)}'
-            # if user gives run_name overwrite that always
-            if hasattr(args, 'run_name'):
-                run_name = args.run_name if args.run_name is not None else run_name
-            args.run_name = run_name
-            # - initialize wandb
-            wandb.init(project=args.wandb_project,
-                       entity=args.wandb_entity,
-                       # job_type="job_type",
-                       name=run_name,
-                       group=args.experiment_name
-                       )
-            wandb.config.update(args)
+        setup_wand(args)
     else:
         pass
 
