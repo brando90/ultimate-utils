@@ -2,6 +2,7 @@ from argparse import Namespace
 
 import wandb
 
+
 def setup_wand(args: Namespace):
     if hasattr(args, 'log_to_wandb'):  # this is here again on purpose to be extra safe
         if args.log_to_wandb:
@@ -29,12 +30,20 @@ def setup_wand(args: Namespace):
                        )
             wandb.config.update(args)
 
+
 def cleanup_wandb(args: Namespace):
     from uutils.torch_uu.distributed import is_lead_worker
 
-    if is_lead_worker(args.rank) and args.log_to_wandb:
+    if hasattr(args, 'log_to_wandb'):
         import wandb
-        wandb.finish()
+        if args.log_to_wandb:
+            if hasattr(args, 'rank'):
+                if is_lead_worker(args.rank):
+                    wandb.finish()
+                else:
+                    pass  # nop, your not lead so you shouldn't need to close wandb
+        else:
+            wandb.finish()
 
 
 def log_2_wanbd(it: int,
