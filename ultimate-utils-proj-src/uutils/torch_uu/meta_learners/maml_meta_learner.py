@@ -204,12 +204,9 @@ class MAMLMetaLearner(nn.Module):
 
         Decision for BN/eval:
         - during training always use .train().
-        During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
-        Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
 
         ref for BN/eval:
             - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-            - https://github.com/tristandeleu/pytorch-maml/issues/19
         """
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
@@ -226,10 +223,11 @@ class MAMLMetaLearner(nn.Module):
 
     def eval(self):
         """
-        Note: decision is to do .train() for all meta-train and .eval() for meta-eval.
+        Note: decision is to do .train() for all meta-train
         ref: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
         """
         logging.warning('Calling MAML.eval(). You sure you want to do that?')
+        raise ValueError(f'Why are you calling eval during meta-learning? Read: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du')
         self.base_model.eval()
 
     def parameters(self):
