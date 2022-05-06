@@ -236,4 +236,5 @@ def setup_wandb(args: Namespace):
                    name=run_name,
                    group=args.experiment_name
                    )
+        # - save args in wandb
         wandb.config.update(args)
