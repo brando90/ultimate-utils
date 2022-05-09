@@ -78,6 +78,12 @@ def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, num
         - list of floats [1.0, 1.3, ...]
         - tensor of size [B]
 
+    note:
+        - I think it can be used for any data because of the following: I believe it is fine since the mean and
+        std are calculated for general numeric data and the z_p/t_p value only takes in the confidence interval and
+        data size, so it is independent of assumptions on the distribution of data. So yes I think this equation can be
+        used for both classification and regression.
+
     ref:
         - https://stackoverflow.com/a/15034143/1601580
         - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/eval/meta_eval.py#L19
