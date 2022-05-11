@@ -36,6 +36,9 @@ def mini_imagenet_tasksets(
         **kwargs,
 ):
     """Tasksets for mini-ImageNet benchmarks."""
+    raise ValueError(f'Do not use. We are only going to use the l2l version. They use the test set transformations'
+                      f'on the test set and I agree that is a good idea. See discussion: '
+                      f'https://github.com/learnables/learn2learn/issues/309')
     if data_augmentation is None:
         train_data_transforms = None
         test_data_transforms = None

@@ -343,6 +343,9 @@ def fc100_tasksets(
         device=None,
         **kwargs,
 ):
+    raise ValueError(f'Do not use. We are only going to use the l2l version. They use the test set transformations'
+                      f'on the test set and I agree that is a good idea. See discussion: '
+                      f'https://github.com/learnables/learn2learn/issues/309')
     import torchvision as tv
     import learn2learn as l2l
 

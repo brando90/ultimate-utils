@@ -35,6 +35,7 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
+    # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
     if args.data_option == 'cifarfs':
         args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
@@ -47,9 +48,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert False, 'Doesnt use data augmentation, dont use! Its here just to demo how to use l2l.'
         raise NotImplemented
     elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
-        # args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
-        from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
-        args.tasksets: BenchmarkTasksets = get_tasksets(
+        # from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
+        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option.split('_')[0],  # returns cifarfs or fc100 string
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -60,8 +60,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         )
     elif args.data_option == 'mini-imagenet' or args.data_option == 'tiered-imagenet':
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
-        from uutils.torch_uu.dataloaders.meta_learning.l2l_mini_imagenet_mi import get_tasksets
-        args.tasksets: BenchmarkTasksets = get_tasksets(
+        # from uutils.torch_uu.dataloaders.meta_learning.l2l_mini_imagenet_mi import get_tasksets
+        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -74,7 +74,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import get_tasksets
         args.tasksets: BenchmarkTasksets = get_tasksets(
             args.data_option,
-            train_samples=args.k_shots + args.k_eval, #k shots for meta-train, k eval for meta-validaton/eval
+            train_samples=args.k_shots + args.k_eval,  # k shots for meta-train, k eval for meta-validaton/eval
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
             test_ways=args.n_cls,
@@ -82,8 +82,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             sigma_m_B=args.sigma_m_B,
             mu_s_B=args.mu_s_B,
             sigma_s_B=args.sigma_s_B,
-            #root=args.data_path, #No need for datafile
-            #data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
+            # root=args.data_path, #No need for datafile
+            # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
