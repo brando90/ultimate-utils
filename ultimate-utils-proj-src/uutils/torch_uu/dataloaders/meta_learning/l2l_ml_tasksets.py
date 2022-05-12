@@ -48,8 +48,9 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert False, 'Doesnt use data augmentation, dont use! Its here just to demo how to use l2l.'
         raise NotImplemented
     elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
-        # from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
-        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+        # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
+        from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
+        args.tasksets: BenchmarkTasksets = get_tasksets(
             args.data_option.split('_')[0],  # returns cifarfs or fc100 string
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -84,6 +85,26 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             sigma_s_B=args.sigma_s_B,
             # root=args.data_path, #No need for datafile
             # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
+        )
+    elif args.data_option == 'hdb1':
+        from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hd1_mi_omniglot_tasksets
+        args.tasksets: BenchmarkTasksets = hd1_mi_omniglot_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'hdb2':
+        from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hd2_cifarfs_omniglot_tasksets
+        args.tasksets: BenchmarkTasksets = hd2_cifarfs_omniglot_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
         )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')

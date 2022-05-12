@@ -239,8 +239,8 @@ def get_rfs_union_sl_dataloader_cifarfs(args: Namespace,
     return dataloaders
 
 
-def get_rfs_union_sl_dataloader_fc100(args: Namespace) -> dict:
-    n_cls = 60
+# def get_rfs_union_sl_dataloader_fc100(args: Namespace) -> dict:
+#     n_cls = 60
 
 
 # -
@@ -272,8 +272,8 @@ def cifarfs_tasksets(
         ])
         test_data_transforms = train_data_transforms
     elif data_augmentation == 'rfs2020':
-        train_data_transforms = get_transform(True)
-        test_data_transforms = get_transform(False)
+        train_data_transforms: list[Callable] = get_transform(augment=True)
+        test_data_transforms: list[Callable] = get_transform(augment=False)
     else:
         raise ('Invalid data_augmentation argument.')
 
@@ -282,7 +282,7 @@ def cifarfs_tasksets(
                                                 mode='train',
                                                 download=True)
     valid_dataset = l2l.vision.datasets.CIFARFS(root=root,
-                                                transform=train_data_transforms,
+                                                transform=test_data_transforms,
                                                 mode='validation',
                                                 download=True)
     test_dataset = l2l.vision.datasets.CIFARFS(root=root,
@@ -343,9 +343,6 @@ def fc100_tasksets(
         device=None,
         **kwargs,
 ):
-    raise ValueError(f'Do not use. We are only going to use the l2l version. They use the test set transformations'
-                      f'on the test set and I agree that is a good idea. See discussion: '
-                      f'https://github.com/learnables/learn2learn/issues/309')
     import torchvision as tv
     import learn2learn as l2l
 
