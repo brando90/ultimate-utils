@@ -174,9 +174,23 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == '4CNN_l2l_cifarfs':
         from uutils.torch_uu.models.l2l_models import cnn4_cifarsfs
         args.model, args.model_hps = cnn4_cifarsfs(**model_hps)
-    elif model_option == '3FNN_5_gaussian': #Added by Patrick 3/14
+    elif model_option == '3FNN_5_gaussian':  #Added by Patrick 3/14
         from uutils.torch_uu.models.fullyconnected import fnn3_gaussian
         args.model, args.model_hps = fnn3_gaussian(**model_hps)
+    elif model_option == 'resnet18_random':
+        from models import get_model
+        from task2vec import ProbeNetwork
+        args.model: ProbeNetwork = get_model('resnet18', pretrained=False, num_classes=args.n_cls)
+        # args.model.cls = args.model.classifier
+        args.model_hps = None  # for now since we can get the model using task2vec idk if we need this
+        raise NotImplementedError
+    elif model_option == 'resnet34_random':
+        from models import get_model
+        from task2vec import ProbeNetwork
+        args.model: ProbeNetwork = get_model('resnet34', pretrained=False, num_classes=args.n_cls)
+        # args.model.cls = args.model.classifier
+        args.model_hps = None  # for now since we can get the model using task2vec idk if we need this
+        raise NotImplementedError
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:

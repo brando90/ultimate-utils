@@ -8,7 +8,8 @@ from task2vec import ProbeNetwork
 
 def get_probe_network(args: Namespace,
 
-                      model_option: Optional[str] = None
+                      model_option: Optional[str] = None,
+                      **model_hps
                       ) -> task2vec.ProbeNetwork:
     """
     Note: a model is not the same as a probe network. Make sure you respect the probe network interface.
