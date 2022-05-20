@@ -1264,7 +1264,7 @@ def load_with_dill(path: str, filename: str, mode='rb') -> Any:
     return python_obj
 
 
-def load_json(path: str, filename: str, mode='r') -> dict:
+def _load_json(path: str, filename: str, mode='r') -> dict:
     from pathlib import Path
     import json
 
@@ -1274,11 +1274,12 @@ def load_json(path: str, filename: str, mode='r') -> dict:
     return data
 
 
-def load_json_path2file(load_json_path2file: str, mode='r') -> dict:
-    from pathlib import Path
+def load_json(load_json_path2file: Union[str, Path], mode: str = 'r') -> dict:
     import json
 
-    load_json_path2file: Path = Path(load_json_path2file).expanduser()
+    if not isinstance(load_json_path2file, Path):
+        load_json_path2file: Path = Path(load_json_path2file)
+    load_json_path2file.expanduser()
     with open(load_json_path2file, mode) as f:
         data: dict = json.load(f)
     return data

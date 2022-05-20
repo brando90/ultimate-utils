@@ -289,28 +289,7 @@ def save_current_plots_and_stats(
 
     tag1 = f'Train loss'
     # tag2 = f'Train accuracy/R2'
-    tag3 = f'Val loss'
-    # if not hasattr(self.args, 'target_type'):
-    #     tag1 = f'Train loss'
-    #     # tag2 = f'Train accuracy/R2'
-    #     tag3 = f'Val loss'
-    #     # tag4 = f'Val accuracy/R2'
-    #     # ylabel_acc = 'Accuracy/R2'
-    #     # raise ValueError(f'Error: args.target_type = {self.args.target_type} not valid.')
-    # elif self.args.target_type == 'regression':
-    #     tag1 = f'Train loss'
-    #     # tag2 = f'Train R2'
-    #     tag3 = f'Val loss'
-    #     # tag4 = f'Val R2'
-    #     # ylabel_acc = 'R2'
-    # elif self.args.target_type == 'classification':
-    #     tag1 = f'Train loss'
-    #     # tag2 = f'Train accuracy'
-    #     tag3 = f'Val loss'
-    #     # tag4 = f'Val accuracy'
-    #     # ylabel_acc = 'Accuracy'
-    # else:
-    #     raise ValueError(f'Not implemented {self.args.target_type}')
+    tag3 = f'Eval loss'
     experiment_stats = uutils.load_json('~/Desktop/paper_figs/logs_Nov23_11-39-21_jobid_438713.iam-pbs/experiment_stats.json')
 
     # - get figure with two axis, loss above and accuracy bellow

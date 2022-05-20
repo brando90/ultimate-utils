@@ -50,9 +50,13 @@ def _plot(x: Array, y: Array, xlabel: str, ylabel: str,
         plt.show()
 
 
-def plot(x: Array, y: Array, xlabel: str, ylabel: str,
-         linewidth: float = 2.0, show: bool = False,
-         save_plot: bool = False, plot_filename: str = 'plot', title: Optional[str] = None,
+def plot(x: Array, y: Array,
+         xlabel: str, ylabel: str,
+         linewidth: float = 2.0,
+         show: bool = False,
+         save_plot: bool = False,
+         plot_filename: str = 'plot',
+         title: Optional[str] = None,
          label: Optional[str] = None,
          y_hline: Optional[float] = None, y_hline_label: Optional[str] = None,
          x_hline: Optional[float] = None, x_hline_label: Optional[str] = None,
