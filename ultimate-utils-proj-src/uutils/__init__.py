@@ -4,6 +4,7 @@ Utils class with useful helper functions
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 """
 import json
+import pickle
 import subprocess
 import time
 
@@ -1257,11 +1258,41 @@ def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> No
         dill.dump(python_obj, f)
 
 
-def load_with_dill(path: str, filename: str, mode='rb') -> Any:
-    path: Path = Path(path).expanduser()
-    with open(path / filename, mode) as f:
+def load_with_dill(path2filename: Union[str, Path], mode='rb') -> Any:
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+    with open(path2filename, mode) as f:
         python_obj = dill.load(f)
     return python_obj
+
+
+def load_with_pickle(path2filename: Union[str, Path], mode='rb') -> Any:
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+    with open(path2filename, mode) as f:
+        python_obj = pickle.load(f)
+    return python_obj
+
+
+def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+    with open(path2filename, mode) as f:
+        import torch
+        python_obj = torch.load(f)
+    return python_obj
+
+
+def load_json(path2filename: Union[str, Path], mode: str = 'r') -> dict:
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+    with open(path2filename, mode) as f:
+        data: dict = json.load(f)
+    return data
 
 
 def _load_json(path: str, filename: str, mode='r') -> dict:
@@ -1274,15 +1305,11 @@ def _load_json(path: str, filename: str, mode='r') -> dict:
     return data
 
 
-def load_json(load_json_path2file: Union[str, Path], mode: str = 'r') -> dict:
-    import json
-
-    if not isinstance(load_json_path2file, Path):
-        load_json_path2file: Path = Path(load_json_path2file)
-    load_json_path2file.expanduser()
-    with open(load_json_path2file, mode) as f:
-        data: dict = json.load(f)
-    return data
+def _load_with_dill(path: str, filename: str, mode='rb') -> Any:
+    path: Path = Path(path).expanduser()
+    with open(path / filename, mode) as f:
+        python_obj = dill.load(f)
+    return python_obj
 
 
 def load_json_list(path: str, filename: str, mode='r') -> list:

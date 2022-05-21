@@ -167,8 +167,55 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
     if show:
         plt.show()
 
+# def pdist(embeddings, distance='cosine') -> np.ndarray:
+#     distance_fn = _DISTANCES[distance]
+#     n = len(embeddings)
+#     distance_matrix = np.zeros([n, n])
+#     if distance != 'asymmetric_kl':
+#         for (i, e1), (j, e2) in itertools.combinations(enumerate(embeddings), 2):
+#             distance_matrix[i, j] = distance_fn(e1, e2)
+#             distance_matrix[j, i] = distance_matrix[i, j]
+#     else:
+#         for (i, e1) in enumerate(embeddings):
+#             for (j, e2) in enumerate(embeddings):
+#                 distance_matrix[i, j] = distance_fn(e1, e2)
+#     return distance_matrix
 
-def save_to_desktop(plot_name: str = 'plot', close: bool = True):
+def plot_distance_matrix(distance_matrix, labels=None, show_plot=True):
+    import seaborn as sns
+    from scipy.cluster.hierarchy import linkage
+    from scipy.spatial.distance import squareform
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    # from task2vec.task_similarity import pdist
+    # distance_matrix = pdist(embeddings, distance=distance)
+    cond_distance_matrix = squareform(distance_matrix, checks=False)
+    linkage_matrix = linkage(cond_distance_matrix, method='complete', optimal_ordering=True)
+    if labels is not None:
+        distance_matrix = pd.DataFrame(distance_matrix, index=labels, columns=labels)
+    sns.clustermap(distance_matrix, row_linkage=linkage_matrix, col_linkage=linkage_matrix, cmap='viridis_r')
+    if show_plot:
+        plt.show()
+
+def plot_distance_matrix_heatmap_only(distance_matrix, labels=None, show_plot=True):
+    import seaborn as sns
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    # from task2vec.task_similarity import pdist
+    # distance_matrix = pdist(embeddings, distance=distance)
+    if labels is not None:
+        distance_matrix = pd.DataFrame(distance_matrix, index=labels, columns=labels)
+    sns.heatmap(distance_matrix, cmap='viridis_r')
+    if show_plot:
+        plt.show()
+
+
+def save_to_desktop(plot_name: str = 'plot',
+                    close: bool = True,
+                    save_png: bool = True,
+                    save_pdf: bool = True,
+                    save_svg: bool = True,
+                    ):
     """
     Assuming you have not called show, saves it to local users desktop as a png, svg & pdf.
 
@@ -177,16 +224,22 @@ def save_to_desktop(plot_name: str = 'plot', close: bool = True):
         - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
     root = Path('~/Desktop').expanduser()
-    plt.savefig(root / f'{plot_name}.png')
-    plt.savefig(root / f'{plot_name}.svg')
-    plt.savefig(root / f'{plot_name}.pdf')
+    if save_png:
+        plt.savefig(root / f'{plot_name}.png')
+    if save_pdf:
+        plt.savefig(root / f'{plot_name}.pdf')
+    if save_svg:
+        plt.savefig(root / f'{plot_name}.svg')
     if close:
-        # plt.clf()
-        # plt.cla()
         plt.close()
 
 
-def save_to_home(plot_name: str = 'plot', close: bool = True):
+def save_to_home(plot_name: str = 'plot',
+                 close: bool = True,
+                 save_png: bool = True,
+                 save_pdf: bool = True,
+                 save_svg: bool = True,
+                 ):
     """
     Assuming you have not called show, saves it to local users desktop as a png, svg & pdf.
 
@@ -195,16 +248,22 @@ def save_to_home(plot_name: str = 'plot', close: bool = True):
         - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
     root = Path('~/').expanduser()
-    plt.savefig(root / f'{plot_name}.png')
-    plt.savefig(root / f'{plot_name}.svg')
-    plt.savefig(root / f'{plot_name}.pdf')
+    if save_png:
+        plt.savefig(root / f'{plot_name}.png')
+    if save_pdf:
+        plt.savefig(root / f'{plot_name}.pdf')
+    if save_svg:
+        plt.savefig(root / f'{plot_name}.svg')
     if close:
-        # plt.clf()
-        # plt.cla()
         plt.close()
 
 
-def save_to(root: Path, plot_name: str = 'plot', close: bool = True):
+def save_to(root: Union[str, Path], plot_name: str = 'plot',
+            close: bool = True,
+            save_png: bool = True,
+            save_pdf: bool = True,
+            save_svg: bool = True,
+            ):
     """
     Assuming there is a plot in display, saves it to local users desktop users desktop as a png, svg & pdf.
 
@@ -212,13 +271,16 @@ def save_to(root: Path, plot_name: str = 'plot', close: bool = True):
         - ref on closing figs after saving: https://stackoverflow.com/questions/741877/how-do-i-tell-matplotlib-that-i-am-done-with-a-plot
         - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
-    root: Path = root.expanduser()
-    plt.savefig(root / f'{plot_name}.png')
-    plt.savefig(root / f'{plot_name}.svg')
-    plt.savefig(root / f'{plot_name}.pdf')
+    if not isinstance(root, Path):
+        root: Path = Path(root).expanduser()
+    root.expanduser()
+    if save_png:
+        plt.savefig(root / f'{plot_name}.png')
+    if save_pdf:
+        plt.savefig(root / f'{plot_name}.pdf')
+    if save_svg:
+        plt.savefig(root / f'{plot_name}.svg')
     if close:
-        # plt.clf()
-        # plt.cla()
         plt.close()
 
 
