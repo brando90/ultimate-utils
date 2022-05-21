@@ -168,34 +168,58 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
         plt.show()
 
 
-def save_to_desktop(plot_name: str = 'plot'):
+def save_to_desktop(plot_name: str = 'plot', close: bool = True):
     """
     Assuming you have not called show, saves it to local users desktop as a png, svg & pdf.
+
+    note:
+        - ref on closing figs after saving: https://stackoverflow.com/questions/741877/how-do-i-tell-matplotlib-that-i-am-done-with-a-plot
+        - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
     root = Path('~/Desktop').expanduser()
     plt.savefig(root / f'{plot_name}.png')
     plt.savefig(root / f'{plot_name}.svg')
     plt.savefig(root / f'{plot_name}.pdf')
+    if close:
+        # plt.clf()
+        # plt.cla()
+        plt.close()
 
 
-def save_to_home(plot_name: str = 'plot'):
+def save_to_home(plot_name: str = 'plot', close: bool = True):
     """
     Assuming you have not called show, saves it to local users desktop as a png, svg & pdf.
+
+    note:
+        - ref on closing figs after saving: https://stackoverflow.com/questions/741877/how-do-i-tell-matplotlib-that-i-am-done-with-a-plot
+        - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
     root = Path('~/').expanduser()
     plt.savefig(root / f'{plot_name}.png')
     plt.savefig(root / f'{plot_name}.svg')
     plt.savefig(root / f'{plot_name}.pdf')
+    if close:
+        # plt.clf()
+        # plt.cla()
+        plt.close()
 
 
-def save_to(root: Path, plot_name: str = 'plot'):
+def save_to(root: Path, plot_name: str = 'plot', close: bool = True):
     """
     Assuming there is a plot in display, saves it to local users desktop users desktop as a png, svg & pdf.
+
+    note:
+        - ref on closing figs after saving: https://stackoverflow.com/questions/741877/how-do-i-tell-matplotlib-that-i-am-done-with-a-plot
+        - clf vs cla https://stackoverflow.com/questions/16661790/difference-between-plt-close-and-plt-clf
     """
     root: Path = root.expanduser()
     plt.savefig(root / f'{plot_name}.png')
     plt.savefig(root / f'{plot_name}.svg')
     plt.savefig(root / f'{plot_name}.pdf')
+    if close:
+        # plt.clf()
+        # plt.cla()
+        plt.close()
 
 
 def draw_veritcal_line(at_x_value: float, start: float, stop: float, num: int = 100, linestyle: str = "--"):
