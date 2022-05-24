@@ -5,7 +5,7 @@ from typing import Optional
 import torch
 from torch import nn
 
-from uutils import load_cluster_jobids_to, load_json_path2file, merge_args
+from uutils import load_cluster_jobids_to, merge_args
 
 
 def parse_args_standard_sl() -> Namespace:
