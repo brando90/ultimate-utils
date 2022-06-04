@@ -60,6 +60,7 @@ def meta_eval(args: Namespace,
         return val_loss, val_loss_ci, val_acc, val_acc_ci
     # assert False
     # - l2l
+    '''
     if hasattr(args, 'tasksets'):
         # hack for l2l
         from learn2learn.data import TaskDataset
@@ -67,6 +68,7 @@ def meta_eval(args: Namespace,
         task_dataset: TaskDataset = getattr(args.tasksets, split)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
+    '''
     # - rfs meta-loader
     from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
     if isinstance(dataloaders['val'].dataset, MetaImageNet):
@@ -78,7 +80,7 @@ def meta_eval(args: Namespace,
         return val_loss, val_loss_ci, val_acc, val_acc_ci
     # - else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
-        batch: Any = next(iter(dataloaders[split]))
+        batch: Any = dataloaders[split].sample()#next(iter(dataloaders[split]))
         # print(batch['train'][0].size())
         # batch: Any = next(iter(dataloaders['test']))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)

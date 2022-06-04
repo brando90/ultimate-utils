@@ -62,7 +62,9 @@ class FNN3(torch.nn.Module):
         )
         self.classifier = nn.Linear(hidden_layers[1], output_size)
         '''
-
+    #@property
+    #def classifier(self):
+    #    return self.classifier
 
 
     def forward(self, x):

@@ -47,6 +47,7 @@ import gc
 import urllib.request
 
 from pprint import pprint
+from learn2learn.data import partition_task
 
 from pdb import set_trace as st
 
@@ -252,7 +253,11 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
     if type(batch) == dict:
         (spt_x, spt_y), (qry_x, qry_y) = batch["train"], batch["test"]
     elif type(batch) == tuple or type(batch) == list:
-        spt_x, spt_y, qry_x, qry_y = batch
+        if(len(batch) ==2):
+            (spt_x, spt_y), (qry_x, qry_y) = partition_task(batch[0],batch[1], shots=args.k_shots) #added by Patrick 5/16
+        else:
+            #print(batch)
+            spt_x, spt_y, qry_x, qry_y = batch
     else:
         raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
     # invariant: we have spt_x, spt_y, qry_x, qry_y after here
@@ -263,6 +268,24 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
         if args.to_single_float_float32:
             spt_x, spt_y, qry_x, qry_y = spt_x.to(torch.float32), spt_y.to(torch.float32), qry_x.to(
                 torch.float32), qry_y.to(torch.float32)
+
+    #Patrick's Hack 5/17
+
+    if((type(batch) == tuple or type(batch) == list) and len(batch) == 2):
+        spt_x_r = torch.unsqueeze(spt_x, 0)
+        spt_x = torch.reshape(spt_x_r, (1, -1, spt_x_r.size(dim=2), spt_x_r.size(dim=3), spt_x_r.size(dim=4)))
+        ##print(spt_x.size())
+        spt_y_r = torch.unsqueeze(spt_y, 0)
+        spt_y = torch.reshape(spt_y_r, (1, -1))
+
+        qry_x_r = torch.unsqueeze(qry_x, 0)
+        qry_x = torch.reshape(qry_x_r, (1, -1, qry_x_r.size(dim=2), qry_x_r.size(dim=3), qry_x_r.size(dim=4)))
+
+        qry_y_r = torch.unsqueeze(qry_y, 0)
+        qry_y = torch.reshape(qry_y_r, (1, -1))
+        #print(qry_y.size())
+
+    # end hack 5/17
     return spt_x.to(args.device), spt_y.to(args.device), qry_x.to(args.device), qry_y.to(args.device)
 
 
