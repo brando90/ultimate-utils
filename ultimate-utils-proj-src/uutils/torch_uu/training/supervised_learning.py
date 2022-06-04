@@ -157,7 +157,6 @@ def train_agent_epochs(args: Namespace,
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
-            #print(batch)
             opt.zero_grad()
             train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass

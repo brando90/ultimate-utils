@@ -22,7 +22,7 @@ def create_default_log_root(args: Namespace):
 
 
 def setup_args_for_experiment(args: Namespace,
-                              num_workers: Optional[int] = -1,
+                              num_workers: Optional[int] = 0,
                               use_tb: bool = False  # not needed anymore since wandb exists
                               ) -> Namespace:
     """
