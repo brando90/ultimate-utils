@@ -2,7 +2,7 @@ from argparse import Namespace
 from typing import Optional
 
 import task2vec
-from models import get_model
+from models import get_model, gaussian_net
 from task2vec import ProbeNetwork
 
 
@@ -33,6 +33,8 @@ def get_probe_network(args: Namespace,
         # probe_network: nn.Module = get_default_learner()
         # probe_network: ProbeNetwork = get_5CNN_random_probe_network()
         raise NotImplementedError
+    elif model_option == '3FNN_5_gaussian':
+        probe_network: ProbeNetwork = gaussian_net(num_classes=args.n_cls)
     else:
         raise ValueError(f'')
 

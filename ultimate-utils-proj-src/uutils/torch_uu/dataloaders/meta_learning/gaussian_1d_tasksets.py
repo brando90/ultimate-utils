@@ -18,6 +18,7 @@ import learn2learn as l2l
 import pickle
 
 from collections import namedtuple
+from torchmeta.transforms import ClassSplitter
 
 
 # from .omniglot_benchmark import omniglot_tasksets
@@ -302,7 +303,6 @@ class MiniGaussiannet(data.Dataset):
         """
 
         #4/5 added pickle functionality
-        #TODO: Tell brando I made a HUGE HUGE realization - forgot to specify the mode! so basically we were training/testing/validating on the SAME dataset?!?!?!
         dataset_filename = os.path.join(os.path.expanduser('~'),"1d_gaussian_datasets/1d_gaussian_%s_%s_%s_%s_%s.pkl" % (mode, mu_m_B,sigma_m_B,mu_s_B,sigma_s_B))
         print("Trying to find pickled 1d gaussian dataset for current benchmark...")
         try:
@@ -354,7 +354,60 @@ class MiniGaussiannet(data.Dataset):
 
 
 # --
+'''
+def gaussian_1d_metadataset(ways=5,shots=10,test_shots=30,mu_m_B=10,sigma_m_B=0,mu_s_B=2,sigma_s_B=1,meta_split='train',shuffle=True):
+    #dataset = klass(folder, num_classes_per_task=ways, **kwargs)
+    dataset = MiniGaussiannet(mode = meta_split, mu_m_B = mu_m_B, sigma_m_B=sigma_m_B, mu_s_B = mu_s_B, sigma_s_B = sigma_s_B)
+    dataset = ClassSplitter(dataset, shuffle=shuffle,
+        num_train_per_class=shots, num_test_per_class=test_shots)
+    #dataset.seed(seed)
 
+    return dataset
+'''
+'''
+def get_1d_gaussian_datasets_torchmeta(args: Namespace) -> dict:
+    """
+    Note:
+        - torchmeta considers the path to the data set the path to the folder where the folder containing the dataset
+        is at. e.g. the folder miniimagenet/ is the ~/data/ folder is the data set.
+    """
+    # - gets path where miniimagenet folder is since that's what torchmeta's helper function wants
+    # - ~/data/miniimagenet -> ~/data/
+    #data_path: Path = get_real_path_to_torchmeta_miniimagenet(dummy_datapath=args.data_path)
+    # get the dataset splits
+    #dataset_train = gaussian_1d_metadataset(ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval,  mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B,
+    #                               sigma_s_B=args.sigma_s_B, meta_split='train')
+    #dataset_val = gaussian_1d_metadataset(ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval, mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B,
+    #                                sigma_s_B=args.sigma_s_B, meta_split='train')
+    #dataset_test = gaussian_1d_metadataset(args.data_path, ways=args.n_classes, shots=args.k_shots, test_shots=args.k_eval, mu_m_B=args.mu_m_B, sigma_m_B=args.sigma_m_B, mu_s_B=args.mu_s_B,
+    #                                sigma_s_B=args.sigma_s_B, meta_split='train')
+
+    train_dataset, validation_dataset, test_dataset = datasets
+    train_transforms, validation_transforms, test_transforms = transforms
+
+    # Instantiate the tasksets
+    train_tasks = l2l.data.TaskDataset(
+        dataset=train_dataset,
+        task_transforms=train_transforms,
+        num_tasks=num_tasks,
+    )
+    validation_tasks = l2l.data.TaskDataset(
+        dataset=validation_dataset,
+        task_transforms=validation_transforms,
+        num_tasks=num_tasks,
+    )
+    test_tasks = l2l.data.TaskDataset(
+        dataset=test_dataset,
+        task_transforms=test_transforms,
+        num_tasks=num_tasks,
+    )
+    #return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
+
+    # - return data sets
+    datasets = {'train': train_tasks.dataset, 'val': validation_tasks.dataset, 'test': test_tasks.dataset}
+    return datasets
+'''
+#--
 def gaussian_taskset_test():
     from argparse import Namespace
     from pathlib import Path
@@ -362,9 +415,9 @@ def gaussian_taskset_test():
     args = Namespace(k_shots=5, k_eval=15, n_classes=5)
     args.data_option = 'n_way_gaussians'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
     args.mu_m_B = 0 #doesn't matter
-    args.sigma_m_B = 10
-    args.mu_s_B = 2
-    args.sigma_s_B = 1
+    args.sigma_m_B = 0.05
+    args.mu_s_B = 1
+    args.sigma_s_B = 0.01
     args.batch_size = 8  # 256 #TODO: How to make learning rates fair comparison with MAML?
     args.batch_size_eval = 8  # TODO: WHat is this?
     args.world_size = 1
@@ -387,6 +440,7 @@ def gaussian_taskset_test():
     )
 
     # try sampling!
+    #print(args.tasksets['val'])
     print(args.tasksets.train.sample())
     print(args.tasksets.test.sample())
     print(args.tasksets.validation.sample())
@@ -397,6 +451,11 @@ def gaussian_taskset_test():
     print(next(iter(usl_1d_gaussian_tasks['train'])))
     print(next(iter(usl_1d_gaussian_tasks['test'])))
     print(next(iter(usl_1d_gaussian_tasks['val'])))
+
+
+
+
+
 
 
 if __name__ == '__main__':

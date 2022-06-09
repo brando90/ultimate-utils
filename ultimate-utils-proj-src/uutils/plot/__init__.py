@@ -112,6 +112,7 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
                           capsize: float = 3.0,
                           alpha: float = 0.2,
                           ylim: Optional[tuple[float, float]] = None,
+                          xlim: Optional[tuple[float, float]] = None,
                           show: bool = False
                           ):
     """
@@ -160,6 +161,8 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
         plt.legend()
     if ylim is not None:
         plt.ylim(*ylim)
+    if xlim is not None:
+        plt.xlim(*xlim)
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

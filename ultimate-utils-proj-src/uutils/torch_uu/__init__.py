@@ -263,6 +263,7 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
         if args.to_single_float_float32:
             spt_x, spt_y, qry_x, qry_y = spt_x.to(torch.float32), spt_y.to(torch.float32), qry_x.to(
                 torch.float32), qry_y.to(torch.float32)
+
     return spt_x.to(args.device), spt_y.to(args.device), qry_x.to(args.device), qry_y.to(args.device)
 
 
