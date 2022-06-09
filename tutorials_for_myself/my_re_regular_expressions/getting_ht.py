@@ -203,7 +203,7 @@ ppt = """\n   (fun (n' : nat) (IH : n' + 0 = n') => ?Goal0) n)"""
 ept = """\n   (fun (n' : nat) (IH : n' + 0 = n') =>\n\teq_ind_r (fun n0 : nat => S n0 = S n') eq_refl IH : S n' + 0 = S n') n)"""
 print(f"{ppt=}")
 print(f'{ept=}')
-pattern_meta_var = r'\s*\?(\w)+\s*'  #
+pattern_meta_var = r'\s*\?(\w)+\s*'
 _ppt = re.sub(pattern=pattern_meta_var, repl='HERE', string=ppt)
 print(f'{_ppt=}')
 _ppt = re.escape(_ppt)
@@ -212,7 +212,7 @@ re_ppt = _ppt.replace('HERE', '\s*(.+)\s*')
 print(f'{re_ppt=}')
 out = re.search(pattern=re_ppt, string=ept)
 print(out)
-assert out is None, f'expected two holes matched but go {out=}'
+assert out is not None, f'expected two holes matched but go {out=}'
 print(out.groups())
 
 print()
@@ -225,43 +225,34 @@ ept = """(fun n : nat =>
    (fun (n' : nat) (IH : n' + 0 = n') =>
 	eq_ind_r (fun n0 : nat => S n0 = S n') eq_refl IH : S n' + 0 = S n') n)"""
 print(f'{ept=}')
-pattern_meta_var = r'\?(\w)+'
+pattern_meta_var = r'\s*\?(\w)+\s*'
 _ppt = re.sub(pattern=pattern_meta_var, repl='HERE', string=ppt)
 print(f'{_ppt=}')
 _ppt = re.escape(_ppt)
 print(f'{_ppt=}')
-re_ppt = _ppt.replace('HERE', '(.+)')
+re_ppt = _ppt.replace('HERE', '\s*(.+)\s*')
 print(f'{re_ppt=}')
 out = re.search(pattern=re_ppt, string=ept)
 print(out)
 print(out.groups())
 
 
-def get_multiple_hts(ppt: str, ept: str) -> list[str]:
-    print(f'{ppt=}')
-    ppt2 = ppt
-    #    assert ppt == """(fun n : nat =>
-    # nat_ind (fun n0 : nat => n0 + 0 = n0) ?Goal
-    #   (fun (n' : nat) (IH : n' + 0 = n') => ?Goal0) n)"""
-
+def get_multiple_hts(ppt: str, ept: str) -> tuple[str]:
     # - put a re pattern that matches anything in place of the meta-variable ?GOAL is
-    pattern_meta_var = r'\?(\w)+'
+    pattern_meta_var = r'\s*\?(\w)+\s*'
     _ppt = re.sub(pattern=pattern_meta_var, repl='HERE', string=ppt)
     print(f'{_ppt=}')
     _ppt = re.escape(_ppt)
     print(f'{_ppt=}')
-    re_ppt = _ppt.replace('HERE', '(.+)')
+    re_ppt = _ppt.replace('HERE', '\s*(.+)\s*')
     print(f'{re_ppt=}')
-    # ans = '\\(fun\\ n\\ :\\ nat\\ =>\\ (.+)\\ :\\ 0\\ \\+\\ n\\ =\\ n\\)'
-    # assert re_ppt == ans, f'Failed, got {re_ppt=}\n wanted: {ans}'
 
     # - now that the re pattern is in the place of the meta-var, compute the diff btw terms to get the ht that goes in the hole
     print(f'{ept=}')
     out = re.search(pattern=re_ppt, string=ept)
     if out is None:
         raise ValueError(f'Output of ht search was {out=}, re ppt was {re_ppt=} and ept was {ept=}.')
-    hts: str = out.groups()
-    print(f'{hts=}')
+    hts: tuple[str] = out.groups()
     return hts
 
 print('\n\n --------------')
@@ -273,4 +264,6 @@ ept = """(fun n : nat =>
    (fun (n' : nat) (IH : n' + 0 = n') =>
 	eq_ind_r (fun n0 : nat => S n0 = S n') eq_refl IH : S n' + 0 = S n') n)"""
 hts = get_multiple_hts(ppt, ept)
+assert hts is not None, f'expected two holes matched but go {out=}'
 pprint(hts)
+print()
