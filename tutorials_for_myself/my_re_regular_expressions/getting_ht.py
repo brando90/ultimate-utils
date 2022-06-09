@@ -1,3 +1,32 @@
+"""
+Very nice interface for doing regexes: https://regex101.com/
+
+"""
+# import re
+# for test in [
+#   "(fun n : nat => eq_refl : 0 + n = n)",
+#   "(fun n : nat => eq_refl : 0+n = n)",
+#   "(fun n     :      nat     =>     eq_refl:0+n=n)",
+# ]:
+#     print(re.search(r'\(fun\s+n\s*:\s*nat\s+=>\s+(\w+)\s*:\s*0\s*\+\s*=\s*n\s*\)', test))
+# import re
+# prefix = re.escape('(fun n : nat => ')
+# suffix = re.escape(' : 0 + n = n)')
+# tester = re.compile(f'{prefix}(.+){suffix}')
+# for test in [
+#   "(fun n : nat => eq_refl : 0 + n = n)",
+# ]:
+#     print(tester.search(test))
+
+import re
+prefix = re.escape('(fun n : nat => ')
+suffix = re.escape(' : 0 + n = n)')
+for test in [
+  "(fun n : nat => eq_refl : 0 + n = n)",
+]:
+    print(re.search(f'{prefix}(.+){suffix}', test))
+    print(re.search(f'{prefix}(.+){suffix}', test).group(1))
+
 #%%
 import re
 s = 'Part 1. Part 2. Part 3 then more text'
@@ -5,9 +34,6 @@ x = re.search(r'Part 1\.(.*?)Part 3', s)
 print(f'{x=}, {type(x)=}')
 xx = re.search(r'Part 1\.(.*?)Part 3', s).group(1)
 print(f'{xx=}')
-
-ht = re.search(pattern=r'(fun n : nat => (.*?) : 0 + n = n)', string='(fun n : nat => eq_refl : 0 + n = n)')
-print(f'{ht=}')
 
 #%%
 """
@@ -28,30 +54,38 @@ import re
 #s = 'Part 1. Part 2. Part 3 then more text'
 #re.search(r'Part 1\.(.*?)Part 3', s).group(1)
 
+# def make_term_to_regex_term(term: str) -> str:
+#     # pattern = r'(fun n : nat => (.*) : 0 + n = n)'.replace('(', '\(')
+#     # pattern = f'r{term}'
+#     pattern = f'{term}'
+#     pattern = pattern.replace('(', r'\(')
+#     pattern = pattern.replace(')', r'\)')
+#     pattern = pattern.replace('+', r'\+')
+#     print(f'{pattern=}')
+#     return pattern
+
 def get_single_ht(ppt: str, ept: str) -> str:
+    # ppt = re.escape(ppt)  # to make everything literal since we want to make the re version of ppt
+    print(f'{ppt=}')
+    assert ppt == '(fun n : nat => ?Goal : 0 + n = n)'
     # - put a re pattern that matches anything in place of the meta-variable ?GOAL is
-    # pattern = r'\b?(\w)+\b'
-    # pattern = r'?(\w)+'
     pattern_meta_var = r'\?(\w)+'
-    # pattern = re.compile(r'\b(\w+)\s+\1\b')
-    # repl = pattern.replace('\\', '\\\\')
+    # re_ppt = re.sub(pattern=pattern_meta_var, repl='(.+)', string=ppt)
     _ppt = re.sub(pattern=pattern_meta_var, repl='HERE', string=ppt)
-    #
-    pattern_any_proof_term = r'(.+)'
-    _ppt = _ppt.replace('HERE', pattern_any_proof_term)
-    # _ppt = "(fun n : nat => ?Goal : 0 + n = n)"
+    _ppt = re.escape(_ppt)
+    re_ppt = _ppt.replace('HERE', '(.+)')
+    ans = '\\(fun\\ n\\ :\\ nat\\ =>\\ (.+)\\ :\\ 0\\ \\+\\ n\\ =\\ n\\)'
+    assert re_ppt == ans, f'Failed, got {re_ppt=}\n wanted: {ans}'
+
     # - now that the re pattern is in the place of the meta-var, compute the diff btw terms to get the ht that goes in the hole
-    ht = re.search(_ppt, ept)
-    print(f'{ept=}')
-    pattern = r'(fun n : nat => (\w) : 0 + n = n)'
-    pattern = r'(fun n : nat => (.*?) : 0 + n = n)'
-    print(f'{pattern=}')
-    ht = re.search(pattern=pattern, string=ept)
-    # ht = re.search('(fun n : nat => (.*?) : 0 + n = n)', ept)
-    ht = re.search(pattern=r'(fun n : nat => (.*?) : 0 + n = n)', string='(fun n : nat => eq_refl : 0 + n = n)')
+    out = re.search(pattern=re_ppt, string=ept)
+    if out is None:
+        raise ValueError(f'Output of ht search was {out=}, re ppt was {re_ppt=} and ept was {ept=}.')
+    ht: str = out.group(1)
     print(f'{ht=}')
     return ht
 
+print()
 ppt = "(fun n : nat => ?Goal : 0 + n = n)"
 ept = "(fun n : nat => eq_refl : 0 + n = n)"
 ht: str = get_single_ht(ppt, ept)
