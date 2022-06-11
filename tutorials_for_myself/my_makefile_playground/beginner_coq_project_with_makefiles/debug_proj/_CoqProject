@@ -1,0 +1,8 @@
+# flags for coqc, path where folder is and stuff is ran from and name of project/Module
+-Q . DebugProj
+-arg "-w all"
+
+# project files
+debug_0_plus_n_eq_n.v
+debug1_n_plus_1_less_than_n.v
+debug2_n_plus_0_eq_n.v
