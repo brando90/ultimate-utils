@@ -102,6 +102,9 @@ def download_content_from_all_sites_using_threads(sites: list[str]) -> list[str]
 
 
 if __name__ == "__main__":
+    """
+    example based on: https://realpython.com/python-concurrency/
+    """
     # - args
     num_sites: int = 80
     sites: list[str] = ["https://www.jython.org", "http://olympus.realpython.org/dice"] * num_sites

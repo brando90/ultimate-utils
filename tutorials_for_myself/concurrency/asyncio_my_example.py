@@ -5,14 +5,19 @@ Best example is from count [1].
 
 todo - async with, async for.
 
-async = defines a coroutine. This doesn't define a real io, it only defines a function that can give up and give the
-    execution power to other coroutines or the (asyncio) event loop.
+async = defines a coroutine (program that can cooperatively give up power). This doesn't define a real io,
+it only defines a function that can give up and give the execution power to other coroutines or the (asyncio) event loop.
 
-await = the key word that does (mainly) two things 1) gives control back to the event loop to see if there is something
-    else to run if we called it on a real expensive io operation (e.g. calling network, printer, etc) 2) gives control to
-    the new coroutine that it is awaiting. If this is your own code with async then it means it will go into this new async
+await = the key word that does (mainly) two things
+    1) gives control back to the event loop to see if there is something
+    else to run if we called it on a real expensive io operation (e.g. calling network, printer, etc)
+    2) gives control to the new coroutine that it is awaiting. If this is your own code with async then it means
+    it will go into this new async
     function (coroutine) you defined.
     No real async benefits are being experienced until you call a real io.
+
+Note:
+    - better definition of coroutine see asincio_example.py
 """
 
 import asyncio
@@ -53,10 +58,11 @@ async def main1(coroutines: list[Coroutine]):
 
 def test1():
     """
-    Single coroutine that waits a couple of times but since the event loop has nothing else to do it is forced to wait.
+    test1 runs a single coroutine that waits a couple of times but since the event loop has nothing else to do
+    it is forced to wait.
 
-    Learned from this example: you *have* to await a routine that is a asyncio coroutine e.g. with the async keyword.
-    This is interesting because it means that calling a async function actually creates a coroutine (in python it
+    Learned from this example: you *have* to await a routine that is an asyncio coroutine e.g. with the async keyword.
+    This is interesting because it means that calling an async function actually creates a coroutine (in python it
     creates a generator).
     """
     # - run event loop
@@ -66,7 +72,7 @@ def test1():
 
 def test2():
     """
-    Multiple coroutines.
+    Multiple coroutines. **This one is the key to understand after test1 is understood**.
 
     What seems to happen is that asyncio.run has the event loop and it runs the coroutine given. Thus since this in the
     async paradigm, it means the given coroutine has all control. For example if it's gather then gather has all control
@@ -74,11 +80,11 @@ def test2():
     coroutines immediately and once all are done aggregates results. If you pass main then what happens is that main is
     given all the control. Then if you have awaits inside your main then those are given full control. In the case of
     simulating an expensive operation you need to call asyncio.sleep - otherwise the code will block and slow down.
-    In this case it's because you need a fake a real io.
+    In this case it's because you need to fake a real io.
     """
     # - run event loop
-    event_loop: AbstractEventLoop = asyncio.get_event_loop()
     coroutines: list[Coroutine] = [my_coroutine('coroutine1'), my_coroutine('coroutine2')]
+    # event_loop: AbstractEventLoop = asyncio.get_event_loop()
     # result = event_loop.run_until_complete(asyncio.gather(*coroutines, return_exceptions=True))
     # result = event_loop.run_until_complete(main1(coroutines))
     result = asyncio.run(main1(coroutines))
