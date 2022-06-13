@@ -1417,7 +1417,7 @@ def nes_torch(x1, x2, dim: int = 0, eps: float = 1e-8) -> Tensor:
 
 def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0_to_1: bool = True) -> Tensor:
     """
-    Computes the orthoginal procrustes distance.
+    Computes the orthogonal procrustes distance.
     If normalized then the answer is divided by 2 so that it's in the interval [0, 1].
     Outputs a single number with no dimensionality.
 
@@ -1426,7 +1426,7 @@ def orthogonal_procrustes_distance(x1: Tensor, x2: Tensor, normalize_for_range_0
             - two weight matrices of size [num_weights1, num_weights2]
             - or two matrices of activations [batch_size, dim_of_layer] (used by paper [1])
 
-    d_proc(A*, B) = ||A||^2_F + ||B||^2_F - 2||A^T B||_*
+    d_proc(A, B) = ||A||^2_F + ||B||^2_F - 2||A^T B||_*
     || . ||_* = nuclear norm = sum of singular values sum_i sig(A)_i = ||A||_*
 
     Note:
