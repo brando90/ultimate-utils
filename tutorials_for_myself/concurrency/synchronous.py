@@ -5,7 +5,10 @@ what the next step is and how it will behave [1].
 
 If your program takes very little time and there is essentially no benefits of concurrency this is enough! Stop here. ;)
 
-
+The sync code (synchronous.py) should have taken longer e.g. in one run the async file (asyncio_example.py) took:
+Downloaded 160 sites in 0.4063692092895508 seconds
+While the sync option took:
+Downloaded 160 in 3.351937770843506 seconds
 
 1. https://realpython.com/python-concurrency/
 """

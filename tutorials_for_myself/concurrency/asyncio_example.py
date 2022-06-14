@@ -111,7 +111,7 @@ Remember that any task that doesn’t give up control to the event loop will blo
 
 see asyncio_example2.py file.
 
-The sync fil should have taken longer e.g. in one run the async file took:
+The sync code (synchronous.py) should have taken longer e.g. in one run the async file (asyncio_example.py) took:
 Downloaded 160 sites in 0.4063692092895508 seconds
 While the sync option took:
 Downloaded 160 in 3.351937770843506 seconds
