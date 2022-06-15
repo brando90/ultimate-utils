@@ -42,6 +42,11 @@ def get_sl_dataloader(args: Namespace) -> dict:
             get_train_valid_test_data_loader_1d_gaussian
         args.dataloaders: dict = get_train_valid_test_data_loader_1d_gaussian(args)
         print("Got n_way_gaussians_sl as dataset")
+    elif args.data_option == 'n_way_gaussians_sl_nd':
+        from uutils.torch_uu.dataloaders.meta_learning.gaussian_nd_tasksets import \
+            get_train_valid_test_data_loader_nd_gaussian
+        args.dataloaders: dict = get_train_valid_test_data_loader_nd_gaussian(args)
+        print("Got n_way_gaussians_sl_nd as dataset")
     elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)

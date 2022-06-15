@@ -10,11 +10,12 @@ from torch import nn
 def fnn3_gaussian(ways: int,
                   input_size: int,
                   hidden_layers = [15,15],
+                  test_skip=False,
                   #hidden_layer1 = 15,
                   #hidden_layer2 = 15,
                   ) -> tuple[nn.Module, dict]:
     model_hps : dict = dict(ways = ways, input_size = input_size, hidden_layers=hidden_layers)
-    model = FNN3(output_size=ways, input_size = input_size, hidden_layers=hidden_layers)
+    model = FNN3(output_size=ways, input_size = input_size, hidden_layers=hidden_layers,test_skip=test_skip)
     return model, model_hps
 
 class FNN3(torch.nn.Module):
@@ -23,6 +24,7 @@ class FNN3(torch.nn.Module):
             input_size,
             output_size,
             hidden_layers=[15, 15],
+            test_skip=False
             #hidden_layer1=15,
             #hidden_layer2=15,
     ):
@@ -30,6 +32,27 @@ class FNN3(torch.nn.Module):
 
         assert len(hidden_layers) >= 2, "Need at least 2 hidden layers"
 
+        #Test if Resnet/skip connection can improve convergence
+        if(test_skip == True):
+            self.testskip=True
+            self.f1 = nn.Flatten()
+            self.l1 = nn.Linear(1, 128)
+            self.bn1 = nn.BatchNorm1d(128)
+            self.relu1 = nn.ReLU()
+            self.l2 = nn.Linear(128, 128)
+            self.bn2 = nn.BatchNorm1d(128)
+            self.relu2 = nn.ReLU()
+            self.l3 = nn.Linear(128, 128)
+            self.bn3 = nn.BatchNorm1d(128)
+            self.relu3 = nn.ReLU()
+            self.l4 = nn.Linear(128, 128)
+            self.bn4 = nn.BatchNorm1d(128)
+            self.relu4 = nn.ReLU()
+            # self.fc = nn.Linear(128, 5)
+            self.classifier = nn.Linear(128, output_size)
+            return
+
+        self.testskip=False
         # Start of our FNN: input -> hidden_layer[0]
         modules = [
             nn.Flatten(),
@@ -68,6 +91,22 @@ class FNN3(torch.nn.Module):
 
 
     def forward(self, x):
+        if(self.testskip==True):
+            x = self.f1(x)
+            x_skip_1 = self.l1(x)
+            x = self.bn1(x_skip_1)
+            x = self.relu1(x)
+            x = self.l2(x)
+            x = self.bn2(x)
+            x = self.relu2(x + x_skip_1)
+            x_skip_2 = self.l3(x)
+            x = self.bn3(x_skip_2)
+            x = self.relu3(x)
+            x = self.l4(x)
+            x = self.bn4(x)
+            x = self.relu4(x + x_skip_2)
+            x = self.classifier(x)
+            return x
         #x = x.view(-1,1).float()
         x = self.features(x)
         x = self.classifier(x)

@@ -152,6 +152,26 @@ def train_agent_epochs(args: Namespace,
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
+
+    # ----added - 0th iter---#
+    args.epochs_num = 0
+    avg_loss = AverageMeter('train loss')
+    avg_acc = AverageMeter('train accuracy')
+    for i, batch in enumerate(dataloaders['train']):
+        #opt.zero_grad()
+        train_loss, train_acc = model(batch, training=True)
+        #train_loss.backward()  # each process synchronizes its gradients in the backward pass
+        #gradient_clip(args, opt)
+        #opt.step()  # the right update is done since all procs have the right synced grads
+
+        # - meter updates
+        avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
+        if args.debug:
+            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+    step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+    log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
+    args.epochs_num = 1
+    # --------#
     while not halt:
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')

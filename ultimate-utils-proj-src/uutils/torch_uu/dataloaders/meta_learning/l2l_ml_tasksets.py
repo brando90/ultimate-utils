@@ -86,6 +86,22 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             # root=args.data_path, #No need for datafile
             # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
+    elif args.data_option == 'n_way_gaussians_nd':
+        from uutils.torch_uu.dataloaders.meta_learning.gaussian_nd_tasksets import get_tasksets
+        args.tasksets: BenchmarkTasksets = get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval,  # k shots for meta-train, k eval for meta-validaton/eval
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            mu_m_B=args.mu_m_B,
+            sigma_m_B=args.sigma_m_B,
+            mu_s_B=args.mu_s_B,
+            sigma_s_B=args.sigma_s_B,
+            dim=args.dim
+            # root=args.data_path, #No need for datafile
+            # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
+        )
     elif args.data_option == 'hdb1':
         from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hd1_mi_omniglot_tasksets
         args.tasksets: BenchmarkTasksets = hd1_mi_omniglot_tasksets(

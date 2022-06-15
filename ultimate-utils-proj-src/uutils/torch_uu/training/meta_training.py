@@ -152,6 +152,15 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
+
+    #----added - 0th iter---#
+    args.it = 0
+    task_dataset: TaskDataset = args.tasksets.train
+    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, training=False,call_backward=False)
+    step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+    log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=False)
+    args.it = 1
+    #--------#
     while not halt:
         outer_opt.zero_grad()
 
