@@ -324,6 +324,7 @@ def init_process_group_l2l(args, local_rank, world_size, init_method=None, backe
         # )
         # dist.init_process_group(backend=backend, init_method="env://")
         # dist.init_process_group(backend=backend, init_method=None)
+        # torch.distributed.barrier()  # causes this warning: https://github.com/pytorch/pytorch/issues/60752
 
 
 def cleanup(rank):

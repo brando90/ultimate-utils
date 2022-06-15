@@ -8,6 +8,7 @@ from torch.optim import Optimizer
 import uutils
 from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu import r2_score_from_torch
+from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.distributed import is_lead_worker
 
@@ -79,6 +80,15 @@ def _log_train_val_stats(args: Namespace,
         if log_to_tb:
             log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
             log_2_tb_supervisedlearning(args.tb, args, it, val_loss, val_acc, 'val')
+
+
+def log_zeroth_step(args: Namespace, meta_learner: Agent):
+    from learn2learn.data import TaskDataset
+    from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
+    task_dataset: TaskDataset = args.tasksets.train
+    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, call_backward=False)
+    step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+    log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=False)
 
 
 # - tests
