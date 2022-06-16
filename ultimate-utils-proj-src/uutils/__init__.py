@@ -511,6 +511,14 @@ def _get_git_revision_short_hash():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 
+def cat_file(path2filename: Union[str, Path]):
+    """prints/displays file contents. Do path / filename or the like outside of this function. ~ is alright to use. """
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+    with open(path2filename, 'r') as f:
+        print(f.read())
+
 def get_good_progressbar(max_value: Union[int, progressbar.UnknownLength, None] = None) -> progressbar.ProgressBar:
     """
     Example output:
