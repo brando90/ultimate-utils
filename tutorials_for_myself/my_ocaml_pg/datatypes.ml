@@ -1,4 +1,7 @@
-(* resource: http://xahlee.info/ocaml/types.html *)
+(* resource:
+- http://xahlee.info/ocaml/types.html
+- https://ocaml.org/docs/data-types
+*)
 
 (* you can put types in functions *)
 let f (n:int) = n + 1;;
@@ -94,3 +97,26 @@ type dummy_serapi_cmd =
 (* make a command example! *)
 let test_cmd = Print(PrettyPrint, (CoqStr "Lemma addn0 n : n + 0 = n."));;
 test_cmd;;
+
+(* -- records types in OCaml since SerAPI uses them
+ref:
+- record: https://ocaml.org/docs/data-types
+- record in serapi: http://ejgallego.github.io/coq-serapi/coq-serapi/Serapi/Serapi_protocol/#type-query_opt
+-- *)
+
+(* define the record type, note records are putable *)
+type point = {x : int; mutable y : int};;
+let a = {x = 5; y = 6};;
+a;;
+a.y <- a.y + 1;;
+a;;
+
+(* A record must contain all fields. So the following gives an error.
+I think it's weird, but seems that once you define records it tries to match a type
+for it. Likely cuz ocaml always has types for everything and a Type Record
+doesn't exist for everyone -- instead Record is likely the type of point...
+*)
+let b = {x = 1.0};;
+
+(* fixed length (mutable) array *)
+let arr = [|1; 2; 3|];;

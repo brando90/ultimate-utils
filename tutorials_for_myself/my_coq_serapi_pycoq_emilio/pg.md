@@ -17,9 +17,9 @@ for example it may be a Notation command.
 rlwrap sertop --printer=human
 ```
 
+Prints current goals & LC all together:
 ```
 (Add () "Lemma addn0 n : n + 0 = n.")
-(Exec 2)
 (Add () "Proof.")
 (Exec 3)
 
@@ -27,9 +27,28 @@ rlwrap sertop --printer=human
 (Query ((sid 3) (pp ((pp_format PpStr)))) Goals)
 (Query ((pp ((pp_format PpStr)))) Goals)
 (Query () Goals)
-
-(Print (pp (pp_format PpStr)) Obj ) 
 ```
+
+Print CoqString from VP's s-exp object using SerAPI print:
+```
+(Add () "Lemma addn0 n : n + 0 = n.")
+(Add () "Proof.")
+(Exec 3)
+
+(Query () Goals)
+(Print  ((pp ((pp_format PpStr)))) )
+
+(pp_ex (Print ((sid 4) (pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0))))))
+(Print ((sid 4) (pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+(Print ((pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+# FAILS (Print (pp ((pp_format PpStr))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+
+(Print ((pp ((pp_format PpStr)))) (CoqObj))
+# (Print ((pp ((pp_format PpStr)))) ( ObjList((CoqGoal((goals(((info((evar(Ser_Evar 3))(name())))(ty(Prod((binder_name(Name(Id x)))(binder_relevance Relevant))(Ind(((MutInd(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id bool))0)(Instance())))(App(Ind(((MutInd(MPfile(DirPath((Id Logic)(Id Init)(Id Coq))))(Id eq))0)(Instance())))((Ind(((MutInd(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id bool))0)(Instance())))(App(Const((Constant(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id negb))(Instance())))((App(Const((Constant(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id negb))(Instance())))((Rel 1)))))(Rel 1)))))(hyp()))))(stack())(shelf())(given_up())(bullet())))) ))
+(Print ((pp ((pp_format PpStr)))) (CoqGoal((goals(((info((evar(Ser_Evar 3))(name())))(ty(Prod((binder_name(Name(Id x)))(binder_relevance Relevant))(Ind(((MutInd(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id bool))0)(Instance())))(App(Ind(((MutInd(MPfile(DirPath((Id Logic)(Id Init)(Id Coq))))(Id eq))0)(Instance())))((Ind(((MutInd(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id bool))0)(Instance())))(App(Const((Constant(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id negb))(Instance())))((App(Const((Constant(MPfile(DirPath((Id TwoGoals)(Id LF))))(Id negb))(Instance())))((Rel 1)))))(Rel 1)))))(hyp()))))(stack())(shelf())(given_up())(bullet()))))
+```
+
+###
 
 What about this algorithm 1 (from VPs to many round tripts to back serapi):
 
@@ -41,6 +60,13 @@ Note: if you query all goals at once you get one big string.
 Is this true with PyCoq-SerApi?
 
 TODO: can this be done with PyCoq-SerApi?
+
+### PPT
+
+```
+# (Query (opts) query)
+(Query ((pp ((pp_format PpStr)))) Proof)
+```
 
 
 
