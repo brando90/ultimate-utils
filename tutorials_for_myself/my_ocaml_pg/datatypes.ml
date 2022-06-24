@@ -29,7 +29,7 @@ type my_dogs = Max | Obamita;;
 
 type foo =
   | Nothing (* Constnat *)
-  | Int of int (* Int constructor with value int *)
+  | Int of int (* Int constructor with value Int int *)
   | Pair of int * int (* Pair constructor with value as pair of ints *)
   | String of string;; (* constructor String that has the value string *)
 
@@ -70,3 +70,27 @@ type 'a list =
 Nil;;
 Cons (1, Nil);; (* [1] 1::Nil *)
 Cons (1, Cons(2, Nil));;
+
+(* -- Dummy SerAPI test ground -- *)
+
+(* type print_opt with 2 values*)
+type print_opt =
+| PrettyPrint
+| MachinePrint;;
+
+(* type coq obj with CoqStr as constructor to create values of the formal form CoqStr any string etc.*)
+type coq_obj =
+| CoqStr of string
+| CoqAstSexp  of string;;
+
+(* type dummy_serapi_cmd with 3 constructors that say how to create values for dumm_serapi_cmd (data) type *)
+type dummy_serapi_cmd =
+| Print of print_opt * coq_obj
+| Add of string (* just dummy not meant to be real, obviously options etc are missing *)
+| Exec of string (* just dummy not meant to be real, obviously options etc are missing *)
+;;
+
+
+(* make a command example! *)
+let test_cmd = Print(PrettyPrint, (CoqStr "Lemma addn0 n : n + 0 = n."));;
+test_cmd;;

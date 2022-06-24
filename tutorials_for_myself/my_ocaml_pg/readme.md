@@ -42,7 +42,7 @@ If you have issues for printing see the printing in OCaml section.
 
 Ref: https://discuss.ocaml.org/t/how-to-run-ml-ocaml-file-without-compiling/4311
 
-## Printing in OCaml
+## Debugging & Printing in OCaml
 
 Seems that due to losing typing during compilation (not really sure of the details) printing
 with `ocaml scripy.ml` is not easy.
@@ -52,8 +52,22 @@ For now it seems the easiest to play around is write in your script and then cop
 Another option is to open utop and "import" (e.g `#use "ocaml_pg.ml";;` in utop) your script every time. 
 The disadvantage is that perhaps some of your code will be remembered in your utop session.
 
+### Debugging the datatypes file
+
+if you don't know how to print in top level and looking to print in ANYWAY -- 
+basically load the file in toplevel/utop `#use "file.ml";;` and then call the variable `var;;` in toplevel.
+
+```
+utop
+#use "datatypes.ml";;
+let var = Pair (1, 2);;
+var;;
+```
+
 Ref:
-- https://discuss.ocaml.org/t/how-does-one-print-any-type/4362/11
+- print in top level: https://discuss.ocaml.org/t/how-does-one-print-any-type/4362/17?u=brando90
+- print outside top level https://stackoverflow.com/questions/7261248/how-can-ocaml-values-be-printed-outside-the-toplevel
+- long printing dicussion: https://discuss.ocaml.org/t/how-does-one-print-any-type/4362/11
 
 Maybe later dum...https://opam.ocaml.org/packages/dum/ 
 
@@ -66,3 +80,4 @@ https://github.com/brando90/cs421
 ref:
     - https://stackoverflow.com/questions/42631912/whats-the-difference-between-include-require-and-open-in-ocaml
     - https://discuss.ocaml.org/t/how-to-run-ml-ocaml-file-without-compiling/4311/18?u=brando90
+
