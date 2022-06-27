@@ -68,7 +68,8 @@ TODO: can this be done with PyCoq-SerApi?
 (Query ((pp ((pp_format PpStr)))) Proof)
 ```
 
-
-
+``` 
+opam reinstall --yes --switch ocaml-variants.4.07.1+flambda_coq-serapi.8.11.0+0.11.1 --keep-build-dir lf
+```
 
 
