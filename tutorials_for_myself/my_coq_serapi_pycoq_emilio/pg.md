@@ -63,13 +63,78 @@ TODO: can this be done with PyCoq-SerApi?
 
 ### PPT
 
+goal: get ppt with query
 ```
-# (Query (opts) query)
+rlwrap sertop --printer=human
+
+(Add () "Lemma addn0 n : n + 0 = n.")
+(Exec 2)
+(Query ((sid 2) (pp ((pp_format PpStr)))) Goals)
+
+(Add () "Lemma addn0 n : 0 + n = n. Proof. intros. simpl. reflexivity.")
+(Exec 6)
+(Query ((pp ((pp_format PpStr)))) Goals)
+
+https://github.com/ejgallego/coq-serapi/issues/270
+(Add () "Lemma addn0 n : 0 + n = n. Proof. intros. simpl.")
+(Exec 5)
+(Query ((pp ((pp_format PpStr)))) Goals)
 (Query ((pp ((pp_format PpStr)))) Proof)
+
+
+(Query ((sid 1) (pp ((pp_format PpStr)))) Goals)
+(Query ((sid 2) (pp ((pp_format PpStr)))) Goals)
+(Query ((sid 3) (pp ((pp_format PpStr)))) Goals)
+(Query ((pp ((pp_format PpStr)))) Goals)
+(Query () Proof)
 ```
 
-``` 
-opam reinstall --yes --switch ocaml-variants.4.07.1+flambda_coq-serapi.8.11.0+0.11.1 --keep-build-dir lf
+get ppt
 ```
+rlwrap sertop --printer=human
 
+(Add () "Lemma addn0 n : 0 + n = n. Proof. intros. simpl. Show Proof.")
+
+RESPONSE:
+(Exec 6)
+(Answer 1 Ack)
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 5) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 4) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 3) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 2) (route 0) (contents (ProcessingIn master))))
+(Feedback ((doc_id 0) (span_id 1) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 2) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 3) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 4) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 5) (route 0) (contents Processed)))
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 1)
+      (Pp_glue
+       ((Pp_string "(")
+        (Pp_box (Pp_hovbox 0)
+         (Pp_glue
+          ((Pp_box (Pp_hovbox 2)
+            (Pp_glue
+             ((Pp_tag constr.keyword (Pp_string fun)) (Pp_print_break 1 0)
+              (Pp_box (Pp_hovbox 1)
+               (Pp_glue
+                ((Pp_string "n : ") (Pp_tag constr.variable (Pp_string nat))))))))
+           (Pp_print_break 1 0) (Pp_string =>) (Pp_print_break 1 0)
+           (Pp_box (Pp_hovbox 0)
+            (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+        (Pp_string ")")))))
+    (str "(fun n : nat => ?Goal)")))))
+(Feedback ((doc_id 0) (span_id 6) (route 0) (contents Processed)))
+(Answer 1 Completed)
+```
 
