@@ -136,5 +136,27 @@ RESPONSE:
     (str "(fun n : nat => ?Goal)")))))
 (Feedback ((doc_id 0) (span_id 6) (route 0) (contents Processed)))
 (Answer 1 Completed)
+
+rlwrap sertop --printer=human
+Inductive bool: Type :=\n| true\n| false.\n
+\n\nDefinition negb (x: bool): bool :=\n  match x with\n  | true => false\n  | false => true\n  end.\n
+\n\nTheorem double: forall x: bool, negb (negb x) = x.\n
+Proof.\n
+
+rlwrap sertop --printer=human
+
+(Add () "Lemma addn0 n : 0 + n = n. Proof.")
+(Exec 3)
+(Add () "Show Proof.")
+(Exec 4)
+
+
+rlwrap sertop --printer=human
+
+(Add () "Lemma addn0: forall n: nat, 0 + n = n. Proof.")
+(Exec 3)
+(Add () "Show Proof.")
+(Exec 4)
+
 ```
 
