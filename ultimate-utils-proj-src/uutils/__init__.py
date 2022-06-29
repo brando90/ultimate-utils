@@ -43,7 +43,7 @@ from collections import deque
 
 from argparse import Namespace
 
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Match
 
 import progressbar
 
@@ -518,6 +518,7 @@ def cat_file(path2filename: Union[str, Path]):
     path2filename.expanduser()
     with open(path2filename, 'r') as f:
         print(f.read())
+
 
 def get_good_progressbar(max_value: Union[int, progressbar.UnknownLength, None] = None) -> progressbar.ProgressBar:
     """
@@ -1475,7 +1476,25 @@ def is_negative_int(value: str) -> bool:
         return is_integer
 
 
+# -- regex
+
+def matches_regex(regex: str, content: str) -> Optional[Match[str]]:
+    import re
+    return re.match(regex, content)
+
+
 # -- tests
+
+def match_regex_test():
+    import re
+
+    regex = r"\s*Proof.\s*"
+    contents = ['Proof.\n', '\nProof.\n']
+    for content in contents:
+        assert re.match(regex, content), f'Failed on {content=} with {regex=}'
+        if re.match(regex, content):
+            print(content)
+
 
 def draw_test():
     # import pylab
