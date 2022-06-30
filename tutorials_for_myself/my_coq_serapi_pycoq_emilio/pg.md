@@ -160,3 +160,93 @@ rlwrap sertop --printer=human
 
 ```
 
+```
+(Add () "From Coq Require Import ssreflect ssrfun ssrbool.
+Theorem comm: 
+    forall (n:nat) (m:nat),
+    n + m = m + n.
+Proof. 
+    intros.
+    have H0: True by auto.
+    have H1: 1 = 1 by auto." )
+(Exec 7)
+(Query ((pp ((pp_format PpStr)))) Goals)
+
+(Add () "From Coq Require Import ssreflect ssrfun ssrbool.
+Theorem comm: 
+    forall (n:nat) (m:nat),
+    n + m = m + n.
+Proof. 
+    intros.
+    have H0: True by auto.
+    have H1: 1 = 1 by auto.
+    have H2: 12 = 12." )
+(Exec 8)
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+
+```
+(Add () "Definition __hole {A:Type} (n:nat) (v:A) := v.
+
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    refine (__hole 0 _).
+    intros;
+    refine (__hole 1 _).
+    Show Proof.")
+(Exec 7)
+
+(Feedback
+ ((doc_id 0) (span_id 7) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 1)
+      (Pp_glue
+       ((Pp_string "(")
+        (Pp_box (Pp_hovbox 2)
+         (Pp_glue
+          ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+           (Pp_string 0) (Pp_print_break 1 0)
+           (Pp_box (Pp_hovbox 1)
+            (Pp_glue
+             ((Pp_string "(")
+              (Pp_box (Pp_hovbox 0)
+               (Pp_glue
+                ((Pp_box (Pp_hovbox 2)
+                  (Pp_glue
+                   ((Pp_tag constr.keyword (Pp_string fun))
+                    (Pp_print_break 1 0)
+                    (Pp_box (Pp_hovbox 1)
+                     (Pp_glue
+                      ((Pp_string "n : ")
+                       (Pp_tag constr.variable (Pp_string nat))))))))
+                 (Pp_print_break 1 0) (Pp_string =>) (Pp_print_break 1 0)
+                 (Pp_box (Pp_hovbox 2)
+                  (Pp_glue
+                   ((Pp_tag constr.variable (Pp_string __hole))
+                    (Pp_print_break 1 0) (Pp_string 1) (Pp_print_break 1 0)
+                    (Pp_box (Pp_hovbox 0)
+                     (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal)))))))))))
+              (Pp_string ")")))))))
+        (Pp_string ")")))))
+    (str "(__hole 0 (fun n : nat => __hole 1 ?Goal))")))))
+(Feedback ((doc_id 0) (span_id 7) (route 0) (contents Processed)))
+(Answer 1 Completed)
+```
+
+```
+(Add () "
+Definition __hole {A:Type} (n:nat) (v:A) := v.
+\n\n\nTheorem refined___double: forall x: bool, negb (negb x) = x.\n refine (__hole 0 _).\n  destruct x;\n refine (__hole 2 _).\n  - simpl;  refine (__hole 3 _).\nreflexivity;\n refine (__hole 4 _).\n  - simpl;  refine (__hole 5 _).\nreflexivity;\n refine (__hole 6 _).\nShow Proof.
+")
+(Exec 12)
+```
+
+```
+rlwrap sertop --printer=human
+
+
+```

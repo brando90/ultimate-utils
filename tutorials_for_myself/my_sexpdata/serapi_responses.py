@@ -85,6 +85,7 @@ def extract_proof_term(serapi_response: str) -> str:
     res: str = serapi_response
     print(res)
     _res: list = loads(res)
+    print(f'{_res=}')
     feedback: list = _res[-1]
     assert len(feedback) == 4
     print(f"{len(feedback)=}")
