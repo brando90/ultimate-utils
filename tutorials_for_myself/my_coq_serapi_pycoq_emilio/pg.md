@@ -186,8 +186,8 @@ Proof.
 ```
 
 ```
-(Add () "Definition __hole {A:Type} (n:nat) (v:A) := v.
-
+(Add () "
+Definition __hole {A:Type} (n:nat) (v:A) := v.
 Theorem add_easy_0'':
 forall n:nat,
   0 + n = n.
@@ -195,7 +195,8 @@ Proof.
     refine (__hole 0 _).
     intros;
     refine (__hole 1 _).
-    Show Proof.")
+    Show Proof.
+")
 (Exec 7)
 
 (Feedback
@@ -248,5 +249,312 @@ Definition __hole {A:Type} (n:nat) (v:A) := v.
 ```
 rlwrap sertop --printer=human
 
+(Add () "
+Definition __hole {A:Type} (n:nat) (v:A) := v.
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    refine (__hole 0 _).
+    Show Proof.
+")
+
+(Exec 6)
+
+(Answer 1 Ack)
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 5) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 4) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 3) (route 0) (contents (ProcessingIn master))))
+(Feedback
+ ((doc_id 0) (span_id 2) (route 0) (contents (ProcessingIn master))))
+(Feedback ((doc_id 0) (span_id 1) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 2) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 3) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 4) (route 0) (contents Processed)))
+(Feedback ((doc_id 0) (span_id 5) (route 0) (contents Processed)))
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 1)
+      (Pp_glue
+       ((Pp_string "(")
+        (Pp_box (Pp_hovbox 2)
+         (Pp_glue
+          ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+           (Pp_string 0) (Pp_print_break 1 0)
+           (Pp_box (Pp_hovbox 0)
+            (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+        (Pp_string ")")))))
+    (str "(__hole 0 ?Goal)")))))
+(Feedback ((doc_id 0) (span_id 6) (route 0) (contents Processed)))
+(Answer 1 Completed)
+
+
+(Print ((pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+```
+
+(pp (Pp_string ")"))
+
+(pp
+ (Pp_box (Pp_hovbox 1)
+  (Pp_glue
+   ((Pp_string "(")
+    (Pp_box (Pp_hovbox 2)
+     (Pp_glue
+      ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+       (Pp_string 0) (Pp_print_break 1 0)
+       (Pp_box (Pp_hovbox 0)
+        (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+    (Pp_string ")")))))
+
+
+(Print ((pp ((pp_format PpStr))))     (CoqPp (
+(pp
+ (Pp_box (Pp_hovbox 1)
+  (Pp_glue
+   ((Pp_string "(")
+    (Pp_box (Pp_hovbox 2)
+     (Pp_glue
+      ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+       (Pp_string 0) (Pp_print_break 1 0)
+       (Pp_box (Pp_hovbox 0)
+        (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+    (Pp_string ")")))))
+) )         )
+
+
+(Print ((pp ((pp_format PpStr))))     (CoqPp ((pp (Pp_box (Pp_hovbox 1) (Pp_glue ((Pp_string "(") (Pp_box (Pp_hovbox 2) (Pp_glue ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0) (Pp_string 0) (Pp_print_break 1 0) (Pp_box (Pp_hovbox 0) (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal)))))))) (Pp_string ")"))))) ) )         )
+
+(Print ((pp (pp_format PpStr))) (CoqPp (pp (Pp_string "hi"))) )
+
+# found the pp cons I think: https://github.com/ejgallego/coq-serapi/blob/b222c1f821694175273d3a295a04abf9454f6727/serlib/ser_pp.ml
+# just construct some CoqPp that prints back
+(Print ((pp (pp_format PpStr))) (CoqPp ()) )
+
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 1)
+      (Pp_glue
+       ((Pp_string "(")
+        (Pp_box (Pp_hovbox 2)
+         (Pp_glue
+          ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+           (Pp_string 0) (Pp_print_break 1 0)
+           (Pp_box (Pp_hovbox 0)
+            (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+        (Pp_string ")")))))
+    (str "(__hole 0 ?Goal)") ))))
+
+# only ?GOAL is simpler
+
+(Add () "
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    Show Proof.
+")
+
+(Exec 4)
+
+(Feedback
+ ((doc_id 0) (span_id 4) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 0)
+      (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))
+    (str ?Goal)))))
+
+(pp
+ (Pp_box (Pp_hovbox 0)
+  (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))
+
+# ?GOAL 1 step forward
+
+(Add () "
+Definition __hole {A:Type} (n:nat) (v:A) := v.
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    refine (__hole 0 _).
+    Show Proof.
+")
+
+(Exec 6)
+
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0)
+  (contents
+   (Message (level Notice) (loc ())
+    (pp
+     (Pp_box (Pp_hovbox 1)
+      (Pp_glue
+       ((Pp_string "(")
+        (Pp_box (Pp_hovbox 2)
+         (Pp_glue
+          ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+           (Pp_string 0) (Pp_print_break 1 0)
+           (Pp_box (Pp_hovbox 0)
+            (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+        (Pp_string ")")))))
+    (str "(__hole 0 ?Goal)")))))
+
+(pp
+ (Pp_box (Pp_hovbox 1)
+  (Pp_glue
+   ((Pp_string "(")
+    (Pp_box (Pp_hovbox 2)
+     (Pp_glue
+      ((Pp_tag constr.variable (Pp_string __hole)) (Pp_print_break 1 0)
+       (Pp_string 0) (Pp_print_break 1 0)
+       (Pp_box (Pp_hovbox 0)
+        (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
+    (Pp_string ")")))))
+
+# abadon that attempt, perhaps lets recall what serapi returns from the query proof object?
+
+(Add () "
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    Show Proof.
+")
+
+(Exec 4)
+
+(Query ((pp ((pp_format PpStr)))) Proof)
+
+(Print ((sid 4) (pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+
+# -- idea: give it the proof term as a string from the feedback response to print but have Print construct an parsable ast for us
+(Print ((pp ((pp_format PpStr)))) (CoqString  (str ?Goal))))
+(Print ((pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+
+(Print ((pp ((pp_format PpStr)))) (CoqString ?Goal))
+
+(Print ((pp ((pp_format PpStr)))) (CoqString "fun x: nat => x."))
+
+(Print ((pp ((pp_format PpSer)))) (CoqString "fun x: nat => x."))
+
+(Print ((pp ((pp_format PpCoq)))) (CoqString "fun x: nat => x."))
 
 ```
+seems that the print option won't give me a traversable ast -- even if I get the proof term mysel (from the feedback) and send it back to serapi. 
+```
+
+# -- What does (Parse ...) do?
+(Parse parse_opt str)
+
+
+(Parse () "fun x: nat => x.")
+(Parse ((ontop 1)) "fun x : nat => x.")
+
+(Parse ((ontop 1)) "Definition id := fun x : nat => x.")
+
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacDefinition (NoDischarge Definition)
+         (((v (Name (Id id)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 11) (ep 13)))))
+          ())
+         (DefineBody () ()
+          ((v
+            (CLambdaN
+             ((CLocalAssum
+               (((v (Name (Id x)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 21) (ep 22))))))
+               (Default Explicit)
+               ((v
+                 (CRef
+                  ((v (Ser_Qualid (DirPath ()) (Id nat)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 25) (ep 28)))))
+                  ()))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 25) (ep 28)))))))
+             ((v
+               (CRef
+                ((v (Ser_Qualid (DirPath ()) (Id x)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 32) (ep 33)))))
+                ()))
+              (loc
+               (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                 (line_nb_last 1) (bol_pos_last 0) (bp 32) (ep 33)))))))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 17) (ep 33)))))
+          ())))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 34))))))))
+
+(CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacDefinition (NoDischarge Definition)
+         (((v (Name (Id id)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 11) (ep 13)))))
+          ())
+         (DefineBody () ()
+          ((v
+            (CLambdaN
+             ((CLocalAssum
+               (((v (Name (Id x)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 21) (ep 22))))))
+               (Default Explicit)
+               ((v
+                 (CRef
+                  ((v (Ser_Qualid (DirPath ()) (Id nat)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 25) (ep 28)))))
+                  ()))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 25) (ep 28)))))))
+             ((v
+               (CRef
+                ((v (Ser_Qualid (DirPath ()) (Id x)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 32) (ep 33)))))
+                ()))
+              (loc
+               (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                 (line_nb_last 1) (bol_pos_last 0) (bp 32) (ep 33)))))))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 17) (ep 33)))))
+          ())))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 34))))))
