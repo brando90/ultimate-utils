@@ -630,7 +630,7 @@ forall n:nat,
                      ((v (CEvar (Id Goal) ()))
                       (loc
                        (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
-                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15))))))))))
+                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15))))))))) )
                 (loc
                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
                    (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 15)))))))
@@ -642,6 +642,29 @@ forall n:nat,
       (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
         (bol_pos_last 0) (bp 0) (ep 17)))))))))
 (Answer 2 Completed)
+
+(Print ((sid 4) (pp ((pp_format PpStr)))) (CoqConstr (App (Rel 0) ((Rel 0)))))
+
+(Print () (
+(((v (Ser_Qualid (DirPath ()) (Id __hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 7)))))
+                  ((ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 8) (ep 9)))))))
+                   (ConstrMayEval
+                    (ConstrTerm
+                     ((v (CEvar (Id Goal) ()))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15)))))))))
+)
+)
 
 # dynamic parser
 
