@@ -423,6 +423,16 @@ Proof.
         (Pp_tag constr.evar (Pp_glue ((Pp_string ?Goal))))))))
     (Pp_string ")")))))
 
+# check what happens if I send terms without definition of __hole
+
+rlwrap sertop --printer=human
+
+(Add () "Definition __hole {A:Type} (n:nat) (v:A) := v.")
+(Exec 2)
+
+
+(Parse () "(__hole 0 ?Goal).")
+
 # abadon that attempt, perhaps lets recall what serapi returns from the query proof object?
 
 (Add () "
@@ -512,6 +522,8 @@ seems that the print option won't give me a traversable ast -- even if I get the
       (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
         (bol_pos_last 0) (bp 0) (ep 34))))))))
 
+(Parse ((ontop 1)) "Definition id := fun x : nat => x.")
+...
 (CoqAst
     ((v
       ((control ()) (attrs ())
@@ -558,3 +570,132 @@ seems that the print option won't give me a traversable ast -- even if I get the
      (loc
       (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
         (bol_pos_last 0) (bp 0) (ep 34))))))
+
+order to get the body of the vernac def and ast:
+1. get VernacDefinition from expr (https://coq.github.io/doc/v8.11/api/coq/Vernacexpr/index.html#type-vernac_control -> https://coq.github.io/doc/v8.11/api/coq/Vernacexpr/index.html#type-vernac_control)
+2. inside VernacDefinition go to DefineBody cons (3rd index so x[2]) https://coq.github.io/doc/v8.13/api/coq/Vernacexpr/index.html#type-vernac_expr
+3. inside DefineBody go to the 3rd argument again (Constrexpr.constr_expr -- this one is where all the Coq Cons are! https://coq.github.io/doc/v8.13/api/coq/Constrexpr/index.html#type-constr_expr_r)
+4. This gives the Coq Ast I want to refine. Let's move next to see how it looks like with an actual refine. 
+
+# try the string -> proof term using parse with refined
+
+rlwrap sertop --printer=human
+
+(Add () "Definition __hole {A:Type} (n:nat) (v:A) := v.")
+(Exec 2)
+
+(Parse ((ontop 2)) "(__hole 0 ?Goal).")
+
+rlwrap sertop --printer=human
+
+(Add () "
+Definition __hole {A:Type} (n:nat) (v:A) := v.
+Theorem add_easy_0:
+forall n:nat,
+  0 + n = n.
+  refine (__hole 0 _).
+  Show Proof.")
+(Exec 5)
+
+(Parse ((ontop 5)) "(__hole 0 ?Goal).")
+
+(Answer 2 Ack)
+(Answer 2
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id __hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 7)))))
+                  ((ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 8) (ep 9)))))))
+                   (ConstrMayEval
+                    (ConstrTerm
+                     ((v (CEvar (Id Goal) ()))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15))))))))))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 15)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 15)))))))
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 17)))))))))
+(Answer 2 Completed)
+
+# dynamic parser
+
+(___hole 0 ?Goal)
+(___hole 0 (fun n : nat => ___hole 1 ?Goal))
+(___hole 0 (fun n : nat => ___hole 1 (___hole 2 ?Goal : 0 + n = n)))
+
+
+(___hole 0 (fun n : nat =>  ___hole 1 (___hole 2 eq_refl : 0 + n = n) ))
+
+
+
+(___hole 0 ?Goal)
+(___hole 0 (fun n : nat => ___hole 1 ?Goal))
+(___hole 0
+   (fun n : nat =>
+	___hole 1
+      (nat_ind (fun n0 : nat => n0 + 0 = n0)
+         (___hole 2 (___hole 2 ?Goal0 : 0 + 0 = 0))
+         (fun (n0 : nat) (IHn : n0 + 0 = n0) => ___hole 2 ?Goal@{n:=n0}) n)))
+(___hole 0
+   (fun n : nat =>
+	___hole 1
+      (nat_ind (fun n0 : nat => n0 + 0 = n0)
+         (___hole 2 (___hole 2 eq_refl : 0 + 0 = 0))
+         (fun (n0 : nat) (IHn : n0 + 0 = n0) => ___hole 2 ?Goal@{n:=n0}) n)))
+(___hole 0
+   (fun n : nat =>
+	___hole 1
+      (nat_ind (fun n0 : nat => n0 + 0 = n0)
+         (___hole 2 (___hole 2 eq_refl : 0 + 0 = 0))
+         (fun (n0 : nat) (IHn : n0 + 0 = n0) =>
+          ___hole 2 (___hole 4 ?Goal@{n:=n0} : S n0 + 0 = S n0)) n)))
+(___hole 0
+   (fun n : nat =>
+	___hole 1
+      (nat_ind (fun n0 : nat => n0 + 0 = n0)
+         (___hole 2 (___hole 2 eq_refl : 0 + 0 = 0))
+         (fun (n0 : nat) (IHn : n0 + 0 = n0) =>
+          ___hole 2
+            (___hole 4
+               (eq_ind_r (fun n1 : nat => S n1 = S n0)
+                  (___hole 5 ?Goal@{n:=n0}) IHn)
+             :
+             S n0 + 0 = S n0)) n)))
+(___hole 0
+   (fun n : nat =>
+	___hole 1
+      (nat_ind (fun n0 : nat => n0 + 0 = n0)
+         (___hole 2 (___hole 2 eq_refl : 0 + 0 = 0))
+         (fun (n0 : nat) (IHn : n0 + 0 = n0) =>
+          ___hole 2
+            (___hole 4
+               (eq_ind_r (fun n1 : nat => S n1 = S n0) 
+                  (___hole 5 eq_refl) IHn)
+             :
+             S n0 + 0 = S n0)) n)))
