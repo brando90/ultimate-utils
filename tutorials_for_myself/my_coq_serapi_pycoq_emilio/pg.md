@@ -710,15 +710,93 @@ forall n:nat,
                   (___hole 5 ?Goal@{n:=n0}) IHn)
              :
              S n0 + 0 = S n0)) n)))
+
 (___hole 0
    (fun n : nat =>
 	___hole 1
       (nat_ind (fun n0 : nat => n0 + 0 = n0)
-         (___hole 2 (___hole 2 eq_refl : 0 + 0 = 0))
+         (___hole 2 (___hole 3 eq_refl : 0 + 0 = 0))
          (fun (n0 : nat) (IHn : n0 + 0 = n0) =>
           ___hole 2
-            (___hole 4
+            (___hole 5
                (eq_ind_r (fun n1 : nat => S n1 = S n0) 
-                  (___hole 5 eq_refl) IHn)
+                  (___hole 6 eq_refl) IHn)
              :
              S n0 + 0 = S n0)) n)))
+
+
+# -- question to emilio
+
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_0: forall n:nat, 0 + n = n. simpl. reflexivity. Show Proof.")
+(Exec 5)
+
+(Parse ((ontop 5)) "(fun n : nat => eq_refl).")
+(Parse () "(fun n : nat => eq_refl).")
+(Parse ((ontop 5)) "(fun n : nat => eq_refl)")
+
+(Parse () "Definition id := (fun n : nat => eq_refl).")
+
+# --
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_0: forall n:nat, 0 + n = n. simpl. reflexivity. Show Proof.")
+(Exec 5)
+
+(Parse () "Definition id := (fun n : nat => eq_refl).")
+
+(Answer 2 Ack)
+(Answer 2
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacDefinition (NoDischarge Definition)
+         (((v (Name (Id id)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 11) (ep 13)))))
+          ())
+         (DefineBody () ()
+          ((v
+            (CLambdaN
+             ((CLocalAssum
+               (((v (Name (Id n)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 22) (ep 23))))))
+               (Default Explicit)
+               ((v
+                 (CRef
+                  ((v (Ser_Qualid (DirPath ()) (Id nat)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 26) (ep 29)))))
+                  ()))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 26) (ep 29)))))))
+             ((v
+               (CRef
+                ((v (Ser_Qualid (DirPath ()) (Id eq_refl)))
+                 (loc
+                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                    (line_nb_last 1) (bol_pos_last 0) (bp 33) (ep 40)))))
+                ()))
+              (loc
+               (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                 (line_nb_last 1) (bol_pos_last 0) (bp 33) (ep 40)))))))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+              (bol_pos_last 0) (bp 18) (ep 40)))))
+          ())))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 42)))))))))
+(Answer 2 Completed)

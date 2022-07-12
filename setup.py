@@ -79,6 +79,7 @@ setup(
         'wandb',
         'matplotlib',
         # 'seaborn'
+        'nltk'
 
         # at the end because it might fail + you might need to pip install it directly for your cuda version
         'torch>=1.4.0,<1.10.0',
