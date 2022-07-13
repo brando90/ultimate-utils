@@ -165,32 +165,32 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     log_zeroth_step(args, meta_learner)
     # --------#
     while not halt:
-        print_inside_halt(args, halt, 0)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 0)  # todo: remove? temporary for debugging
         outer_opt.zero_grad()
-        print_inside_halt(args, halt, 1)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 1)  # todo: remove? temporary for debugging
 
         # - forward pass. Since the data fetching is different for l2l we do it this way
         task_dataset: TaskDataset = args.tasksets.train
-        print_inside_halt(args, halt, 2)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 2)  # todo: remove? temporary for debugging
         train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, call_backward=True)
-        print_inside_halt(args, halt, 3)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 3)  # todo: remove? temporary for debugging
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
-        print_inside_halt(args, halt, 4)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 4)  # todo: remove? temporary for debugging
 
         # - Grad clip  (optional)
         gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-        print_inside_halt(args, halt, 5)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 5)  # todo: remove? temporary for debugging
 
         # - Opt Step - Average the accumulated gradients and optimize
         from uutils.torch_uu.distributed import is_running_parallel
-        print_inside_halt(args, halt, 6)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 6)  # todo: remove? temporary for debugging
         if is_running_parallel(args.rank):
             for p in meta_learner.parameters():
                 p.grad.data.mul_(1.0 / meta_batch_size)
-        print_inside_halt(args, halt, 7)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 7)  # todo: remove? temporary for debugging
         outer_opt.step()  # averages gradients across all workers
-        print_inside_halt(args, halt, 8)  # todo: remove? temporary for debugging
+        # print_inside_halt(args, halt, 8)  # todo: remove? temporary for debugging
 
         # - Scheduler
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
