@@ -795,8 +795,170 @@ Theorem add_easy_0: forall n:nat, 0 + n = n. simpl. reflexivity. Show Proof.")
            (loc
             (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
               (bol_pos_last 0) (bp 18) (ep 40)))))
-          ())))))
+          ())) )))
      (loc
       (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
         (bol_pos_last 0) (bp 0) (ep 42)))))))))
 (Answer 2 Completed)
+
+# --
+
+goal: extract "ht" when we have a "___hole rid ht" construct.
+
+
+rlwrap sertop --printer=human
+
+(Add () "
+Definition ___hole {A:Type} (n:nat) (v:A) := v.
+Theorem add_easy_0: forall n:nat, 0 + n = n. refine (___hole 0 _). Show Proof.")
+(Exec 5)
+
+...
+
+(Parse () "(__hole 0 ?Goal).")
+
+(Answer 2 Ack)
+(Answer 2
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id __hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 7)))))
+                  ((ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 8) (ep 9)))))))
+                   (ConstrMayEval
+                    (ConstrTerm
+                     ((v (CEvar (Id Goal) ()))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15)))))) ))) )
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 15)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 15)))))))
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 17)))))))))
+(Answer 2 Completed)
+
+...
+
+(Print ((sid 5) (pp ((pp_format PpStr))))
+(
+(ConstrTerm
+                     ((v (CEvar (Id Goal) ()))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 10) (ep 15))))))
+)
+)
+
+
+# --
+
+rlwrap sertop --printer=human
+
+(Add () "
+Definition ___hole {A:Type} (v:A) := v.
+(* Set Printing All. *)
+Theorem easy: nat. refine (___hole _). apply O. Show Proof.
+")
+
+(Exec 7)
+(Exec 6)
+
+(Parse () "(__hole 0 ?Goal).")
+(Parse () "(@___hole nat (O : nat)).")
+(Parse () "(___hole 0).")
+
+(Parse () "(___hole 0).")
+(Answer 2 Ack)
+(Answer 2
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
+                  ( (ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) )))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 12)))))))))
+(Answer 2 Completed)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(
+CoqGenArg
+
+(GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
+                  ( (ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) )))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+)
+
+(Answer 3 Ack)
+(Answer 3 (ObjList ((CoqString "___hole 0"))))
+(Answer 3 Completed)
