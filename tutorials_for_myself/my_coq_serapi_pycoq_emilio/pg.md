@@ -880,16 +880,12 @@ rlwrap sertop --printer=human
 
 (Add () "
 Definition ___hole {A:Type} (v:A) := v.
-(* Set Printing All. *)
 Theorem easy: nat. refine (___hole _). apply O. Show Proof.
 ")
 
-(Exec 7)
 (Exec 6)
 
-(Parse () "(__hole 0 ?Goal).")
-(Parse () "(@___hole nat (O : nat)).")
-(Parse () "(___hole 0).")
+# (Parse () "(__hole 0 ?Goal).")
 
 (Parse () "(___hole 0).")
 (Answer 2 Ack)
@@ -907,17 +903,17 @@ Theorem easy: nat. refine (___hole _). apply O. Show Proof.
             ((v
               (TacCall
                ((v
-                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                 ( ((v (Ser_Qualid (DirPath ()) (Id ___hole)))
                    (loc
                     (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
                       (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
-                  ( (ConstrMayEval
+                  ((ConstrMayEval
                     (ConstrTerm
                      ((v
                        (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
                       (loc
                        (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
-                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) )))
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))) ) )
                 (loc
                  (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
                    (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
@@ -930,10 +926,10 @@ Theorem easy: nat. refine (___hole _). apply O. Show Proof.
         (bol_pos_last 0) (bp 0) (ep 12)))))))))
 (Answer 2 Completed)
 
+
 (Print ((sid 6) (pp ((pp_format PpStr))))
 (
 CoqGenArg
-
 (GenArg raw (ExtraArg tactic)
            (TacArg
             ((v
@@ -962,3 +958,146 @@ CoqGenArg
 (Answer 3 Ack)
 (Answer 3 (ObjList ((CoqString "___hole 0"))))
 (Answer 3 Completed)
+
+
+# -
+# wrap 0 proof term and send it in s-exp format to coq-serapi and have it pprint it back to me
+
+# first I want to see how zero is wrapped up in GenArg from a response. Then perhaps I can map that to the answer I
+# already have to figure out how to extract what I need. 
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem easy: nat. apply O. Show Proof.
+")
+
+(Exec 4)
+
+(Parse () "0.")
+#doesnt work :/
+
+# - try extract the content of the hole
+
+rlwrap sertop --printer=human
+
+(Add () "
+Definition ___hole {A:Type} (v:A) := v.
+Theorem easy: nat. refine (___hole _). apply O. Show Proof.
+")
+
+(Exec 6)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+( (ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) )
+)
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))) )
+)
+)
+)
+
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqConstr
+(ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))
+)
+
+((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqConstr
+((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+ (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqConstr
+(CPrim (Numeral SPlus ((int 0) (frac "") (exp ""))))
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(
+CoqGenArg
+(GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 ( 
+                  ( (ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) ) ))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10))))) ))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+)
+
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(
+CoqGenArg
+(GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 ( ()
+                  ( (ConstrMayEval
+                    (ConstrTerm
+                     ((v
+                       (CPrim (Numeral SPlus ((int 0) (frac "") (exp "")))))
+                      (loc
+                       (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                         (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))) ) ))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10))))) ))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+)
+
+
