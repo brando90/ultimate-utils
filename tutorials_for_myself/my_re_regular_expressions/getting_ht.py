@@ -244,7 +244,7 @@ def get_multiple_hts(ppt: str, ept: str) -> tuple[str]:
     print(f'{_ppt=}')
     _ppt = re.escape(_ppt)
     print(f'{_ppt=}')
-    re_ppt = _ppt.replace('HERE', '\s*(.+)\s*')
+    re_ppt = _ppt.replace('HERE', r'\s*(.+)\s*')
     print(f'{re_ppt=}')
 
     # - now that the re pattern is in the place of the meta-var, compute the diff btw terms to get the ht that goes in the hole
@@ -264,6 +264,31 @@ ept = """(fun n : nat =>
    (fun (n' : nat) (IH : n' + 0 = n') =>
 	eq_ind_r (fun n0 : nat => S n0 = S n') eq_refl IH : S n' + 0 = S n') n)"""
 hts = get_multiple_hts(ppt, ept)
-assert hts is not None, f'expected two holes matched but go {out=}'
+assert hts is not None, f'expected two holes matched but go {hts=}'
+from pprint import pprint
 pprint(hts)
 print()
+
+#%%
+"""
+compute "differences" of strings.
+"""
+import re
+
+ppt = 'abc HERE abc'
+ept = 'abc TERM abc'
+re_ppt = ppt.replace('HERE', '(.+)')
+print()
+print(f'{re_ppt=}')
+out = re.search(pattern=re_ppt, string=ept)
+print(out)
+print(out.groups())
+
+ppt = 'abc HERE abc HERE abc'
+ept = 'abc TERM1 abc TERM2 abc'
+re_ppt = ppt.replace('HERE', '(.+)')
+print()
+print(f'{re_ppt=}')
+out = re.search(pattern=re_ppt, string=ept)
+print(out)
+print(out.groups())
