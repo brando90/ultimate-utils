@@ -238,6 +238,9 @@ print(out.groups())
 
 
 def get_multiple_hts(ppt: str, ept: str) -> tuple[str]:
+    # ppt_ = re.sub(pattern='\s+', repl=' ', string=ppt)
+    # ept_ = re.sub(pattern='\s+', repl=' ', string=ept)
+
     # - put a re pattern that matches anything in place of the meta-variable ?GOAL is
     pattern_meta_var = r'\s*\?(\w)+\s*'
     _ppt = re.sub(pattern=pattern_meta_var, repl='HERE', string=ppt)
