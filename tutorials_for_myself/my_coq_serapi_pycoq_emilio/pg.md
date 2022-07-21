@@ -666,7 +666,8 @@ forall n:nat,
 )
 )
 
-# dynamic parser
+# - dynamic parser
+# https://github.com/FormalML/iit-term-synthesis/issues/6
 
 (___hole 0 ?Goal)
 (___hole 0 (fun n : nat => ___hole 1 ?Goal))
@@ -1100,4 +1101,592 @@ CoqGenArg
 )
 )
 
+
+(Parse () "0.")
+(Answer 2 Ack)
+(Answer 2
+ (CoqExn
+  ((loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+      (bol_pos_last 0) (bp 1) (ep 2))))
+   (stm_ids ()) (backtrace (Backtrace ()))
+   (exn
+    (Stream.Error
+     "':' expected after [selector_body] (in [vernac:toplevel_selector])"))
+   (pp
+    (Pp_box (Pp_hovbox 0)
+     (Pp_glue
+      ((Pp_string "Syntax error: ")
+       (Pp_string
+        "':' expected after [selector_body] (in [vernac:toplevel_selector])")
+       (Pp_string .)))))
+   (str
+    "Syntax error: ':' expected after [selector_body] (in [vernac:toplevel_selector])."))))
+(Answer 2 Completed)
+
+(Parse () "(___hole O).")
+(Answer 3 Ack)
+(Answer 3
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) )) ))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 12)))))))))
+(Answer 3 Completed)
+
+(Parse () "O.")
+(Answer 7 Ack)
+(Answer 7
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id O)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 0) (ep 1)))))
+                  ()))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 0) (ep 1)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 0) (ep 1)))))))
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 2)))))))))
+(Answer 7 Completed)
+
+# --
+
+((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) ))
+
+(Print ((sid 6) (pp ((pp_format PpStr))))  
+(CoqQualId
+(
+((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))
+)
+)
+
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))  
+(CoqQualId
+(Ser_Qualid (DirPath ()) (Id O))
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))  
+(CoqQualId
+(Qualid (DirPath ()) (Id O))
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))  
+(CoqGenArg
+(Qualid (DirPath ()) (Id O))
+)
+)
+
+#--
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) coq_obj)
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(
+CoqGenArg
+(GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) )) ))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+)
+
+((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) ))
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) (CoqGenArg (...)))
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg 
+
+(GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) )) ))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10))))))
+)
+
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) (CoqGenArg (...)))
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+(Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) )
+
+)
+)
+)
+
+)
+
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+((v
+                 (
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) ) ) )
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+)
+)
+)
+
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+
+(Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) )
+
+)
+)
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+((v
+                 (
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) ) ) )
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+)
+)
+)
+
+)
+)
+
+# -
+
+(Parse () "(___hole O).")
+(Parse () "S S O .")
+(Parse () "(S (S (O))).")
+(Parse () 
+"
+___hole ( S (___hole ( S (___hole O)))).
+"
+)
+
+(Parse () 
+"
+Definition id := fun (x: nat) => x.
+"
+)
+
+
+(Parse () 
+"
+fun (x: nat) => x.
+"
+)
+
+(Parse () 
+"(___hole (fun (x: nat) => ___hole (x)))."
+)
+
+(Parse () "S.")
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    ((Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    (Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    ((Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    (Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+
+)
+
+# --
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    (Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))))
+)
+)
+
+# --
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) 
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+((v
+                 
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))) ) ) 
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+)
+)
+)
+
+)
+)
+
+# --
+
+(Parse () "(___hole O).")
+(Answer 24 Ack)
+(Answer 24
+ (ObjList
+  ((CoqAst
+    ((v
+      ((control ()) (attrs ())
+       (expr
+        (VernacExtend (VernacSolve 0)
+         ((GenArg raw (OptArg (ExtraArg ltac_selector)) ())
+          (GenArg raw (OptArg (ExtraArg ltac_info)) ())
+          (GenArg raw (ExtraArg tactic)
+           (TacArg
+            ((v
+              (TacCall
+               ((v
+                 (((v (Ser_Qualid (DirPath ()) (Id ___hole)))
+                   (loc
+                    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 8)))))
+                  ((Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))))
+                (loc
+                 (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+
+
+))
+             (loc
+              (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+            )
+          )
+          (GenArg raw (ExtraArg ltac_use_default) false))))))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0) (line_nb_last 1)
+        (bol_pos_last 0) (bp 0) (ep 12)))))))))
+(Answer 24 Completed)
+
+
+(Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))
+
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+(Reference
+                    ((v (Ser_Qualid (DirPath ()) (Id O)))
+                     (loc
+                      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+                        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))
+)
+
+)
+)
+)
+)
+
+# ----
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+ (TacArg
+  ((v
+    (Reference
+          ((v (Ser_Qualid (DirPath ()) (Id O)))
+           (loc
+            (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+              (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10)))))))
+   (loc
+    (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+      (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10))))))
+)
+)
+)
+
+# ----
+
+# get from the inner TacCall the argument for 0. 
+
+((v
+(Reference
+    ((v (Ser_Qualid (DirPath ()) (Id O)))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))
+)
+(loc
+ (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+((v
+(Reference
+    ((v (Ser_Qualid (DirPath ()) (Id O)))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))
+)
+(loc
+ (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+   (line_nb_last 1) (bol_pos_last 0) (bp 1) (ep 10)))))
+)
+)
+)
+)
+
+
+(Print ((sid 6) (pp ((pp_format PpStr))))
+(CoqGenArg
+(GenArg raw (ExtraArg tactic)
+(TacArg
+((v
+(Reference
+    ((v (Ser_Qualid (DirPath ()) (Id O)))
+     (loc
+      (((fname ToplevelInput) (line_nb 1) (bol_pos 0)
+        (line_nb_last 1) (bol_pos_last 0) (bp 9) (ep 10))))))
+)
+(loc
+ ()
+)
+)
+)
+)))
+
+
+# --
+
+```bash
+## -- setup opam like VP's PyCoq
+#RUN opam init --disable-sandboxing
+## compiler + '_' + coq_serapi + '.' + coq_serapi_pin
+#RUN opam switch create ocaml-variants.4.07.1+flambda_coq-serapi.8.11.0+0.11.1 ocaml-variants.4.07.1+flambda
+#RUN opam switch ocaml-variants.4.07.1+flambda_coq-serapi.8.11.0+0.11.1
+#RUN eval $(opam env)
+#
+#RUN opam repo add coq-released https://coq.inria.fr/opam/released
+## RUN opam pin add -y coq 8.11.0
+## ['opam', 'repo', '--all-switches', 'add', '--set-default', 'coq-released', 'https://coq.inria.fr/opam/released']
+#RUN opam repo --all-switches add --set-default coq-released https://coq.inria.fr/opam/released
+#RUN opam update --all
+opam pin add -y coq 8.11.0
+
+#RUN opam install -y --switch ocaml-variants.4.07.1+flambda_coq-serapi_coq-serapi_8.11.0+0.11.1 coq-serapi 8.11.0+0.11.1
+opam install -y coq-serapi
+eval $(opam env)
+```
+get the serapi top:
+```bash
+rlwrap sertop --printer=human
+```
+
+
+```
+(Add () "
+Definition ___hole {A:Type} (v:A) := v.
+Theorem easy: nat. refine (___hole _). apply O. Show Proof.
+")
+
+(Exec 6)
+
+
+(Parse () "(___hole O).")
+(Parse () "O.")
+
+(Parse () "S S O .")
+(Parse () "___hole ( S (___hole ( S (___hole O)))). ")
+(Parse () "(___hole (fun (x: nat) => ___hole (x))).")
+(Parse () "S.")
+(Parse () "(__hole 0 ?Goal).")
+(Parse () "Definition id := (fun n : nat => eq_refl).")
+
+(Print ((sid 6) (pp ((pp_format PpStr)))) coq_obj)
+```
 
