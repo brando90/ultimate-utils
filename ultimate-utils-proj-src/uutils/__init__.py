@@ -1295,7 +1295,7 @@ def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
     return python_obj
 
 
-def load_json(path2filename: Union[str, Path], mode: str = 'r') -> dict:
+def load_json(path2filename: Union[str, Path], mode: str = 'r') -> Union[dict, list]:
     if not isinstance(path2filename, Path):
         path2filename: Path = Path(path2filename).expanduser()
     path2filename.expanduser()
@@ -1304,7 +1304,7 @@ def load_json(path2filename: Union[str, Path], mode: str = 'r') -> dict:
     return data
 
 
-def _load_json(path: str, filename: str, mode='r') -> dict:
+def _load_json(path: str, filename: str, mode='r') -> Union[dict, list]:
     from pathlib import Path
     import json
 
@@ -1322,13 +1322,7 @@ def _load_with_dill(path: str, filename: str, mode='rb') -> Any:
 
 
 def load_json_list(path: str, filename: str, mode='r') -> list:
-    from pathlib import Path
-    import json
-
-    path = Path(path).expanduser()
-    with open(path / filename, mode) as f:
-        d: list = json.load(f)
-    return d
+    return load_json(path / filename, mode)
 
 
 def write_str_to_file(path: str, filename: str, file_content: str, mode: str = 'w'):
