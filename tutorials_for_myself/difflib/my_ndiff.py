@@ -25,8 +25,8 @@ import difflib
 # ppt = '(fun A B : Prop => ?Goal)'
 ptp = 'Theorem th1: forall A B: Prop, A -> A -> (A->B) -> B.\n Proof.\n   intros A B.\n   intros a0 a1.\n   intros ab.\n   apply ab.\n   exact a1.\n'
 
-# ppt = '(fun A B : Prop => ?Goal)'
-ppt = '(fun A B : Prop => )'
+ppt = '(fun A B : Prop => ?Goal)'
+# ppt = '(fun A B : Prop => )'
 re_ppt = '\\(fun\\ A\\ B\\ :\\ Prop\\ =>\\s*(.+)\\s*\\)'
 ept = '(fun (A B : Prop) (_ a1 : A) (ab : A -> B) => ab a1)'
 
@@ -55,3 +55,4 @@ still once we don't have a consecutive jump we are found the hole.
 
 (- if not a lonely, then that is a hole no matter the size. it stops once the jump is none consecutive)
 """
+
