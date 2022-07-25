@@ -887,6 +887,24 @@ def collect_content_from_file(filepath):
     return contents
 
 
+# -
+
+def unique_name_from_str(string: str, last_idx: int = 12) -> str:
+    """
+    Generates a unique id name
+    refs:
+    - md5: https://stackoverflow.com/questions/22974499/generate-id-from-string-in-python
+    - sha3: https://stackoverflow.com/questions/47601592/safest-way-to-generate-a-unique-hash
+    (- guid/uiid: https://stackoverflow.com/questions/534839/how-to-create-a-guid-uuid-in-python?noredirect=1&lq=1)
+    """
+    import hashlib
+    m = hashlib.md5()
+    string = string.encode('utf-8')
+    m.update(string)
+    unqiue_name: str = str(int(m.hexdigest(), 16))[0:last_idx]
+    return unqiue_name
+
+
 # - cluster stuff
 
 def print_args(args: Namespace, sort_keys: bool = True):
@@ -943,7 +961,7 @@ def pprint_namespace(ns):
     pprint_any_dict(ns)
 
 
-def _to_json_dict_with_strings(dictionary):
+def _to_json_dict_with_strings(dictionary) -> dict:
     """
     Convert dict to dict with leafs only being strings. So it recursively makes keys to strings
     if they are not dictionaries.
@@ -963,10 +981,7 @@ def _to_json_dict_with_strings(dictionary):
     return d
 
 
-def to_json(dic):
-    import types
-    import argparse
-
+def to_json(dic) -> dict:
     if type(dic) is dict:
         dic = dict(dic)
     else:
@@ -974,10 +989,14 @@ def to_json(dic):
     return _to_json_dict_with_strings(dic)
 
 
-def save_to_json_pretty(dic, path, mode='w', indent=4, sort_keys=True):
+def save_to_json_pretty(dic: Any, path2filename: Union[str, Path], mode='w', indent=4, sort_keys=True):
     import json
 
-    with open(path, mode) as f:
+    if not isinstance(path2filename, Path):
+        path2filename: Path = Path(path2filename).expanduser()
+    path2filename.expanduser()
+
+    with open(path2filename, mode) as f:
         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
 
 
