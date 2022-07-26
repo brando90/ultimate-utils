@@ -1690,3 +1690,58 @@ Theorem easy: nat. refine (___hole _). apply O. Show Proof.
 (Print ((sid 6) (pp ((pp_format PpStr)))) coq_obj)
 ```
 
+
+# what does the output of done proof looks like?
+```
+rlwrap sertop --printer=human
+```
+```
+(Add () "
+Theorem easy: nat. apply O.
+")
+
+(Exec 3)
+
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+  (Query ((pp ((pp_format PpStr)))) Goals)
+(Answer 2 Ack)
+(Answer 2 (ObjList ((CoqString ""))))
+(Answer 2 Completed)
+
+```
+rlwrap sertop --printer=human
+```
+```
+(Add () "
+Theorem easy: nat. apply O. Qed.
+")
+
+(Exec 4)
+
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+(Query ((pp ((pp_format PpStr)))) Goals)
+(Answer 2 Ack)
+(Answer 2 (ObjList ()))
+(Answer 2 Completed)
+
+```
+rlwrap sertop --printer=human
+```
+```
+(Add () "
+Theorem easy: nat.
+")
+
+(Exec 2)
+
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+(Query ((pp ((pp_format PpStr)))) Goals)
+(Answer 2 Ack)
+(Answer 2
+ (ObjList ((CoqString  "none\
+                      \n============================\
+                      \nnat"))))
+(Answer 2 Completed)
