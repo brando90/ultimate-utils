@@ -1691,33 +1691,76 @@ Theorem easy: nat. refine (___hole _). apply O. Show Proof.
 ```
 
 
-# what does the output of done proof looks like?
+# when are u in a proof? 
+
+case 1: only declared proof
 ```
 rlwrap sertop --printer=human
-```
-```
+
 (Add () "
-Theorem easy: nat. apply O.
+Theorem easy: nat -> nat.
+")
+
+(Exec 2)
+
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+(Answer 2 Ack)
+(Answer 2
+ (ObjList ((CoqString  "none\
+                      \n============================\
+                      \nnat -> nat"))))
+(Answer 2 Completed)
+-> Conclusion: proof state with (lots) of string content, so your in proof mode
+
+case 2: in the middle of some step.
+```
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem easy: nat -> nat. intros.
 ")
 
 (Exec 3)
 
 (Query ((pp ((pp_format PpStr)))) Goals)
 ```
-  (Query ((pp ((pp_format PpStr)))) Goals)
+(Query ((pp ((pp_format PpStr)))) Goals)
+(Answer 2 Ack)
+(Answer 2
+ (ObjList ((CoqString  "\
+                      \n  H : nat\
+                      \n============================\
+                      \nnat"))))
+(Answer 2 Completed)
+-> Conclusion: proof state with (lots) of string content, so your in proof mode
+
+case 3: proof is done (but without a Qed.)
+```
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem easy: nat -> nat. intros. apply O.
+")
+(Exec 4)
+
+(Query ((pp ((pp_format PpStr)))) Goals)
+```
+(Query ((pp ((pp_format PpStr)))) Goals)
 (Answer 2 Ack)
 (Answer 2 (ObjList ((CoqString ""))))
 (Answer 2 Completed)
+-> Conclusion: when proof is done then we have goals being the empty string (note proof term is completed).
 
+case 4: proof is closed (i.e. Qed. like ststement has been called).
 ```
 rlwrap sertop --printer=human
-```
-```
+
 (Add () "
-Theorem easy: nat. apply O. Qed.
+Theorem easy: nat -> nat. intros. apply O. Qed.
 ")
 
-(Exec 4)
+(Exec 5)
 
 (Query ((pp ((pp_format PpStr)))) Goals)
 ```
@@ -1725,23 +1768,34 @@ Theorem easy: nat. apply O. Qed.
 (Answer 2 Ack)
 (Answer 2 (ObjList ()))
 (Answer 2 Completed)
+-> Conclusion: when proof is closed, then the goals is literally empty, no coq string object. 
 
-```
+# --
+
 rlwrap sertop --printer=human
-```
-```
-(Add () "
-Theorem easy: nat.
-")
 
-(Exec 2)
+(Add ()
+"
+Fixpoint eqb (n m : nat) : bool :=
+  match n with
+  | O => match m with
+         | O => true
+         | S m' => false
+         end
+  | S n' => match m with
+            | O => false
+            | S m' => eqb n' m'
+            end
+  end.
 
-(Query ((pp ((pp_format PpStr)))) Goals)
-```
-(Query ((pp ((pp_format PpStr)))) Goals)
-(Answer 2 Ack)
-(Answer 2
- (ObjList ((CoqString  "none\
-                      \n============================\
-                      \nnat"))))
-(Answer 2 Completed)
+Theorem eqb_refl: forall n, eqb n n = true.
+Proof. induction n as [|n1 IHn1].
+       - simpl. reflexivity.
+       - simpl. rewrite -> IHn1. reflexivity.
+"
+)
+
+(Exec 12)
+
+(Add () "Show Proof.")
+(Exec 13)
