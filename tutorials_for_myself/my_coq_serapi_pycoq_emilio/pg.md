@@ -1799,3 +1799,68 @@ Proof. induction n as [|n1 IHn1].
 
 (Add () "Show Proof.")
 (Exec 13)
+
+# -- 
+
+```
+Show Conjectures. is how you get the theorem name you are currently trying to prove.  
+Because of nested proofs, I guess it theoretically can return more than one thing. 
+I suggest adding this to your data if for nothing else than debugging. 
+It is easier to look up a theorem by name in a file than a position index. (edited) 
+```
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_0'':
+forall n:nat,
+  0 + n = n.
+Proof.
+    intros.
+    simpl.
+")
+(Exec 5)
+
+(Add () "Show Conjectures.")
+(Exec 6)
+
+(Exec 6)
+(Answer 4 Ack)
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0) (contents (ProcessingIn master))))
+(Feedback ((doc_id 0) (span_id 5) (route 0) (contents Processed)))
+(Feedback
+ ((doc_id 0) (span_id 6) (route 0)
+  (contents
+   (Message (level Notice) (loc ()) (pp (Pp_string add_easy_0''))
+    (str add_easy_0'')))))
+(Feedback ((doc_id 0) (span_id 6) (route 0) (contents Processed)))
+(Answer 4 Completed)
+
+
+```
+Show Existentials
+
+Displays all open goals / existential variables in the current proof along with the type and the context of each variable.
+
+https://coq.github.io/doc/v8.10/refman/proof-engine/proof-handling.html#coq:cmdv.show-conjectures
+3:14
+Show Existentials. is interesting too.  It shows the proof state for each goal/e-variable, and also makes clear what the e-variables names are in the proof.
+3:15
+https://coq.github.io/doc/v8.10/refman/proof-engine/proof-handling.html#coq:cmdv.show-existentials
+```
+
+```
+Theorem zero_plus_n_eq_n:
+  forall n: nat, 0 + n = n.
+  Show.
+ Proof.
+  intros.
+  simpl.
+  Show Existentials.
+
+Existential 1 =
+?Goal : [n : nat |- n = n]
+
+Displays all open goals / existential variables in the current proof along with the type and the context of each variable.
+```
