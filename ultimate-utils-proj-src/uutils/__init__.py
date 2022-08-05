@@ -969,11 +969,9 @@ def _to_json_dict_with_strings(dictionary) -> dict:
     Use case:
         - saving dictionary of tensors (convert the tensors to strins!)
         - saving arguments from script (e.g. argparse) for it to be pretty
-
-    e.g.
-
     """
     # base case: if the input is not a dict make it into a string and return it
+    # if type(dictionary) != dict or type(dictionary) != list:
     if type(dictionary) != dict:
         return str(dictionary)
     # recurse into all the values that are dictionaries
@@ -989,16 +987,26 @@ def to_json(dic) -> dict:
     return _to_json_dict_with_strings(dic)
 
 
-def save_to_json_pretty(dic: Any, path2filename: Union[str, Path], mode='w', indent=4, sort_keys=True):
+def save_to_json_pretty(dic: Any, path2filename: Union[str, Path], mode='w', indent=4, sort_keys=True,
+                        force: bool = True):
     import json
 
     if not isinstance(path2filename, Path):
         path2filename: Path = Path(path2filename).expanduser()
     path2filename.expanduser()
 
+    dic = to_json(dic) if force else dic
     with open(path2filename, mode) as f:
-        json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
+        json.dump(dic, f, indent=indent, sort_keys=sort_keys)
 
+
+# def save_to_json():
+#     if not isinstance(path2filename, Path):
+#         path2filename: Path = Path(path2filename).expanduser()
+#     path2filename.expanduser()
+#
+#     with open(path2filename, mode) as f:
+#         json.dump(to_json(dic), f, indent=indent, sort_keys=sort_keys)
 
 def save_args_to_sorted_json(args, dirpath):
     with open(dirpath / 'args.json', 'w+') as argsfile:
