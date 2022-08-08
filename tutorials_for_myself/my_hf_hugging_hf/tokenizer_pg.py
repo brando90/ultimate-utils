@@ -24,8 +24,13 @@ tokenizer.save_pretrained(path / "pre-train-roberta-base")
 tokenizer.save_pretrained("pre-train-roberta-base")
 
 # - try out tokenizer
-tokenizer_checkpoint = "nasa-tokenizer"
+tokenizer_checkpoint = "saved-tokenizer"
 # tokenizer_checkpoint = path / "pre-train-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
+
+# - retraining a tokenizer, write made up coq code or something.
+# tokenizer_ckpt = "saved-tokenizer"
+# tokenizer = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
+# new_tokenizer = tokenizer.train_new_from_iterator(iterator(), vocab_size=vocab)
 
 #%%
