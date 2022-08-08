@@ -1,3 +1,7 @@
+#%%
+my_string = 'asdasd    \n asdasd \nm\n.'
+s = " ".join(my_string.split())
+print(s)
 """
 very nive interface to try regexes: https://regex101.com/
 """

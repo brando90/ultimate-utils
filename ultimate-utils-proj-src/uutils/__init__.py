@@ -1000,6 +1000,13 @@ def save_to_json_pretty(dic: Any, path2filename: Union[str, Path], mode='w', ind
         json.dump(dic, f, indent=indent, sort_keys=sort_keys)
 
 
+def force_expanduser(path: Union[str, Path]) -> Path:
+    """ todo: replace everywhere where bottom is hardcoded. """
+    if not isinstance(path, Path):
+        path: Path = Path(path).expanduser()
+    path.expanduser()
+    return path
+
 # def save_to_json():
 #     if not isinstance(path2filename, Path):
 #         path2filename: Path = Path(path2filename).expanduser()
