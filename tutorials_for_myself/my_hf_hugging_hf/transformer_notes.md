@@ -30,3 +30,17 @@ Translation = Translation converts a sequence of text from one language to anoth
 
 - notebooks from HF:
   - https://github.com/huggingface/notebooks/blob/main/examples/translation.ipynb
+
+
+### Previous model I trained as Enc-Dec arch/translation (tinfer)
+
+- Prediction at training:
+  - I gave the entire (right shifted) target as input to decoder (masks only for out of bounds, not for step of prediction)
+  - (I did not loop through the len & masked the target input to dec nor the loss according to step)
+- Prediction at testing (inference/eval):
+  - I looped the length of the seq (i.e. auto-regressive) until a <eos> was predicted greedily.
+
+- Q:
+  - is this what T5 do?
+  - is this what original trans do?
+  - is this what T5/original trans do with HF?

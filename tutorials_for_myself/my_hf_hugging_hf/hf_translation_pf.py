@@ -5,6 +5,7 @@ import datasets
 from datasets import load_dataset
 
 books = load_dataset("opus_books", "en-fr")
+print(f'{books=}')
 
 books = books["train"].train_test_split(test_size=0.2)
 

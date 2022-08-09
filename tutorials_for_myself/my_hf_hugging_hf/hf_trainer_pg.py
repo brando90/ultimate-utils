@@ -6,6 +6,7 @@ import datasets
 from datasets import load_dataset
 
 dataset = load_dataset("yelp_review_full")
+print(f'{dataset=}')
 print(f'{dataset["train"]=}')
 dataset["train"][100]
 print(f'print data point: {dataset["train"][100]=}')
