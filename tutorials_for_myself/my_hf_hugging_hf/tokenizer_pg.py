@@ -10,7 +10,7 @@ refs:
 # from transformers import AutoTokenizer, XLMRobertaTokenizer
 from pathlib import Path
 
-from transformers import AutoTokenizer, PreTrainedTokenizerFast
+from transformers import AutoTokenizer, PreTrainedTokenizerFast, RobertaTokenizerFast
 
 path: Path = Path('~/data/tmp/').expanduser()
 path.mkdir(parents=True, exist_ok=True)
@@ -19,6 +19,7 @@ path.mkdir(parents=True, exist_ok=True)
 tokenizer = AutoTokenizer.from_pretrained('roberta-base')
 assert tokenizer.is_fast
 print(tokenizer)
+print(tokenizer.vocab_size)
 
 # - save tokenizer
 tokenizer.save_pretrained(path / "pre-train-roberta-base")
@@ -80,15 +81,16 @@ def my_iterator():
 
 print()
 tokenizer_checkpoint = path / "pre-train-roberta-base"
-tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
+tokenizer: RobertaTokenizerFast = AutoTokenizer.from_pretrained(tokenizer_checkpoint)
 print(f'original tokenizer vocab size: {tokenizer.vocab_size=}')
 vocab_size_new_guess: int = 500
 vocab_size: int = tokenizer.vocab_size + vocab_size_new_guess  # todo how do you know this value if you've not ran the tokenizer yet?
 print(f'{vocab_size=}')
+# - this re-train your tokenizer from scratch
 new_tokenizer: PreTrainedTokenizerFast = tokenizer.train_new_from_iterator(my_iterator(), vocab_size=vocab_size)
-assert new_tokenizer.vocab_size > tokenizer.vocab_size, f'new tokenizer vocab size should be at least as large as original.'
 print(f'original tokenizer vocab size: {tokenizer.vocab_size=}')
 print(f'new vocab size: {new_tokenizer.vocab_size=}')
+# assert new_tokenizer.vocab_size > tokenizer.vocab_size, f'new tokenizer vocab size should be at least as large as original.'
 
 tokenizer_checkpoint = path / "new-pre-train-roberta-base"
 new_tokenizer.save_pretrained(tokenizer_checkpoint)

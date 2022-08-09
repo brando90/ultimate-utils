@@ -30,6 +30,7 @@ def tokenize_function(examples: datasets.arrow_dataset.Batch):
 
 # use 🤗 Datasets map method to apply a preprocessing function over the entire dataset:
 tokenized_datasets = dataset.map(tokenize_function, batched=True, batch_size=2)
+print(tokenized_datasets)
 
 # If you like, you can create a smaller subset of the full dataset to fine-tune on to reduce the time it takes:
 small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
