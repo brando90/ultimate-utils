@@ -59,6 +59,9 @@ rm -rf dist
 
 ```angular2html
 cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+cd ~/ultimate-utils/
 python setup.py sdist bdist_wheel
 twine check dist/*
 twine upload dist/*
@@ -104,16 +107,17 @@ Test by pip installing it to your env:
 ```angular2html
 pip install ultimate-utils
 ```
-
+check it was installed and the depedencies you expected are there.
+```
+conda list
+pip list
+```
 To test the installation uutils do:
-
 ```
 python -c "import uutils; uutils.hello()"
 python -c "import uutils; uutils.torch_uu.hello()"
 ```
-
 it should print something like the following:
-
 ```
 
 hello from uutils __init__.py in:
