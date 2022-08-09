@@ -153,6 +153,10 @@ ref: see files
 - https://github.com/brando90/ultimate-utils/blob/master/run_tb.sh
 - https://github.com/brando90/ultimate-utils/blob/master/ultimate-utils-proj-src/execute_tensorboard.py
 
+## Pushing to pypi
+
+See: `~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md`
+
 ## Citation
 If you use this implementation consider citing us:
 

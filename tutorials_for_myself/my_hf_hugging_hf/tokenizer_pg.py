@@ -50,20 +50,20 @@ in_text = 'Handle all the shared methods for tokenization and special tokens as 
 print(in_text)
 
 print('\nEncode text in tokenizer\'s ids:')
-out: list[int] = tokenizer(in_text)['input_ids']
-print(f'{out=}')
+encoding: list[int] = tokenizer(in_text)['input_ids']
+print(f'{encoding=}')
 
 print('\nSanity check: check original text and decoded text are of similar length')
 print(f'{len(in_text.split())=}')
-print(f'{len(out)=}')
+print(f'{len(encoding)=}')
 
 print('\nSanity check: decode output ids of the tokenizer back to a string, is it similar to original input text?')
-print(f'{tokenizer.decode(out)=}')
+print(f'{tokenizer.decode(encoding)=}')
 print(f'{in_text=}')
 
 
 # print('Print str of each token.')
-# print('\n'.join([tokenizer.decode(token_id) for token_id in out]))
+# print('\n'.join([tokenizer.decode(token_id) for token_id in encoding]))
 
 # - retraining a tokenizer (i.e. get new token stats), write made up coq code or something.
 def my_iterator():
@@ -100,15 +100,15 @@ in_text = '(fun n m p : nat =>\n nat_ind (fun n0 : nat => n0 + (m + p) = n0 + m 
 print(in_text)
 
 print('\nEncode text in tokenizer\'s ids:')
-out: list[int] = tokenizer(in_text)['input_ids']
-print(f'{out=}')
+encoding: list[int] = tokenizer(in_text)['input_ids']
+print(f'{encoding=}')
 
 print('\nSanity check: check original text and decoded text are of similar length')
 print(f'{len(in_text.split())=}')
-print(f'{len(out)=}')
+print(f'{len(encoding)=}')
 
 print('\nSanity check: decode output ids of the tokenizer back to a string, is it similar to original input text?')
-print(f'{tokenizer.decode(out)=}')
+print(f'{tokenizer.decode(encoding)=}')
 print(f'{in_text=}')
 
 # %%

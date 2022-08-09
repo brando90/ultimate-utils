@@ -1,16 +1,20 @@
 # Steps to upload to pypi
 
-If you have any dist or wheels things, remove them first.
-
+If you have any dist or wheels things, remove them first:
+```
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+```
+Make sure twine is installed to be able to build a distribution for pypi:
 ```angular2html
 pip install twine
 ```
-
-go to project src and do:
+go to project root and run setup do:
 ```angular2html
+cd ~/ultimate-utils/
 python setup.py sdist bdist_wheel
 ```
-
 create the distribution for pypi:
 ```angular2html
 twine check dist/*
@@ -19,7 +23,17 @@ twine check dist/*
 ## Upload to pytest [optional]
 
 ```angular2html
+cd ~/ultimate-utils/
+python setup.py sdist bdist_wheel
+twine check dist/*
 twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+```
+might ask you your username & password. 
+Note: **test & pypi are different**. 
+For that check your 1password for pypi  https://test.pypi.org.
+```makefile
+Enter your username:
+Enter your password:
 ```
 then click the url that appears. e.g.
 ```angular2html
@@ -34,13 +48,29 @@ Uploading ultimate-utils-0.1.0.tar.gz
 View at:
 https://test.pypi.org/project/ultimate-utils/0.1.0/
 ```
+then make sure you delete the build and dist:
+```angular2html
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+```
 
 ## Upload to pypi
 
 ```angular2html
+cd ~/ultimate-utils/
+python setup.py sdist bdist_wheel
+twine check dist/*
 twine upload dist/*
 ```
-click url that appears to test it worked e.g.
+might ask you your username & password. 
+Note: **test & pypi are different**. 
+For that check your 1password for pypi  https://test.pypi.org.
+```makefile
+Enter your username:
+Enter your password:
+```
+then click the url that appears. e.g.
 ```angular2html
 Uploading distributions to https://upload.pypi.org/legacy/
 Enter your username: brando90
@@ -53,10 +83,11 @@ Uploading ultimate-utils-0.1.0.tar.gz
 View at:
 https://pypi.org/project/ultimate-utils/0.1.0/
 ```
-
 then make sure you delete the build and dist:
 ```angular2html
-rm -rf build dist
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
 ```
 this avoids you accidentally trying to upload the same version of your package twice to pypi 
 (which pypi won't let you do anyone but it will throw errors and perhaps confuse you).
