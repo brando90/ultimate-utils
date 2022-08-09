@@ -46,7 +46,7 @@ with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.5.4',
+    version='0.5.5',
     description="Brando's ultimate utils for science, machine learning and AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
