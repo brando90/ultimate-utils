@@ -14,7 +14,8 @@ def re_train_tokenizer_from(dataset: Dataset,
                             ) -> Union[PreTrainedTokenizer, PreTrainedTokenizerFast]:
     """
     """
-    tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained(pretrained_model_name_or_path)
+    tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = AutoTokenizer.from_pretrained(
+        pretrained_model_name_or_path)
     print(f'{isinstance(tokenizer, PreTrainedTokenizer)=}')
     print(f'{isinstance(tokenizer, PreTrainedTokenizerFast)=}')
     print(f'{type(tokenizer)=}')

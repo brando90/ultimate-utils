@@ -1,3 +1,12 @@
+"""
+note:
+the key line for preprocessing correctly is:
+    inputs: list[str] = [prefix + example[source_lang] for example in examples["translation"]]
+    targets: list[str] = [example[target_lang] for example in examples["translation"]]
+where examples[key] comes from your hf Dataset. Therefore, you need to modify that to use the actual columsn of your
+hf Dataset. Note, that Datasets work with not only linear columns but with recursive columns (at least if they are dicts)
+, so your data sets might be more structured but if it respects json/jsonl it seems it will be fine.
+"""
 from typing import Union, Callable
 
 import datasets
@@ -27,12 +36,11 @@ def preprocess_function_translation_tutorial(examples: datasets.arrow_dataset.Ba
                                              target_lang: str = 'fr',
                                              ) -> BatchEncoding:
     """
-
     note:
     - padding and other stuff done at DataCollatorForSeq2Seq
 
     Inspections:
-    examples
+    example (comes from your hf Dataset)s
         Out[6]: {'id': ['12513', '55647'], 'translation': [{'en': 'Descending the laurel walk, I faced the wreck of the chestnut-tree; it stood up black and riven: the trunk, split down the centre, gasped ghastly.', 'fr': "Après avoir descendu l'allée de lauriers, je regardai le marronnier frappé par la foudre."}, {'en': '"He said, \'Come, here\'s a ladder that\'s of no use!\' and he took it."', 'fr': 'Il a dit : Tiens, voilà une échelle qui ne sert pas ! et il l’a prise. »'}]}
 
     model_inputs
@@ -98,6 +106,7 @@ def preprocess_function_translation_tutorial(examples: datasets.arrow_dataset.Ba
 
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
+
 
 # - tests
 
