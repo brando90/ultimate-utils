@@ -513,9 +513,7 @@ def _get_git_revision_short_hash():
 
 def cat_file(path2filename: Union[str, Path]):
     """prints/displays file contents. Do path / filename or the like outside of this function. ~ is alright to use. """
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
     with open(path2filename, 'r') as f:
         print(f.read())
 
@@ -987,25 +985,30 @@ def to_json(dic) -> dict:
     return _to_json_dict_with_strings(dic)
 
 
-def save_to_json_pretty(dic: Any, path2filename: Union[str, Path], mode='w', indent=4, sort_keys=True,
+def save_to_json_pretty(data: Any, path2filename: Union[str, Path], mode='w', indent=4, sort_keys=True,
                         force: bool = True):
+    """
+
+    force: this argument when true forces anything that isn't jsonable into a string so that you force it to save as
+    json data anyway. e.g. objs, function, tensorboard etc. are made into ANY string representation they have & saved.
+    This is likely useful when you have param args floating around carying pointers/refs to arbitrary data but you
+    want to save it anyway.
+    """
     import json
 
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
 
-    dic = to_json(dic) if force else dic
+    data = to_json(data) if force else data
     with open(path2filename, mode) as f:
-        json.dump(dic, f, indent=indent, sort_keys=sort_keys)
+        json.dump(data, f, indent=indent, sort_keys=sort_keys)
 
 
-def force_expanduser(path: Union[str, Path]) -> Path:
-    """ todo: replace everywhere where bottom is hardcoded. """
+def expanduser(path: Union[str, Path]):
     if not isinstance(path, Path):
         path: Path = Path(path).expanduser()
     path.expanduser()
-    return path
+    assert not '~' in str(path), f'Path username was not expanded properly see path: {path=}'
+    # return path
 
 # def save_to_json():
 #     if not isinstance(path2filename, Path):
@@ -1302,27 +1305,21 @@ def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> No
 
 
 def load_with_dill(path2filename: Union[str, Path], mode='rb') -> Any:
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
     with open(path2filename, mode) as f:
         python_obj = dill.load(f)
     return python_obj
 
 
 def load_with_pickle(path2filename: Union[str, Path], mode='rb') -> Any:
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
     with open(path2filename, mode) as f:
         python_obj = pickle.load(f)
     return python_obj
 
 
 def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
     with open(path2filename, mode) as f:
         import torch
         python_obj = torch.load(f)
@@ -1330,9 +1327,7 @@ def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
 
 
 def load_json(path2filename: Union[str, Path], mode: str = 'r') -> Union[dict, list]:
-    if not isinstance(path2filename, Path):
-        path2filename: Path = Path(path2filename).expanduser()
-    path2filename.expanduser()
+    expanduser(path2filename)
     with open(path2filename, mode) as f:
         data: dict = json.load(f)
     return data
