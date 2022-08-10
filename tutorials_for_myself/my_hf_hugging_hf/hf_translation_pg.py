@@ -9,6 +9,7 @@ print(f'{books=}')
 
 books: DatasetDict = books["train"].train_test_split(test_size=0.2)
 print(f'{books=}')
+print(f'{books["train"]=}')
 
 print(books["train"][0])
 """

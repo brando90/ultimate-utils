@@ -74,6 +74,31 @@ def helper_get_preprocess_function_translation_tutorial(tokenizer: Union[PreTrai
     return f
 
 
+#
+
+def preprocess_function_translation_tutorial(examples: datasets.arrow_dataset.Batch,
+                                             tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+                                             prefix: str = "Generate entire proof term: ",
+                                             ) -> BatchEncoding:
+    """
+
+    note:
+    - padding and other stuff done at DataCollatorForSeq2Seq
+    """
+    # approximately batch of sequences, but sequences are still strings
+    inputs: list[str] = [prefix + example['ptp'] for example in examples]
+    targets: list[str] = [example['ept'] for example in examples]
+
+    # encodes strings to the token ids & returns other useful stuff like the attention make (see comments in fun def).
+    model_inputs: BatchEncoding = tokenizer(inputs, max_length=128, truncation=True)
+
+    # tokenize targets with special mode for target e.g. targets might need to be right shifted while encoder might not etc.
+    with tokenizer.as_target_tokenizer():  # Temporarily sets the tokenizer for encoding the targets. Useful for tokenizer associated to sequence-to-sequence models that need a slightly different processing for the labels.
+        labels: BatchEncoding = tokenizer(targets, max_length=128, truncation=True)
+
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
+
 # - tests
 
 if __name__ == '__main__':
