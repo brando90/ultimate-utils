@@ -18,6 +18,7 @@ def get_data_set_with_splits(all_data: Dataset,
                              ) -> DatasetDict:
     original_size: int = len(all_data)
     assert approx_equal(train_size + validation_size + test_size, 1.0, tolerance=1e-3)
+    # train_val_test: DatasetDict = all_data.shuffle(seed=seed).train_test_split(train_size=train_size + validation_size, seed=seed)
     train_val_test: DatasetDict = all_data.train_test_split(train_size=train_size + validation_size, seed=seed)
 
     frac_of_train: float = train_size / (train_size + validation_size)  # e.g. 0.9x = 0.8 === (t + v*x) = real_train
