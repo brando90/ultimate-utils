@@ -10,7 +10,7 @@ from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast, AutoToken
 def re_train_tokenizer_from(dataset: Dataset,
                             vocab_size_new_guess: int = 500,
                             pretrained_model_name_or_path: Union[str, os.PathLike] = "t5-small",
-                            path2save_tokenizer = None,
+                            path2save_tokenizer=None,
                             ) -> Union[PreTrainedTokenizer, PreTrainedTokenizerFast]:
     """
     """
@@ -28,7 +28,6 @@ def re_train_tokenizer_from(dataset: Dataset,
     print(f'original tokenizer vocab size: {tokenizer.vocab_size=}')
     print(f'new vocab size: {new_tokenizer.vocab_size=}')
     # assert new_tokenizer.vocab_size > tokenizer.vocab_size, f'new tokenizer vocab size should be at least as large as original.'
-
     if path2save_tokenizer:
         tokenizer.save_pretrained(path2save_tokenizer)
     return tokenizer

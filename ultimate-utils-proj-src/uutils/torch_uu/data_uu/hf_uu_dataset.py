@@ -46,7 +46,12 @@ def get_data_set_books_tutorial(tokenizer: Union[PreTrainedTokenizer, PreTrained
 def get_dataset_from_json_file(path2filename: Path) -> Dataset:
     """ """
     expanduser(path2filename)
-    dataset: Dataset = Dataset.from_json(path2filename)
+    try:
+        dataset: Dataset = Dataset.from_json(path2filename)
+    except AttributeError:
+        dataset: Dataset = Dataset.from_json(str(path2filename))
+    except Exception as e:
+        raise e
     return dataset
 
 # - toy data set

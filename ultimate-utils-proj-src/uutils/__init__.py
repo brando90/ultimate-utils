@@ -1043,6 +1043,42 @@ def save_git_hash_if_possible_in_args(args, path_to_repo_root):
         args.githash = -1
 
 
+def dicts_to_jsonl(data_list: list[dict], path2filename: Union[str, Path], compress: bool = False) -> None:
+    """
+    Method saves list of dicts into jsonl file.
+    :param data: (list) list of dicts to be stored,
+    :param filename: (str) path to the output file. If suffix .jsonl is not given then methods appends
+        .jsonl suffix into the file.
+    :param compress: (bool) should file be compressed into a gzip archive?
+
+    credit:
+        - https://stackoverflow.com/questions/73312575/what-is-the-official-way-to-save-list-of-dictionaries-as-jsonl-or-json-lines
+        - https://ml-gis-service.com/index.php/2022/04/27/toolbox-python-list-of-dicts-to-jsonl-json-lines/
+    """
+    import gzip
+    import json
+
+    sjsonl = '.jsonl'
+    sgz = '.gz'
+    # Check filename
+    if not str(path2filename).endswith(sjsonl):
+        path2filename = Path(str(path2filename) + sjsonl)
+    expanduser(path2filename)
+    # Save data
+
+    if compress:
+        filename = path2filename + sgz
+        with gzip.open(filename, 'w') as compressed:
+            for ddict in data_list:
+                jout = json.dumps(ddict) + '\n'
+                jout = jout.encode('utf-8')
+                compressed.write(jout)
+    else:
+        with open(path2filename, 'w') as out:
+            for ddict in data_list:
+                jout = json.dumps(ddict) + '\n'
+                out.write(jout)
+
 ##
 
 def to_table(df):
