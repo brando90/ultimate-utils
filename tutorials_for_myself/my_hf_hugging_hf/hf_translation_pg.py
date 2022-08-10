@@ -2,12 +2,13 @@
 
 # https://huggingface.co/docs/transformers/tasks/translation
 import datasets
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 
-books = load_dataset("opus_books", "en-fr")
+books: DatasetDict = load_dataset("opus_books", "en-fr")
 print(f'{books=}')
 
-books = books["train"].train_test_split(test_size=0.2)
+books: DatasetDict = books["train"].train_test_split(test_size=0.2)
+print(f'{books=}')
 
 print(books["train"][0])
 """
@@ -18,9 +19,11 @@ print(books["train"][0])
 
 # - t5 tokenizer
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerFast, PreTrainedTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("t5-small")
+tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained("t5-small")
+print(f'{isinstance(tokenizer, PreTrainedTokenizer)=}')
+print(f'{isinstance(tokenizer, PreTrainedTokenizerFast)=}')
 
 source_lang = "en"
 target_lang = "fr"
@@ -37,22 +40,18 @@ def preprocess_function(examples):
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
 
-# def tokenize_function(examples: datasets.arrow_dataset.Batch):
-#     encoded_batch: BatchEncoding = tokenizer(examples["text"], padding="max_length", truncation=True)
-#     batch_size: int = len(examples['text'])
-#     assert batch_size == len(examples['label'])
-#     # encode_batch = tokenizer(examples["text"], padding=True, truncation=True, return_tensors="pt")
-#     # return tokenizer(examples["text"], padding="max_length", truncation=True)
-#     # print(encoded_batch)
-#     return encoded_batch  # e.g. {'input_ids': [[101, 173, 1197, 119, 22, ...}
-#
+
 # # use 🤗 Datasets map method to apply a preprocessing function over the entire dataset:
 # tokenized_datasets = dataset.map(tokenize_function, batched=True, batch_size=2)
 
-tokenized_books = books.map(preprocess_function, batched=True, batch_size=2)
+# todo - would be nice to remove this since gpt-2/3 size you can't preprocess the entire data set...or can you?
+# tokenized_books = books.map(preprocess_function, batched=True, batch_size=2)
+from uutils.torch_uu.data_uu.hf_uu_data_preprocessing import helper_get_preprocess_function_translation_tutorial
+preprocessor = helper_get_preprocess_function_translation_tutorial(tokenizer)
+tokenized_books = books.map(preprocessor, batched=True, batch_size=2)
+print(f'{tokenized_books=}')
 
 # - load model
-
 from transformers import AutoModelForSeq2SeqLM
 
 model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
@@ -63,18 +62,23 @@ model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
 
 from transformers import DataCollatorForSeq2Seq
 
-data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
+# Data collator that will dynamically pad the inputs received, as well as the labels.
+data_collator: DataCollatorForSeq2Seq = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 
 """
 At this point, only three steps remain:
 
-Define your training hyperparameters in Seq2SeqTrainingArguments.
-Pass the training arguments to Seq2SeqTrainer along with the model, dataset, tokenizer, and data collator.
-Call train() to fine-tune your model.
+- Define your training hyperparameters in Seq2SeqTrainingArguments.
+- Pass the training arguments to Seq2SeqTrainer along with the model, dataset, tokenizer, and data collator.
+- Call train() to fine-tune your model.
 """
 
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
+# fp16 = True # cuda
+#fp16 = False # cpu
+import torch
+fp16 = torch.cuda.is_available()  # True for cuda, false for cpu
 training_args = Seq2SeqTrainingArguments(
     output_dir="./results",
     evaluation_strategy="epoch",
@@ -84,7 +88,7 @@ training_args = Seq2SeqTrainingArguments(
     weight_decay=0.01,
     save_total_limit=3,
     num_train_epochs=1,
-    fp16=True,
+    fp16=fp16,
 )
 
 trainer = Seq2SeqTrainer(
