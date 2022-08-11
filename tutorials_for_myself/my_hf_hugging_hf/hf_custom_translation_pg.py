@@ -23,7 +23,7 @@ dataset: DatasetDict = get_data_set_with_splits(dataset)
 print(f'{dataset["train"]=}')
 print(f'{dataset["train"][0]=}')
 
-# - get our tokenizer
+# - get our tokenizer & model (due to them being coupled)
 # todo: have code to pre-train the tokenizer
 tokenizer_ckpt: Path = path / 'tokenizer'
 # if tokenizer_ckpt.exists():
@@ -33,15 +33,13 @@ tokenizer_ckpt: Path = path / 'tokenizer'
 #                                                                                              path2save_tokenizer=tokenizer_ckpt)
 tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = re_train_tokenizer_from(dataset,
                                                                                          path2save_tokenizer=tokenizer_ckpt)
+model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
+assert isinstance(model, torch.nn.Module)
 
 # - preprocess the data set ala HF trans tutorial (padding is not done here)
 from data_pkg.data_preprocessing import get_preprocessed_tokenized_datasets
 
 dataset: DatasetDict = get_preprocessed_tokenized_datasets(dataset, tokenizer, batch_size=2)
-
-# - get model
-
-model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
 
 # - get trainer, trainer args & it's data collate (padding is done here)
 

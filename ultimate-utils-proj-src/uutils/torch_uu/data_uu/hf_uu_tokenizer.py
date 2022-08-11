@@ -11,27 +11,32 @@ def re_train_tokenizer_from(dataset: Dataset,
                             vocab_size_new_guess: int = 500,
                             pretrained_model_name_or_path: Union[str, os.PathLike] = "t5-small",
                             path2save_tokenizer=None,
+                            verbose: bool = False,
                             ) -> Union[PreTrainedTokenizer, PreTrainedTokenizerFast]:
     """
     """
     tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast] = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path)
-    print(f'{isinstance(tokenizer, PreTrainedTokenizer)=}')
-    print(f'{isinstance(tokenizer, PreTrainedTokenizerFast)=}')
-    print(f'{type(tokenizer)=}')
-    print(tokenizer)
-    print(f'{tokenizer.vocab_size=}')
+    if verbose:
+        print(f'{isinstance(tokenizer, PreTrainedTokenizer)=}')
+        print(f'{isinstance(tokenizer, PreTrainedTokenizerFast)=}')
+        print(f'{type(tokenizer)=}')
+        print(tokenizer)
+        print(f'{tokenizer.vocab_size=}')
 
     vocab_size: int = tokenizer.vocab_size + vocab_size_new_guess  # todo how do you know this value if you've not ran the tokenizer yet?
-    print(f'{vocab_size=}')
+    if verbose:
+        print(f'{vocab_size=}')
     # - this re-train your tokenizer from scratch
     new_tokenizer: PreTrainedTokenizerFast = tokenizer.train_new_from_iterator(iter(dataset), vocab_size=vocab_size)
-    print(f'original tokenizer vocab size: {tokenizer.vocab_size=}')
-    print(f'new vocab size: {new_tokenizer.vocab_size=}')
+    if verbose:
+        print(f'original tokenizer vocab size: {tokenizer.vocab_size=}')
+        print(f'new vocab size: {new_tokenizer.vocab_size=}')
     # assert new_tokenizer.vocab_size > tokenizer.vocab_size, f'new tokenizer vocab size should be at least as large as original.'
     if path2save_tokenizer:
-        tokenizer.save_pretrained(path2save_tokenizer)
-    return tokenizer
+        new_tokenizer.save_pretrained(path2save_tokenizer)
+    # assert len(new_tokenizer) != len(tokenizer)  # very unlucky if they are same size
+    return new_tokenizer
 
 
 def my_iterator():
@@ -90,3 +95,65 @@ def nice_preprocess_of_tokenizer_example(tokenizer: Union[PreTrainedTokenizer, P
                                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                                [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]])}
     """
+
+def does_t5_have_sep_token():
+    """
+
+    https://huggingface.co/docs/transformers/v4.21.1/en/main_classes/model#transformers.PreTrainedModel.resize_token_embeddings
+    https://discuss.huggingface.co/t/issue-with-finetuning-a-seq-to-seq-model/1680/29
+    https://stackoverflow.com/questions/73322462/how-to-add-all-standard-special-tokens-to-my-hugging-face-tokenizer-and-model
+    """
+    import torch
+    from transformers import AutoModelForSeq2SeqLM
+
+    tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained('t5-small')
+    # tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained('t5-base')
+    # tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained('t5-large')
+    # tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained('t5-11b')
+    assert isinstance(tokenizer, PreTrainedTokenizerFast)
+    print(tokenizer)
+    print(f'{len(tokenizer)=}')
+
+    print()
+    print(f'{tokenizer.sep_token=}')
+    print(f'{tokenizer.eos_token=}')
+    print(f'{tokenizer.all_special_tokens=}')
+    print()
+
+    special_tokens_dict = {'additional_special_tokens': ['<bos>', '<cls>', '<s>'] + tokenizer.all_special_tokens}
+    num_added_toks = tokenizer.add_special_tokens(special_tokens_dict)
+    # tokenizer.add_tokens([f"_{n}" for n in range(1, 100)], special_tokens=True)
+    model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
+    assert isinstance(model, torch.nn.Module)
+    model.resize_token_embeddings(len(tokenizer))
+    # tokenizer.save_pretrained('pathToExtendedTokenizer/')
+    # tokenizer = T5Tokenizer.from_pretrained("sandbox/t5_models/pretrained/tokenizer/")
+
+    # tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained('t5-small')
+    new_tokenizer: PreTrainedTokenizerFast = AutoTokenizer.from_pretrained(tokenizer_ckpt)
+    model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
+    assert isinstance(model, torch.nn.Module)
+    model.resize_token_embeddings(len(new_tokenizer))
+
+    print()
+    print(f'{tokenizer.bos_token=}')
+    print(f'{tokenizer.cls_token=}')
+    print(f'{tokenizer.sep_token=}')
+    print(f'{tokenizer.mask_token=}')
+    print(f'{tokenizer.eos_token=}')
+    print(f'{tokenizer.unk_token=}')
+    print(f'{tokenizer.bos_token_id=}')
+    print(f'{tokenizer.cls_token_id=}')
+    print(f'{tokenizer.sep_token_id=}')
+    print(f'{tokenizer.mask_token_id=}')
+    print(f'{tokenizer.eos_token_id=}')
+    print(f'{tokenizer.unk_token_id=}')
+    print(f'{tokenizer.all_special_tokens=}')
+    print()
+
+
+
+if __name__ == '__main__':
+    does_t5_have_sep_token()
+    print('Done\a')
+
