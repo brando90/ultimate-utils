@@ -63,6 +63,11 @@ def print_pids():
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
 
+# -
+
+def print_file(path_or_str: Union[str, Path]) -> None:
+    """ prints the content of a file """
+    cat_file(path2filename=path_or_str)
 
 # - getting args for expts
 
@@ -500,6 +505,16 @@ def try_to_get_git_revision_hash_long():
         print(f'(Not critical), unable to retrieve githash for reason: {e}')
         return f'{e}'
 
+def run_bash_command(cmd: str) -> Any:
+    import subprocess
+
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    if error:
+        raise Exception(error)
+    else:
+        return output
+
 
 def _get_git_revision_hash():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
@@ -513,7 +528,7 @@ def _get_git_revision_short_hash():
 
 def cat_file(path2filename: Union[str, Path]):
     """prints/displays file contents. Do path / filename or the like outside of this function. ~ is alright to use. """
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     with open(path2filename, 'r') as f:
         print(f.read())
 
@@ -996,7 +1011,7 @@ def save_to_json_pretty(data: Any, path2filename: Union[str, Path], mode='w', in
     """
     import json
 
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
 
     data = to_json(data) if force else data
     with open(path2filename, mode) as f:
@@ -1004,11 +1019,19 @@ def save_to_json_pretty(data: Any, path2filename: Union[str, Path], mode='w', in
 
 
 def expanduser(path: Union[str, Path]):
+    """
+
+    note: if you give in a path no need to get the output of this function because it mutates path. If you
+    give a string you do need to assign the output to a new variable
+    :param path:
+    :return:
+    """
     if not isinstance(path, Path):
+        # path: Path = Path(path).expanduser()
         path: Path = Path(path).expanduser()
-    path.expanduser()
+    path = path.expanduser()
     assert not '~' in str(path), f'Path username was not expanded properly see path: {path=}'
-    # return path
+    return path
 
 # def save_to_json():
 #     if not isinstance(path2filename, Path):
@@ -1063,7 +1086,7 @@ def dicts_to_jsonl(data_list: list[dict], path2filename: Union[str, Path], compr
     # Check filename
     if not str(path2filename).endswith(sjsonl):
         path2filename = Path(str(path2filename) + sjsonl)
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     # Save data
 
     if compress:
@@ -1341,21 +1364,21 @@ def save_with_dill(path: str, filename: str, python_obj, mode: str = 'wb') -> No
 
 
 def load_with_dill(path2filename: Union[str, Path], mode='rb') -> Any:
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     with open(path2filename, mode) as f:
         python_obj = dill.load(f)
     return python_obj
 
 
 def load_with_pickle(path2filename: Union[str, Path], mode='rb') -> Any:
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     with open(path2filename, mode) as f:
         python_obj = pickle.load(f)
     return python_obj
 
 
 def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     with open(path2filename, mode) as f:
         import torch
         python_obj = torch.load(f)
@@ -1363,7 +1386,7 @@ def load_with_torch(path2filename: Union[str, Path], mode='rb') -> Any:
 
 
 def load_json(path2filename: Union[str, Path], mode: str = 'r') -> Union[dict, list]:
-    expanduser(path2filename)
+    path2filename = expanduser(path2filename)
     with open(path2filename, mode) as f:
         data: dict = json.load(f)
     return data

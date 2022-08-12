@@ -9,6 +9,7 @@ from transformers import AutoModelForSeq2SeqLM
 from uutils.torch_uu.data_uu.hf_uu_dataset import get_dataset_from_json_file, get_data_set_with_splits
 from uutils.torch_uu.data_uu.hf_uu_tokenizer import re_train_tokenizer_from
 
+import wandb
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
 import torch
@@ -56,6 +57,8 @@ At this point, only three steps remain:
 - Call train() to fine-tune your model.
 """
 
+wandb.init(project="proof-term-synthesis", entity="brando")
+
 fp16: bool = torch.cuda.is_available()  # True for cuda, false for cpu
 training_args = Seq2SeqTrainingArguments(
     output_dir="./results",  # todo change
@@ -67,6 +70,7 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=3,
     num_train_epochs=1,
     fp16=fp16,
+    report_to="wandb",
 )
 
 trainer = Seq2SeqTrainer(
