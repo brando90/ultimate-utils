@@ -78,7 +78,9 @@ def get_tokenizer_trained_from_scratch_and_acompanying_model(datasets: Union[lis
     assert len(tokenizer) != len(original_tokenizer), 'If new tokenizer and old are exactly the same size recheck.'  # very unlucky if they are same size
     if add_my_special_tokens:
         add_special_all_special_tokens(tokenizer)
-    model = AutoModel.from_pretrained(pretrained_model_name_or_path)
+    # model = AutoModel.from_pretrained(pretrained_model_name_or_path)
+    from transformers import AutoModelForSeq2SeqLM
+    model = AutoModelForSeq2SeqLM.from_pretrained(pretrained_model_name_or_path)
     assert isinstance(model, torch.nn.Module)
     model.resize_token_embeddings(len(tokenizer))
     assert model.get_input_embeddings().weight.size(0) == len(tokenizer)

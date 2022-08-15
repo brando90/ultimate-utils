@@ -1,4 +1,4 @@
-#%%
+# %%
 
 # https://huggingface.co/docs/transformers/tasks/translation
 import datasets
@@ -30,6 +30,7 @@ source_lang = "en"
 target_lang = "fr"
 prefix = "translate English to French: "
 
+
 def preprocess_function(examples):
     inputs = [prefix + example[source_lang] for example in examples["translation"]]
     targets = [example[target_lang] for example in examples["translation"]]
@@ -42,12 +43,17 @@ def preprocess_function(examples):
     return model_inputs
 
 
+# Then create a smaller subset of the dataset as previously shown to speed up the fine-tuning: (hack to seep up tutorial)
+books['train'] = books["train"].shuffle(seed=42).select(range(100))
+books['test'] = books["test"].shuffle(seed=42).select(range(100))
+
 # # use 🤗 Datasets map method to apply a preprocessing function over the entire dataset:
 # tokenized_datasets = dataset.map(tokenize_function, batched=True, batch_size=2)
 
 # todo - would be nice to remove this since gpt-2/3 size you can't preprocess the entire data set...or can you?
 # tokenized_books = books.map(preprocess_function, batched=True, batch_size=2)
 from uutils.torch_uu.data_uu.hf_uu_data_preprocessing import preprocess_function_translation_tutorial
+
 preprocessor = lambda examples: preprocess_function_translation_tutorial(examples, tokenizer)
 tokenized_books = books.map(preprocessor, batched=True, batch_size=2)
 print(f'{tokenized_books=}')
@@ -73,12 +79,17 @@ At this point, only three steps remain:
 - Pass the training arguments to Seq2SeqTrainer along with the model, dataset, tokenizer, and data collator.
 - Call train() to fine-tune your model.
 """
+report_to = "none"
+if report_to != 'none':
+    import wandb
+    wandb.init(project="playground", entity="brando", name='run_name', group='expt_name')
 
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
 # fp16 = True # cuda
-#fp16 = False # cpu
+# fp16 = False # cpu
 import torch
+
 fp16 = torch.cuda.is_available()  # True for cuda, false for cpu
 training_args = Seq2SeqTrainingArguments(
     output_dir="./results",
@@ -90,6 +101,7 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=3,
     num_train_epochs=1,
     fp16=fp16,
+    report_to=report_to,
 )
 
 trainer = Seq2SeqTrainer(
