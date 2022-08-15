@@ -35,6 +35,9 @@ You can do early stopping but LLM rarely need it.
 
 Conclusion: you need to loop through the seq length at generation/prediction time in **true** eval mode.
 
+note: it seems there is prefixed causual masked for decoders i.e. the condition is a mask with ones, instead of 
+predicting and ignoring the outputs according to the t5 video (& paper?).
+
 ## Language Model
 
 LM = Language modeling predicts words in a sentence. 

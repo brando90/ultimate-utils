@@ -56,6 +56,14 @@ def hello():
     print(f'\nhello from uutils __init__.py in:\n{uutils}\n')
 
 
+def helloworld():
+    hello()
+
+
+def hello_world():
+    hello()
+
+
 def print_pids():
     import torch.multiprocessing as mp
 
@@ -63,11 +71,13 @@ def print_pids():
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
 
+
 # -
 
 def print_file(path_or_str: Union[str, Path]) -> None:
     """ prints the content of a file """
     cat_file(path2filename=path_or_str)
+
 
 # - getting args for expts
 
@@ -504,6 +514,7 @@ def try_to_get_git_revision_hash_long():
     except Exception as e:
         print(f'(Not critical), unable to retrieve githash for reason: {e}')
         return f'{e}'
+
 
 def run_bash_command(cmd: str) -> Any:
     import subprocess
@@ -1033,6 +1044,7 @@ def expanduser(path: Union[str, Path]):
     assert not '~' in str(path), f'Path username was not expanded properly see path: {path=}'
     return path
 
+
 # def save_to_json():
 #     if not isinstance(path2filename, Path):
 #         path2filename: Path = Path(path2filename).expanduser()
@@ -1101,6 +1113,7 @@ def dicts_to_jsonl(data_list: list[dict], path2filename: Union[str, Path], compr
             for ddict in data_list:
                 jout = json.dumps(ddict) + '\n'
                 out.write(jout)
+
 
 ##
 
@@ -1576,6 +1589,24 @@ def match_regex_test():
         assert re.match(regex, content), f'Failed on {content=} with {regex=}'
         if re.match(regex, content):
             print(content)
+
+
+# --  other
+
+def lists_equal(l1: list, l2: list) -> bool:
+    """
+
+    import collections
+    compare = lambda x, y: collections.Counter(x) == collections.Counter(y)
+    ref:
+        - https://stackoverflow.com/questions/9623114/check-if-two-unordered-lists-are-equal
+        - https://stackoverflow.com/questions/7828867/how-to-efficiently-compare-two-unordered-lists-not-sets
+    """
+    import collections
+    compare = lambda x, y: collections.Counter(x) == collections.Counter(y)
+    set_comp = set(l1) == set(l2)  # removes duplicates, so returns true when not sometimes :(
+    multiset_comp = compare(l1, l2)  # approximates multiset
+    return set_comp and multiset_comp  # set_comp is gere in case the compare function doesn't work
 
 
 def draw_test():

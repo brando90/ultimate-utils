@@ -47,8 +47,8 @@ def preprocess_function(examples):
 
 # todo - would be nice to remove this since gpt-2/3 size you can't preprocess the entire data set...or can you?
 # tokenized_books = books.map(preprocess_function, batched=True, batch_size=2)
-from uutils.torch_uu.data_uu.hf_uu_data_preprocessing import helper_get_preprocess_function_translation_tutorial
-preprocessor = helper_get_preprocess_function_translation_tutorial(tokenizer)
+from uutils.torch_uu.data_uu.hf_uu_data_preprocessing import preprocess_function_translation_tutorial
+preprocessor = lambda examples: preprocess_function_translation_tutorial(examples, tokenizer)
 tokenized_books = books.map(preprocessor, batched=True, batch_size=2)
 print(f'{tokenized_books=}')
 
@@ -102,3 +102,5 @@ trainer = Seq2SeqTrainer(
 )
 
 trainer.train()
+
+print('\n ----- Success\a')
