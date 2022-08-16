@@ -86,7 +86,7 @@ def log_zeroth_step(args: Namespace, meta_learner: Agent):
     from learn2learn.data import TaskDataset
     from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
     task_dataset: TaskDataset = args.tasksets.train
-    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, call_backward=False)
+    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, training=False, call_backward=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=False)
 
