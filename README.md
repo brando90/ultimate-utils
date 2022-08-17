@@ -9,10 +9,10 @@ Mainly for machine learning and programming languages tasks.
 
 If you are going to use a gpu the do this first before continuing 
 (or check the offical website: https://pytorch.org/get-started/locally/):
-```angular2html
+```
 pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
-Otherwise, just doing the follwoing should work.
+Otherwise, just doing the following should work.
 ```
 pip install ultimate-utils
 ```
@@ -156,6 +156,18 @@ ref: see files
 ## Pushing to pypi
 
 See: `~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md`
+
+## Testing pip install with docker
+
+Create & pull image:
+```
+docker run -ti continuumio/miniconda3
+```
+then do
+```
+pip install ultimate-utils
+```
+it should be installed. You can import and test the print as mentioned above. 
 
 ## Citation
 If you use this implementation consider citing us:

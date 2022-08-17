@@ -24,9 +24,12 @@ twine check dist/*
 
 ```angular2html
 cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+cd ~/ultimate-utils/
 python setup.py sdist bdist_wheel
 twine check dist/*
-twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+twine upload --repository testpypi dist/*
 ```
 might ask you your username & password. 
 Note: **test & pypi are different**. 
