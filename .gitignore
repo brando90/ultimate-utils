@@ -329,3 +329,6 @@ wandb/
 
 # hf transolation tutorial
 /results
+
+#
+.idea/
