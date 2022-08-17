@@ -12,3 +12,10 @@ TensorParallel (TP) - each tensor is split up into multiple chunks, so instead o
 PipelineParallel (PP) - the model is split up vertically (layer-level) across multiple GPUs, so that only one or several layers of the model are places on a single gpu. Each gpu processes in parallel different stages of the pipeline and working on a small chunk of the batch.
 Zero Redundancy Optimizer (ZeRO) - Also performs sharding of the tensors somewhat similar to TP, except the whole tensor gets reconstructed in time for a forward or backward computation, therefore the model doesn’t need to be modified. It also supports various offloading techniques to compensate for limited GPU memory.
 Sharded DDP - is another name for the foundational ZeRO concept as used by various other implementations of ZeRO.
+
+
+### Qs
+
+- deepspeed, fsdp, accelerate, ddp, dp, zero,
+- ray, pyarrows
+- kubernetes, slurm
