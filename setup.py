@@ -46,7 +46,7 @@ with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.6.0',
+    version='0.6.1',
     description="Brando's ultimate utils for science, machine learning and AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -67,7 +67,7 @@ setup(
         'scipy',
         'scikit-learn',
         'lark-parser',
-        'torchtext==0.10.1',
+        'torchtext',
         'tensorboard',
         'pandas',
         'progressbar2',
