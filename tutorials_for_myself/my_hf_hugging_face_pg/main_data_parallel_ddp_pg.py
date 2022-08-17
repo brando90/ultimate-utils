@@ -1,5 +1,12 @@
 """
 
+python -m torch.distributed.launch --nproc_per_node 2 main_data_parallel_ddp_pg.py
+torchrun --nnodes 2 main_data_parallel_ddp_pg.py
+
+
+- ref: https://discuss.huggingface.co/t/how-to-run-an-end-to-end-example-of-distributed-data-parallel-with-hugging-faces-trainer-api-ideally-on-a-single-node-multiple-gpus/21750/3
+
+
 - SO: https://stackoverflow.com/questions/73391230/how-to-run-an-end-to-end-example-of-distributed-data-parallel-with-hugging-face
 - training on multiple gpus: https://huggingface.co/docs/transformers/perf_train_gpu_many#efficient-training-on-multiple-gpus
 - data paralelism, dp vs ddp: https://huggingface.co/docs/transformers/perf_train_gpu_many#data-parallelism
@@ -19,7 +26,6 @@ python -m torch.distributed.launch \
     --nproc_per_node number_of_gpu_you_have path_to_script.py \
 	--all_arguments_of_the_script
 
-python -m torch.distributed.launch --nproc_per_node 2 main_data_parallel_ddp_pg.py
 python -m torch.distributed.launch --nproc_per_node 2 ~/ultimate-utils/tutorials_for_myself/my_hf_hugging_face_pg/main_data_parallel_ddp_pg.py
 
 e.g.

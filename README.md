@@ -9,19 +9,25 @@ Mainly for machine learning and programming languages tasks.
 
 If you are going to use a gpu the do this first before continuing 
 (or check the offical website: https://pytorch.org/get-started/locally/):
-```
-pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+```bash
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 --upgrade
 ```
 Otherwise, just doing the following should work.
-```
+```bash
 pip install ultimate-utils
 ```
 If that worked, then you should be able to import is as follows:
-```
+```python
 import uutils
 ```
-
 note the import statement is shorter than the library name (`ultimate-utils` vs `uutils`).
+
+Note, for an older version of uutils you might need to downgrade pytorch related stuff by doing:
+```bash
+pip uninstall torch torchvision torchaudio
+pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+```
 
 ## Manual installation [for Development]
 
@@ -155,7 +161,26 @@ ref: see files
 
 ## Pushing to pypi
 
-See: `~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md`
+For full details see
+```
+~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md
+```
+For quick push do:
+```bash
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+cd ~/ultimate-utils/
+python setup.py sdist bdist_wheel
+twine check dist/*
+twine upload dist/*
+```
+then:
+```bash
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+```
 
 ## Testing pip install with docker
 
