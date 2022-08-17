@@ -42,6 +42,11 @@ from data_pkg.data_preprocessing import get_preprocessed_tokenized_datasets
 
 dataset: DatasetDict = get_preprocessed_tokenized_datasets(dataset, tokenizer, batch_size=2)
 
+data_size: int = 10
+dataset["train"] = dataset["train"].shuffle(seed=42).select(range(data_size))
+dataset["validation"] = dataset["validation"].shuffle(seed=42).select(range(data_size))
+dataset["test"] = dataset["test"].shuffle(seed=42).select(range(data_size))
+
 # - get trainer, trainer args & it's data collate (padding is done here)
 
 from transformers import DataCollatorForSeq2Seq

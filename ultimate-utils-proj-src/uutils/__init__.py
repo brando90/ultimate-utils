@@ -71,7 +71,6 @@ def print_pids():
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
 
-
 # -
 
 def print_file(path_or_str: Union[str, Path]) -> None:
