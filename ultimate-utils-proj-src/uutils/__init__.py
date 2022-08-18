@@ -1205,6 +1205,10 @@ def load_cluster_jobids_to(args):
     if 'dgx' in str(gethostname()):
         args.jobid = f'{args.jobid}_pid_{os.getpid()}'
 
+    if 'LSB_JOBID' in os.environ:
+        jobid: str = str(os.environ['LSB_JOBID'])
+        args.jobid = jobid
+
 
 def set_system_wide_force_flush():
     """
