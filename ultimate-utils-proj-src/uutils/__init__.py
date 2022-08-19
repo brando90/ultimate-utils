@@ -525,6 +525,9 @@ def run_bash_command(cmd: str) -> Any:
     else:
         return output
 
+def get_nvidia_smi_output() -> str:
+    out = run_bash_command('nvidia-smi')
+    return out
 
 def _get_git_revision_hash():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """

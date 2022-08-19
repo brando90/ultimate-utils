@@ -10,6 +10,21 @@ from uutils import expanduser
 from uutils.torch_uu import approx_equal
 
 
+def get_data_set_with_tr_val_ts_splits(path2filename_train: Union[str, Path],
+                                       path2filename_test: Union[str, Path],
+                                       train_size: float = 0.9,
+                                       seed: int = 0,
+                                       ) -> DatasetDict:
+    expanduser(path2filename_train)
+    expanduser(path2filename_test)
+    train_dataset: Dataset = get_dataset_from_json_file(path2filename_train)
+    test_dataset: Dataset = get_dataset_from_json_file(path2filename_test)
+    # - split train to train & val randomly
+    train_val: DatasetDict = train_dataset.train_test_split(train_size=train_size, seed=seed)
+    dataset: DatasetDict = DatasetDict(train=train_val['train'], validation=train_val['test'], test=test_dataset)
+    return dataset
+
+
 def get_data_set_with_splits(all_data: Dataset,
                              train_size: float = 0.8,
                              validation_size: float = 0.1,
