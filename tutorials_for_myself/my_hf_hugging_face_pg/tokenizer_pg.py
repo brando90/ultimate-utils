@@ -113,4 +113,4 @@ print('\nSanity check: decode output ids of the tokenizer back to a string, is i
 print(f'{tokenizer.decode(encoding)=}')
 print(f'{in_text=}')
 
-# %%
+print('Success! \n\a')
