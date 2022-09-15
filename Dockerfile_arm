@@ -28,11 +28,19 @@ USER bot
 
 ADD https://api.github.com/repos/IBM/pycoq/git/refs/heads/main version.json
 
+#
+RUN pip3 install --upgrade pip
+RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools wheel
+
 # makes sure depedencies for pycoq are installed once already in the docker image
 RUN pip install https://github.com/ddelange/psutil/releases/download/release-5.9.1/psutil-5.9.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+RUN pip install pip install pyzmq==23.2.1
+
 ENV WANDB_API_KEY="SECRET"
 RUN pip install wandb --upgrade
 
+# makes sure deps to uutils are bre-built before starting image even if installing in editable mode layer
 RUN pip install ultimate-utils
 
 # then make sure editable mode is done to be able to use changing pycoq from system

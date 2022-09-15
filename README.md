@@ -246,8 +246,8 @@ docker run -ti brandojazz/ultimate-utils:test_arm bash
 ```
 or in development mode:
 ```bash
-docker run -v /Users/brandomiranda/ultimate-utils:/home/bot/ultimate-utils \
-           -v /Users/brandomiranda/data:/home/bot/data \
+docker run -v ~/ultimate-utils:/home/bot/ultimate-utils \
+           -v ~/data:/home/bot/data \
            -ti brandojazz/ultimate-utils:test_arm bash
 ```
 
