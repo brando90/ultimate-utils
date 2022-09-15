@@ -207,3 +207,51 @@ If you use this implementation consider citing us:
 ```
 
 A permanent link lives here: https://www.ideals.illinois.edu/handle/2142/112797
+
+
+# Docker container
+If you have issues with docker & space
+run [warning this will remove all your docker images](https://stackoverflow.com/questions/44664900/oserror-errno-28-no-space-left-on-device-docker-but-i-have-space):
+```bash
+docker system prune -af
+```
+
+To build the docker image form the computer that will run the docker container
+```bash
+# for adm/x86
+docker pull brandojazz/ultimate-utils:test
+# for adm/x86
+docker pull brandojazz/ultimate-utils:test_arm
+```
+
+or do the standard docker build for the image for an x86 machine:
+```bash
+# for adm/x86
+docker build -t brandojazz/ultimate-utils:test ~/ultimate-utils/
+# for arm/m1
+docker build -f ~/ultimate-utils/Dockerfile_arm -t brandojazz/ultimate-utils:test_arm ~/ultimate-utils/
+
+docker login
+# for adm/x86
+docker push brandojazz/ultimate-utils:test
+# for arm/m1
+docker push brandojazz/ultimate-utils:test_arm
+
+docker images
+```
+
+Run container:
+```bash
+docker run -ti brandojazz/ultimate-utils:test_arm bash
+```
+or in development mode:
+```bash
+docker run -v /Users/brandomiranda/ultimate-utils:/home/bot/ultimate-utils \
+           -v /Users/brandomiranda/data:/home/bot/data \
+           -ti brandojazz/ultimate-utils:test_arm bash
+```
+
+Inside the docker container:
+```bash
+python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
+```

@@ -26,11 +26,16 @@ RUN adduser bot sudo
 WORKDIR /home/bot
 USER bot
 
+ADD https://api.github.com/repos/IBM/pycoq/git/refs/heads/main version.json
+
 # makes sure depedencies for pycoq are installed once already in the docker image
+RUN pip install https://github.com/ddelange/psutil/releases/download/release-5.9.1/psutil-5.9.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 ENV WANDB_API_KEY="SECRET"
 RUN pip install wandb --upgrade
 
 RUN pip install ultimate-utils
+# RUN pip install pycoq  # do not uncomment on arm, unless serlib is removed from setup.py in the pypi pycoq version.
+# RUN pip install ~/iit-term-synthesis  # likely won't work cuz we don't have iit or have pused it to pypi
 
 # then make sure editable mode is done to be able to use changing pycoq from system
 RUN echo "pip install -e /home/bot/ultimate-utils" >> ~/.bashrc
