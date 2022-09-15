@@ -1864,3 +1864,17 @@ Existential 1 =
 
 Displays all open goals / existential variables in the current proof along with the type and the context of each variable.
 ```
+
+# ----
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_induct_1:
+forall n:nat,
+  n + 0 = n.
+Proof.
+  intros.
+  induction n as [| n' IH].
+")
+(Exec 5)
