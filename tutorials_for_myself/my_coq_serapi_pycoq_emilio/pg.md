@@ -1878,3 +1878,55 @@ Proof.
   induction n as [| n' IH].
 ")
 (Exec 5)
+(Query ((pp ((pp_format PpStr)))) Goals)
+
+
+https://github.com/ejgallego/coq-serapi/issues/280
+
+# ----
+
+docker run -v /Users/brandomiranda/iit-term-synthesis:/home/bot/iit-term-synthesis \
+           -v /Users/brandomiranda/pycoq:/home/bot/pycoq \
+           -v /Users/brandomiranda/ultimate-utils:/home/bot/ultimate-utils \
+           -v /Users/brandomiranda/proverbot9001:/home/bot/proverbot9001 \
+           -v /Users/brandomiranda/data:/home/bot/data \
+           -ti brandojazz/iit-term-synthesis:test_arm bash
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_induct_1:
+forall n:nat,
+  n + 0 = n.
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite -> IH.
+    reflexivity.
+")
+(Exec 12)
+(Query ((pp ((pp_format PpStr)))) Goals)
+
+rlwrap sertop --printer=human
+
+(Add () "
+Theorem add_easy_induct_1:
+forall n:nat,
+  n + 0 = n.
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite -> IH.
+    reflexivity.
+Qed.
+")
+(Exec 13)
+(Query ((pp ((pp_format PpStr)))) Goals)
+
+python -m pdb -c continue ~/iit-term-synthesis/iit-term-synthesis-src/data_pkg/data_gen.py
