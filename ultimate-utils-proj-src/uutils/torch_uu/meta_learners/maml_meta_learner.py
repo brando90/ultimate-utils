@@ -120,13 +120,7 @@ class MAMLMetaLearner(nn.Module):
         It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
 
         Decision for BN/eval:
-        - during training always use .train().
-        During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
-        Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
-
-        ref for BN/eval:
-            - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-            - https://github.com/tristandeleu/pytorch-maml/issues/19
+            - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
@@ -203,10 +197,7 @@ class MAMLMetaLearner(nn.Module):
         It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
 
         Decision for BN/eval:
-        - during training always use .train().
-
-        ref for BN/eval:
-            - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
+            - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
@@ -364,13 +355,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         Does a forward pass ala l2l.
 
         Decision for BN/eval:
-            - during training always use .train().
-            During eval use the meta-train stats so do .eval() (and using .train() is always wrong since it cheats).
-            Having track_running_stats=False seems overly complicated and nobody seems to use it...so why use it?
-
-        ref for BN/eval:
-            - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-            - https://github.com/tristandeleu/pytorch-maml/issues/19
+            - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
