@@ -12,6 +12,7 @@ from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.distributed import is_lead_worker
 
+from pdb import set_trace as st
 
 def _log_train_val_stats(args: Namespace,
                          it: int,
@@ -86,9 +87,12 @@ def log_zeroth_step(args: Namespace, meta_learner: Agent):
     from learn2learn.data import TaskDataset
     from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
     task_dataset: TaskDataset = args.tasksets.train
-    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, training=False, call_backward=True)
+    # st()
+    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-    log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=False)
+    print('-- done normal forward pass (not in log val) -- ')
+    log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
+    st()
 
 
 # - tests

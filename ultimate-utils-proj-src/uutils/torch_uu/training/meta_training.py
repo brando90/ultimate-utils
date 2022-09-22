@@ -163,6 +163,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
 
     # ----added - 0th iter---#
     log_zeroth_step(args, meta_learner)
+    st()
     # --------#
     while not halt:
         # print_inside_halt(args, halt, 0)  # todo: remove? temporary for debugging

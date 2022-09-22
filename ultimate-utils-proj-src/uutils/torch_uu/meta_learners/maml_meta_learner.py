@@ -25,6 +25,8 @@ import numpy as np
 
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 
+from pdb import set_trace as st
+
 Spt_x, Spt_y, Qry_x, Qry_y = torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 Task = tuple[Spt_x, Spt_y, Qry_x, Qry_y]
 Batch = list
@@ -300,7 +302,9 @@ def forward(meta_learner,
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
     meta_losses, meta_accs = [], []
+    print('--start forward')
     for task in range(meta_batch_size):
+        print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
         task_data: list = task_dataset.sample()  # data, labels
 
@@ -319,12 +323,13 @@ def forward(meta_learner,
         if call_backward:
             loss.backward()
         # collect losses & accs
-        meta_losses.append(loss)
-        meta_accs.append(acc)
+        meta_losses.append(loss.item())
+        meta_accs.append(acc.item())
     assert len(meta_losses) == meta_batch_size
     assert len(meta_accs) == meta_batch_size
     meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
     meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+    print('-- done forward --')
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 

@@ -95,6 +95,7 @@ def _log_train_val_stats(args: Namespace,
         from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
 
         # - get eval stats
+        print('-- get eval stats')
         val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
             args.best_val_loss = float(val_loss)
