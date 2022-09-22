@@ -302,9 +302,9 @@ def forward(meta_learner,
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
     meta_losses, meta_accs = [], []
-    print('--start forward')
+    # print('--start forward')
     for task in range(meta_batch_size):
-        print(f'{task=}')
+        # print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
         task_data: list = task_dataset.sample()  # data, labels
 
@@ -329,7 +329,7 @@ def forward(meta_learner,
     assert len(meta_accs) == meta_batch_size
     meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
     meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
-    print('-- done forward --')
+    # print('-- done forward --')
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
