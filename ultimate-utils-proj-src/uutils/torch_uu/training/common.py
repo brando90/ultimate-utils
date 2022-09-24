@@ -172,7 +172,7 @@ class ConvergenceMeter:
         else:
             self.counts_above_current_lowest += 1
 
-    def item(self):
+    def item(self) -> float:
         if type(self.current_lowest) is Tensor:
             return self.current_lowest.item()
         else:

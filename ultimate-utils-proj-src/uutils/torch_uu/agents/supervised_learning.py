@@ -1,6 +1,10 @@
 """
 Design pattern: since each model has it's own data, we wrap each model in an agent class that can take care of the
 specifics of the data manipulation form a batch. e.g. if they are tensors, or symbolic objects or NL etc.
+
+Note:
+    - the forward functions are used in training so calling .item() on the values it returns will create issues for
+    training.
 """
 from argparse import Namespace
 

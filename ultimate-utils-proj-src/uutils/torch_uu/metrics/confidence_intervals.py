@@ -45,6 +45,8 @@ todo:
     of the time). Drawback, interval doesn't shrink as we have more data. But this analysis makes the entire net
     analysis harder, perhaps try CI only on entire net analysis to see what happens.
 """
+from typing import Union
+
 import numpy
 import scipy
 import torch
@@ -109,7 +111,8 @@ def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, num
 
 
 def torch_compute_confidence_interval_classification(data: Tensor,
-                                                     confidence: float = 0.95
+                                                     confidence: float = 0.95,
+                                                     item: bool = False,  # setting to true might remove memory issues
                                                      ) -> tuple[Tensor, Tensor]:
     """
     Computes the confidence interval for a given survey of a data set.
@@ -124,12 +127,16 @@ def torch_compute_confidence_interval_classification(data: Tensor,
     margin_of_error = torch.sqrt((error * (1 - error)) / B)
     # ci_interval: Tensor = z_p * margin_of_error
     ci_interval: Tensor = t_p * margin_of_error
+    if item:
+        error: float = error.item()
+        ci_interval: float = ci_interval.item()
     return error, ci_interval
 
 
 def torch_compute_confidence_interval(data: Tensor,
-                                      confidence: float = 0.95
-                                      ) -> tuple[Tensor, Tensor]:
+                                      confidence: float = 0.95,
+                                      item: bool = False,  # setting to true might remove memory issues
+                                      ) -> tuple[Union[Tensor, float], Union[Tensor, float]]:
     """
     Computes the confidence interval for a given survey of a data set.
     """
@@ -140,6 +147,9 @@ def torch_compute_confidence_interval(data: Tensor,
     se: Tensor = data.std(unbiased=True) / (n ** 0.5)
     t_p: float = float(scipy.stats.t.ppf((1 + confidence) / 2., n - 1))
     ci = t_p * se
+    if item:
+        mean: float = mean.item()
+        ci: float = ci.item()
     return mean, ci
 
 

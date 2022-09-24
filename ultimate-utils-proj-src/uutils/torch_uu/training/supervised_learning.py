@@ -74,7 +74,7 @@ def train_agent_fit_single_batch(args: Namespace,
         # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
         if args.epoch_num % args.log_freq == 0 or halt or args.debug:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-            log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
+            log_train_val_stats(args, args.it, step_name, train_loss.item(), train_acc.item())
 
         if halt:
             break
