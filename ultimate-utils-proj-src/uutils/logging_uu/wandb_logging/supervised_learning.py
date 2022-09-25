@@ -98,7 +98,9 @@ def _log_train_val_stats(args: Namespace,
         val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
             args.best_val_loss = float(val_loss)
-            save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
+            # if train_loss < 0.5: after 0.5, the loss has decreased enough to make this worth it.
+            if step >= 20 * ckpt_freq:  # saving ckpt is expensive and at the beginning val will keep decreasing, so this hack so that a lot of training has happening, alternative we could do train loss < 0.2
+                save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
         # - log ckpt
         if step % ckpt_freq == 0:

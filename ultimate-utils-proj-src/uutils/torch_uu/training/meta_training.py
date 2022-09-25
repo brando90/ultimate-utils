@@ -148,13 +148,15 @@ def meta_train_iterations_ala_l2l(args: Namespace,
                                   meta_learner,
                                   outer_opt,
                                   scheduler,
-
                                   training: bool = True
                                   ):
     """"""
-    # torch.autograd.set_detect_anomaly(True)
+    # torch.distributed.barrier()
     print('Starting training!')
     meta_batch_size: int = args.batch_size // args.world_size
+    # meta_batch_size: int = max(args.batch_size // args.world_size, 1)
+    # assert args.batch_size >= args.world_size, f'If batch size is smaller training might be slightly wrong when in distributed.'
+
     # print(args.batch_size, meta_batch_size, "args and Meta BatchSize")
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
@@ -165,6 +167,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     log_zeroth_step(args, meta_learner)
     # --------#
     while not halt:
+        # print(f'{args.rank=}')
         # print_inside_halt(args, halt, 0)  # todo: remove? temporary for debugging
         outer_opt.zero_grad()
         # print_inside_halt(args, halt, 1)  # todo: remove? temporary for debugging

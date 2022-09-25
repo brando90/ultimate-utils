@@ -560,6 +560,7 @@ def clean_end_with_sigsegv_hack(rank):
 
 def dist_log(msg: str, rank, flush: bool = False, use_pprint: bool = False):
     """Prints only if the current process is the leader (e.g. rank = -1)."""
+    #         torch.distributed.barrier() # could be used to sync prints?
     if is_lead_worker(rank):
         if not use_pprint:
             print(msg, flush=flush)
