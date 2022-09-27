@@ -31,10 +31,12 @@ l2l meta data set -> union data set -> .dataset field -> data loader
 but the last one might need to make sure .indices or .labels is created or a get labels function that checking the attribute
 gets the right .labels or remaps it correctly
 """
+from collections import defaultdict
 from pathlib import Path
 
 import torch
 import torchvision
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
 from uutils.torch_uu.dataloaders.cifar100 import get_test_loader_for_cifar100
@@ -50,38 +52,48 @@ class USLDataset(Dataset):
         """
         """
         self.datasets = datasets
+        # todo do we really need the l2l ones?
         # maps a class label to a list of sample indices with that label.
-        self.labels_to_indices = {}
+        self.labels_to_indices = defaultdict(list)
         # maps a sample index to its corresponding class label.
-        self.indices_to_labels = {}
+        self.indices_to_labels = defaultdict(None)
         # - do the relabeling
-        new_label = 0
+        self.data = []
         dataset: Dataset
+        label_cum_sum: int = 0
+        new_idx: int = 0
         for dataset in datasets:
             for x, y in dataset:
-                print(f'{(x, y)=}')
-                print()
+                y = int(y)
+                # print(f'{(x, y)=}')
+                new_label = y + label_cum_sum
+                self.indices_to_labels[new_idx] = new_label
+                new_idx += 1
+                self.labels_to_indices[new_label].append(new_idx)
+                # -
+                self.data.append(x)
+            label_cum_sum += len(dataset.labels)
+        assert len(self.data) == sum([len(dataset) for dataset in self.datasets])
+        assert len(self.labels) == cum_sum
         print()
+        self.labels = list(self.labels_to_indices.keys()).sort()
+        # todo: 1. do bisect function to index to union, make sure it works with getitem, might be needed for meta-data set?
+        # todo: 2. other option is to do what mnist does:
+        # self.data, self.targets = self._load_data()
+        del self.datasets
+        self.target_transform = lambda data: torch.tensor(data, dtype=torch.int)
 
     def __len__(self):
-        return len(self.landmarks_frame)
+        return len(self.data)
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
+        # todo: do bisect function to index to union, make sure it works with getitem
+        x = self.data[idx]
+        y = self.indices_to_labels[idx]
+        if self.target_transform is not None:
+            y = self.target_transform(y)
+        return x, y
 
-        img_name = os.path.join(self.root_dir,
-                                self.landmarks_frame.iloc[idx, 0])
-        image = io.imread(img_name)
-        landmarks = self.landmarks_frame.iloc[idx, 1:]
-        landmarks = np.array([landmarks])
-        landmarks = landmarks.astype('float').reshape(-1, 2)
-        sample = {'image': image, 'landmarks': landmarks}
-
-        if self.transform:
-            sample = self.transform(sample)
-
-        return sample
 
 def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
     """ to do 1 data set wrap it in a list"""
@@ -90,6 +102,7 @@ def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
             print(f'{type(dataset)=}')
             print(f'{type(dataset.dataset)=}')
         assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
+
 
 def get_relabling_counts(dataset: Dataset) -> dict:
     """
@@ -107,6 +120,7 @@ def get_relabling_counts(dataset: Dataset) -> dict:
         else:
             counts[y] += 1
     return counts
+
 
 def assert_relabling_counts(counts: dict, labels: int = 100, counts_per_label: int = 600):
     """
@@ -137,6 +151,7 @@ def assert_relabling_counts(counts: dict, labels: int = 100, counts_per_label: i
     # - checks the final label is the total number of labels
     assert label == labels - 1
 
+
 def check_entire_data_via_the_dataloader(dataloader: DataLoader) -> dict:
     counts: dict = {}
     for it, batch in enumerate(dataloader):
@@ -148,7 +163,24 @@ def check_entire_data_via_the_dataloader(dataloader: DataLoader) -> dict:
                 counts[y] += 1
     return counts
 
+
 # - tests
+
+def loop_through_mnist():
+    root = Path('~/data/').expanduser()
+    import torch
+    import torchvision
+    mnist = torchvision.datasets.MNIST(root=root, download=True, transform=torchvision.transforms.ToTensor())
+    # iter(torch.utils.data.DataLoader(mnist)).next()
+    for x, y in mnist:
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, int)
+        pass
+    for x, y in iter(mnist):
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, int)
+        pass
+    assert_dataset_is_pytorch_dataset([mnist])
 
 def check_cifar100_is_100_in_usl():
     """not worth debuging my cifar100 code."""
@@ -171,6 +203,7 @@ def check_cifar100_is_100_in_usl():
     # next(iter(union_loader))
     pass
 
+
 def check_mi_omniglot_in_usl():
     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
     dataset_list_train, dataset_list_validation, dataset_list_test = get_mi_and_omniglot_list_data_set_splits()
@@ -185,23 +218,11 @@ def check_mi_omniglot_in_usl():
     assert len(test_dataset.labels) == 20 + 423, f'mi + omnigloat should be number of labels 443.'
     # next(iter(union_loader))
 
+
 def check_mi_usl():
     """concat data sets should have 100 labels. """
     # - loop through mnist (normal pytorch data set, sanity check, checking api)
-    root = Path('~/data/').expanduser()
-    import torch
-    import torchvision
-    mnist = torchvision.datasets.MNIST(root=root, download=True, transform=torchvision.transforms.ToTensor())
-    # iter(torch.utils.data.DataLoader(mnist)).next()
-    for x, y in mnist:
-        assert isinstance(x, torch.Tensor)
-        assert isinstance(y, int)
-        pass
-    for x, y in iter(mnist):
-        assert isinstance(x, torch.Tensor)
-        assert isinstance(y, int)
-        pass
-    assert_dataset_is_pytorch_dataset([mnist])
+    # loop_through_mnist()
 
     # - get mi data set
     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
@@ -210,11 +231,11 @@ def check_mi_usl():
 
     # - create usl data set
     from learn2learn.data import UnionMetaDataset
-    union = UnionMetaDataset([train_dataset, validation_dataset, test_dataset])
+    union = USLDataset([train_dataset, validation_dataset, test_dataset])
     # from learn2learn.data import OnDeviceDataset
     # union = OnDeviceDataset(union)
     assert_dataset_is_pytorch_dataset([union])
-    assert len(union) == 100*600, f'got {len(union)=}'
+    assert len(union) == 100 * 600, f'got {len(union)=}'
     assert len(union.labels) == 100, f'got {len(union.labels)=}'
 
     # - create dataloader
@@ -228,7 +249,6 @@ def check_mi_usl():
     relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
     assert len(relabling_counts.keys()) == 100
     assert_relabling_counts(relabling_counts)
-
 
 
 if __name__ == '__main__':
