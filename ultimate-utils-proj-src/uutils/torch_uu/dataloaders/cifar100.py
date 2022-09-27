@@ -8,7 +8,8 @@ from typing import Optional, Callable
 
 import numpy as np
 import torch
-from PIL.Image import Image
+# from PIL.Image import Image
+import PIL.Image as Image
 from torch.utils.data import random_split, DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
