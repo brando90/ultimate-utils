@@ -19,9 +19,21 @@ compare the mappings of one & the other?
 actually it's easy, just add the cummulative offset and that's it. :D the indices are already -1 indexed.
 
 assert every image has a label between 0 --> n1+n2+... and every bin for each class is none empty
+
+for it to work with any standard pytorch data set I think the workflow would be:
+```
+pytorch dataset -> l2l meta data set -> union data set -> .dataset field -> data loader
+```
+for l2l data sets:
+```
+l2l meta data set -> union data set -> .dataset field -> data loader
+```
+but the last one might need to make sure .indices or .labels is created or a get labels function that checking the attribute
+gets the right .labels or remaps it correctly
 """
 from pathlib import Path
 
+import torch
 import torchvision
 from torch.utils.data import Dataset, DataLoader
 
@@ -51,45 +63,58 @@ class USLDataset(Dataset):
                 print()
         print()
 
-    # def __len__(self):
-    #     return len(self.landmarks_frame)
-    #
-    # def __getitem__(self, idx):
-    #     if torch.is_tensor(idx):
-    #         idx = idx.tolist()
-    #
-    #     img_name = os.path.join(self.root_dir,
-    #                             self.landmarks_frame.iloc[idx, 0])
-    #     image = io.imread(img_name)
-    #     landmarks = self.landmarks_frame.iloc[idx, 1:]
-    #     landmarks = np.array([landmarks])
-    #     landmarks = landmarks.astype('float').reshape(-1, 2)
-    #     sample = {'image': image, 'landmarks': landmarks}
-    #
-    #     if self.transform:
-    #         sample = self.transform(sample)
-    #
-    #     return sample
+    def __len__(self):
+        return len(self.landmarks_frame)
 
-def assert_dataset_is_pytorch_dataset(datasets: list):
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        img_name = os.path.join(self.root_dir,
+                                self.landmarks_frame.iloc[idx, 0])
+        image = io.imread(img_name)
+        landmarks = self.landmarks_frame.iloc[idx, 1:]
+        landmarks = np.array([landmarks])
+        landmarks = landmarks.astype('float').reshape(-1, 2)
+        sample = {'image': image, 'landmarks': landmarks}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
+
+def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
     """ to do 1 data set wrap it in a list"""
     for dataset in datasets:
-        print(f'{type(dataset)=}')
-        print(f'{type(dataset.dataset)=}')
+        if verbose:
+            print(f'{type(dataset)=}')
+            print(f'{type(dataset.dataset)=}')
         assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
 
-def assert_relabling_is_correct(dataset: Dataset) -> dict:
+def get_relabling_counts(dataset: Dataset) -> dict:
+    """
+    counts[new_label] -> counts/number of data points for that new label
+    """
+    assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
     counts: dict = {}
-    for x, y in dataset:
+    iter_dataset = iter(dataset)
+    for datapoint in iter_dataset:
+        x, y = datapoint
+        # assert isinstance(x, torch.Tensor)
+        # assert isinstance(y, int)
         if y not in counts:
             counts[y] = 0
         else:
             counts[y] += 1
     return counts
 
-def check_counts(counts: dict, labels: int = 100, counts_per_label: int = 600):
+def assert_relabling_counts(counts: dict, labels: int = 100, counts_per_label: int = 600):
     """
     default values are for MI.
+
+    - checks each label/class has the right number of expected images per class
+    - checks the relabels start from 0 and increase by 1
+    - checks the total number of labels after concat is what you expect
 
     ref: https://openreview.net/pdf?id=rJY0-Kcll
     Because the exact splits used in Vinyals et al. (2016)
@@ -109,7 +134,19 @@ def check_counts(counts: dict, labels: int = 100, counts_per_label: int = 600):
         diff = label - prev_label
         assert diff == 1
         assert prev_label < label
-    assert label == labels
+    # - checks the final label is the total number of labels
+    assert label == labels - 1
+
+def check_entire_data_via_the_dataloader(dataloader: DataLoader) -> dict:
+    counts: dict = {}
+    for it, batch in enumerate(dataloader):
+        xs, ys = batch
+        for y in ys:
+            if y not in counts:
+                counts[y] = 0
+            else:
+                counts[y] += 1
+    return counts
 
 # - tests
 
@@ -150,12 +187,48 @@ def check_mi_omniglot_in_usl():
 
 def check_mi_usl():
     """concat data sets should have 100 labels. """
+    # - loop through mnist (normal pytorch data set, sanity check, checking api)
+    root = Path('~/data/').expanduser()
+    import torch
+    import torchvision
+    mnist = torchvision.datasets.MNIST(root=root, download=True, transform=torchvision.transforms.ToTensor())
+    # iter(torch.utils.data.DataLoader(mnist)).next()
+    for x, y in mnist:
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, int)
+        pass
+    for x, y in iter(mnist):
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, int)
+        pass
+    assert_dataset_is_pytorch_dataset([mnist])
+
+    # - get mi data set
     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
     train_dataset, validation_dataset, test_dataset = get_mi_datasets()
     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
+
+    # - create usl data set
     from learn2learn.data import UnionMetaDataset
     union = UnionMetaDataset([train_dataset, validation_dataset, test_dataset])
-    assert len(union) == 100
+    # from learn2learn.data import OnDeviceDataset
+    # union = OnDeviceDataset(union)
+    assert_dataset_is_pytorch_dataset([union])
+    assert len(union) == 100*600, f'got {len(union)=}'
+    assert len(union.labels) == 100, f'got {len(union.labels)=}'
+
+    # - create dataloader
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
+
+    # - assert the relabling worked
+    relabling_counts: dict = get_relabling_counts(union)
+    assert len(relabling_counts.keys()) == 100
+    assert_relabling_counts(relabling_counts)
+    relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
+    assert len(relabling_counts.keys()) == 100
+    assert_relabling_counts(relabling_counts)
+
 
 
 if __name__ == '__main__':
@@ -165,6 +238,7 @@ if __name__ == '__main__':
     start = time.time()
     # - run experiment
     # check_cifar100_is_100_in_usl()
-    check_mi_omniglot_in_usl()
+    # check_mi_omniglot_in_usl()
+    check_mi_usl()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
