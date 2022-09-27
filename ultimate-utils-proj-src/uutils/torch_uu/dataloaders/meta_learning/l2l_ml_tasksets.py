@@ -103,8 +103,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
     elif args.data_option == 'hdb1':
-        from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hd1_mi_omniglot_tasksets
-        args.tasksets: BenchmarkTasksets = hd1_mi_omniglot_tasksets(
+        from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
+        args.tasksets: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -113,8 +113,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'hdb2':
-        from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hd2_cifarfs_omniglot_tasksets
-        args.tasksets: BenchmarkTasksets = hd2_cifarfs_omniglot_tasksets(
+        from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hdb2_cifarfs_omniglot_tasksets
+        args.tasksets: BenchmarkTasksets = hdb2_cifarfs_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,

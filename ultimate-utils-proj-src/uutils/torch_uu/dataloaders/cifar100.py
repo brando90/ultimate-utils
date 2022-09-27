@@ -43,8 +43,8 @@ def get_train_valid_test_data_loader_helper_for_cifar100(args: Namespace) -> dic
                    'world_size': args.world_size,
                    'merge': None
                    }
-    train_loader, val_loader = get_train_valid_loader(**train_kwargs)
-    test_loader: DataLoader = get_test_loader(**test_kwargs)
+    train_loader, val_loader = get_train_valid_loader_for_cirfar100(**train_kwargs)
+    test_loader: DataLoader = get_test_loader_for_cifar100(**test_kwargs)
     args.n_cls = 100  # all splits share same # classes
     dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
     return dataloaders
@@ -70,21 +70,21 @@ def get_transform(augment: bool):
     return transform
 
 
-def get_train_valid_loader(data_path: Path,
-                           batch_size: int = 128,
-                           batch_size_eval: int = 64,
-                           seed: Optional[int] = None,
-                           augment_train: bool = True,
-                           augment_val: bool = False,
-                           val_size: Optional[float] = 0.2,
-                           shuffle: bool = False,  # false for reproducibility, and any split is as good as any other.
-                           num_workers: int = -1,
-                           pin_memory: bool = False,
+def get_train_valid_loader_for_cirfar100(data_path: Path,
+                                         batch_size: int = 128,
+                                         batch_size_eval: int = 64,
+                                         seed: Optional[int] = None,
+                                         augment_train: bool = True,
+                                         augment_val: bool = False,
+                                         val_size: Optional[float] = 0.2,
+                                         shuffle: bool = False,  # false for reproducibility, and any split is as good as any other.
+                                         num_workers: int = -1,
+                                         pin_memory: bool = False,
 
-                           rank: int = -1,
-                           world_size: int = 1,
-                           merge: Optional[Callable] = None,
-                           ) -> tuple[DataLoader, DataLoader]:
+                                         rank: int = -1,
+                                         world_size: int = 1,
+                                         merge: Optional[Callable] = None,
+                                         ) -> tuple[DataLoader, DataLoader]:
     """
     Utility function for loading and returning train and valid
     multi-process iterators over the CIFAR100 dataset. A sample
@@ -120,17 +120,17 @@ def get_train_valid_loader(data_path: Path,
     return train_loader, val_loader
 
 
-def get_test_loader(data_path,
-                    batch_size_eval: int = 64,
-                    shuffle: bool = True,
-                    augment_test: bool = False,
-                    num_workers: int = -1,
-                    pin_memory=False,
+def get_test_loader_for_cifar100(data_path,
+                                 batch_size_eval: int = 64,
+                                 shuffle: bool = True,
+                                 augment_test: bool = False,
+                                 num_workers: int = -1,
+                                 pin_memory=False,
 
-                    rank: int = -1,
-                    world_size: int = 1,
-                    merge: Optional[Callable] = None,
-                    ) -> DataLoader:
+                                 rank: int = -1,
+                                 world_size: int = 1,
+                                 merge: Optional[Callable] = None,
+                                 ) -> DataLoader:
     """
     Utility function for loading and returning a multi-process
     test iterator over the CIFAR100 dataset.

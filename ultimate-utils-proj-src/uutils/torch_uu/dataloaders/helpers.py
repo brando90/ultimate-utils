@@ -47,6 +47,8 @@ def get_sl_dataloader(args: Namespace) -> dict:
             get_train_valid_test_data_loader_nd_gaussian
         args.dataloaders: dict = get_train_valid_test_data_loader_nd_gaussian(args)
         print("Got n_way_gaussians_sl_nd as dataset")
+    elif args.data_options == 'hdb1':
+        raise NotImplementedError
     elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
