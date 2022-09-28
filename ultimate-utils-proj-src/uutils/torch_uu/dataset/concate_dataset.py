@@ -182,25 +182,64 @@ def loop_through_mnist():
         pass
     assert_dataset_is_pytorch_dataset([mnist])
 
+def l2l_cirfar100_example_union():
+    import learn2learn as l2l
+    train = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="train")
+    train = l2l.data.MetaDataset(train)
+    valid = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="validation")
+    valid = l2l.data.MetaDataset(valid)
+    test = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="test")
+    test = l2l.data.MetaDataset(test)
+    from learn2learn.data import UnionMetaDataset
+    union = UnionMetaDataset([train, valid, test])
+    assert len(union.labels) == 100
+
 def check_cifar100_is_100_in_usl():
     """not worth debuging my cifar100 code."""
-    from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_loader_for_cirfar100
-    # import learn2learn as l2l
-    # root = Path("~/data/").expanduser()
-    # train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
-    # train = l2l.data.MetaDataset(train)
+    # https://github.com/learnables/learn2learn/issues/357
+    from pathlib import Path
+    import learn2learn as l2l
+
+    root = Path("~/data/").expanduser()
+    # root = Path(".").expanduser()
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
+    train = l2l.data.MetaDataset(train)
+    print(f'{len(train.labels)=}')
     # valid = torchvision.datasets.CIFAR100(root="/tmp/mnist", mode="validation")
     # valid = l2l.data.MetaDataset(valid)
-    # test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
-    # test = l2l.data.MetaDataset(test)
+    test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+    test = l2l.data.MetaDataset(test)
+    print(f'{len(test.labels)=}')
+
+    from learn2learn.data import UnionMetaDataset
     # union = UnionMetaDataset([train, valid, test])
-    # train_loader, val_loader = get_train_valid_loader_for_cirfar100(root)
-    # test_loader: DataLoader = get_test_loader_for_cifar100(root)
-    # train, valid, test = train_loader.dataset, val_loader.dataset, test_loader.dataset
-    # union = USLDataset([train, valid, test])
-    # assert len(union.labels) == 100
-    # union_loader = DataLoader(union)
-    # next(iter(union_loader))
+    union = UnionMetaDataset([train, test])
+    assert isinstance(union, Dataset)
+    # assert len(union.labels) == 100, f'Error, got instead: {len(union.labels)=}.'
+
+    # - test looping (to eventually see why data loader of union fails)
+    print(f'{union[0]}')
+    print(f'{next(iter(union))=}')
+    for data_point in union:
+        print(f'{data_point=}')
+        break
+    for x, y in union:
+        print(f'{(x, y)=}')
+        break
+    from torch.utils.data import DataLoader
+    union_dl: DataLoader = DataLoader(union)
+    for x, y in union_dl:
+        print(f'{(x, y)=}')
+        break
+
+    # - get normal pytoch data loaders
+    from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_loader_for_cirfar100
+    train_loader, val_loader = get_train_valid_loader_for_cirfar100(root)
+    test_loader: DataLoader = get_test_loader_for_cifar100(root)
+    train, valid, test = train_loader.dataset, val_loader.dataset, test_loader.dataset
+    union = USLDataset([train, valid, test])
+    union_loader = DataLoader(union)
+    next(iter(union_loader))
     pass
 
 
@@ -257,8 +296,8 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run experiment
-    # check_cifar100_is_100_in_usl()
+    check_cifar100_is_100_in_usl()
     # check_mi_omniglot_in_usl()
-    check_mi_usl()
+    # check_mi_usl()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
