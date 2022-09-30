@@ -44,8 +44,9 @@ from uutils.torch_uu.dataloaders.cifar100 import get_test_loader_for_cifar100
 
 class ConcatDataset(Dataset):
     """
-
-    ref: https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
+    ref:
+        - https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
+        - https://stackoverflow.com/questions/73913522/why-dont-the-images-align-when-concatenating-two-data-sets-in-pytorch-using-tor
     """
 
     def __init__(self, datasets: list[Dataset]):
@@ -230,17 +231,17 @@ def loop_through_mnist():
         pass
     assert_dataset_is_pytorch_dataset([mnist])
 
-def l2l_cirfar100_example_union():
-    import learn2learn as l2l
-    train = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="train")
-    train = l2l.data.MetaDataset(train)
-    valid = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="validation")
-    valid = l2l.data.MetaDataset(valid)
-    test = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="test")
-    test = l2l.data.MetaDataset(test)
-    from learn2learn.data import UnionMetaDataset
-    union = UnionMetaDataset([train, valid, test])
-    assert len(union.labels) == 100
+# def l2l_cirfar100_example_union():
+#     import learn2learn as l2l
+#     train = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="train")
+#     train = l2l.data.MetaDataset(train)
+#     valid = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="validation")
+#     valid = l2l.data.MetaDataset(valid)
+#     test = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="test")
+#     test = l2l.data.MetaDataset(test)
+#     from learn2learn.data import UnionMetaDataset
+#     union = UnionMetaDataset([train, valid, test])
+#     assert len(union.labels) == 100
 
 def check_cifar100_is_100_in_usl():
     """not worth debuging my cifar100 code."""
@@ -303,51 +304,51 @@ def check_cifar100_is_100_in_usl():
     # pass
 
 
-def check_mi_omniglot_in_usl():
-    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
-    dataset_list_train, dataset_list_validation, dataset_list_test = get_mi_and_omniglot_list_data_set_splits()
-    # assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
-    assert_dataset_is_pytorch_dataset(dataset_list_train)
-    assert isinstance(dataset_list_train[0].dataset, Dataset)
-    train_dataset = USLDataset(dataset_list_train)
-    valid_dataset = USLDataset(dataset_list_validation)
-    test_dataset = USLDataset(dataset_list_test)
-    assert len(train_dataset.labels) == 64 + 1100, f'mi + omnigloat should be number of labels 1164.'
-    assert len(valid_dataset.labels) == 16 + 100, f'mi + omnigloat should be number of labels 116.'
-    assert len(test_dataset.labels) == 20 + 423, f'mi + omnigloat should be number of labels 443.'
-    # next(iter(union_loader))
+# def check_mi_omniglot_in_usl():
+#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
+#     dataset_list_train, dataset_list_validation, dataset_list_test = get_mi_and_omniglot_list_data_set_splits()
+#     # assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
+#     assert_dataset_is_pytorch_dataset(dataset_list_train)
+#     assert isinstance(dataset_list_train[0].dataset, Dataset)
+#     train_dataset = USLDataset(dataset_list_train)
+#     valid_dataset = USLDataset(dataset_list_validation)
+#     test_dataset = USLDataset(dataset_list_test)
+#     assert len(train_dataset.labels) == 64 + 1100, f'mi + omnigloat should be number of labels 1164.'
+#     assert len(valid_dataset.labels) == 16 + 100, f'mi + omnigloat should be number of labels 116.'
+#     assert len(test_dataset.labels) == 20 + 423, f'mi + omnigloat should be number of labels 443.'
+#     # next(iter(union_loader))
 
 
-def check_mi_usl():
-    """concat data sets should have 100 labels. """
-    # - loop through mnist (normal pytorch data set, sanity check, checking api)
-    # loop_through_mnist()
-
-    # - get mi data set
-    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
-    train_dataset, validation_dataset, test_dataset = get_mi_datasets()
-    assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
-
-    # - create usl data set
-    from learn2learn.data import UnionMetaDataset
-    union = USLDataset([train_dataset, validation_dataset, test_dataset])
-    # from learn2learn.data import OnDeviceDataset
-    # union = OnDeviceDataset(union)
-    assert_dataset_is_pytorch_dataset([union])
-    assert len(union) == 100 * 600, f'got {len(union)=}'
-    assert len(union.labels) == 100, f'got {len(union.labels)=}'
-
-    # - create dataloader
-    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
-    union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
-
-    # - assert the relabling worked
-    relabling_counts: dict = get_relabling_counts(union)
-    assert len(relabling_counts.keys()) == 100
-    assert_relabling_counts(relabling_counts)
-    relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
-    assert len(relabling_counts.keys()) == 100
-    assert_relabling_counts(relabling_counts)
+# def check_mi_usl():
+#     """concat data sets should have 100 labels. """
+#     # - loop through mnist (normal pytorch data set, sanity check, checking api)
+#     # loop_through_mnist()
+#
+#     # - get mi data set
+#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
+#     train_dataset, validation_dataset, test_dataset = get_mi_datasets()
+#     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
+#
+#     # - create usl data set
+#     from learn2learn.data import UnionMetaDataset
+#     union = USLDataset([train_dataset, validation_dataset, test_dataset])
+#     # from learn2learn.data import OnDeviceDataset
+#     # union = OnDeviceDataset(union)
+#     assert_dataset_is_pytorch_dataset([union])
+#     assert len(union) == 100 * 600, f'got {len(union)=}'
+#     assert len(union.labels) == 100, f'got {len(union.labels)=}'
+#
+#     # - create dataloader
+#     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+#     union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
+#
+#     # - assert the relabling worked
+#     relabling_counts: dict = get_relabling_counts(union)
+#     assert len(relabling_counts.keys()) == 100
+#     assert_relabling_counts(relabling_counts)
+#     relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
+#     assert len(relabling_counts.keys()) == 100
+#     assert_relabling_counts(relabling_counts)
 
 
 def concat_data_set_mi():
@@ -380,6 +381,18 @@ def concat_data_set_mi():
     # assert len(relabling_counts.keys()) == 100
     # assert_relabling_counts(relabling_counts)
 
+def check_xs_align_cifar100():
+    from pathlib import Path
+
+    root = Path("~/data/").expanduser()
+    # root = Path(".").expanduser()
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
+    test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+
+    concat = ConcatDataset([train, test])
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
+
 if __name__ == '__main__':
     import time
     from uutils import report_times
@@ -390,5 +403,6 @@ if __name__ == '__main__':
     # check_mi_omniglot_in_usl()
     # check_mi_usl()
     # concat_data_set_mi()
+    check_xs_align_cifar100()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
