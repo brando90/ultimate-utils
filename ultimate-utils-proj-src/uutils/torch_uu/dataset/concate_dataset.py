@@ -42,6 +42,54 @@ from torch.utils.data import Dataset, DataLoader
 from uutils.torch_uu.dataloaders.cifar100 import get_test_loader_for_cifar100
 
 
+class ConcatDataset(Dataset):
+    """
+
+    ref: https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
+    """
+
+    def __init__(self, datasets: list[Dataset]):
+        """
+        """
+        # I think concat is better than passing data to a self.data = x obj since concat likely using the getitem method of the passed dataset and thus if the passed dataset doesnt put all the data in memory concat won't either
+        self.concat_datasets = torch.utils.data.ConcatDataset(datasets)
+        # maps a class label to a list of sample indices with that label.
+        self.labels_to_indices = defaultdict(list)
+        # maps a sample index to its corresponding class label.
+        self.indices_to_labels = defaultdict(None)
+        # - do the relabeling
+        offset: int = 0
+        new_idx: int = 0
+        for dataset_idx, dataset in enumerate(datasets):
+            assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
+            assert dataset == self.concat_datasets.datasets[dataset_idx]
+            for x, y in dataset:
+                y = int(y)
+                _x, _y = self.concat_datasets[new_idx]
+                _y = int(_y)
+                # assert y == _y
+                assert torch.equal(x, _x)
+                new_label = y + offset
+                self.indices_to_labels[new_idx] = new_label
+                self.labels_to_indices[new_label] = new_idx
+            num_labels_for_current_dataset: int = max([y for _, y in dataset])
+            offset += num_labels_for_current_dataset
+            new_idx += 1
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)
+        # contains the list of labels from 0 - total num labels after concat
+        self.labels = range(offset)
+        self.target_transform = lambda data: torch.tensor(data, dtype=torch.int)
+
+    def __len__(self):
+        return len(self.concat_datasets)
+
+    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
+        x = self.concat_datasets[idx]
+        y = self.indices_to_labels[idx]
+        if self.target_transform is not None:
+            y = self.target_transform(y)
+        return x, y
+
 class USLDataset(Dataset):
     """Generates a Union Supervised Learning (basically concat) like Meta-Data set:
         > The non-episodic baselines are trained to solve the
@@ -226,21 +274,33 @@ def check_cifar100_is_100_in_usl():
     for x, y in union:
         print(f'{(x, y)=}')
         break
-    from torch.utils.data import DataLoader
-    union_dl: DataLoader = DataLoader(union)
-    for x, y in union_dl:
-        print(f'{(x, y)=}')
-        break
+    # -
+    usl = ConcatDataset([train, test])
+    for d1, d2 in zip(union, usl):
+        x1, y1 = d1
+        x2, y2 = d2
+        print(x1, x2)
+        print(y1, y2)
+        assert x1 == x2
+        assert y1 == y2
+    assert len(usl.labels) == len(union.labels)
+    assert len(usl) == len(union)
+
+    # from torch.utils.data import DataLoader
+    # union_dl: DataLoader = DataLoader(union)
+    # for x, y in union_dl:
+    #     print(f'{(x, y)=}')
+    #     break
 
     # - get normal pytoch data loaders
-    from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_loader_for_cirfar100
-    train_loader, val_loader = get_train_valid_loader_for_cirfar100(root)
-    test_loader: DataLoader = get_test_loader_for_cifar100(root)
-    train, valid, test = train_loader.dataset, val_loader.dataset, test_loader.dataset
-    union = USLDataset([train, valid, test])
-    union_loader = DataLoader(union)
-    next(iter(union_loader))
-    pass
+    # from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_loader_for_cirfar100
+    # train_loader, val_loader = get_train_valid_loader_for_cirfar100(root)
+    # test_loader: DataLoader = get_test_loader_for_cifar100(root)
+    # train, valid, test = train_loader.dataset, val_loader.dataset, test_loader.dataset
+    # union = USLDataset([train, valid, test])
+    # union_loader = DataLoader(union)
+    # next(iter(union_loader))
+    # pass
 
 
 def check_mi_omniglot_in_usl():
@@ -290,14 +350,45 @@ def check_mi_usl():
     assert_relabling_counts(relabling_counts)
 
 
+def concat_data_set_mi():
+    """
+    note test had to be in MI where train, val, test have disjount/different labels. In cifar100 classic the labels
+    in train, val and test are shared from 0-99 instead of being different/disjoint.
+    :return:
+    """
+    # - get mi data set
+    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
+    train_dataset, validation_dataset, test_dataset = get_mi_datasets()
+    assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
+    train_dataset, validation_dataset, test_dataset = train_dataset.dataset, validation_dataset.dataset, test_dataset.dataset
+
+    # - create usl data set
+    union = ConcatDataset([train_dataset, validation_dataset, test_dataset])
+    assert_dataset_is_pytorch_dataset([union])
+    assert len(union) == 100 * 600, f'got {len(union)=}'
+    assert len(union.labels) == 100, f'got {len(union.labels)=}'
+
+    # # - create dataloader
+    # from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    # union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
+    #
+    # # - assert the relabling worked
+    # relabling_counts: dict = get_relabling_counts(union)
+    # assert len(relabling_counts.keys()) == 100
+    # assert_relabling_counts(relabling_counts)
+    # relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
+    # assert len(relabling_counts.keys()) == 100
+    # assert_relabling_counts(relabling_counts)
+
 if __name__ == '__main__':
     import time
     from uutils import report_times
 
     start = time.time()
     # - run experiment
-    check_cifar100_is_100_in_usl()
+    # check_cifar100_is_100_in_usl()
     # check_mi_omniglot_in_usl()
     # check_mi_usl()
+    # concat_data_set_mi()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
