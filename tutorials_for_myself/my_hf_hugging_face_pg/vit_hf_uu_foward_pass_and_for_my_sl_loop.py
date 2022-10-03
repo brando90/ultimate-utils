@@ -106,14 +106,38 @@ img2tensor: Callable = torchvision.transforms.ToTensor()
 from transformers import ViTFeatureExtractor
 
 feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+model = feature_extractor
 
-x, y = train_ds[0]
+# - feature extractor
+x, y = train[0]
 print(f'{y=}')
 print(f'{type(x)=}')
-x = img2tensor(x)
+# x = img2tensor(x)
+print(f'{type(x)=}')
 
 x = x.unsqueeze(0)  # add batch size 1
-out_cls: ImageClassifierOutput = model(x)
+print(f'{type(x)=}')
+print(f'{x.size()=}')
+from transformers.modeling_outputs import ImageClassifierOutput
+# out_cls: ImageClassifierOutput = model(x)
+out_cls = model(x)
+print(f'{out_cls=}')
+print(f'{out_cls.keys()=}')
+
+# - labels
+id2label = {id: label for id, label in enumerate(train.features['label'].names)}
+print(f'{id2label=}')
+label2id = {label: id for id, label in id2label.items()}
+print(f'{label2id=}')
+
+from transformers import ViTForImageClassification
+
+model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224-in21k',
+                                                  num_labels=10,
+                                                  id2label=id2label,
+                                                  label2id=label2id)
+out_cls = model(x)
+print(f'{out_cls.keys()=}')
 print(f'{out_cls.logits=}')
 
 # %%
