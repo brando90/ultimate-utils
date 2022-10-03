@@ -395,6 +395,8 @@ def concat_data_set_mi():
 
 def check_xs_align_cifar100():
     from pathlib import Path
+    import torchvision
+    # from typing import Callable
 
     root = Path("~/data/").expanduser()
     # root = Path(".").expanduser()

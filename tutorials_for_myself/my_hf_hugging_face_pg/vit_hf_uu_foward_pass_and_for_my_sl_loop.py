@@ -49,7 +49,7 @@ model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224-i
 # logits = model(x)
 # print(f'{logits=}')
 
-#%%
+# %%
 
 from transformers import ViTFeatureExtractor
 
@@ -63,27 +63,57 @@ from torchvision.transforms import (CenterCrop,
                                     Resize,
                                     ToTensor)
 
-
 normalize = Normalize(mean=feature_extractor.image_mean, std=feature_extractor.image_std)
 _train_transforms = Compose(
-        [
-            RandomResizedCrop(feature_extractor.size),
-            RandomHorizontalFlip(),
-            ToTensor(),
-            normalize,
-        ]
-    )
+    [
+        RandomResizedCrop(feature_extractor.size),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        normalize,
+    ]
+)
+
+
 def train_transforms(examples):
     examples['pixel_values'] = [_train_transforms(image.convert("RGB")) for image in examples['img']]
     return examples
+
 
 x = train_ds[0]['img']
 x = _train_transforms(x.convert("RGB"))
 print(f'{x.size()=}')
 
 x = x.unsqueeze(0)  # add batch size 1
-out_cls: ImageClassifierOutput= model(x)
+out_cls: ImageClassifierOutput = model(x)
 print(f'{out_cls.logits=}')
 
 print()
 
+# %%
+# can't download vitt for some reason?
+# https://stackoverflow.com/questions/73939929/how-to-resolve-the-hugging-face-error-importerror-cannot-import-name-is-tokeni
+
+from pathlib import Path
+import torchvision
+from typing import Callable
+
+root = Path("~/data/").expanduser()
+# root = Path(".").expanduser()
+train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
+test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+img2tensor: Callable = torchvision.transforms.ToTensor()
+
+from transformers import ViTFeatureExtractor
+
+feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+
+x, y = train_ds[0]
+print(f'{y=}')
+print(f'{type(x)=}')
+x = img2tensor(x)
+
+x = x.unsqueeze(0)  # add batch size 1
+out_cls: ImageClassifierOutput = model(x)
+print(f'{out_cls.logits=}')
+
+# %%
