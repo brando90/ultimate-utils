@@ -33,6 +33,7 @@ gets the right .labels or remaps it correctly
 """
 from collections import defaultdict
 from pathlib import Path
+from typing import Callable
 
 import torch
 import torchvision
@@ -45,8 +46,8 @@ from uutils.torch_uu.dataloaders.cifar100 import get_test_loader_for_cifar100
 class ConcatDataset(Dataset):
     """
     ref:
-        - https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
         - https://stackoverflow.com/questions/73913522/why-dont-the-images-align-when-concatenating-two-data-sets-in-pytorch-using-tor
+        - https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
     """
 
     def __init__(self, datasets: list[Dataset]):
@@ -59,17 +60,28 @@ class ConcatDataset(Dataset):
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
         # - do the relabeling
+        img2tensor: Callable = torchvision.transforms.ToTensor()
         offset: int = 0
         new_idx: int = 0
         for dataset_idx, dataset in enumerate(datasets):
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
             assert dataset == self.concat_datasets.datasets[dataset_idx]
-            for x, y in dataset:
+            for data_idx, (x, y) in enumerate(dataset):
                 y = int(y)
+                # - get data point from concataned data set (to compare with the data point from the data set list)
                 _x, _y = self.concat_datasets[new_idx]
                 _y = int(_y)
+                # - sanity check concatanted data set aligns with the list of datasets
                 # assert y == _y
-                assert torch.equal(x, _x)
+                # from PIL import ImageChops
+                # diff = ImageChops.difference(x, _x)  # https://stackoverflow.com/questions/35176639/compare-images-python-pil
+                # assert diff.getbbox(), f'comparison of imgs failed: {diff.getbbox()=}'
+                # assert list(x.getdata()) == list(_x.getdata()), f'\n{list(x.getdata())=}, \n{list(_x.getdata())=}'
+                # tensor comparison
+                x, _x = img2tensor(x), img2tensor(_x)
+                print(f'{data_idx=}, {x.norm()=}, {_x.norm()=}')
+                assert torch.equal(x, _x), f'Error for some reason, got: {data_idx=}, {x.norm()=}, {_x.norm()=}, {x=}, {_x=}'
+                # - relabling
                 new_label = y + offset
                 self.indices_to_labels[new_idx] = new_label
                 self.labels_to_indices[new_label] = new_idx
@@ -388,6 +400,8 @@ def check_xs_align_cifar100():
     # root = Path(".").expanduser()
     train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
     test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+    # train = torchvision.datasets.CIFAR100(root=root, train=True, download=True, transform=torchvision.transforms.ToTensor())
+    # test = torchvision.datasets.CIFAR100(root=root, train=False, download=True, transform=torchvision.transforms.ToTensor())
 
     concat = ConcatDataset([train, test])
     print(f'{len(concat)=}')
