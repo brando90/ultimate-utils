@@ -307,6 +307,8 @@ def concat_data_set_mi():
     # - create usl data set
     concat = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
     assert_dataset_is_pytorch_dataset([concat])
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
     assert len(concat) == 100 * 600, f'got {len(concat)=}'
     assert len(concat.labels) == 100, f'got {len(concat.labels)=}'
 
@@ -316,7 +318,6 @@ def concat_data_set_mi():
         x, y = batch
         assert x is not None
         assert y is not None
-        break
     # - loader with the code that will run it for real experiments
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
     union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=concat, val_dataset=concat)
@@ -333,7 +334,7 @@ if __name__ == '__main__':
     start = time.time()
     # - run experiment
     check_xs_align_mnist()
-    # check_xs_align_cifar100()
+    check_xs_align_cifar100()
     concat_data_set_mi()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
