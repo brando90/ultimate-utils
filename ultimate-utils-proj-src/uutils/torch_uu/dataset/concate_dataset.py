@@ -23,26 +23,39 @@ gets the right .labels or remaps it correctly
 """
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 import torch
 import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from uutils.torch_uu.dataloaders.cifar100 import get_test_loader_for_cifar100
 
-
-class ConcatDataset(Dataset):
+class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     """
+    Useful attributes:
+        - self.labels: contains all new USL labels i.e. contains the list of labels from 0 - total num labels after concat.
+        - len(self): gives number of images after all images have been concatenated
+        - self.indices_to_labels: maps the new concat idx to the new label after concat.
+
     ref:
         - https://stackoverflow.com/questions/73913522/why-dont-the-images-align-when-concatenating-two-data-sets-in-pytorch-using-tor
         - https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
     """
 
-    def __init__(self, datasets: list[Dataset]):
+    def __init__(self, datasets: list[Dataset],
+                 transform: Optional[Callable] = None,
+                 target_transform: Optional[Callable] = None,
+                 compare_imgs_directly: bool = False,
+                 ):
         """
+        Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
+
+        compare_imgs_directly: adds the additional test that imgs compare at the PIL imgage level.
         """
+        self.datasets = datasets
+        self.transform = transform
+        self.target_transform = target_transform
         # I think concat is better than passing data to a self.data = x obj since concat likely using the getitem method of the passed dataset and thus if the passed dataset doesnt put all the data in memory concat won't either
         self.concat_datasets = torch.utils.data.ConcatDataset(datasets)
         # maps a class label to a list of sample indices with that label.
@@ -50,8 +63,28 @@ class ConcatDataset(Dataset):
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
         # - do the relabeling
-        img2tensor: Callable = torchvision.transforms.ToTensor()
-        offset: int = 0
+        self._re_label_all_dataset(datasets, compare_imgs_directly)
+
+    def __len__(self):
+        return len(self.concat_datasets)
+
+    def _re_label_all_dataset(self, datasets: list[Dataset], compare_imgs_directly: bool = False):
+        """
+        Relabels according to a blind (mutually exclusive) assumption.
+
+        Relabling Algorithm:
+        The zero index of the label starts at the number of labels collected so far. So when relabling we do:
+            y =  y + total_number_labels
+            total_number_labels += max label for current data set
+        where total_number_labels always has the + 1 to correct for the zero indexing.
+
+        :param datasets:
+        :param compare_imgs_directly:
+        :return:
+        """
+        self.img2tensor: Callable = torchvision.transforms.ToTensor()
+        self.int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
+        total_num_labels_so_far: int = 0
         new_idx: int = 0
         for dataset_idx, dataset in enumerate(datasets):
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
@@ -62,36 +95,57 @@ class ConcatDataset(Dataset):
                 _x, _y = self.concat_datasets[new_idx]
                 _y = int(_y)
                 # - sanity check concatanted data set aligns with the list of datasets
-                # assert y == _y
-                # from PIL import ImageChops
-                # diff = ImageChops.difference(x, _x)  # https://stackoverflow.com/questions/35176639/compare-images-python-pil
-                # assert diff.getbbox(), f'comparison of imgs failed: {diff.getbbox()=}'
-                # assert list(x.getdata()) == list(_x.getdata()), f'\n{list(x.getdata())=}, \n{list(_x.getdata())=}'
-                # tensor comparison
-                x, _x = img2tensor(x), img2tensor(_x)
-                print(f'{data_idx=}, {x.norm()=}, {_x.norm()=}')
-                assert torch.equal(x, _x), f'Error for some reason, got: {data_idx=}, {x.norm()=}, {_x.norm()=}, {x=}, {_x=}'
+                assert y == _y
+                if compare_imgs_directly:
+                    # from PIL import ImageChops
+                    # diff = ImageChops.difference(x, _x)  # https://stackoverflow.com/questions/35176639/compare-images-python-pil
+                    # assert diff.getbbox(), f'comparison of imgs failed: {diff.getbbox()=}' # doesn't work :/
+                    assert list(x.getdata()) == list(_x.getdata()), f'\n{list(x.getdata())=}, \n{list(_x.getdata())=}'
+                    # tensor comparison
+                if not isinstance(x, Tensor):
+                    x, _x = self.img2tensor(x), self.img2tensor(_x)
+                if isinstance(y, int):
+                    y, _y = self.int2tensor(y), self.int2tensor(_y)
+                assert torch.equal(x,
+                                   _x), f'Error for some reason, got: {new_idx=}, {data_idx=}, {x.norm()=}, {_x.norm()=}, {x=}, {_x=}'
                 # - relabling
-                new_label = y + offset
+                new_label = y + total_num_labels_so_far
                 self.indices_to_labels[new_idx] = new_label
-                self.labels_to_indices[new_label] = new_idx
+                self.labels_to_indices[new_label].append(new_idx)
                 new_idx += 1
-            num_labels_for_current_dataset: int = max([y for _, y in dataset])
-            offset += num_labels_for_current_dataset
+            num_labels_for_current_dataset: int = int(max([y for _, y in dataset])) + 1
+            # - you'd likely resolve unions if you wanted a proper union, the addition assumes mutual exclusivity
+            total_num_labels_so_far += num_labels_for_current_dataset
         assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)
-        # contains the list of labels from 0 - total num labels after concat
-        self.labels = range(offset)
-        self.target_transform = lambda data: torch.tensor(data, dtype=torch.int)
-
-    def __len__(self):
-        return len(self.concat_datasets)
+        # contains the list of labels from 0 - total num labels after concat, assume mutually exclusive
+        self.labels = range(total_num_labels_so_far)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
-        x = self.concat_datasets[idx]
+        """
+        Get's the data point and it's new label according to a mutually exclusive concatenation.
+
+        For later?
+        to do the relabling on the fly we'd need to figure out which data set idx corresponds to and to compute the
+        total_num_labels_so_far. Something like this:
+            current_data_set_idx = bisect_left(idx)
+            total_num_labels_so_far = sum(max(_, y in dataset)+1 for dataset_idx, dataset in enumerate(self.datasets) if dataset_idx <= current_data_set_idx)
+            new_y = total_num_labels_so_far
+            self.indices_to_labels[idx] = new_y
+        :param idx:
+        :return:
+        """
+        x, _y = self.concat_datasets[idx]
         y = self.indices_to_labels[idx]
+        # for the first data set they aren't re-labaled so can't use assert
+        # assert y != _y, f'concat dataset returns x, y so the y is not relabeled, but why are they the same {_y}, {y=}'
+        # idk what this is but could be useful? mnist had this.
+        # img = Image.fromarray(img.numpy(), mode="L")
+        if self.transform is not None:
+            x = self.transform(x)
         if self.target_transform is not None:
             y = self.target_transform(y)
         return x, y
+
 
 class USLDataset(Dataset):
     """Generates a Union Supervised Learning (basically concat) like Meta-Data set:
@@ -217,140 +271,68 @@ def check_entire_data_via_the_dataloader(dataloader: DataLoader) -> dict:
 
 # - tests
 
-def loop_through_mnist():
+def check_xs_align_mnist():
     root = Path('~/data/').expanduser()
-    import torch
     import torchvision
-    mnist = torchvision.datasets.MNIST(root=root, download=True, transform=torchvision.transforms.ToTensor())
-    # iter(torch.utils.data.DataLoader(mnist)).next()
-    for x, y in mnist:
-        assert isinstance(x, torch.Tensor)
-        assert isinstance(y, int)
-        pass
-    for x, y in iter(mnist):
-        assert isinstance(x, torch.Tensor)
-        assert isinstance(y, int)
-        pass
-    assert_dataset_is_pytorch_dataset([mnist])
+    # - test 1, imgs (not the recommended use)
+    train = torchvision.datasets.MNIST(root=root, train=True, download=True)
+    test = torchvision.datasets.MNIST(root=root, train=False, download=True)
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test], compare_imgs_directly=True)
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
+    # - test 2, tensor imgs
+    train = torchvision.datasets.MNIST(root=root, train=True, download=True,
+                                       transform=torchvision.transforms.ToTensor(),
+                                       target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+    test = torchvision.datasets.MNIST(root=root, train=False, download=True,
+                                      transform=torchvision.transforms.ToTensor(),
+                                      target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test])
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
+    assert len(concat) == 10 * 7000, f'Err, unexpected number of datapoints {len(concat)=} expected {100 * 700}'
+    assert len(
+        concat.labels) == 20, f'Note it should be 20 (since it is not a true union), but got {len(concat.labels)=}'
 
-# def l2l_cirfar100_example_union():
-#     import learn2learn as l2l
-#     train = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="train")
-#     train = l2l.data.MetaDataset(train)
-#     valid = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="validation")
-#     valid = l2l.data.MetaDataset(valid)
-#     test = torchvision.datasets.CIFARFS(root="/tmp/mnist", mode="test")
-#     test = l2l.data.MetaDataset(test)
-#     from learn2learn.data import UnionMetaDataset
-#     union = UnionMetaDataset([train, valid, test])
-#     assert len(union.labels) == 100
+    # - test dataloader
+    loader = DataLoader(concat)
+    for batch in loader:
+        x, y = batch
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, torch.Tensor)
 
-def check_cifar100_is_100_in_usl():
-    """not worth debuging my cifar100 code."""
-    # https://github.com/learnables/learn2learn/issues/357
+
+def check_xs_align_cifar100():
     from pathlib import Path
-    import learn2learn as l2l
-
-    root = Path("~/data/").expanduser()
-    # root = Path(".").expanduser()
+    root = Path('~/data/').expanduser()
+    import torchvision
+    # - test 1, imgs (not the recommended use)
     train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
-    train = l2l.data.MetaDataset(train)
-    print(f'{len(train.labels)=}')
-    # valid = torchvision.datasets.CIFAR100(root="/tmp/mnist", mode="validation")
-    # valid = l2l.data.MetaDataset(valid)
     test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
-    test = l2l.data.MetaDataset(test)
-    print(f'{len(test.labels)=}')
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test], compare_imgs_directly=True)
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
+    # - test 2, tensor imgs
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                          transform=torchvision.transforms.ToTensor(),
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+    test = torchvision.datasets.CIFAR100(root=root, train=False, download=True,
+                                         transform=torchvision.transforms.ToTensor(),
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test])
+    print(f'{len(concat)=}')
+    print(f'{len(concat.labels)=}')
+    assert len(concat) == 100 * 600, f'Err, unexpected number of datapoints {len(concat)=} expected {100 * 600}'
+    assert len(
+        concat.labels) == 200, f'Note it should be 200 (since it is not a true union), but got {len(concat.labels)=}'
+    # details on cifar100: https://www.cs.toronto.edu/~kriz/cifar.html
 
-    from learn2learn.data import UnionMetaDataset
-    # union = UnionMetaDataset([train, valid, test])
-    union = UnionMetaDataset([train, test])
-    assert isinstance(union, Dataset)
-    # assert len(union.labels) == 100, f'Error, got instead: {len(union.labels)=}.'
-
-    # - test looping (to eventually see why data loader of union fails)
-    print(f'{union[0]}')
-    print(f'{next(iter(union))=}')
-    for data_point in union:
-        print(f'{data_point=}')
-        break
-    for x, y in union:
-        print(f'{(x, y)=}')
-        break
-    # -
-    usl = ConcatDataset([train, test])
-    for d1, d2 in zip(union, usl):
-        x1, y1 = d1
-        x2, y2 = d2
-        print(x1, x2)
-        print(y1, y2)
-        assert x1 == x2
-        assert y1 == y2
-    assert len(usl.labels) == len(union.labels)
-    assert len(usl) == len(union)
-
-    # from torch.utils.data import DataLoader
-    # union_dl: DataLoader = DataLoader(union)
-    # for x, y in union_dl:
-    #     print(f'{(x, y)=}')
-    #     break
-
-    # - get normal pytoch data loaders
-    # from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_loader_for_cirfar100
-    # train_loader, val_loader = get_train_valid_loader_for_cirfar100(root)
-    # test_loader: DataLoader = get_test_loader_for_cifar100(root)
-    # train, valid, test = train_loader.dataset, val_loader.dataset, test_loader.dataset
-    # union = USLDataset([train, valid, test])
-    # union_loader = DataLoader(union)
-    # next(iter(union_loader))
-    # pass
-
-
-# def check_mi_omniglot_in_usl():
-#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
-#     dataset_list_train, dataset_list_validation, dataset_list_test = get_mi_and_omniglot_list_data_set_splits()
-#     # assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
-#     assert_dataset_is_pytorch_dataset(dataset_list_train)
-#     assert isinstance(dataset_list_train[0].dataset, Dataset)
-#     train_dataset = USLDataset(dataset_list_train)
-#     valid_dataset = USLDataset(dataset_list_validation)
-#     test_dataset = USLDataset(dataset_list_test)
-#     assert len(train_dataset.labels) == 64 + 1100, f'mi + omnigloat should be number of labels 1164.'
-#     assert len(valid_dataset.labels) == 16 + 100, f'mi + omnigloat should be number of labels 116.'
-#     assert len(test_dataset.labels) == 20 + 423, f'mi + omnigloat should be number of labels 443.'
-#     # next(iter(union_loader))
-
-
-# def check_mi_usl():
-#     """concat data sets should have 100 labels. """
-#     # - loop through mnist (normal pytorch data set, sanity check, checking api)
-#     # loop_through_mnist()
-#
-#     # - get mi data set
-#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_datasets
-#     train_dataset, validation_dataset, test_dataset = get_mi_datasets()
-#     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
-#
-#     # - create usl data set
-#     from learn2learn.data import UnionMetaDataset
-#     union = USLDataset([train_dataset, validation_dataset, test_dataset])
-#     # from learn2learn.data import OnDeviceDataset
-#     # union = OnDeviceDataset(union)
-#     assert_dataset_is_pytorch_dataset([union])
-#     assert len(union) == 100 * 600, f'got {len(union)=}'
-#     assert len(union.labels) == 100, f'got {len(union.labels)=}'
-#
-#     # - create dataloader
-#     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
-#     union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
-#
-#     # - assert the relabling worked
-#     relabling_counts: dict = get_relabling_counts(union)
-#     assert len(relabling_counts.keys()) == 100
-#     assert_relabling_counts(relabling_counts)
-#     relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
-#     assert len(relabling_counts.keys()) == 100
-#     assert_relabling_counts(relabling_counts)
+    # - test dataloader
+    loader = DataLoader(concat)
+    for batch in loader:
+        x, y = batch
+        assert isinstance(x, torch.Tensor)
+        assert isinstance(y, torch.Tensor)
 
 
 def concat_data_set_mi():
@@ -364,40 +346,20 @@ def concat_data_set_mi():
     train_dataset, validation_dataset, test_dataset = get_mi_datasets()
     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
     train_dataset, validation_dataset, test_dataset = train_dataset.dataset, validation_dataset.dataset, test_dataset.dataset
-
     # - create usl data set
-    union = ConcatDataset([train_dataset, validation_dataset, test_dataset])
+    union = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
     assert_dataset_is_pytorch_dataset([union])
     assert len(union) == 100 * 600, f'got {len(union)=}'
     assert len(union.labels) == 100, f'got {len(union.labels)=}'
 
-    # # - create dataloader
-    # from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
-    # union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
-    #
-    # # - assert the relabling worked
-    # relabling_counts: dict = get_relabling_counts(union)
-    # assert len(relabling_counts.keys()) == 100
-    # assert_relabling_counts(relabling_counts)
-    # relabling_counts: dict = check_entire_data_via_the_dataloader(union_loader)
-    # assert len(relabling_counts.keys()) == 100
-    # assert_relabling_counts(relabling_counts)
+    # - create dataloader
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
+    for batch in union_loader:
+        x, y = batch
+        assert x is not None
+        assert y is not None
 
-def check_xs_align_cifar100():
-    from pathlib import Path
-    import torchvision
-    # from typing import Callable
-
-    root = Path("~/data/").expanduser()
-    # root = Path(".").expanduser()
-    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
-    test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
-    # train = torchvision.datasets.CIFAR100(root=root, train=True, download=True, transform=torchvision.transforms.ToTensor())
-    # test = torchvision.datasets.CIFAR100(root=root, train=False, download=True, transform=torchvision.transforms.ToTensor())
-
-    concat = ConcatDataset([train, test])
-    print(f'{len(concat)=}')
-    print(f'{len(concat.labels)=}')
 
 if __name__ == '__main__':
     import time
@@ -405,10 +367,8 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run experiment
-    # check_cifar100_is_100_in_usl()
-    # check_mi_omniglot_in_usl()
-    # check_mi_usl()
-    # concat_data_set_mi()
+    check_xs_align_mnist()
     check_xs_align_cifar100()
+    concat_data_set_mi()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
