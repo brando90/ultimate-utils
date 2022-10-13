@@ -30,6 +30,8 @@ import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
+int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
+
 
 class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     """
@@ -88,7 +90,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         :return:
         """
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
-        self.int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
         total_num_labels_so_far: int = 0
         new_idx: int = 0
         for dataset_idx, dataset in enumerate(datasets):
@@ -110,7 +111,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                 if not isinstance(x, Tensor):
                     x, _x = self.img2tensor(x), self.img2tensor(_x)
                 if isinstance(y, int):
-                    y, _y = self.int2tensor(y), self.int2tensor(_y)
+                    y, _y = int2tensor(y), int2tensor(_y)
                 if verify_xs_align:
                     # this might fails if there are random ops in the getitem
                     assert torch.equal(x,
@@ -139,7 +140,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         total_num_labels_so_far. Something like this:
             current_data_set_idx = bisect_left(idx)
             total_num_labels_so_far = sum(max(_, y in dataset)+1 for dataset_idx, dataset in enumerate(self.datasets) if dataset_idx <= current_data_set_idx)
-            new_y = total_num_labels_so_far
+            new_y = total_num_labels_so_far + y
             self.indices_to_labels[idx] = new_y
         :param idx:
         :return:
@@ -304,16 +305,21 @@ def concat_data_set_mi():
     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
     train_dataset, validation_dataset, test_dataset = train_dataset.dataset, validation_dataset.dataset, test_dataset.dataset
     # - create usl data set
-    union = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
-    # union = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset],
-    #                                              compare_imgs_directly=True)
-    assert_dataset_is_pytorch_dataset([union])
-    assert len(union) == 100 * 600, f'got {len(union)=}'
-    assert len(union.labels) == 100, f'got {len(union.labels)=}'
+    concat = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
+    assert_dataset_is_pytorch_dataset([concat])
+    assert len(concat) == 100 * 600, f'got {len(concat)=}'
+    assert len(concat.labels) == 100, f'got {len(concat.labels)=}'
 
     # - create dataloader
+    loader = DataLoader(concat)
+    for batch in loader:
+        x, y = batch
+        assert x is not None
+        assert y is not None
+        break
+    # - loader with the code that will run it for real experiments
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
-    union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=union, val_dataset=union)
+    union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=concat, val_dataset=concat)
     for batch in union_loader:
         x, y = batch
         assert x is not None
@@ -327,7 +333,7 @@ if __name__ == '__main__':
     start = time.time()
     # - run experiment
     check_xs_align_mnist()
-    check_xs_align_cifar100()
+    # check_xs_align_cifar100()
     concat_data_set_mi()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
