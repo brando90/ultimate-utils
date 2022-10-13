@@ -147,59 +147,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         return x, y
 
 
-class USLDataset(Dataset):
-    """Generates a Union Supervised Learning (basically concat) like Meta-Data set:
-        > The non-episodic baselines are trained to solve the
-        > large classification problem that results from ‘concatenating’ the training classes of all datasets.
-    """
-
-    def __init__(self, datasets: list[Dataset]):
-        """
-        """
-        self.datasets = datasets
-        # todo do we really need the l2l ones?
-        # maps a class label to a list of sample indices with that label.
-        self.labels_to_indices = defaultdict(list)
-        # maps a sample index to its corresponding class label.
-        self.indices_to_labels = defaultdict(None)
-        # - do the relabeling
-        self.data = []
-        dataset: Dataset
-        label_cum_sum: int = 0
-        new_idx: int = 0
-        for dataset in datasets:
-            for x, y in dataset:
-                y = int(y)
-                # print(f'{(x, y)=}')
-                new_label = y + label_cum_sum
-                self.indices_to_labels[new_idx] = new_label
-                new_idx += 1
-                self.labels_to_indices[new_label].append(new_idx)
-                # -
-                self.data.append(x)
-            label_cum_sum += len(dataset.labels)
-        assert len(self.data) == sum([len(dataset) for dataset in self.datasets])
-        assert len(self.labels) == cum_sum
-        print()
-        self.labels = list(self.labels_to_indices.keys()).sort()
-        # todo: 1. do bisect function to index to union, make sure it works with getitem, might be needed for meta-data set?
-        # todo: 2. other option is to do what mnist does:
-        # self.data, self.targets = self._load_data()
-        del self.datasets
-        self.target_transform = lambda data: torch.tensor(data, dtype=torch.int)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
-        # todo: do bisect function to index to union, make sure it works with getitem
-        x = self.data[idx]
-        y = self.indices_to_labels[idx]
-        if self.target_transform is not None:
-            y = self.target_transform(y)
-        return x, y
-
-
 def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
     """ to do 1 data set wrap it in a list"""
     for dataset in datasets:
