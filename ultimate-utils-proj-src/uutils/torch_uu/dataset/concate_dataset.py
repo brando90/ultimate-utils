@@ -1,14 +1,4 @@
 """
-todo: check the two common interfacses for labels normal l2l uses l2l comment on normal dataset
-
-.indices
-.labels
-
-right?
-
-function get_labels() then indices the right one?
-
-mapping algorithm
 
 do checks, loop through all data points, create counts for each label how many data points there are
 do this for MI only
@@ -85,9 +75,9 @@ class ConcatDataset(Dataset):
                 new_label = y + offset
                 self.indices_to_labels[new_idx] = new_label
                 self.labels_to_indices[new_label] = new_idx
+                new_idx += 1
             num_labels_for_current_dataset: int = max([y for _, y in dataset])
             offset += num_labels_for_current_dataset
-            new_idx += 1
         assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)
         # contains the list of labels from 0 - total num labels after concat
         self.labels = range(offset)
