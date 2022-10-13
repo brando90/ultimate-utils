@@ -47,6 +47,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                  transform: Optional[Callable] = None,
                  target_transform: Optional[Callable] = None,
                  compare_imgs_directly: bool = False,
+                 verify_xs_align: bool = False,
                  ):
         """
         Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
@@ -63,12 +64,15 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
         # - do the relabeling
-        self._re_label_all_dataset(datasets, compare_imgs_directly)
+        self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align)
 
     def __len__(self):
         return len(self.concat_datasets)
 
-    def _re_label_all_dataset(self, datasets: list[Dataset], compare_imgs_directly: bool = False):
+    def _re_label_all_dataset(self, datasets: list[Dataset],
+                              compare_imgs_directly: bool = False,
+                              verify_xs_align: bool = False,
+                              ):
         """
         Relabels according to a blind (mutually exclusive) assumption.
 
@@ -80,6 +84,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
 
         :param datasets:
         :param compare_imgs_directly:
+        :parm verify_xs_align: set to false by default in case your transforms aren't deterministic.
         :return:
         """
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
@@ -106,8 +111,13 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                     x, _x = self.img2tensor(x), self.img2tensor(_x)
                 if isinstance(y, int):
                     y, _y = self.int2tensor(y), self.int2tensor(_y)
-                assert torch.equal(x,
-                                   _x), f'Error for some reason, got: {new_idx=}, {data_idx=}, {x.norm()=}, {_x.norm()=}, {x=}, {_x=}'
+                if verify_xs_align:
+                    # this might fails if there are random ops in the getitem
+                    assert torch.equal(x,
+                                       _x), f'Error for some reason, got: {dataset_idx=},' \
+                                            f' {new_idx=}, {data_idx=}, ' \
+                                            f'{x.norm()=}, {_x.norm()=}, ' \
+                                            f'{x=}, {_x=}'
                 # - relabling
                 new_label = y + total_num_labels_so_far
                 self.indices_to_labels[new_idx] = new_label
@@ -234,7 +244,7 @@ def check_xs_align_mnist():
     test = torchvision.datasets.MNIST(root=root, train=False, download=True,
                                       transform=torchvision.transforms.ToTensor(),
                                       target_transform=lambda data: torch.tensor(data, dtype=torch.int))
-    concat = ConcatDatasetMutuallyExclusiveLabels([train, test])
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test], verify_xs_align=True)
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
     assert len(concat) == 10 * 7000, f'Err, unexpected number of datapoints {len(concat)=} expected {100 * 700}'
@@ -266,7 +276,7 @@ def check_xs_align_cifar100():
     test = torchvision.datasets.CIFAR100(root=root, train=False, download=True,
                                          transform=torchvision.transforms.ToTensor(),
                                          target_transform=lambda data: torch.tensor(data, dtype=torch.int))
-    concat = ConcatDatasetMutuallyExclusiveLabels([train, test])
+    concat = ConcatDatasetMutuallyExclusiveLabels([train, test], verify_xs_align=True)
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
     assert len(concat) == 100 * 600, f'Err, unexpected number of datapoints {len(concat)=} expected {100 * 600}'
@@ -295,6 +305,8 @@ def concat_data_set_mi():
     train_dataset, validation_dataset, test_dataset = train_dataset.dataset, validation_dataset.dataset, test_dataset.dataset
     # - create usl data set
     union = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
+    # union = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset],
+    #                                              compare_imgs_directly=True)
     assert_dataset_is_pytorch_dataset([union])
     assert len(union) == 100 * 600, f'got {len(union)=}'
     assert len(union.labels) == 100, f'got {len(union.labels)=}'
