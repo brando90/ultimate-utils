@@ -797,7 +797,7 @@ def get_truly_random_seed_through_os():
     return random_seed
 
 
-def seed_everything(seed=42):
+def seed_everything(seed: int =42):
     """
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     """
@@ -810,6 +810,7 @@ def seed_everything(seed=42):
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    # #torch.use_deterministic_algorithms(True) # do not uncomment
 
 
 def get_hostname_mit():

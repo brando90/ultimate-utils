@@ -95,6 +95,9 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         for dataset_idx, dataset in enumerate(datasets):
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
             assert dataset == self.concat_datasets.datasets[dataset_idx]
+            print(f'{dataset=}')
+            print(f'{len(dataset.labels)=}')
+            print(f'{sorted(dataset.labels)=}')
             for data_idx, (x, y) in enumerate(dataset):
                 y = int(y)
                 # - get data point from concataned data set (to compare with the data point from the data set list)
@@ -125,6 +128,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                 self.labels_to_indices[new_label].append(new_idx)
                 new_idx += 1
             num_labels_for_current_dataset: int = int(max([y for _, y in dataset])) + 1
+            print(f'{num_labels_for_current_dataset=}')
             # - you'd likely resolve unions if you wanted a proper union, the addition assumes mutual exclusivity
             total_num_labels_so_far += num_labels_for_current_dataset
         assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)

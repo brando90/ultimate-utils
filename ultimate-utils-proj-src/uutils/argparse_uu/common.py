@@ -124,13 +124,15 @@ def setup_args_for_experiment(args: Namespace,
     args.master_port = find_free_port()
 
     # - determinism
+    print(f'{args.seed=}')
     if hasattr(args, 'always_use_deterministic_algorithms'):
         if args.always_use_deterministic_algorithms:
             uutils.torch_uu.make_code_deterministic(args.seed)
-            logging.warning(f'Seed being ignored, seed value: {args.seed=}')
+        logging.warning(f'Seed being ignored, seed value: {args.seed=}')
+    if args.seed != -1:
+        uutils.seed_everything(args.seed)
 
     # - get device name
-    print(f'{args.seed=}')
     # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     from uutils.torch_uu.distributed import set_devices
     set_devices(args)  # args.device = rank or .device

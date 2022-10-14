@@ -174,7 +174,7 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == '4CNN_l2l_cifarfs':
         from uutils.torch_uu.models.l2l_models import cnn4_cifarsfs
         args.model, args.model_hps = cnn4_cifarsfs(**model_hps)
-    elif model_option == '3FNN_5_gaussian':  #Added by Patrick 3/14
+    elif model_option == '3FNN_5_gaussian':  # Added by Patrick 3/14
         from uutils.torch_uu.models.fullyconnected import fnn3_gaussian
         args.model, args.model_hps = fnn3_gaussian(**model_hps)
     elif model_option == 'resnet18_random':

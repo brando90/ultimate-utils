@@ -136,6 +136,9 @@ def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool
     import random
     import numpy as np
     import torch
+    import os
+
+    os.environ["PYTHONHASHSEED"] = str(seed)
     # - make pytorch determinsitc
     # makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
     torch.manual_seed(seed)

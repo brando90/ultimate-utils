@@ -130,7 +130,7 @@ def parse_args_meta_learning() -> Namespace:
     # - miscellaneous arguments
     parser.add_argument('--log_freq', type=int, default=-1, help='default is to put the epochs or iterations default'
                                                                  'either log every epoch or log ever ~100 iterations')
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seed', type=int, default=-1)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
                         help='tries to make pytorch fully deterministic')
     parser.add_argument('--num_workers', type=int, default=-1,
