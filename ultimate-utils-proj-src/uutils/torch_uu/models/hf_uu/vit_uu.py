@@ -156,8 +156,12 @@ def cifar_vit():
     # custom data set tutorial: https://colab.research.google.com/drive/1Z1lbR_oTSaeodv9tTm11uEhOjhkUx1L4?usp=sharing#scrollTo=5ql2T5PDUI1D
     from transformers import ViTModel
     model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
-    feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k')
+    # feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k')
     # this blog also uses the in21k, https://huggingface.co/blog/fine-tune-vit
+    # model with with input size for cifar
+    from transformers import ViTConfig
+    vitconfig = ViTConfig(image_size=32)
+    model = ViTModel(vitconfig)
     # cls layer
     num_labels, cls_p_dropout = 100, 0.1  # seems they use 0.1 p_dropout for cosine scheduler, but also use weight decay...
     dropout = nn.Dropout(cls_p_dropout)
@@ -171,6 +175,7 @@ def cifar_vit():
         for batch_idx, batch in enumerate(train_loader):
             # - process batch
             x, y = batch
+            x.to(device), y.to(device)
             assert isinstance(x, torch.Tensor)
             assert isinstance(y, torch.Tensor)
             print(f'{x.size()=}')
@@ -280,8 +285,8 @@ if __name__ == "__main__":
 
     start = time.time()
     # - run experiment
-    does_feature_extractor_have_params()
-    # cifar_vit()
+    # does_feature_extractor_have_params()
+    cifar_vit()
     # hdb1_vit()
     # mi_vit()
     # - Done
