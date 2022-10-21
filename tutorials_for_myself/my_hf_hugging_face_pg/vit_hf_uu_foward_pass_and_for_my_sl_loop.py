@@ -120,7 +120,7 @@ print(f'{type(x)=}')
 print(f'{x.size()=}')
 from transformers.modeling_outputs import ImageClassifierOutput
 # out_cls: ImageClassifierOutput = model(x)
-out_cls = model(x)
+out_cls = model(x)  # todo, this looks wrong to me
 print(f'{out_cls=}')
 print(f'{out_cls.keys()=}')
 
@@ -140,4 +140,72 @@ out_cls = model(x)
 print(f'{out_cls.keys()=}')
 print(f'{out_cls.logits=}')
 
-# %%
+#%%
+
+from transformers import ViTFeatureExtractor, ViTModel
+import torch
+from datasets import load_dataset
+
+dataset = load_dataset("huggingface/cats-image")
+image = dataset["test"]["image"][0]
+
+feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
+model = ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
+
+inputs = feature_extractor(image, return_tensors="pt")
+
+with torch.no_grad():
+    outputs = model(**inputs)
+
+last_hidden_states = outputs.last_hidden_state
+list(last_hidden_states.shape)
+
+#%%
+"""
+ref: https://github.com/NielsRogge/Transformers-Tutorials/blob/master/VisionTransformer/Quick_demo_of_HuggingFace_version_of_Vision_Transformer_inference.ipynb
+
+This worked on vision with an A40!
+```python
+Predicted class: Egyptian cat
+```
+"""
+# - get model (for inference)
+from transformers import ViTForImageClassification
+import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+model.eval()
+model.to(device)
+
+# - get an image
+from PIL import Image
+import requests
+
+url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
+im = Image.open(requests.get(url, stream=True).raw)
+# im
+
+# - get encoding/embedding of im
+from transformers import ViTFeatureExtractor
+
+feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224')
+encoding = feature_extractor(images=im, return_tensors="pt")
+encoding.keys()
+
+encoding['pixel_values'].shape
+
+# - forward pass (get logits!)
+pixel_values = encoding['pixel_values'].to(device)
+
+outputs = model(pixel_values)
+logits = outputs.logits
+logits.shape
+
+# - (extra, get label name), empty function in class, point to tutorial
+prediction = logits.argmax(-1)
+print("Predicted class:", model.config.id2label[prediction.item()])
+
+
+
