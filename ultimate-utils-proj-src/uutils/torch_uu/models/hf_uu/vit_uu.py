@@ -41,16 +41,87 @@ x = output of encoder # decoder is similar but it has a masked MHSA & then MHSA 
 """
 from argparse import Namespace
 from pathlib import Path
+from typing import Callable, Optional, Union
 
 import torch
 
-from torch import nn
+from torch import nn, Tensor
 
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 
-from transformers import ViTFeatureExtractor, ViTModel
+from transformers import ViTFeatureExtractor, ViTModel, ViTConfig
 
 from pdb import set_trace as st
+
+from transformers.modeling_outputs import BaseModelOutputWithPooling
+
+
+class ViTForImageClassificationUU(nn.Module):
+    def __init__(self,
+                 num_labels: int,
+                 image_size: int,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                 criterion: Optional[Union[None, Callable]] = None,  # e.g nn.Criterion()
+                 cls_p_dropout: float = 0.0,
+                 pretrained_name: str = None,
+                 vitconfig: ViTConfig = None,
+                 ):
+        """
+        :param num_labels:
+        :param pretrained_name: 'google/vit-base-patch16-224-in21k'  # what the diff with this one: "google/vit-base-patch16-224"
+        """
+        super().__init__()
+        if vitconfig is not None:
+            raise NotImplementedError
+            self.vitconfig = vitconfig
+            print(f'You gave a config so everyone other param given is going to be ignored.')
+        elif pretrained_name is not None:
+            raise NotImplementedError
+            # self.vit = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+            self.model = ViTModel.from_pretrained(pretrained_name)
+            print('Make sure you did not give a vitconfig or this pretrained name will be ignored.')
+        else:
+            self.num_labels = num_labels
+            self.image_size = image_size
+            self.vitconfig = ViTConfig(image_size=self.image_size)
+            self.model = ViTModel(self.vitconfig)
+        assert cls_p_dropout == 0.0, 'Error, for now only p dropout for cls is zero until we figure out if we need to ' \
+                                     'change all the other p dropout layers too.'
+        self.dropout = nn.Dropout(cls_p_dropout)
+        self.classifier = nn.Linear(self.model.config.hidden_size, num_labels)
+        self.criterion = None if criterion is None else criterion
+
+    def forward(self, batch_xs: Tensor, labels: Tensor = None) -> Tensor:
+        """
+        Forward pass of vit. I added the "missing" classifier (and drouput layer before it) to act on the first cls
+        token embedding. Remaining token embeddings are ignored/not used.
+
+        I think the feature extractor only normalizes the data for you, doesn't seem to even make it into a seq, see:
+        ...
+        so idk why it's needed but an example using it can be found here:
+            - colab https://colab.research.google.com/drive/1Z1lbR_oTSaeodv9tTm11uEhOjhkUx1L4?usp=sharing#scrollTo=cGDrb1Q4ToLN
+            - blog with trainer https://huggingface.co/blog/fine-tune-vit
+            - single PIL notebook https://github.com/NielsRogge/Transformers-Tutorials/blob/master/VisionTransformer/Quick_demo_of_HuggingFace_version_of_Vision_Transformer_inference.ipynb
+        """
+        outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
+        output: Tensor = self.dropout(outputs.last_hidden_state[:, 0])
+        logits: Tensor = self.classifier(output)
+        if labels is None:
+            assert logits.dtype == torch.float32
+            return logits  # this is what my usl agent does ;)
+        else:
+            raise NotImplementedError
+            assert labels.dtype == torch.long
+            #   loss = self.criterion(logits.view(-1, self.num_labels), labels.view(-1))
+            loss = self.criterion(logits, labels)
+            return loss, logits
+
+    def _assert_its_random_model(self):
+        from uutils.torch_uu import norm
+        pre_trained_model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+        print(f'----> {norm(pre_trained_model)=}')
+        print(f'----> {norm(self)=}')
+        assert norm(pre_trained_model) > norm(self), f'Random models usually have smaller weight size but got ' \
+                                                     f'{norm(pre_trained_model)}{norm(self)}'
 
 
 # - tests
@@ -141,10 +212,10 @@ def cifar_vit():
     root = Path('~/data/').expanduser()
     train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
                                           transform=torchvision.transforms.ToTensor(),
-                                          target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     test = torchvision.datasets.CIFAR100(root=root, train=False, download=True,
                                          transform=torchvision.transforms.ToTensor(),
-                                         target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     from torch.utils.data import DataLoader
     train_loader = DataLoader(train, batch_size=4)
 
@@ -156,26 +227,33 @@ def cifar_vit():
     # custom data set tutorial: https://colab.research.google.com/drive/1Z1lbR_oTSaeodv9tTm11uEhOjhkUx1L4?usp=sharing#scrollTo=5ql2T5PDUI1D
     from transformers import ViTModel
     model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+    from uutils.torch_uu import norm
+    print(f'----> {norm(model)=}')
     # feature_extractor = ViTFeatureExtractor.from_pretrained('google/vit-base-patch16-224-in21k')
     # this blog also uses the in21k, https://huggingface.co/blog/fine-tune-vit
     # model with with input size for cifar
     from transformers import ViTConfig
     vitconfig = ViTConfig(image_size=32)
     model = ViTModel(vitconfig)
+    from uutils.torch_uu import norm
+    print(f'----> {norm(model)=}')
     # cls layer
     num_labels, cls_p_dropout = 100, 0.1  # seems they use 0.1 p_dropout for cosine scheduler, but also use weight decay...
     dropout = nn.Dropout(cls_p_dropout)
     classifier = nn.Linear(model.config.hidden_size, num_labels)
+    # loss
     criterion = nn.CrossEntropyLoss()
     device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
+    # to device
     model.to(device)
+    classifier.to(device)  # put as field to class so it's moved automatically
     # -
     epochs = 1
     for epoch in range(epochs):
         for batch_idx, batch in enumerate(train_loader):
             # - process batch
             x, y = batch
-            x.to(device), y.to(device)
+            x, y = x.to(device), y.to(device)
             assert isinstance(x, torch.Tensor)
             assert isinstance(y, torch.Tensor)
             print(f'{x.size()=}')
@@ -187,7 +265,6 @@ def cifar_vit():
             # x = feature_extractor(x)
             # print(f'{x.size()=}')
             out = model(x)
-            print(f'{out.size()=}')
             # todo: Q, so do we do dropout after cls linear layer? Dropout, when used, is applied after every dense layer except for the the qkv-projections and directly after adding positional- to patch embeddings.
             cls_token_emebd = out.last_hidden_state[:, 0]
             print(f'{cls_token_emebd.size()=}')
@@ -197,7 +274,10 @@ def cifar_vit():
             loss = criterion(logits, y)
             print(f'{loss=}')
             # then you can do backward()
-            st()
+            break
+        break
+    print('--- success vit cifar ---')
+    return
 
 
 def hdb1_vit():
@@ -213,6 +293,7 @@ def hdb1_vit():
     # - options for number of tasks/meta-batch size
     batch_size = 5
     num_iterations = 1
+    device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 
     # - get benchmark
     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
@@ -220,14 +301,13 @@ def hdb1_vit():
     splits = ['train', 'validation', 'test']
     tasksets = [getattr(benchmark, split) for split in splits]
 
-    # - loop through tasks
-    device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
-    # model = get_model('resnet18', pretrained=False, num_classes=5).to(device)
-    #
-    feature_extractor = ViTFeatureExtractor.from_pretrained("google/vit-base-patch16-224-in21k")
-    # The bare ViT Model transformer outputting raw hidden-states without any specific head on top.
-    model = ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
+    # - get my vit model
+    model = ViTForImageClassificationUU(num_labels=64 + 1100, image_size=84)
     criterion = nn.CrossEntropyLoss()
+    # to device
+    model.to(device)
+    criterion.to(device)
+    # -
     for i, taskset in enumerate(tasksets):
         print(f'-- {splits[i]=}')
         # - train loop
@@ -235,25 +315,23 @@ def hdb1_vit():
             for task_num in range(batch_size):
                 print(f'{task_num=}')
 
-                X, y = taskset.sample()
-                print(f'{X.size()=}')
+                x, y = taskset.sample()
+                x, y = x.to(device), y.to(device)
+                print(f'{x.size()=}')
                 print(f'{y.size()=}')
                 print(f'{y=}')
+                assert isinstance(x, torch.Tensor)
+                assert isinstance(y, torch.Tensor)
 
-                image = X
-
-                inputs = feature_extractor(image, return_tensors="pt")
-                outputs = model(**inputs)
-                print(f'{outputs=}')
-                last_hidden_states = outputs.last_hidden_state
-                st()
-
-                y_pred = model(X)
-                loss = criterion(y_pred, y)
+                # - forward pass
+                logits = model(x)
+                loss = criterion(logits, y)
                 print(f'{loss=}')
-                print()
-
-    print('-- end of test --')
+                # then you can do backward()
+                break
+            break
+        break
+    return
 
 
 def mi_vit():
@@ -287,7 +365,7 @@ if __name__ == "__main__":
     # - run experiment
     # does_feature_extractor_have_params()
     cifar_vit()
-    # hdb1_vit()
+    hdb1_vit()
     # mi_vit()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
