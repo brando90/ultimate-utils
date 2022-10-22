@@ -190,7 +190,8 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # print_inside_halt(args, halt, 6)  # todo: remove? temporary for debugging
         if is_running_parallel(args.rank):
             for p in meta_learner.parameters():
-                p.grad.data.mul_(1.0 / meta_batch_size)
+                if p.grad is not None:
+                    p.grad.data.mul_(1.0 / meta_batch_size)
         # print_inside_halt(args, halt, 7)  # todo: remove? temporary for debugging
         outer_opt.step()  # averages gradients across all workers
         # print_inside_halt(args, halt, 8)  # todo: remove? temporary for debugging

@@ -347,7 +347,12 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model = base_model
         assert args is self.args
         assert base_model is args.model
-        self.maml = learn2learn.algorithms.MAML(args.model, lr=args.inner_lr, first_order=args.first_order)
+        allow_unused = args.allow_unused if getattr(args, 'allow_unused') else None  # ternary op for backwards comp.
+        self.maml = learn2learn.algorithms.MAML(args.model,
+                                                lr=args.inner_lr,
+                                                first_order=args.first_order,
+                                                allow_unused=allow_unused
+                                                )
         # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
         # opt = torch.optim.Adam(maml.parameters(), meta_lr)
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
