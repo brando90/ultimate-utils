@@ -191,6 +191,15 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         # args.model.cls = args.model.classifier
         args.model_hps = None  # for now since we can get the model using task2vec idk if we need this
         raise NotImplementedError
+    elif model_option == 'resnet12_hdb1_mio':
+        # same as the one in MI since Omni has been resized to that size [3, 84, 84].
+        from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
+        assert model_hps['num_classes'] != 64
+        assert model_hps['num_classes'] == 64 + 1100
+        args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
+    elif model_option == 'vit_mi':
+        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_mi
+        args.model, args.model_hps = get_vit_mi(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:

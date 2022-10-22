@@ -47,8 +47,10 @@ def get_sl_dataloader(args: Namespace) -> dict:
             get_train_valid_test_data_loader_nd_gaussian
         args.dataloaders: dict = get_train_valid_test_data_loader_nd_gaussian(args)
         print("Got n_way_gaussians_sl_nd as dataset")
-    elif args.data_options == 'hdb1':
-        raise NotImplementedError
+    elif args.data_options == 'hdb1_mio_usl':
+        from diversity_src.dataloaders.usl.hdb1_mi_omniglot_usl_dl import hdb1_mi_omniglot_usl_all_splits_dataloaders
+        args.dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
+        assert args.n_cls == 64 + 1100  # todo: is this needed?
     elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)

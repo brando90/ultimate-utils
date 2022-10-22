@@ -58,15 +58,16 @@ from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 class ViTForImageClassificationUU(nn.Module):
     def __init__(self,
-                 num_labels: int,
+                 num_classes: int,
                  image_size: int,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
-                 criterion: Optional[Union[None, Callable]] = None,  # e.g nn.Criterion()
+                 criterion: Optional[Union[None, Callable]] = None,
+                 # None, USL agent does this not model usually for me e.g nn.Criterion()
                  cls_p_dropout: float = 0.0,
                  pretrained_name: str = None,
                  vitconfig: ViTConfig = None,
                  ):
         """
-        :param num_labels:
+        :param num_classes:
         :param pretrained_name: 'google/vit-base-patch16-224-in21k'  # what the diff with this one: "google/vit-base-patch16-224"
         """
         super().__init__()
@@ -80,19 +81,19 @@ class ViTForImageClassificationUU(nn.Module):
             self.model = ViTModel.from_pretrained(pretrained_name)
             print('Make sure you did not give a vitconfig or this pretrained name will be ignored.')
         else:
-            self.num_labels = num_labels
+            self.num_classes = num_classes
             self.image_size = image_size
             self.vitconfig = ViTConfig(image_size=self.image_size)
             self.model = ViTModel(self.vitconfig)
         assert cls_p_dropout == 0.0, 'Error, for now only p dropout for cls is zero until we figure out if we need to ' \
                                      'change all the other p dropout layers too.'
         self.dropout = nn.Dropout(cls_p_dropout)
-        self.classifier = nn.Linear(self.model.config.hidden_size, num_labels)
+        self.cls = nn.Linear(self.model.config.hidden_size, num_classes)
         self.criterion = None if criterion is None else criterion
 
     def forward(self, batch_xs: Tensor, labels: Tensor = None) -> Tensor:
         """
-        Forward pass of vit. I added the "missing" classifier (and drouput layer before it) to act on the first cls
+        Forward pass of vit. I added the "missing" cls (and drouput layer before it) to act on the first cls
         token embedding. Remaining token embeddings are ignored/not used.
 
         I think the feature extractor only normalizes the data for you, doesn't seem to even make it into a seq, see:
@@ -104,14 +105,14 @@ class ViTForImageClassificationUU(nn.Module):
         """
         outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
         output: Tensor = self.dropout(outputs.last_hidden_state[:, 0])
-        logits: Tensor = self.classifier(output)
+        logits: Tensor = self.cls(output)
         if labels is None:
             assert logits.dtype == torch.float32
             return logits  # this is what my usl agent does ;)
         else:
             raise NotImplementedError
             assert labels.dtype == torch.long
-            #   loss = self.criterion(logits.view(-1, self.num_labels), labels.view(-1))
+            #   loss = self.criterion(logits.view(-1, self.num_classes), labels.view(-1))
             loss = self.criterion(logits, labels)
             return loss, logits
 
@@ -122,6 +123,24 @@ class ViTForImageClassificationUU(nn.Module):
         print(f'----> {norm(self)=}')
         assert norm(pre_trained_model) > norm(self), f'Random models usually have smaller weight size but got ' \
                                                      f'{norm(pre_trained_model)}{norm(self)}'
+
+
+def get_vit(num_classes: int,
+            image_size: int,
+            ) -> tuple[nn.Module, dict]:
+    """get vit."""
+    model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
+    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    return model, model_hps
+
+
+def get_vit_mi(num_classes: int = 5,
+               image_size: int = 84,
+               ) -> tuple[nn.Module, dict]:
+    """get vit for mi, only num_classes = 5 and image size 84 is needed. """
+    model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
+    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    return model, model_hps
 
 
 # - tests
@@ -238,15 +257,15 @@ def cifar_vit():
     from uutils.torch_uu import norm
     print(f'----> {norm(model)=}')
     # cls layer
-    num_labels, cls_p_dropout = 100, 0.1  # seems they use 0.1 p_dropout for cosine scheduler, but also use weight decay...
+    num_classes, cls_p_dropout = 100, 0.1  # seems they use 0.1 p_dropout for cosine scheduler, but also use weight decay...
     dropout = nn.Dropout(cls_p_dropout)
-    classifier = nn.Linear(model.config.hidden_size, num_labels)
+    cls = nn.Linear(model.config.hidden_size, num_classes)
     # loss
     criterion = nn.CrossEntropyLoss()
     device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
     # to device
     model.to(device)
-    classifier.to(device)  # put as field to class so it's moved automatically
+    cls.to(device)  # put as field to class so it's moved automatically
     # -
     epochs = 1
     for epoch in range(epochs):
@@ -269,8 +288,8 @@ def cifar_vit():
             cls_token_emebd = out.last_hidden_state[:, 0]
             print(f'{cls_token_emebd.size()=}')
             output = dropout(cls_token_emebd)
-            logits = classifier(output)
-            # loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            logits = cls(output)
+            # loss = loss_fct(logits.view(-1, self.num_classes), labels.view(-1))
             loss = criterion(logits, y)
             print(f'{loss=}')
             # then you can do backward()
@@ -302,7 +321,7 @@ def hdb1_vit():
     tasksets = [getattr(benchmark, split) for split in splits]
 
     # - get my vit model
-    model = ViTForImageClassificationUU(num_labels=64 + 1100, image_size=84)
+    model = ViTForImageClassificationUU(num_classes=64 + 1100, image_size=84)
     criterion = nn.CrossEntropyLoss()
     # to device
     model.to(device)

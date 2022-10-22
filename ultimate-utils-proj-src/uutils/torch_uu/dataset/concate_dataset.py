@@ -30,7 +30,8 @@ import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
+# int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
+int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.long)
 
 
 class ConcatDatasetMutuallyExclusiveLabels(Dataset):
@@ -89,6 +90,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         :parm verify_xs_align: set to false by default in case your transforms aren't deterministic.
         :return:
         """
+        print('\n\n')
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         total_num_labels_so_far: int = 0
         new_idx: int = 0
@@ -124,16 +126,22 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                                             f'{x=}, {_x=}'
                 # - relabling
                 new_label = y + total_num_labels_so_far
-                self.indices_to_labels[new_idx] = new_label
-                self.labels_to_indices[new_label].append(new_idx)
+                self.indices_to_labels[int(new_idx)] = int(new_label)
+                self.labels_to_indices[int(new_label)].append(int(new_idx))
                 new_idx += 1
-            num_labels_for_current_dataset: int = int(max([y for _, y in dataset])) + 1
+            num_labels_for_current_dataset: int = int(max([int(y) for _, y in dataset])) + 1
             print(f'{num_labels_for_current_dataset=}')
             # - you'd likely resolve unions if you wanted a proper union, the addition assumes mutual exclusivity
             total_num_labels_so_far += num_labels_for_current_dataset
         assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)
         # contains the list of labels from 0 - total num labels after concat, assume mutually exclusive
+        # - set & validate new labels
         self.labels = range(total_num_labels_so_far)
+        labels = sorted(list(self.labels_to_indices.keys()))
+        # for dataset in datasets:
+        #     if hasattr(dataset, 'labels'):
+        #         assert dataset.labels ==
+        assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         """
@@ -245,10 +253,10 @@ def check_xs_align_mnist():
     # - test 2, tensor imgs
     train = torchvision.datasets.MNIST(root=root, train=True, download=True,
                                        transform=torchvision.transforms.ToTensor(),
-                                       target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                       target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     test = torchvision.datasets.MNIST(root=root, train=False, download=True,
                                       transform=torchvision.transforms.ToTensor(),
-                                      target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                      target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     concat = ConcatDatasetMutuallyExclusiveLabels([train, test], verify_xs_align=True)
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
@@ -277,10 +285,10 @@ def check_xs_align_cifar100():
     # - test 2, tensor imgs
     train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
                                           transform=torchvision.transforms.ToTensor(),
-                                          target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     test = torchvision.datasets.CIFAR100(root=root, train=False, download=True,
                                          transform=torchvision.transforms.ToTensor(),
-                                         target_transform=lambda data: torch.tensor(data, dtype=torch.int))
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.long))
     concat = ConcatDatasetMutuallyExclusiveLabels([train, test], verify_xs_align=True)
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
