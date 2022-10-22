@@ -125,18 +125,18 @@ class ViTForImageClassificationUU(nn.Module):
                                                      f'{norm(pre_trained_model)}{norm(self)}'
 
 
-def get_vit(num_classes: int,
-            image_size: int,
-            ) -> tuple[nn.Module, dict]:
+def get_vit_model_and_model_hps(num_classes: int,
+                                image_size: int,
+                                ) -> tuple[nn.Module, dict]:
     """get vit."""
     model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
     return model, model_hps
 
 
-def get_vit_mi(num_classes: int = 5,
-               image_size: int = 84,
-               ) -> tuple[nn.Module, dict]:
+def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,
+                                           image_size: int = 84,
+                                           ) -> tuple[nn.Module, dict]:
     """get vit for mi, only num_classes = 5 and image size 84 is needed. """
     model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
