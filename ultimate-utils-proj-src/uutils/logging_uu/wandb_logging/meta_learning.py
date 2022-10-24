@@ -60,6 +60,7 @@ def _log_train_val_stats(args: Namespace,
         bar.update(it)
 
         # - print
+        st()
         args.logger.log('\n')
         args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
         args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")

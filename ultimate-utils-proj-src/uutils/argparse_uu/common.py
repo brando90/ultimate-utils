@@ -231,12 +231,22 @@ def setup_wandb(args: Namespace):
         if hasattr(args, 'run_name'):
             run_name = args.run_name if args.run_name is not None else run_name
         args.run_name = run_name
+        # set a location of where to save your local wandb stuff
+        dir_wandb = None
+        # if hasattr(args, 'dir_wandb'):
+        #     # if user forces where to save
+        #     dir_wandb = args.dir_wandb
+        # else:
+        #     args.dir_wandb: Path = args.log_root.expanduser()
+        #     dir_wandb = args.dir_wandb
         # - initialize wandb
-        wandb.init(project=args.wandb_project,
-                   entity=args.wandb_entity,
-                   # job_type="job_type",
-                   name=run_name,
-                   group=args.experiment_name
-                   )
+        wandb.init(
+            dir=dir_wandb,
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            # job_type="job_type",
+            name=run_name,
+            group=args.experiment_name
+        )
         # - save args in wandb
         wandb.config.update(args)

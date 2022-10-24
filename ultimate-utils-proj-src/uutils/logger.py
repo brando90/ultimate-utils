@@ -22,6 +22,8 @@ from uutils.torch_uu.distributed import is_lead_worker
 from uutils.torch_uu.models import get_simple_model
 from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
 
+from pdb import set_trace as st
+
 
 def save_model_as_string(args: Namespace, model: nn.Module):
     """ save model as as string. """
@@ -86,6 +88,7 @@ class Logger:
             # - guarantees it prints to console
             # from pprint import pprint
             # pprint(msg)
+            # st()
             print(msg, flush=flush)
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console
@@ -105,7 +108,6 @@ class Logger:
     #         # # - to make sure it prints to the logger file too not just to console
     #         # if log_file_name is not None:
     #         #     print(msg, file=self.args.log_root / log_file_name, flush=True)
-
 
     def record_train_stats_stats_collector(self, it: int, loss: float, acc: float):
         """
@@ -197,7 +199,7 @@ class Logger:
             show: bool = False,
 
             wandb_log_fig: bool = False
-        ):
+    ):
         if is_lead_worker(self.args.rank):
             # plt.style.use('default')
             # self.save_experiment_stats_to_json_file()
@@ -240,9 +242,9 @@ class Logger:
 
             # - plot stuff into acc axis
             acc_ax2.plot(self.experiment_stats['train']['its'], self.experiment_stats['train']['acc'],
-                          label=tag2, linestyle='-', marker='x', color='b', linewidth=1)
+                         label=tag2, linestyle='-', marker='x', color='b', linewidth=1)
             acc_ax2.plot(self.experiment_stats['val']['its'], self.experiment_stats['val']['acc'],
-                          label=tag4, linestyle='-', marker='x', color='c', linewidth=1)
+                         label=tag4, linestyle='-', marker='x', color='c', linewidth=1)
 
             acc_ax2.legend()
             x_axis_label: str = self.args.training_mode  # epochs or iterations
@@ -267,14 +269,15 @@ class Logger:
             # but return it who knows what might happen.
             plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
+
 def save_current_plots_and_stats(
         title='Learnig & Evaluation Curves',
 
         grid: bool = True,
         show: bool = False,
 
-        wandb_log_fig = False
-    ):
+        wandb_log_fig=False
+):
     """
     TODO - adapt so that logger doesn't have this function as a method attached to the object
 
@@ -290,7 +293,8 @@ def save_current_plots_and_stats(
     tag1 = f'Train loss'
     # tag2 = f'Train accuracy/R2'
     tag3 = f'Eval loss'
-    experiment_stats = uutils.load_json('~/Desktop/paper_figs/logs_Nov23_11-39-21_jobid_438713.iam-pbs/experiment_stats.json')
+    experiment_stats = uutils.load_json(
+        '~/Desktop/paper_figs/logs_Nov23_11-39-21_jobid_438713.iam-pbs/experiment_stats.json')
 
     # - get figure with two axis, loss above and accuracy bellow
     fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
