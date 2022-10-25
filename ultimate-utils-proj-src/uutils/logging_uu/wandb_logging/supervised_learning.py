@@ -93,6 +93,12 @@ def _log_train_val_stats(args: Namespace,
     """
     if is_lead_worker(args.rank):
         from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
+        # - print what flags are on
+        if step == 0:
+            print(f'{save_val_ckpt=}')
+            print(f'{uu_logger_log=}')
+            print(f'{log_to_wandb=}')
+            print(f'{log_to_tb=}')
 
         # - get eval stats
         val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
@@ -118,6 +124,7 @@ def _log_train_val_stats(args: Namespace,
         args.logger.log(f"{step_name}={step}: {val_loss=}, {val_acc=}")
 
         # - record into stats collector
+
         if uu_logger_log:
             args.logger.record_train_stats_stats_collector(step, train_loss, train_acc)
             args.logger.record_val_stats_stats_collector(step, val_loss, val_acc)

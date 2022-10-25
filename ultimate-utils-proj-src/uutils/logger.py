@@ -1,4 +1,5 @@
 import logging
+import sys
 from argparse import Namespace
 from typing import Any, Union
 
@@ -89,6 +90,7 @@ class Logger:
             # from pprint import pprint
             # pprint(msg)
             # st()
+            # print(msg, flush=flush, file=sys.stdout)
             print(msg, flush=flush)
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console
