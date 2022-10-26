@@ -116,7 +116,8 @@ def _log_train_val_stats(args: Namespace,
         uutils.save_args(args, args_filename='args.json')
 
         # - update progress bar at the end
-        bar.update(step)
+        if bar is not None:
+            bar.update(step)
 
         # - print
         args.logger.log('\n')

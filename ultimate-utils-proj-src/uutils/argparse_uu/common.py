@@ -233,6 +233,7 @@ def setup_wandb(args: Namespace):
         args.run_name = run_name
         # set a location of where to save your local wandb stuff
         dir_wandb = None
+        dir_wandb = Path('~/tmp/').expanduser()
         # if hasattr(args, 'dir_wandb'):
         #     # if user forces where to save
         #     dir_wandb = args.dir_wandb
@@ -240,6 +241,7 @@ def setup_wandb(args: Namespace):
         #     args.dir_wandb: Path = args.log_root.expanduser()
         #     dir_wandb = args.dir_wandb
         # - initialize wandb
+        print(f'{dir_wandb=}')
         wandb.init(
             dir=dir_wandb,
             project=args.wandb_project,

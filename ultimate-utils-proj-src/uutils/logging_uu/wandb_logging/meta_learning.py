@@ -14,6 +14,7 @@ from uutils.torch_uu.distributed import is_lead_worker
 
 from pdb import set_trace as st
 
+
 def _log_train_val_stats(args: Namespace,
                          it: int,
 
@@ -57,10 +58,10 @@ def _log_train_val_stats(args: Namespace,
         uutils.save_args(args, args_filename='args.json')
 
         # - update progress bar at the end
-        bar.update(it)
+        if bar is not None:
+            bar.update(it)
 
         # - print
-        st()
         args.logger.log('\n')
         args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
         args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
