@@ -1,7 +1,8 @@
 import os
+import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from uutils import find_free_port, load_cluster_jobids_to, try_to_get_git_revision_hash_short, \
     try_to_get_git_revision_hash_long
@@ -233,7 +234,10 @@ def setup_wandb(args: Namespace):
         args.run_name = run_name
         # set a location of where to save your local wandb stuff
         dir_wandb = None
-        dir_wandb = Path('~/tmp/').expanduser()
+        # dir_wandb = Path('~/tmp/').expanduser()
+        # dir_wandb = Path('/shared/rsaas/miranda9/tmp/').expanduser()
+        print(f"{os.environ['WANDB_DIR']=}")
+        dir_wandb: Union[str, None] = os.environ['WANDB_DIR'] if os.environ['WANDB_DIR'] else None
         # if hasattr(args, 'dir_wandb'):
         #     # if user forces where to save
         #     dir_wandb = args.dir_wandb
@@ -242,6 +246,7 @@ def setup_wandb(args: Namespace):
         #     dir_wandb = args.dir_wandb
         # - initialize wandb
         print(f'{dir_wandb=}')
+        print(f'{sys.stdout=}')
         wandb.init(
             dir=dir_wandb,
             project=args.wandb_project,

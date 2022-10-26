@@ -347,7 +347,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model = base_model
         assert args is self.args
         assert base_model is args.model
-        allow_unused = args.allow_unused if getattr(args, 'allow_unused') else None  # ternary op for backwards comp.
+        allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None  # ternary op for backwards comp.
         self.maml = learn2learn.algorithms.MAML(args.model,
                                                 lr=args.inner_lr,
                                                 first_order=args.first_order,

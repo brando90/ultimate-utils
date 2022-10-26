@@ -91,6 +91,7 @@ class Logger:
             # pprint(msg)
             # st()
             # print(msg, flush=flush, file=sys.stdout)
+            print(f'{sys.stdout=}')
             print(msg, flush=flush)
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console
