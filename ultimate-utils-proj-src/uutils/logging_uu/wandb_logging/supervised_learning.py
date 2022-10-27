@@ -1,3 +1,5 @@
+import os
+import sys
 from argparse import Namespace
 from typing import Callable, Any
 
@@ -99,6 +101,8 @@ def _log_train_val_stats(args: Namespace,
             print(f'{uu_logger_log=}')
             print(f'{log_to_wandb=}')
             print(f'{log_to_tb=}')
+            print(f'{sys.stdout=}')
+            print(f'{os.path.realpath(sys.stdout.name)=}')
 
         # - get eval stats
         val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
@@ -119,10 +123,10 @@ def _log_train_val_stats(args: Namespace,
         if bar is not None:
             bar.update(step)
 
-        # - print
+        # - print, todo: move before checkpointing
         args.logger.log('\n')
-        args.logger.log(f"{step_name}={step}: {train_loss=}, {train_acc=}")
-        args.logger.log(f"{step_name}={step}: {val_loss=}, {val_acc=}")
+        args.logger.log(f"-> {step_name}={step}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"-> {step_name}={step}: {val_loss=}, {val_acc=}")
 
         # - record into stats collector
 

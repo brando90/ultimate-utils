@@ -247,6 +247,11 @@ def setup_wandb(args: Namespace):
         # - initialize wandb
         print(f'{dir_wandb=}')
         print(f'{sys.stdout=}')
+        print(f'{os.path.realpath(sys.stdout.name)=}')
+        print(f'{sys.stderr=}')
+        print(f'{os.path.realpath(sys.stderr.name)=}')
+        print(f'{sys.stdin=}')
+        print(f'{os.path.realpath(sys.stdin.name)=}')
         wandb.init(
             dir=dir_wandb,
             project=args.wandb_project,

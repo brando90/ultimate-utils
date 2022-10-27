@@ -75,6 +75,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     def _re_label_all_dataset(self, datasets: list[Dataset],
                               compare_imgs_directly: bool = False,
                               verify_xs_align: bool = False,
+                              verbose: bool = False,
                               ):
         """
         Relabels according to a blind (mutually exclusive) assumption.
@@ -85,62 +86,77 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             total_number_labels += max label for current data set
         where total_number_labels always has the + 1 to correct for the zero indexing.
 
-        :param datasets:
-        :param compare_imgs_directly:
-        :parm verify_xs_align: set to false by default in case your transforms aren't deterministic.
-        :return:
+        assumption: it re-lables the data points to have a concatenation of all the labels. If there are rebeated labels
+        they are treated as different. So if dataset1 and dataset2 both have cats (represented as indices), then they
+        will get unique integers representing these. So the cats are treated as entirely different labels.
         """
-        print('\n\n')
+        print()
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         total_num_labels_so_far: int = 0
-        new_idx: int = 0
+        global_idx: int = 0  # new_idx
         for dataset_idx, dataset in enumerate(datasets):
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
             assert dataset == self.concat_datasets.datasets[dataset_idx]
-            print(f'{dataset=}')
-            print(f'{len(dataset.labels)=}')
-            print(f'{sorted(dataset.labels)=}')
-            for data_idx, (x, y) in enumerate(dataset):
-                y = int(y)
+            local_label2global_idx: defaultdict = defaultdict(list)
+            for local_data_idx, (x, local_y) in enumerate(dataset):
+                local_y = int(local_y)
                 # - get data point from concataned data set (to compare with the data point from the data set list)
-                _x, _y = self.concat_datasets[new_idx]
+                _x, _y = self.concat_datasets[global_idx]
                 _y = int(_y)
                 # - sanity check concatanted data set aligns with the list of datasets
-                assert y == _y
+                assert local_y == _y, f'{local_y=}, {_y=}'
                 if compare_imgs_directly:
                     # from PIL import ImageChops
                     # diff = ImageChops.difference(x, _x)  # https://stackoverflow.com/questions/35176639/compare-images-python-pil
                     # assert diff.getbbox(), f'comparison of imgs failed: {diff.getbbox()=}' # doesn't work :/
                     assert list(x.getdata()) == list(_x.getdata()), f'\n{list(x.getdata())=}, \n{list(_x.getdata())=}'
-                    # tensor comparison
+                # - tensor comparison
                 if not isinstance(x, Tensor):
                     x, _x = self.img2tensor(x), self.img2tensor(_x)
-                if isinstance(y, int):
-                    y, _y = int2tensor(y), int2tensor(_y)
-                if verify_xs_align:
+                if isinstance(local_y, int):
+                    local_y, _y = int2tensor(local_y), int2tensor(_y)
+                if verify_xs_align:  # checks the data points after doing get item make them match.
                     # this might fails if there are random ops in the getitem
                     assert torch.equal(x,
                                        _x), f'Error for some reason, got: {dataset_idx=},' \
-                                            f' {new_idx=}, {data_idx=}, ' \
+                                            f' {global_idx=}, {local_data_idx=}, ' \
                                             f'{x.norm()=}, {_x.norm()=}, ' \
                                             f'{x=}, {_x=}'
-                # - relabling
-                new_label = y + total_num_labels_so_far
-                self.indices_to_labels[int(new_idx)] = int(new_label)
-                self.labels_to_indices[int(new_label)].append(int(new_idx))
-                new_idx += 1
-            num_labels_for_current_dataset: int = int(max([int(y) for _, y in dataset])) + 1
-            print(f'{num_labels_for_current_dataset=}')
-            # - you'd likely resolve unions if you wanted a proper union, the addition assumes mutual exclusivity
+                # - collect local labels in dictionary keys so you can count how many different labels there are and thus do the re-labeling correctly
+                local_label2global_idx[local_y].append(global_idx)
+                global_idx += 1
+            # - re-labeling
+            re_labeling: dict = {}
+            for new_local_label, local_label in enumerate(local_label2global_idx.keys()):
+                re_labeling[local_label] = new_local_label
+            for local_label, new_local_label in re_labeling.items():
+                global_label: int = new_local_label + total_num_labels_so_far
+                new_label: int = global_label
+                global_indices: list[int] = local_label2global_idx[local_label]
+                for global_idx in global_indices:
+                    self.labels_to_indices[int(new_label)].append(int(global_idx))
+            for global_label, global_indices in self.labels_to_indices.items():
+                new_label: int = global_label
+                for global_idx in global_indices:
+                    self.indices_to_labels[int(global_idx)] = new_label
+            num_data_points_for_data_set: int = sum(len(g_indices) for g_indices in local_label2global_idx.values())
+            assert num_data_points_for_data_set == len(dataset), f'Error, as you are collecting local label to global' \
+                                                                 f'indices, you should do it for every data point ' \
+                                                                 f'preserving the number of data points. But got:' \
+                                                                 f'\n {num_data_points_for_data_set=}, {len(dataset)=}'
+            # - this assumes the integers in each data set is different, if there were unions you'd likely need semantic information about the label e.g. the string cat instead of absolute integers, or know the integers are shared between the two data sets
+            num_labels_for_current_dataset: int = len(local_label2global_idx.keys())
             total_num_labels_so_far += num_labels_for_current_dataset
-        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets)
+            if hasattr(dataset, 'labels'):
+                assert len(dataset.labels) == num_labels_for_current_dataset, f'Error: {len(dataset.labels)}, {num_labels_for_current_dataset=}'
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: \n{len(self.indices_to_labels.keys())=}' \
+                                                                                f'\n {len(self.concat_datasets)=}'
+        if all(hasattr(dataset, 'labels') for dataset in datasets):
+            assert sum(len(dataset.labels) for dataset in datasets) == total_num_labels_so_far
         # contains the list of labels from 0 - total num labels after concat, assume mutually exclusive
         # - set & validate new labels
         self.labels = range(total_num_labels_so_far)
-        labels = sorted(list(self.labels_to_indices.keys()))
-        # for dataset in datasets:
-        #     if hasattr(dataset, 'labels'):
-        #         assert dataset.labels ==
+        labels = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:

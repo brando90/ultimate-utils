@@ -44,6 +44,9 @@ def save_for_supervised_learning(args: Namespace,
         - DDP checkpointing: https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
     """
     if is_lead_worker(args.rank):
+        print(f'saving checkpoint at: {(args.log_root/ckpt_filename)=}')
+        print(f'{type(args.model)=}')
+        print(f'{args.model_option=}')
         import pickle
         if not ignore_logger:
             args.logger.save_current_plots_and_stats() if hasattr(args, 'logger') else None
@@ -76,6 +79,7 @@ def save_for_supervised_learning(args: Namespace,
                     },
                    pickle_module=pickle,
                    f=args.log_root / ckpt_filename)
+        print(f'saving checkpoint success at {(args.log_root/ckpt_filename)=}')
     return
 
 # todo - make a folder for it in models uutils and put this at the bottom

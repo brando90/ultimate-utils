@@ -61,10 +61,10 @@ def _log_train_val_stats(args: Namespace,
         if bar is not None:
             bar.update(it)
 
-        # - print
+        # - print, todo: move before checkpointing model
         args.logger.log('\n')
-        args.logger.log(f"{it_or_epoch}={it}: {train_loss=}, {train_acc=}")
-        args.logger.log(f"{it_or_epoch}={it}: {val_loss=}, {val_acc=}")
+        args.logger.log(f"-> {it_or_epoch}={it}: {train_loss=}, {train_acc=}")
+        args.logger.log(f"-> {it_or_epoch}={it}: {val_loss=}, {val_acc=}")
 
         print(f'{args.it=}')
         print(f'{args.num_its=}')
