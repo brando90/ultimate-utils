@@ -134,7 +134,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             local_num_dps: int = sum(len(global_indices) for global_indices in original_label2global_idx.values())
             assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
             # - do relabeling - original labeling to new global labels
-            total_num_labels_so_far += len(original_label2global_idx.keys())
             print(f'{total_num_labels_so_far=}')
             assert total_num_labels_so_far != len(dataset), f'Err:\n{total_num_labels_so_far=}\n{len(dataset)=}'
             new_local_label2global_indices: dict = {}
@@ -152,14 +151,13 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             local_num_dps: int = sum(len(global_indices) for global_indices in global_label2global_indices.values())
             assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
             # - this assumes the integers in each data set is different, if there were unions you'd likely need semantic information about the label e.g. the string cat instead of absolute integers, or know the integers are shared between the two data sets
-            num_labels_for_current_dataset: int = len(global_label2global_indices.keys())
-            print(f'{num_labels_for_current_dataset=}')
-            if hasattr(dataset, 'labels'):
-                assert len(dataset.labels) == num_labels_for_current_dataset, f'Err:\n{len(dataset.labels)=}' \
-                                                                              f'\n{num_labels_for_current_dataset=}'
             print(f'{total_num_labels_so_far=}')
             # this is the step where classes are concatenated. Note due to the previous loops assuming each label is uning this should never have intersecting keys.
+            print(f'{list(self.labels_to_indices.keys())=}')
+            print(f'{list(global_label2global_indices.keys())=}')
             dup: list = get_duplicates(list(self.labels_to_indices.keys()) + list(global_label2global_indices.keys()))
+            print(f'{list(self.labels_to_indices.keys())=}')
+            print(f'{list(global_label2global_indices.keys())=}')
             assert len(dup) == 0, f'Error:\n{self.labels_to_indices.keys()=}\n{global_label2global_indices.keys()=}\n{dup=}'
             for global_label, global_indices in global_label2global_indices.items():
                 # note g_idx might different to global_idx!
@@ -167,9 +165,16 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                 for g_idx in global_indices:
                     self.labels_to_indices[int(global_label)] = g_idx
                     self.indices_to_labels[g_idx] = int(global_label)
+            # - update number of labels seen so far
+            num_labels_for_current_dataset: int = len(original_label2global_idx.keys())
+            print(f'{num_labels_for_current_dataset=}')
+            total_num_labels_so_far += num_labels_for_current_dataset
             assert total_num_labels_so_far == len(self.labels_to_indices.keys()), f'Err:\n{total_num_labels_so_far=}' \
                                                                                   f'\n{len(self.labels_to_indices.keys())=}'
             assert global_idx == len(self.indices_to_labels.keys()), f'Err:\n{global_idx=}\n{len(self.indices_to_labels.keys())=}'
+            if hasattr(dataset, 'labels'):
+                assert len(dataset.labels) == num_labels_for_current_dataset, f'Err:\n{len(dataset.labels)=}' \
+                                                                              f'\n{num_labels_for_current_dataset=}'
         # - relabling done
         assert len(self.indices_to_labels.keys()) == len(
             self.concat_datasets), f'Err: \n{len(self.indices_to_labels.keys())=}' \
@@ -364,22 +369,27 @@ def concat_data_set_mi():
     print('---> test2 passed!')
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
-    assert len(concat) == 100 * 600, f'got {len(concat)=}'
-    assert len(concat.labels) == 64 + 16 + 20, f'got {len(concat.labels)=}'
+    assert len(concat) == 100 * 600, f'Err, got {len(concat)=}'
+    assert len(concat.labels) == 64 + 16 + 20, f'Err got {len(concat.labels)=}'
 
     # - create dataloader
     loader = DataLoader(concat)
+    print(f'{loader=}')
     for batch in loader:
+        print(f'{batch=}')
         x, y = batch
         assert x is not None
         assert y is not None
     # - loader with the code that will run it for real experiments
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
     union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=concat, val_dataset=concat)
+    print(f'{union_loader=}')
     for batch in union_loader:
+        print(f'{batch=}')
         x, y = batch
         assert x is not None
         assert y is not None
+    print('-- done with concat mi test! --')
 
 
 if __name__ == '__main__':
