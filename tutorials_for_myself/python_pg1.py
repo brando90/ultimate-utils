@@ -12341,3 +12341,13 @@ print(f'{val=}{original_val=}')
 val = 'b'
 assert original_val == 'a'
 print(f'{val=}{original_val=}')
+
+#%%
+
+from collections import defaultdict
+d = defaultdict(list)
+keys = [0, 1, 2, 2, 2, 3]
+for k in keys:
+    d[k].append(k)
+print(f'{d=}')
+print(f'{dict(d)=}')

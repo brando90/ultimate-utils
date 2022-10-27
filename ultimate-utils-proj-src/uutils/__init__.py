@@ -71,6 +71,7 @@ def print_pids():
     print(f'current process: {mp.current_process()}')
     print(f'pid: {os.getpid()}')
 
+
 # -
 
 def print_file(path_or_str: Union[str, Path]) -> None:
@@ -525,9 +526,11 @@ def run_bash_command(cmd: str) -> Any:
     else:
         return output
 
+
 def get_nvidia_smi_output() -> str:
     out = run_bash_command('nvidia-smi')
     return out
+
 
 def _get_git_revision_hash():
     """ ref: https://stackoverflow.com/questions/14989858/get-the-current-git-hash-in-a-python-script """
@@ -797,7 +800,7 @@ def get_truly_random_seed_through_os():
     return random_seed
 
 
-def seed_everything(seed: int =42):
+def seed_everything(seed: int = 42):
     """
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     """
@@ -1599,6 +1602,57 @@ def match_regex_test():
 
 
 # --  other
+
+def get_duplicates(lst: list) -> list:
+    """
+    Returns the duplicate elements in the list.
+
+    ref: https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
+    """
+    seen: set = set()
+    dup: list = []
+    for val in lst:
+        if val in seen:
+            dup.append(val)
+        else:
+            seen.add(val)
+    return dup
+
+
+def get_non_intersecting_elements(lst: list) -> list:
+    """
+    Gets you the elements that are not common to the two lists i.e. not intersecting elements.
+
+    ref: https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
+    """
+    seen: set = set()
+    not_intersect: set = set()
+    for val in lst:
+        if val not in seen:
+            not_intersect.add(val)
+            seen.add(val)
+        else:
+            not_intersect.remove(val)
+    return list(not_intersect)
+
+
+def list_of_elements_present(lst: list) -> list:
+    """
+    Gets you the elements in the list (in the SO post it's refered as the unique elements list).
+
+    ref: https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
+    :param lst:
+    :return:
+    """
+    # seen = set()
+    # uniq = []
+    # for x in a:
+    #     if x not in seen:
+    #         uniq.append(x)
+    #         seen.add(x)
+    # return uniq
+    return list(set(lst))
+
 
 def lists_equal(l1: list, l2: list) -> bool:
     """

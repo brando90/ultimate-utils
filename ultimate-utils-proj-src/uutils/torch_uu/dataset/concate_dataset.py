@@ -95,62 +95,83 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         total_num_labels_so_far: int = 0
         global_idx: int = 0  # new_idx
         for dataset_idx, dataset in enumerate(datasets):
+            print(f'{dataset_idx=} \n{len(dataset)=}')
+            if hasattr(dataset, 'labels'):
+                print(f'{len(dataset.labels)=}')
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
             assert dataset == self.concat_datasets.datasets[dataset_idx]
-            local_label2global_idx: defaultdict = defaultdict(list)
-            for local_data_idx, (x, local_y) in enumerate(dataset):
-                local_y = int(local_y)
+            original_label2global_idx: defaultdict = defaultdict(list)
+            for original_data_idx, (x, original_y) in enumerate(dataset):
+                original_y = int(original_y)
                 # - get data point from concataned data set (to compare with the data point from the data set list)
                 _x, _y = self.concat_datasets[global_idx]
                 _y = int(_y)
                 # - sanity check concatanted data set aligns with the list of datasets
-                assert local_y == _y, f'{local_y=}, {_y=}'
+                assert original_y == _y, f'{original_y=}, {_y=}'
                 if compare_imgs_directly:
                     # from PIL import ImageChops
                     # diff = ImageChops.difference(x, _x)  # https://stackoverflow.com/questions/35176639/compare-images-python-pil
                     # assert diff.getbbox(), f'comparison of imgs failed: {diff.getbbox()=}' # doesn't work :/
                     assert list(x.getdata()) == list(_x.getdata()), f'\n{list(x.getdata())=}, \n{list(_x.getdata())=}'
-                # - tensor comparison
+                # - tensor comparison of raw images
                 if not isinstance(x, Tensor):
                     x, _x = self.img2tensor(x), self.img2tensor(_x)
-                if isinstance(local_y, int):
-                    local_y, _y = int2tensor(local_y), int2tensor(_y)
+                # if isinstance(original_y, int):
+                #     original_y, _y = int2tensor(original_y), int2tensor(_y)
                 if verify_xs_align:  # checks the data points after doing get item make them match.
                     # this might fails if there are random ops in the getitem
                     assert torch.equal(x,
                                        _x), f'Error for some reason, got: {dataset_idx=},' \
-                                            f' {global_idx=}, {local_data_idx=}, ' \
+                                            f' {global_idx=}, {original_data_idx=}, ' \
                                             f'{x.norm()=}, {_x.norm()=}, ' \
                                             f'{x=}, {_x=}'
-                # - collect local labels in dictionary keys so you can count how many different labels there are and thus do the re-labeling correctly
-                local_label2global_idx[local_y].append(global_idx)
+                # - collect original labels in dictionary keys
+                original_label2global_idx[int(original_y)].append(global_idx)
                 global_idx += 1
-            # - re-labeling
-            re_labeling: dict = {}
-            for new_local_label, local_label in enumerate(local_label2global_idx.keys()):
-                re_labeling[local_label] = new_local_label
-            for local_label, new_local_label in re_labeling.items():
-                global_label: int = new_local_label + total_num_labels_so_far
-                new_label: int = global_label
-                global_indices: list[int] = local_label2global_idx[local_label]
-                for global_idx in global_indices:
-                    self.labels_to_indices[int(new_label)].append(int(global_idx))
-            for global_label, global_indices in self.labels_to_indices.items():
-                new_label: int = global_label
-                for global_idx in global_indices:
-                    self.indices_to_labels[int(global_idx)] = new_label
-            num_data_points_for_data_set: int = sum(len(g_indices) for g_indices in local_label2global_idx.values())
-            assert num_data_points_for_data_set == len(dataset), f'Error, as you are collecting local label to global' \
-                                                                 f'indices, you should do it for every data point ' \
-                                                                 f'preserving the number of data points. But got:' \
-                                                                 f'\n {num_data_points_for_data_set=}, {len(dataset)=}'
+            print(f'{global_idx=}')
+            local_num_dps: int = sum(len(global_indices) for global_indices in original_label2global_idx.values())
+            assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
+            # - do relabeling - original labeling to new global labels
+            total_num_labels_so_far += len(original_label2global_idx.keys())
+            print(f'{total_num_labels_so_far=}')
+            assert total_num_labels_so_far != len(dataset), f'Err:\n{total_num_labels_so_far=}\n{len(dataset)=}'
+            new_local_label2global_indices: dict = {}
+            global_label2global_indices: dict = {}
+            # make sure to sort to avoid random looping of unordered data structures e.g. keys in a dict
+            for new_local_label, original_label in enumerate(sorted(original_label2global_idx.keys())):
+                global_indices: list[int] = original_label2global_idx[original_label]
+                new_local_label2global_indices[int(new_local_label)] = global_indices
+                new_global_label: int = total_num_labels_so_far + new_local_label
+                global_label2global_indices[int(new_global_label)] = global_indices
+            local_num_dps: int = sum(len(global_indices) for global_indices in original_label2global_idx.values())
+            assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
+            local_num_dps: int = sum(len(global_indices) for global_indices in new_local_label2global_indices.values())
+            assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
+            local_num_dps: int = sum(len(global_indices) for global_indices in global_label2global_indices.values())
+            assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
             # - this assumes the integers in each data set is different, if there were unions you'd likely need semantic information about the label e.g. the string cat instead of absolute integers, or know the integers are shared between the two data sets
-            num_labels_for_current_dataset: int = len(local_label2global_idx.keys())
-            total_num_labels_so_far += num_labels_for_current_dataset
+            num_labels_for_current_dataset: int = len(global_label2global_indices.keys())
+            print(f'{num_labels_for_current_dataset=}')
             if hasattr(dataset, 'labels'):
-                assert len(dataset.labels) == num_labels_for_current_dataset, f'Error: {len(dataset.labels)}, {num_labels_for_current_dataset=}'
-        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: \n{len(self.indices_to_labels.keys())=}' \
-                                                                                f'\n {len(self.concat_datasets)=}'
+                assert len(dataset.labels) == num_labels_for_current_dataset, f'Err:\n{len(dataset.labels)=}' \
+                                                                              f'\n{num_labels_for_current_dataset=}'
+            print(f'{total_num_labels_so_far=}')
+            # this is the step where classes are concatenated. Note due to the previous loops assuming each label is uning this should never have intersecting keys.
+            dup: list = get_duplicates(list(self.labels_to_indices.keys()) + list(global_label2global_indices.keys()))
+            assert len(dup) == 0, f'Error: \n{self.labels_to_indices.keys()=} \n{global_label2global_indices.keys()=}'
+            for global_label, global_indices in global_label2global_indices.items():
+                # note g_idx might different to global_idx!
+                global_indices: list[int]
+                for g_idx in global_indices:
+                    self.labels_to_indices[int(global_label)] = g_idx
+                    self.indices_to_labels[g_idx] = int(global_label)
+            assert total_num_labels_so_far == len(self.labels_to_indices.keys()), f'Err:\n{total_num_labels_so_far=}' \
+                                                                                  f'\n{len(self.labels_to_indices.keys())=}'
+            assert global_idx == len(self.indices_to_labels.keys()), f'Err:\n{global_idx=}\n{len(self.indices_to_labels.keys())=}'
+        # - relabling done
+        assert len(self.indices_to_labels.keys()) == len(
+            self.concat_datasets), f'Err: \n{len(self.indices_to_labels.keys())=}' \
+                                   f'\n {len(self.concat_datasets)=}'
         if all(hasattr(dataset, 'labels') for dataset in datasets):
             assert sum(len(dataset.labels) for dataset in datasets) == total_num_labels_so_far
         # contains the list of labels from 0 - total num labels after concat, assume mutually exclusive
@@ -333,6 +354,8 @@ def concat_data_set_mi():
     assert_dataset_is_pytorch_dataset([train_dataset, validation_dataset, test_dataset])
     train_dataset, validation_dataset, test_dataset = train_dataset.dataset, validation_dataset.dataset, test_dataset.dataset
     # - create usl data set
+    concat = ConcatDatasetMutuallyExclusiveLabels([validation_dataset, test_dataset])
+    assert len(concat.labels) == 16 + 20, f'got {len(concat.labels)=}'
     concat = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
     assert_dataset_is_pytorch_dataset([concat])
     print(f'{len(concat)=}')
@@ -357,12 +380,12 @@ def concat_data_set_mi():
 
 if __name__ == '__main__':
     import time
-    from uutils import report_times
+    from uutils import report_times, get_duplicates
 
     start = time.time()
     # - run experiment
-    check_xs_align_mnist()
-    check_xs_align_cifar100()
+    # check_xs_align_mnist()
+    # check_xs_align_cifar100()
     concat_data_set_mi()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
