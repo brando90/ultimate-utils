@@ -94,6 +94,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         total_num_labels_so_far: int = 0
         global_idx: int = 0  # new_idx
+        assert len(self.indices_to_labels.keys()) == 0
+        assert len(self.labels_to_indices.keys()) == 0
         for dataset_idx, dataset in enumerate(datasets):
             print(f'{dataset_idx=} \n{len(dataset)=}')
             if hasattr(dataset, 'labels'):
@@ -158,7 +160,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             print(f'{total_num_labels_so_far=}')
             # this is the step where classes are concatenated. Note due to the previous loops assuming each label is uning this should never have intersecting keys.
             dup: list = get_duplicates(list(self.labels_to_indices.keys()) + list(global_label2global_indices.keys()))
-            assert len(dup) == 0, f'Error: \n{self.labels_to_indices.keys()=} \n{global_label2global_indices.keys()=}'
+            assert len(dup) == 0, f'Error:\n{self.labels_to_indices.keys()=}\n{global_label2global_indices.keys()=}\n{dup=}'
             for global_label, global_indices in global_label2global_indices.items():
                 # note g_idx might different to global_idx!
                 global_indices: list[int]
@@ -356,12 +358,14 @@ def concat_data_set_mi():
     # - create usl data set
     concat = ConcatDatasetMutuallyExclusiveLabels([validation_dataset, test_dataset])
     assert len(concat.labels) == 16 + 20, f'got {len(concat.labels)=}'
+    print('---> test1 passed!')
     concat = ConcatDatasetMutuallyExclusiveLabels([train_dataset, validation_dataset, test_dataset])
     assert_dataset_is_pytorch_dataset([concat])
+    print('---> test2 passed!')
     print(f'{len(concat)=}')
     print(f'{len(concat.labels)=}')
     assert len(concat) == 100 * 600, f'got {len(concat)=}'
-    assert len(concat.labels) == 100, f'got {len(concat.labels)=}'
+    assert len(concat.labels) == 64 + 16 + 20, f'got {len(concat.labels)=}'
 
     # - create dataloader
     loader = DataLoader(concat)
