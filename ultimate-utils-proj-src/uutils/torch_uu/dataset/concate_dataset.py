@@ -1,25 +1,4 @@
 """
-
-do checks, loop through all data points, create counts for each label how many data points there are
-do this for MI only
-
-then check union and ur implementation?
-compare the mappings of one & the other?
-
-actually it's easy, just add the cummulative offset and that's it. :D the indices are already -1 indexed.
-
-assert every image has a label between 0 --> n1+n2+... and every bin for each class is none empty
-
-for it to work with any standard pytorch data set I think the workflow would be:
-```
-pytorch dataset -> l2l meta data set -> union data set -> .dataset field -> data loader
-```
-for l2l data sets:
-```
-l2l meta data set -> union data set -> .dataset field -> data loader
-```
-but the last one might need to make sure .indices or .labels is created or a get labels function that checking the attribute
-gets the right .labels or remaps it correctly
 """
 from collections import defaultdict
 from pathlib import Path
@@ -54,6 +33,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                  ):
         """
         Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
+        Thus, even if you have labels of cats on both they are treated differently.
 
         compare_imgs_directly: adds the additional test that imgs compare at the PIL imgage level.
         """
@@ -75,20 +55,21 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     def _re_label_all_dataset(self, datasets: list[Dataset],
                               compare_imgs_directly: bool = False,
                               verify_xs_align: bool = False,
-                              verbose: bool = False,
                               ):
         """
-        Relabels according to a blind (mutually exclusive) assumption.
+        Relabels by treating all labels as unique/different. Thus, even if you have labels of cats on two data sets
+        this procedure will treat them as different.
 
-        Relabling Algorithm:
-        The zero index of the label starts at the number of labels collected so far. So when relabling we do:
-            y =  y + total_number_labels
-            total_number_labels += max label for current data set
-        where total_number_labels always has the + 1 to correct for the zero indexing.
-
-        assumption: it re-lables the data points to have a concatenation of all the labels. If there are rebeated labels
-        they are treated as different. So if dataset1 and dataset2 both have cats (represented as indices), then they
-        will get unique integers representing these. So the cats are treated as entirely different labels.
+        algorithm outline:
+        for each data set
+        - go through all data points its data points img & label
+        - collect all the original labels & img idx
+        - get a global idx for each img idx
+        - re-label the original labels (with corresponding img) to 0 to number of original labels to get a local label
+        - re-label the local label wrt a global label and associate it to it's global idx
+        - then to the reverse mapping (global index to global label)
+        done, now when indexing use the self.indices_to_labels to map a global idx to a global label.
+        Also, get the .labels field to keep track of the number of labels in the concatenation.
         """
         print()
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
@@ -97,7 +78,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         assert len(self.indices_to_labels.keys()) == 0
         assert len(self.labels_to_indices.keys()) == 0
         for dataset_idx, dataset in enumerate(datasets):
-            print(f'{dataset_idx=} \n{len(dataset)=}')
             if hasattr(dataset, 'labels'):
                 print(f'{len(dataset.labels)=}')
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
@@ -130,11 +110,9 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                 # - collect original labels in dictionary keys
                 original_label2global_idx[int(original_y)].append(global_idx)
                 global_idx += 1
-            print(f'{global_idx=}')
             local_num_dps: int = sum(len(global_indices) for global_indices in original_label2global_idx.values())
             assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
             # - do relabeling - original labeling to new global labels
-            print(f'{total_num_labels_so_far=}')
             assert total_num_labels_so_far != len(dataset), f'Err:\n{total_num_labels_so_far=}\n{len(dataset)=}'
             new_local_label2global_indices: dict = {}
             global_label2global_indices: dict = {}
@@ -151,13 +129,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             local_num_dps: int = sum(len(global_indices) for global_indices in global_label2global_indices.values())
             assert len(dataset) == local_num_dps, f'Error: \n{local_num_dps=} \n{len(dataset)=}'
             # - this assumes the integers in each data set is different, if there were unions you'd likely need semantic information about the label e.g. the string cat instead of absolute integers, or know the integers are shared between the two data sets
-            print(f'{total_num_labels_so_far=}')
             # this is the step where classes are concatenated. Note due to the previous loops assuming each label is uning this should never have intersecting keys.
-            print(f'{list(self.labels_to_indices.keys())=}')
-            print(f'{list(global_label2global_indices.keys())=}')
             dup: list = get_duplicates(list(self.labels_to_indices.keys()) + list(global_label2global_indices.keys()))
-            print(f'{list(self.labels_to_indices.keys())=}')
-            print(f'{list(global_label2global_indices.keys())=}')
             assert len(dup) == 0, f'Error:\n{self.labels_to_indices.keys()=}\n{global_label2global_indices.keys()=}\n{dup=}'
             for global_label, global_indices in global_label2global_indices.items():
                 # note g_idx might different to global_idx!
@@ -167,7 +140,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                     self.indices_to_labels[g_idx] = int(global_label)
             # - update number of labels seen so far
             num_labels_for_current_dataset: int = len(original_label2global_idx.keys())
-            print(f'{num_labels_for_current_dataset=}')
             total_num_labels_so_far += num_labels_for_current_dataset
             assert total_num_labels_so_far == len(self.labels_to_indices.keys()), f'Err:\n{total_num_labels_so_far=}' \
                                                                                   f'\n{len(self.labels_to_indices.keys())=}'
@@ -175,16 +147,15 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             if hasattr(dataset, 'labels'):
                 assert len(dataset.labels) == num_labels_for_current_dataset, f'Err:\n{len(dataset.labels)=}' \
                                                                               f'\n{num_labels_for_current_dataset=}'
-        # - relabling done
-        assert len(self.indices_to_labels.keys()) == len(
-            self.concat_datasets), f'Err: \n{len(self.indices_to_labels.keys())=}' \
-                                   f'\n {len(self.concat_datasets)=}'
+        # - re-labling done
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: ' \
+                                                                                f'\n{len(self.indices_to_labels.keys())=}' \
+                                                                                f'\n {len(self.concat_datasets)=}'
         if all(hasattr(dataset, 'labels') for dataset in datasets):
             assert sum(len(dataset.labels) for dataset in datasets) == total_num_labels_so_far
-        # contains the list of labels from 0 - total num labels after concat, assume mutually exclusive
         # - set & validate new labels
         self.labels = range(total_num_labels_so_far)
-        labels = list(sorted(list(self.labels_to_indices.keys())))
+        labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
@@ -380,6 +351,7 @@ def concat_data_set_mi():
         x, y = batch
         assert x is not None
         assert y is not None
+        break
     # - loader with the code that will run it for real experiments
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
     union_loader, _ = get_serial_or_distributed_dataloaders(train_dataset=concat, val_dataset=concat)
@@ -389,6 +361,7 @@ def concat_data_set_mi():
         x, y = batch
         assert x is not None
         assert y is not None
+        break
     print('-- done with concat mi test! --')
 
 
