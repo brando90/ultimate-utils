@@ -33,15 +33,17 @@ def helloworld(msg="hello"):
     print(f'hello world with mgs: {msg}')
 
 
-def get_defaul_args_for_5cnn() -> Namespace:
-    args: Namespace = Namespace()
-    args.image_size = 84
-    args.bn_eps = 1e-3
-    args.bn_momentum = 0.95
-    args.n_classes = 5
-    args.filter_size = 32
-    args.levels = None
-    args.spp = False
+def get_defaul_args_for_5cnn(args: Optional = None) -> Namespace:
+    if args is None:
+        args: Namespace = Namespace()
+    else:
+        args.image_size = 84
+        args.bn_eps = 1e-3
+        args.bn_momentum = 0.95
+        args.n_classes = 5
+        args.filter_size = 32
+        args.levels = None
+        args.spp = False
     return args
 
 

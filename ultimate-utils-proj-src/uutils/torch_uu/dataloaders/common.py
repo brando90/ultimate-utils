@@ -176,3 +176,29 @@ def split_inidices(indices: list,
     return train_indices, val_indices
 
 # - visualization help
+
+# - tests
+
+# def omni_locals_lambda_bug_fixer():
+#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
+#     root: str = '~/data/l2l_data/'
+#     data_augmentation: str = 'hdb1'
+#     # - test if data sets can be created into pytorch dataloader
+#     _, _, dataset_list = get_mi_and_omniglot_list_data_set_splits(root, data_augmentation)
+#     mi, omni = dataset_list
+#     from learn2learn.vision.datasets import FullOmniglot
+#     omni2: FullOmniglot = omni.dataset.dataset
+#     assert isinstance(omni2, FullOmniglot), f'Err: {type(omni2)=}'
+#     _loader, loader = get_serial_or_distributed_dataloaders(omni, omni, num_workers=1)
+#     next(iter(loader))
+#     next(iter(_loader))
+#
+#
+# if __name__ == '__main__':
+#     import time
+#     from uutils import report_times
+#     start = time.time()
+#     # - run experiment
+#     omni_locals_lambda_bug_fixer()
+#     # - Done
+#     print(f"\nSuccess Done!: {report_times(start)}\a")

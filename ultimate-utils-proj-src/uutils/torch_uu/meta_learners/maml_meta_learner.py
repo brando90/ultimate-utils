@@ -86,8 +86,8 @@ class MAML(DifferentiableOptimizer):  # copy pasted from DifferentiableSGD but w
                     else:
                         g = buf
 
-                if self.fo:  # first-order
-                    g = g.detach()  # dissallows flow of higher order grad while still letting params track gradients.
+                # if self.fo:  # first-order
+                #     g = g.detach()  # dissallows flow of higher order grad while still letting params track gradients.
                 group['params'][p_idx] = _add(p, -group['lr'], g)
 
 
@@ -179,15 +179,31 @@ class MAMLMetaLearner(nn.Module):
 
     @property
     def lr_inner(self) -> float:
-        return self.args.inner_lr
+        if hasattr(self.args, 'inner_lr'):
+            return self.args.inner_lr
+        else:
+            return self.args.lr_inner
 
     @lr_inner.setter
     def lr_inner(self, new_val: float):
-        self.args.inner_lr = new_val
+        if hasattr(self.args, 'inner_lr'):
+            self.args.inner_lr = new_val
+        else:
+            self.args.lr_inner = new_val
+        # self.args.inner_lr = new_val
 
     @property
-    def fo(self):
-        return self.args.fo
+    def fo(self) -> bool:
+        if hasattr(self.args, 'fo'):
+            if hasattr(self.args, 'track_higher_grads'):
+                assert self.args.fo == (not self.args.track_higher_grads), f'Err: ' \
+                                                                           f'{self.args.self.fo=} {self.args.track_higher_grads=}'
+        if hasattr(self.args, 'fo'):
+            return self.args.fo
+        elif hasattr(self.args, 'track_higher_grads'):
+            return not self.args.track_higher_grads
+        else:
+            raise ValueError(f'Err: {self.args.self.fo=} {self.args.track_higher_grads=}')
 
     # @property
     # def mdl(self) -> torch.nn.Module:
@@ -220,7 +236,8 @@ class MAMLMetaLearner(nn.Module):
         ref: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
         """
         logging.warning('Calling MAML.eval(). You sure you want to do that?')
-        raise ValueError(f'Why are you calling eval during meta-learning? Read: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du')
+        raise ValueError(
+            f'Why are you calling eval during meta-learning? Read: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du')
         self.base_model.eval()
 
     def parameters(self):
@@ -415,33 +432,103 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.base_model.cuda()
 
 
+def get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn() -> Namespace:
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_defaul_args_for_5cnn
+    from pathlib import Path
+    from uutils.argparse_uu.meta_learning import parse_args_meta_learning
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args: Namespace = parse_args_meta_learning()
+    args = get_defaul_args_for_5cnn(args)
+    args.data_option = 'torchmeta_miniimagenet'
+    args.data_path = Path('~/data/torchmeta_data/').expanduser()
+    args.lr_inner = 0.1
+    args.nb_inner_train_steps = 5
+    args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
+    args.track_higher_grads = True  # not FO maml
+    # args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
+    args: Namespace = setup_args_for_experiment(args)
+    return args
+
+
 # - tests
 
-def check_training_loops():
-    if args.training_mode == 'meta_train_agent_fit_single_batch':
-            meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
-    elif 'iterations' in args.training_mode:
-        meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
-    else:
-        raise NotImplementedError
+def check_training_loop_fit_one_batch():
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+    from uutils.torch_uu.training.meta_training import meta_train_agent_fit_single_batch
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+    from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
+    from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
+
+    args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
+    args.training_mode = 'meta_train_agent_fit_single_batch'
+    args.model, args.model_hps = get_default_learner_and_hps_dict()
+    args.agent = MAMLMetaLearner(args, base_model=args.model)
+    args.meta_learner = args.agent
+    opt_hps = {}
+    args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
+    scheduler_hps = {}
+    args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
+    args.dataloaders: dict = get_meta_learning_dataloader(args)
+    print(f'{args.dataloaders=}')
+    assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
+    meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+
+
+def check_training_meta_train_fixed_iterations():
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+    from uutils.torch_uu.training.meta_training import meta_train_fixed_iterations
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+    from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
+    from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
+
+    args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
+    args.training_mode = 'iterations'
+    args.num_its = 2
+    args.model, args.model_hps = get_default_learner_and_hps_dict()
+    args.agent = MAMLMetaLearner(args, base_model=args.model)
+    args.meta_learner = args.agent
+    opt_hps = {}
+    args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
+    scheduler_hps = {}
+    args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
+    args.dataloaders: dict = get_meta_learning_dataloader(args)
+    print(f'{args.dataloaders=}')
+    assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
+    meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
 
 
 def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_defaul_args_for_5cnn
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_learner_from_args
     from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+    from pathlib import Path
+    from uutils.argparse_uu.meta_learning import parse_args_meta_learning
+    from uutils.argparse_uu.common import setup_args_for_experiment
 
-    args = get_defaul_args_for_5cnn()
-    model = get_learner_from_args()  # random 5cnn
+    args: Namespace = parse_args_meta_learning()
+    args = get_defaul_args_for_5cnn(args)
+    args.data_option = 'torchmeta_miniimagenet'
+    args.data_path = Path('~/data/torchmeta_data/').expanduser()
+    args.lr_inner = 0.1
+    args.nb_inner_train_steps = 5
+    args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
+    # args.track_higher_grads = True  # not FO maml
+    args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
+    args: Namespace = setup_args_for_experiment(args)
+    model = get_learner_from_args(args)  # random 5cnn
     agent = MAMLMetaLearner(args, base_model=model)
 
     args.dataloaders: dict = get_meta_learning_dataloader(args)
+    print(f'{args.dataloaders=}')
     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
-    for batch in args.dataloaders:
+    for batch in args.dataloaders['train']:
         losses = agent(batch)
         print(f'{losses=}')
         break
 
+
 if __name__ == "__main__":
     check_torchmeta_4_tuple_works_with_meta_learner_agent()
+    # check_training_loop_fit_one_batch()
+    check_training_meta_train_fixed_iterations()
     print('Done, all Tests Passed! \a')

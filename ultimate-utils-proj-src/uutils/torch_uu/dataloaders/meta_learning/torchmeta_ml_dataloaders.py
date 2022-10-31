@@ -164,6 +164,10 @@ def get_miniimagenet_dataloaders_torchmeta(args: Namespace) -> dict:
     # - get data sets
     datasets = get_miniimagenet_datasets_torchmeta(args)
     # - get dataloaders
+    if not hasattr(args, 'meta_batch_size_train'):
+        args.meta_batch_size_train = 4
+    if not hasattr(args, 'meta_batch_size_eval'):
+        args.meta_batch_size_eval = 2
     meta_train_dataloader = BatchMetaDataLoader(datasets['train'],
                                                 batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
