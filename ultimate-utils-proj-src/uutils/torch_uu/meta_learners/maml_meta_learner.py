@@ -417,5 +417,31 @@ class MAMLMetaLearnerL2L(nn.Module):
 
 # - tests
 
+def check_training_loops():
+    if args.training_mode == 'meta_train_agent_fit_single_batch':
+            meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    elif 'iterations' in args.training_mode:
+        meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    else:
+        raise NotImplementedError
+
+
+def check_torchmeta_4_tuple_works_with_meta_learner_agent():
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_defaul_args_for_5cnn
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_learner_from_args
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+
+    args = get_defaul_args_for_5cnn()
+    model = get_learner_from_args()  # random 5cnn
+    agent = MAMLMetaLearner(args, base_model=model)
+
+    args.dataloaders: dict = get_meta_learning_dataloader(args)
+    assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
+    for batch in args.dataloaders:
+        losses = agent(batch)
+        print(f'{losses=}')
+        break
+
 if __name__ == "__main__":
+    check_torchmeta_4_tuple_works_with_meta_learner_agent()
     print('Done, all Tests Passed! \a')

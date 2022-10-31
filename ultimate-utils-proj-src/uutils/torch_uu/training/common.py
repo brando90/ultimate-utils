@@ -12,12 +12,10 @@ from argparse import Namespace
 from typing import Any
 
 import progressbar
-import transformers.optimization
 from progressbar import ProgressBar
 from torch import nn, Tensor, optim
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
-from transformers.optimization import AdafactorSchedule
 
 
 def get_trainer_progress_bar(args: Namespace) -> ProgressBar:
@@ -122,9 +120,6 @@ def scheduler_step(args: Namespace, scheduler: _LRScheduler):
             val_loss, val_loss_ci, val_acc, val_acc_ci = args.mdl.eval_forward(val_batch)
             args.scheduler.step(val_loss)
             raise NotImplementedError
-        # -- AdafactorSchedule transformers/hugging face
-        elif isinstance(args.scheduler, transformers.optimization.AdafactorSchedule):
-            args.scheduler.step()
         # -- CosineAnnealingLR
         # based: https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/train_supervised.py#L243
         # rfs seems to call cosine scheduler every epoch, since cosine takes in max step, I assume it must be fine to
@@ -133,7 +128,13 @@ def scheduler_step(args: Namespace, scheduler: _LRScheduler):
             args.scheduler.step()
         # -- Error catcher
         else:
-            raise ValueError(f'Error, invalid Scheduler: the scheduler {args.scheduler=} is not supported.')
+            import transformers.optimization
+            # from transformers.optimization import AdafactorSchedule
+            # -- AdafactorSchedule transformers/hugging face
+            if isinstance(args.scheduler, transformers.optimization.AdafactorSchedule):
+                args.scheduler.step()
+            else:
+                raise ValueError(f'Error, invalid Scheduler: the scheduler {args.scheduler=} is not supported.')
 
 
 # - meter
