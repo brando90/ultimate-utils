@@ -5,7 +5,6 @@ trying to detect which field is the anonymous function giving me isse since:
 doesn't tell me which one for some reason.
 """
 import re
-from pprint import pprint
 from typing import Any, Callable, Union, Optional
 
 
@@ -85,10 +84,10 @@ class MyObj2:
         return x
 
 
-# obj = MyObj()
-# print(f"{_get_anonymous_function_attributes(obj)=}")
-# print()
-
+"""
+Trying to fix: AttributeError: Can't pickle local object 'FullOmniglot.__init__.<locals>.<lambda>'
+Trying to approximate with my obj and get: obj.__init__.<locals> to to get the obj.__ini__.<locals>.<lambda> 
+"""
 top_obj = MyObj2()
 # print(f'anons recursive: {_get_anonymous_function_attributes_recursive(obj)=}')
 print('getting all anonymous functions recursively: ')
@@ -101,22 +100,19 @@ for k, v in anons.items():
     # print(k, v)
 print()
 
-from uutils import get_anonymous_function_attributes_recursive
-get_anonymous_function_attributes_recursive(top_obj, 'top_obj', print_output=True)
+# from uutils import get_anonymous_function_attributes_recursive
+# get_anonymous_function_attributes_recursive(top_obj, 'top_obj', print_output=True)
+# print()
+# %%
+"""
+pip install torch
+pip install learn2learn
+"""
 print()
-"""
-Trying to fix: AttributeError: Can't pickle local object 'FullOmniglot.__init__.<locals>.<lambda>'
-Trying to approximate with my obj and get: obj.__init__.<locals> to to get the obj.__ini__.<locals>.<lambda> 
-"""
-# since .<locals> seems like an attribute lets get it with dir (dir does "With an argument, attempt to return a list of valid attributes for that object.")
-print(f'{"anon" in dir(obj)}')  # sanity check obj has anon
-print(f'{dir(obj.__init__)=}')
-print(f'{"anon" in dir(obj.__init__)}')  # failed
-print(f'{type(obj.__init__.__self__)=}')
-# weird...why is it such a odd type: type(obj.__init__.__self__)=<class '__main__.MyObj'>
-# print(f'{dir(obj.__init__.__self__)=}')
-print(f'{"anon" in dir(obj.__init__.__self__)}')
-print(f'{_get_anonymous_function_attributes(obj.__init__.__self__)}')
+import learn2learn
+from torch.utils.data import DataLoader
 
-
-# pickle it
+omni = learn2learn.vision.benchmarks.get_tasksets('omniglot', root='~/data/l2l_data')
+loader = DataLoader(omni, num_workers=1)
+next(iter(loader))
+print()

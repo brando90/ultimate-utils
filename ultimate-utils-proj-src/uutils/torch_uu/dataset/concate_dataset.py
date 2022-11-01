@@ -2,6 +2,7 @@
 """
 from collections import defaultdict
 from pathlib import Path
+from pprint import pprint
 from typing import Callable, Optional
 
 import torch
@@ -9,8 +10,13 @@ import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
+from uutils import report_times, get_duplicates
+
+
 # int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
-int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.long)
+# int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.long)
+def int2tensor(data: torch.Tensor) -> torch.long:
+    return torch.tensor(data, dtype=torch.long)
 
 
 class ConcatDatasetMutuallyExclusiveLabels(Dataset):
@@ -131,7 +137,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             # - this assumes the integers in each data set is different, if there were unions you'd likely need semantic information about the label e.g. the string cat instead of absolute integers, or know the integers are shared between the two data sets
             # this is the step where classes are concatenated. Note due to the previous loops assuming each label is uning this should never have intersecting keys.
             dup: list = get_duplicates(list(self.labels_to_indices.keys()) + list(global_label2global_indices.keys()))
-            assert len(dup) == 0, f'Error:\n{self.labels_to_indices.keys()=}\n{global_label2global_indices.keys()=}\n{dup=}'
+            assert len(
+                dup) == 0, f'Error:\n{self.labels_to_indices.keys()=}\n{global_label2global_indices.keys()=}\n{dup=}'
             for global_label, global_indices in global_label2global_indices.items():
                 # note g_idx might different to global_idx!
                 global_indices: list[int]
@@ -143,7 +150,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
             total_num_labels_so_far += num_labels_for_current_dataset
             assert total_num_labels_so_far == len(self.labels_to_indices.keys()), f'Err:\n{total_num_labels_so_far=}' \
                                                                                   f'\n{len(self.labels_to_indices.keys())=}'
-            assert global_idx == len(self.indices_to_labels.keys()), f'Err:\n{global_idx=}\n{len(self.indices_to_labels.keys())=}'
+            assert global_idx == len(
+                self.indices_to_labels.keys()), f'Err:\n{global_idx=}\n{len(self.indices_to_labels.keys())=}'
             if hasattr(dataset, 'labels'):
                 assert len(dataset.labels) == num_labels_for_current_dataset, f'Err:\n{len(dataset.labels)=}' \
                                                                               f'\n{num_labels_for_current_dataset=}'
@@ -365,14 +373,60 @@ def concat_data_set_mi():
     print('-- done with concat mi test! --')
 
 
+def hdb1_mio_check_dataloader():
+    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+
+    root: str = '~/data/l2l_data/'
+    data_augmentation: str = 'hdb1'
+
+    # - test if data sets can be created into pytorch dataloader
+    dataset_list_train, dataset_list_val, dataset_list_test = get_mi_and_omniglot_list_data_set_splits(root,
+                                                                                                       data_augmentation)
+    mi, omni = dataset_list_test
+    loader = DataLoader(omni, num_workers=1)
+    next(iter(loader))
+    print()
+    loader = DataLoader(mi, num_workers=1)
+    next(iter(loader))
+    print()
+
+    # - hdb1/mio test
+    train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train)
+    assert len(train_dataset) == sum(len(dataset) for dataset in dataset_list_train), f'Err, got {len(train_dataset)=}'
+    assert len(train_dataset.labels) == 64 + 1100, f'Err:\n{len(train_dataset.labels)=}'
+    loader = DataLoader(train_dataset, num_workers=1)
+    next(iter(loader))
+    loader = get_serial_or_distributed_dataloaders(train_dataset)
+    next(iter(loader))
+
+    valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_val)
+    assert len(valid_dataset) == sum(len(dataset) for dataset in dataset_list_val), f'Err, got {len(valid_dataset)=}'
+    assert len(valid_dataset.labels) == 16 + 100, f'Err:\n{len(valid_dataset.labels)=}'
+    loader = DataLoader(train_dataset, num_workers=1)
+    next(iter(loader))
+    loader = get_serial_or_distributed_dataloaders(valid_dataset)
+    next(iter(loader))
+
+    test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test)
+    assert len(test_dataset) == sum(len(dataset) for dataset in dataset_list_test), f'Err, got {len(test_dataset)=}'
+    assert len(test_dataset.labels) == 20 + 423, f'Err:\n{len(test_dataset.labels)=}'
+    loader = DataLoader(train_dataset, num_workers=1)
+    next(iter(loader))
+    loader = get_serial_or_distributed_dataloaders(test_dataset)
+    next(iter(loader))
+
+    print()
+
+
 if __name__ == '__main__':
     import time
-    from uutils import report_times, get_duplicates
 
     start = time.time()
     # - run experiment
     # check_xs_align_mnist()
     # check_xs_align_cifar100()
-    concat_data_set_mi()
+    # concat_data_set_mi()
+    hdb1_mio_check_dataloader()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
