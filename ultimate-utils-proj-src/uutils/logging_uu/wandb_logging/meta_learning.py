@@ -15,81 +15,17 @@ from uutils.torch_uu.distributed import is_lead_worker
 from pdb import set_trace as st
 
 
-def _log_train_val_stats(args: Namespace,
-                         it: int,
-
-                         train_loss: float,
-                         train_acc: float,
-
-                         valid,
-
-                         bar,
-
-                         log_freq: int = 10,
-                         ckpt_freq: int = 50,
-                         mdl_watch_log_freq: int = 50,
-                         force_log: bool = False,  # e.g. at the final it/epoch
-
-                         save_val_ckpt: bool = False,
-                         log_to_tb: bool = False,
-                         log_to_wandb: bool = False
-                         ):
-    """
-    Log train and val stats where it is iteration or epoch step.
-
-    Note: Unlike save ckpt, this one does need it to be passed explicitly (so it can save it in the stats collector).
-    """
-    import wandb
-    from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
-    # - is it epoch or iteration
-    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
-
-    # if its
-    total_its: int = args.num_epochs if args.training_mode == 'epochs' else args.num_its
-
-    if (it % log_freq == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        # - get eval stats
-        val_loss, val_acc, val_loss_std, val_acc_std = valid(args, save_val_ckpt=save_val_ckpt)
-        # - log ckpt
-        if it % ckpt_freq == 0:
-            save_for_meta_learning(args)
-
-        # - save args
-        uutils.save_args(args, args_filename='args.json')
-
-        # - update progress bar at the end
-        if bar is not None:
-            bar.update(it)
-
-        # - print, todo: move before checkpointing model
-        args.logger.log('\n')
-        args.logger.log(f"-> {it_or_epoch}={it}: {train_loss=}, {train_acc=}")
-        args.logger.log(f"-> {it_or_epoch}={it}: {val_loss=}, {val_acc=}")
-
-        print(f'{args.it=}')
-        print(f'{args.num_its=}')
-
-        # - record into stats collector
-        args.logger.record_train_stats_stats_collector(it, train_loss, train_acc)
-        args.logger.record_val_stats_stats_collector(it, val_loss, val_acc)
-        args.logger.save_experiment_stats_to_json_file()
-        args.logger.save_current_plots_and_stats()
-
-        # - log to wandb
-        if log_to_wandb:
-            log_2_wanbd(it, train_loss, train_acc, val_loss, val_acc, it_or_epoch)
-
-        # - log to tensorboard
-        if log_to_tb:
-            log_2_tb_supervisedlearning(args.tb, args, it, train_loss, train_acc, 'train')
-            log_2_tb_supervisedlearning(args.tb, args, it, val_loss, val_acc, 'val')
-
-
 def log_zeroth_step(args: Namespace, meta_learner: Agent):
-    from learn2learn.data import TaskDataset
+    print('log_zeroth_step')
     from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
-    task_dataset: TaskDataset = args.tasksets.train
-    train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset)
+    if hasattr(args, 'tasksets'):
+        from learn2learn.data import TaskDataset
+        task_dataset: TaskDataset = args.tasksets.train
+        train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset)
+    else:
+        batch = next(iter(args.dataloaders['train']))  # this might advance the dataloader one step
+        print(f'{args.dataloaders=}')
+        train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(batch)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
 
@@ -119,6 +55,7 @@ def valid_for_test(args: Namespace, mdl: nn.Module, save_val_ckpt: bool = False)
 
 
 def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, scheduler=None):
+    from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
     for it in range(50):
         x = torch.randn(args.batch_size, 5)
         y = (x ** 2 + x + 1).sum(dim=1)
@@ -132,7 +69,7 @@ def train_for_test(args: Namespace, mdl: nn.Module, optimizer: Optimizer, schedu
         scheduler.step()
 
         if it % 2 == 0 and is_lead_worker(args.rank):
-            _log_train_val_stats(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
+            log_train_val_stats(args, it, train_loss, train_acc, valid_for_test, save_val_ckpt=True, log_to_tb=True)
             if it % 10 == 0:
                 # save_ckpt(args, args.mdl, args.optimizer)
                 pass

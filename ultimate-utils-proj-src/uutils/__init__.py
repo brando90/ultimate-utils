@@ -47,7 +47,7 @@ from typing import Union, Any, Optional, Match
 
 import progressbar
 
-from uutils.logging_uu.wandb_logging.common import setup_wand
+from uutils.logging_uu.wandb_logging.common import setup_wandb
 from uutils.torch_uu.distributed import find_free_port
 
 
@@ -229,7 +229,7 @@ def setup_args_for_experiment(args: Namespace,
 
     # - wandb
     if hasattr(args, 'log_to_wandb'):
-        setup_wand(args)
+        setup_wandb(args)
     else:
         pass
 
@@ -1157,7 +1157,7 @@ def to_latex_is_rapid_learning_real(df: DataFrame):
 ##
 
 def create_logs_dir_and_load(opts):
-    from uutils import load_cluster_jobids_to
+    # from uutils import load_cluster_jobids_to
     from datetime import datetime
 
     load_cluster_jobids_to(opts)

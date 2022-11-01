@@ -1,34 +1,59 @@
+import os
+import sys
 from argparse import Namespace
+from typing import Union
 
 import wandb
 
 
-def setup_wand(args: Namespace):
-    if hasattr(args, 'log_to_wandb'):  # this is here again on purpose to be extra safe
-        if args.log_to_wandb:
-            # os.environ['WANDB_MODE'] = 'offline'
-            import wandb
-            print(f'{wandb=}')
+def setup_wandb(args: Namespace):
+    if args.log_to_wandb:
+        # os.environ['WANDB_MODE'] = 'offline'
+        import wandb
+        print(f'{wandb=}')
 
-            # - set run name
-            run_name = None
-            # if in cluster use the cluster jobid
-            if hasattr(args, 'jobid'):
-                # if jobid is actually set to something, use that as the run name in ui
-                if args.jobid is not None and args.jobid != -1 and str(args.jobid) != '-1':
-                    run_name: str = f'jobid={str(args.jobid)}'
-            # if user gives run_name overwrite that always
-            if hasattr(args, 'run_name'):
-                run_name = args.run_name if args.run_name is not None else run_name
-            args.run_name = run_name
-            # - initialize wandb
-            wandb.init(project=args.wandb_project,
-                       entity=args.wandb_entity,
-                       # job_type="job_type",
-                       name=run_name,
-                       group=args.experiment_name
-                       )
-            wandb.config.update(args)
+        # - set run name
+        run_name = None
+        # if in cluster use the cluster jobid
+        if hasattr(args, 'jobid'):
+            # if jobid is actually set to something, use that as the run name in ui
+            if args.jobid is not None and args.jobid != -1 and str(args.jobid) != '-1':
+                run_name: str = f'jobid={str(args.jobid)}'
+        # if user gives run_name overwrite that always
+        if hasattr(args, 'run_name'):
+            run_name = args.run_name if args.run_name is not None else run_name
+        args.run_name = run_name
+        # set a location of where to save your local wandb stuff
+        dir_wandb = None
+        if 'WANDB_DIR' in os.environ.keys():
+            # dir_wandb = Path('~/tmp/').expanduser()
+            # dir_wandb = Path('/shared/rsaas/miranda9/tmp/').expanduser()
+            print(f"{os.environ['WANDB_DIR']=}")
+            dir_wandb: Union[str, None] = os.environ['WANDB_DIR'] if os.environ['WANDB_DIR'] else None
+        # if hasattr(args, 'dir_wandb'):
+        #     # if user forces where to save
+        #     dir_wandb = args.dir_wandb
+        # else:
+        #     args.dir_wandb: Path = args.log_root.expanduser()
+        #     dir_wandb = args.dir_wandb
+        # - initialize wandb
+        print(f'{dir_wandb=}')
+        print(f'{sys.stdout=}')
+        print(f'{os.path.realpath(sys.stdout.name)=}')
+        print(f'{sys.stderr=}')
+        print(f'{os.path.realpath(sys.stderr.name)=}')
+        print(f'{sys.stdin=}')
+        print(f'{os.path.realpath(sys.stdin.name)=}')
+        wandb.init(
+            dir=dir_wandb,
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            # job_type="job_type",
+            name=run_name,
+            group=args.experiment_name
+        )
+        # - save args in wandb
+        wandb.config.update(args)
 
 
 def cleanup_wandb(args: Namespace):

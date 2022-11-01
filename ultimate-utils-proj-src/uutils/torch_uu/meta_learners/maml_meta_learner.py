@@ -7,14 +7,14 @@ import torch
 import torch.nn as nn
 from learn2learn.data import TaskDataset
 from torch import Tensor
-from torch.multiprocessing import Pool
-from torch.optim.optimizer import required
-from torch.optim import Optimizer as Optimizer
-
-import higher
-from higher.optim import _add
-from higher.optim import DifferentiableOptimizer
-from higher.optim import _GroupedGradsType
+# from torch.multiprocessing import Pool
+# from torch.optim.optimizer import required
+# from torch.optim import Optimizer as Optimizer
+#
+# import higher
+# from higher.optim import _add
+# from higher.optim import DifferentiableOptimizer
+# from higher.optim import _GroupedGradsType
 
 import uutils
 from uutils.torch_uu import functional_diff_norm, ned_torch, r2_score_from_torch, calc_accuracy_from_logits, \
@@ -26,72 +26,6 @@ import numpy as np
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 
 from pdb import set_trace as st
-
-Spt_x, Spt_y, Qry_x, Qry_y = torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-Task = tuple[Spt_x, Spt_y, Qry_x, Qry_y]
-Batch = list
-
-
-class EmptyOpt(Optimizer):  # This is just an example
-    def __init__(self, params, *args, **kwargs):
-        defaults = {'args': args, 'kwargs': kwargs}
-        super().__init__(params, defaults)
-
-
-class NonDiffMAML(Optimizer):  # copy pasted from torch.optim.SGD
-
-    def __init__(self, params, lr=required, momentum=0, dampening=0,
-                 weight_decay=0, nesterov=False):
-        if lr is not required and lr < 0.0:
-            raise ValueError("Invalid learning rate: {}".format(lr))
-        if momentum < 0.0:
-            raise ValueError("Invalid momentum value: {}".format(momentum))
-        if weight_decay < 0.0:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
-
-        defaults = dict(lr=lr, momentum=momentum, dampening=dampening,
-                        weight_decay=weight_decay, nesterov=nesterov)
-
-        if nesterov and (momentum <= 0 or dampening != 0):
-            raise ValueError("Nesterov momentum requires a momentum and zero dampening")
-        super().__init__(params, defaults)
-
-
-class MAML(DifferentiableOptimizer):  # copy pasted from DifferentiableSGD but with the g.detach() line of code
-
-    def _update(self, grouped_grads: _GroupedGradsType, **kwargs) -> None:
-        zipped = zip(self.param_groups, grouped_grads)
-        for group_idx, (group, grads) in enumerate(zipped):
-            weight_decay = group['weight_decay']
-            momentum = group['momentum']
-            dampening = group['dampening']
-            nesterov = group['nesterov']
-
-            for p_idx, (p, g) in enumerate(zip(group['params'], grads)):
-                if g is None:
-                    continue
-
-                if weight_decay != 0:
-                    g = _add(g, weight_decay, p)
-                if momentum != 0:
-                    param_state = self.state[group_idx][p_idx]
-                    if 'momentum_buffer' not in param_state:
-                        buf = param_state['momentum_buffer'] = g
-                    else:
-                        buf = param_state['momentum_buffer']
-                        buf = _add(buf.mul(momentum), 1 - dampening, g)
-                        param_state['momentum_buffer'] = buf
-                    if nesterov:
-                        g = _add(g, momentum, buf)
-                    else:
-                        g = buf
-
-                # if self.fo:  # first-order
-                #     g = g.detach()  # dissallows flow of higher order grad while still letting params track gradients.
-                group['params'][p_idx] = _add(p, -group['lr'], g)
-
-
-higher.register_optim(NonDiffMAML, MAML)
 
 
 class MAMLMetaLearner(nn.Module):
@@ -128,16 +62,12 @@ class MAMLMetaLearner(nn.Module):
 
     @property
     def fo(self) -> bool:
-        if hasattr(self.args, 'fo'):
-            if hasattr(self.args, 'track_higher_grads'):
-                assert self.args.fo == (not self.args.track_higher_grads), f'Err: ' \
-                                                                           f'{self.args.self.fo=} {self.args.track_higher_grads=}'
-        if hasattr(self.args, 'fo'):
-            return self.args.fo
-        elif hasattr(self.args, 'track_higher_grads'):
-            return not self.args.track_higher_grads
-        else:
-            raise ValueError(f'Err: {self.args.self.fo=} {self.args.track_higher_grads=}')
+        """
+        Return the fo param of args.
+
+        Note: track_higher_order_grads is weird and should always be true for now. Details: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
+        """
+        return self.args.fo
 
     # @property
     # def mdl(self) -> torch.nn.Module:
@@ -378,37 +308,46 @@ def get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn() -> Namespace:
     args.lr_inner = 0.1
     args.nb_inner_train_steps = 5
     args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
-    args.track_higher_grads = True  # not FO maml
-    # args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
+    # args.track_higher_grads = True  # not FO maml
+    args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
+    args.training_mode = 'iterations'
+    args.num_its = 2
     args: Namespace = setup_args_for_experiment(args)
     return args
 
 
 # - tests
 
-def check_training_loop_fit_one_batch():
-    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
-    from uutils.torch_uu.training.meta_training import meta_train_agent_fit_single_batch
-    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
-    from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
-    from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
+# def check_training_loop_fit_one_batch():
+#     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+#     from uutils.torch_uu.training.meta_training import meta_train_agent_fit_single_batch
+#     from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+#     from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
+#     from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
+#
+#     args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
+#     args.training_mode = 'meta_train_agent_fit_single_batch'
+#     args.model, args.model_hps = get_default_learner_and_hps_dict()
+#     args.agent = MAMLMetaLearner(args, base_model=args.model)
+#     args.meta_learner = args.agent
+#     opt_hps = {}
+#     args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
+#     scheduler_hps = {}
+#     args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
+#     args.dataloaders: dict = get_meta_learning_dataloader(args)
+#     print(f'{args.dataloaders=}')
+#     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
+#     meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
 
-    args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
-    args.training_mode = 'meta_train_agent_fit_single_batch'
-    args.model, args.model_hps = get_default_learner_and_hps_dict()
-    args.agent = MAMLMetaLearner(args, base_model=args.model)
-    args.meta_learner = args.agent
-    opt_hps = {}
-    args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
-    scheduler_hps = {}
-    args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
-    args.dataloaders: dict = get_meta_learning_dataloader(args)
-    print(f'{args.dataloaders=}')
-    assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
-    meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+def check_training_fo_maml():
+    print('---- checking fo MAML torchmeta higher')
+    track_higher_grads = False
+    print(f'{track_higher_grads=}')
+    check_training_meta_train_fixed_iterations(track_higher_grads)
+    print('---- success! Of fo MAML torchmeta higher')
 
 
-def check_training_meta_train_fixed_iterations():
+def check_training_meta_train_fixed_iterations(track_higher_grads: bool = True):
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
     from uutils.torch_uu.training.meta_training import meta_train_fixed_iterations
     from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
@@ -416,8 +355,7 @@ def check_training_meta_train_fixed_iterations():
     from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
 
     args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
-    args.training_mode = 'iterations'
-    args.num_its = 2
+    args.track_higher_grads = track_higher_grads
     args.model, args.model_hps = get_default_learner_and_hps_dict()
     args.agent = MAMLMetaLearner(args, base_model=args.model)
     args.meta_learner = args.agent
@@ -428,6 +366,7 @@ def check_training_meta_train_fixed_iterations():
     args.dataloaders: dict = get_meta_learning_dataloader(args)
     print(f'{args.dataloaders=}')
     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
+    print()
     meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
 
 
@@ -446,7 +385,6 @@ def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     args.lr_inner = 0.1
     args.nb_inner_train_steps = 5
     args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
-    # args.track_higher_grads = True  # not FO maml
     args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
     args: Namespace = setup_args_for_experiment(args)
     model = get_learner_from_args(args)  # random 5cnn
@@ -462,7 +400,8 @@ def check_torchmeta_4_tuple_works_with_meta_learner_agent():
 
 
 if __name__ == "__main__":
-    check_torchmeta_4_tuple_works_with_meta_learner_agent()
+    # check_torchmeta_4_tuple_works_with_meta_learner_agent()
     # check_training_loop_fit_one_batch()
-    check_training_meta_train_fixed_iterations()
+    # check_training_meta_train_fixed_iterations()
+    check_training_fo_maml()
     print('Done, all Tests Passed! \a')

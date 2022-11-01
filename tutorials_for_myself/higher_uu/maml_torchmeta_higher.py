@@ -1,3 +1,8 @@
+"""
+For correctness see details here:
+- SO: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch/74270560#74270560
+- gitissue: https://github.com/facebookresearch/higher/issues/102
+"""
 import os
 from pathlib import Path
 
@@ -116,12 +121,13 @@ def train(args):
                            test_target) in enumerate(zip(train_inputs, train_targets,
                                                          test_inputs, test_targets)):
                 track_higher_grads = True
-                # track_higher_grads = False
+                # track_higher_grads = False  # never set to False it seems.
                 with higher.innerloop_ctx(model, inner_optimiser, track_higher_grads=track_higher_grads, copy_initial_weights=False) as (fmodel, diffopt):
                     train_logit = fmodel(train_input)
                     inner_loss = F.cross_entropy(train_logit, train_target)
 
-                    diffopt.step(inner_loss)
+                    # diffopt.step(inner_loss)
+                    # FO with track_higher_grads = True
                     # diffopt.step(inner_loss, grad_callback=lambda grads: [g.detach() for g in grads])
 
                     test_logit = fmodel(test_input)

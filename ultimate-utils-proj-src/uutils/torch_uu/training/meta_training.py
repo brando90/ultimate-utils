@@ -109,11 +109,14 @@ def meta_train_fixed_iterations(args: Namespace,
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
-    # TODO have a logging of the zeroth step...
-    print('About to enter the while not halt loop training...')
+
+    # ----added - 0th iter---#
+    log_zeroth_step(args, meta_learner)
+    # --------#
     while not halt:
         for batch_idx, batch in enumerate(dataloaders['train']):
             outer_opt.zero_grad()
+            assert outer_opt is args.opt
             train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(batch, call_backward=True)
             # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
             assert outer_opt.param_groups[0]['params'][0].grad is not None
@@ -135,7 +138,6 @@ def meta_train_fixed_iterations(args: Namespace,
             if args.it % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
                 log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
-                # args.convg_meter.update(train_loss)
 
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:

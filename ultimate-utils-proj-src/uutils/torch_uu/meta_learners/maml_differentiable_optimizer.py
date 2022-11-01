@@ -80,8 +80,8 @@ class MAML(DifferentiableOptimizer):  # copy pasted from DifferentiableSGD but w
                     else:
                         g = buf
 
-                if self.fo:  # first-order
-                    g = g.detach()  # dissallows flow of higher order grad while still letting params track gradients.
+                # if self.fo:  # first-order
+                #     g = g.detach()  # dissallows flow of higher order grad while still letting params track gradients.
                 group['params'][p_idx] = _add(p, -group['lr'], g)
 
 
@@ -180,16 +180,19 @@ def get_maml_adapted_model_with_higher_one_task(base_model: nn.Module,
                                                               copy_initial_weights=copy_initial_weights,
                                                               track_higher_grads=track_higher_grads)
     # - do inner addptation using task/support set
-    # print(f'>maml_new (before inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
-    diffopt.fo = fo
+    # diffopt.fo = fo
     base_model.train() if training else base_model.eval()
     for i_inner in range(nb_inner_train_steps):
         # base model forward pass
         spt_logits_t = fmodel(spt_x_t)
         inner_loss = criterion(spt_logits_t, spt_y_t)
-        # inner-opt update
-        diffopt.step(inner_loss)
-    # print(f'>maml_new (after inner adapt): {fmodel.model.features.conv1.weight.norm(2)=}')
+        if not fo:
+            assert track_higher_grads == True
+            diffopt.step(inner_loss)
+        else:
+            assert copy_initial_weights == False
+            assert track_higher_grads == True  # I know it's confusing, see SO here: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
+            diffopt.step(inner_loss, grad_callback=lambda grads: [g.detach() for g in grads])
     return fmodel
 
 
@@ -471,10 +474,12 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
     meta_batch_size = spt_x.size(0)
     meta_losses, meta_accs = [], []
+    print(f'{meta_learner_forward_adapt_batch_of_tasks=}')
     for t in range(meta_batch_size):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         # - Inner Loop Adaptation
-        # st()
+        # assert meta_learner.args.copy_initial_weights == False
+        # assert meta_learner.args.track_higher_grads == False
         fmodel: FuncModel = get_maml_adapted_model_with_higher_one_task(meta_learner.base_model,
                                                                         inner_opt,
                                                                         spt_x_t, spt_y_t,
@@ -493,6 +498,10 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
         # note this is more mem efficient (removes intermediate data needed since backward has already been called)
         if call_backward:
             (qry_loss_t / meta_batch_size).backward()
+            # print(f'{t=}')
+            # print(f"{meta_learner.args.opt.param_groups[0]['params'][0].grad.norm()}")
+            # print(f"{meta_learner.args.opt.param_groups[0]['params'][0].grad is not None=}")
+            assert meta_learner.args.opt.param_groups[0]['params'][0].grad is not None
 
         # get accuracy
         if meta_learner.target_type == 'classification':
