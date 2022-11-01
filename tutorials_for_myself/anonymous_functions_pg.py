@@ -101,6 +101,9 @@ for k, v in anons.items():
     # print(k, v)
 print()
 
+from uutils import get_anonymous_function_attributes_recursive
+get_anonymous_function_attributes_recursive(top_obj, 'top_obj', print_output=True)
+print()
 """
 Trying to fix: AttributeError: Can't pickle local object 'FullOmniglot.__init__.<locals>.<lambda>'
 Trying to approximate with my obj and get: obj.__init__.<locals> to to get the obj.__ini__.<locals>.<lambda> 

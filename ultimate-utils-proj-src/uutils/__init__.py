@@ -5,6 +5,7 @@ utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programm
 """
 import json
 import pickle
+import re
 import subprocess
 import time
 
@@ -982,7 +983,7 @@ def pprint_any_dict(dic: dict, indent: Optional[int] = None):
         dic = to_json(dic)
         print(json.dumps(dic, indent=4, sort_keys=True))  # only this one works...idk why
     else:
-        pprint(dict)
+        pprint(dic)
     # return pretty_dic
 
 
@@ -1587,13 +1588,21 @@ def is_anonymous_function(f: Any) -> bool:
 
     ref: https://stackoverflow.com/questions/3655842/how-can-i-test-whether-a-variable-holds-a-lambda
     """
-    return callable(f) and f.__name__ == "<lambda>"
+    if hasattr(f, '__name__'):
+        return callable(f) and f.__name__ == "<lambda>"
+    else:
+        return False
 
 
-def get_anonymous_function_attributes(anything: Any, halt: bool = False, verbose: bool = False) -> dict[str, Callable]:
+def get_anonymous_function_attributes(anything: Any,
+                                      halt: bool = False,
+                                      verbose: bool = False,
+                                      very_verbose: bool = False,
+                                      ) -> dict[str, Callable]:
     """
     Returns the dictionary of name of fields to anonymous functions in the past anything thing.
 
+    :param very_verbose:
     :param anything:
     :param halt:
     :param verbose:
@@ -1601,16 +1610,62 @@ def get_anonymous_function_attributes(anything: Any, halt: bool = False, verbose
     """
     anons: dict = {}
     for field_name in dir(anything):
-        if verbose:
+        field = getattr(anything, field_name)
+        if very_verbose:
             print(f'{field_name=}')
-        field = getattr(any, field_name)
+            print(f'{field=}')
         if is_anonymous_function(field):
-            if verbose:
+            if verbose or very_verbose:
+                print(f'{field_name=}')
                 print(f'{field=}')
             if halt:
                 from pdb import set_trace as st
                 st()
             anons[str(field_name)] = field
+    return anons
+
+
+def get_anonymous_function_attributes_recursive(anything: Any, path: str = '', print_output: bool = False) -> dict[
+    str, Callable]:
+    """
+    Finds in a dictionary from path of field_name calling to the callable anonymous function.
+    It is recommended that you hardcode path to the name of the top object being given to this function (sorry I tried
+    doing .__name__ of anything but it doesn't always have that field set).
+
+    :param anything:
+    :param path:
+    :return:
+    """
+    anons: dict = {}
+
+    def _get_anonymous_function_attributes_recursive(anything: Any, path: Optional[str] = '') -> None:
+
+        if is_anonymous_function(anything):
+            # assert field is anything, f'Err not save thing/obj: \n{field=}\n{anything=}'
+            # key: str = str(dict(obj=anything, field_name=field_name))
+            key: str = str(path)
+            anons[key] = anything
+        else:
+            for field_name in dir(anything):
+                # most likely it's one of YOUR field causing the anonymous function bug, so only loop through those
+                if not bool(re.search(r'__(.+)__', field_name)):
+                    field = getattr(anything, field_name)
+                    # only recurse if new field is not itself
+                    if field is not anything:  # avoids infinite recursions
+                        # needs a new variable or the paths for different field will INCORRECTLY crash
+                        path_for_this_field = f'{path}.{field_name}'
+                        print(f'{path_for_this_field}')
+                        _get_anonymous_function_attributes_recursive(field, path_for_this_field)
+        return
+
+    _get_anonymous_function_attributes_recursive(anything, path)
+    if print_output:
+        print(f'top path given {path=}')
+        print(f'{len(anons.keys())=}')
+        for k, v in anons.items():
+            print()
+            print(f'{k=}')
+            print(f'{v=}')
     return anons
 
 
