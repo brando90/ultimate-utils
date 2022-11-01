@@ -43,7 +43,7 @@ from collections import deque
 
 from argparse import Namespace
 
-from typing import Union, Any, Optional, Match
+from typing import Union, Any, Optional, Match, Callable
 
 import progressbar
 
@@ -1579,6 +1579,39 @@ def is_negative_int(value: str) -> bool:
         is_negative_integer: bool = value.startswith("-") and value[1:].isdigit()
         is_integer: bool = is_positive_integer or is_negative_integer
         return is_integer
+
+
+def is_anonymous_function(f: Any) -> bool:
+    """
+    Returns true if it's an anonynouys function.
+
+    ref: https://stackoverflow.com/questions/3655842/how-can-i-test-whether-a-variable-holds-a-lambda
+    """
+    return callable(f) and f.__name__ == "<lambda>"
+
+
+def get_anonymous_function_attributes(anything: Any, halt: bool = False, verbose: bool = False) -> dict[str, Callable]:
+    """
+    Returns the dictionary of name of fields to anonymous functions in the past anything thing.
+
+    :param anything:
+    :param halt:
+    :param verbose:
+    :return:
+    """
+    anons: dict = {}
+    for field_name in dir(anything):
+        if verbose:
+            print(f'{field_name=}')
+        field = getattr(any, field_name)
+        if is_anonymous_function(field):
+            if verbose:
+                print(f'{field=}')
+            if halt:
+                from pdb import set_trace as st
+                st()
+            anons[str(field_name)] = field
+    return anons
 
 
 # -- regex
