@@ -77,15 +77,15 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         done, now when indexing use the self.indices_to_labels to map a global idx to a global label.
         Also, get the .labels field to keep track of the number of labels in the concatenation.
         """
-        print()
+        # print()
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         total_num_labels_so_far: int = 0
         global_idx: int = 0  # new_idx
         assert len(self.indices_to_labels.keys()) == 0
         assert len(self.labels_to_indices.keys()) == 0
         for dataset_idx, dataset in enumerate(datasets):
-            if hasattr(dataset, 'labels'):
-                print(f'{len(dataset.labels)=}')
+            # if hasattr(dataset, 'labels'):
+            #     print(f'{len(dataset.labels)=}')
             assert len(dataset) == len(self.concat_datasets.datasets[dataset_idx])
             assert dataset == self.concat_datasets.datasets[dataset_idx]
             original_label2global_idx: defaultdict = defaultdict(list)
