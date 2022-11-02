@@ -58,9 +58,8 @@ def meta_eval(args: Namespace,
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         # val_loss, val_loss_ci, val_acc, val_acc_ci = model(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
-    # assert False
-    # - l2l
 
+    # - l2l
     if hasattr(args, 'tasksets'):
         # hack for l2l
         from learn2learn.data import TaskDataset
@@ -78,6 +77,7 @@ def meta_eval(args: Namespace,
         batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
+    
     # - else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))

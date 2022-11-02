@@ -46,6 +46,9 @@ def get_standard_pytorch_dataset_from_l2l_taskdatasets(tasksets: BenchmarkTaskse
 
 
 def get_l2l_torchmeta_dataloaders(args: Namespace) -> dict:
+    """
+    Returns a batch of tasks, the way that torchmeta would.
+    """
     args.tasksets: BenchmarkTasksets = get_l2l_tasksets(args)
 
     meta_trainloader = TorchMetaDLforL2L(args, split='train')
@@ -58,6 +61,8 @@ def get_l2l_torchmeta_dataloaders(args: Namespace) -> dict:
 
 class TorchMetaDLforL2L:
     """
+    Returns a batch of tasks, the way that torchmeta would.
+
     Not intended or tested to work with ddp. For that extension see this: https://github.com/learnables/learn2learn/issues/263
     """
 
