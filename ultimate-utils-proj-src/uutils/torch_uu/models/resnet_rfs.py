@@ -336,6 +336,7 @@ def seresnet101(keep_prob=1.0, avg_pool=False, **kwargs):
 model_dict = {
     'resnet12_rfs': resnet12,
     'resnet12_rfs_mi': resnet12,
+    'resnet12_hdb1_mio': resnet12,
     'resnet12_rfs_cifarfs_fc100': resnet12,
 
     'resnet18_rfs': resnet18,

@@ -92,8 +92,9 @@ class Logger:
             # pprint(msg)
             # st()
             # print(msg, flush=flush, file=sys.stdout)
-            print(f'{sys.stdout=}')
-            print(f'{os.path.realpath(sys.stdout.name)=}')
+            # uncomment two lines bellow perhaps to debug vit issue
+            # print(f'{sys.stdout=}')
+            # print(f'{os.path.realpath(sys.stdout.name)=}')
             print(msg, flush=flush)
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console

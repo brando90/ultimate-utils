@@ -195,6 +195,7 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         # same as the one in MI since Omni has been resized to that size [3, 84, 84].
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
         assert model_hps['num_classes'] != 64
+        assert model_hps['num_classes'] != 1100
         assert model_hps['num_classes'] == 64 + 1100
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
     elif model_option == 'vit_mi':

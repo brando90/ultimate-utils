@@ -37,6 +37,7 @@ def setup_wandb(args: Namespace):
         #     args.dir_wandb: Path = args.log_root.expanduser()
         #     dir_wandb = args.dir_wandb
         # - initialize wandb
+        print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
         print(f'{dir_wandb=}')
         print(f'{sys.stdout=}')
         print(f'{os.path.realpath(sys.stdout.name)=}')

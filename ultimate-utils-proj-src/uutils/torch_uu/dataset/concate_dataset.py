@@ -36,6 +36,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                  target_transform: Optional[Callable] = None,
                  compare_imgs_directly: bool = False,
                  verify_xs_align: bool = False,
+                 picke_usl_relabling: bool = False,
+                 load_usl_relabels: bool = False,
                  ):
         """
         Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
@@ -53,7 +55,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
         # - do the relabeling
-        self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align)
+        self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align, picke_usl_relabling)
+        if load_usl_relabels:
+            # just pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels
+            raise NotImplementedError
 
     def __len__(self):
         return len(self.concat_datasets)
@@ -61,6 +66,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     def _re_label_all_dataset(self, datasets: list[Dataset],
                               compare_imgs_directly: bool = False,
                               verify_xs_align: bool = False,
+                              picke_usl_relabling: bool = False,
                               ):
         """
         Relabels by treating all labels as unique/different. Thus, even if you have labels of cats on two data sets
@@ -77,7 +83,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         done, now when indexing use the self.indices_to_labels to map a global idx to a global label.
         Also, get the .labels field to keep track of the number of labels in the concatenation.
         """
-        # print()
+        import time
+        from uutils import report_times
+        start = time.time()
+        print(f'-> preprocessing data to relabel, might take a while... {self._re_label_all_dataset=}')
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         total_num_labels_so_far: int = 0
         global_idx: int = 0  # new_idx
@@ -165,6 +174,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.labels = range(total_num_labels_so_far)
         labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
+        if picke_usl_relabling:
+            # just pickle in the location of where the data is the array/maps global_idx <-> global_new_labels
+            raise NotImplementedError
+        print(f'-> done data preprocessing for relabel... {self._re_label_all_dataset=}, took: {report_times(start)}')
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         """
