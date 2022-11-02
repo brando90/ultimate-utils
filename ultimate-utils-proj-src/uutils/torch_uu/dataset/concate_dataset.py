@@ -397,15 +397,13 @@ def hdb1_mio_check_dataloader():
     assert len(train_dataset.labels) == 64 + 1100, f'Err:\n{len(train_dataset.labels)=}'
     loader = DataLoader(train_dataset, num_workers=1)
     next(iter(loader))
-    loader = get_serial_or_distributed_dataloaders(train_dataset)
-    next(iter(loader))
 
     valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_val)
     assert len(valid_dataset) == sum(len(dataset) for dataset in dataset_list_val), f'Err, got {len(valid_dataset)=}'
     assert len(valid_dataset.labels) == 16 + 100, f'Err:\n{len(valid_dataset.labels)=}'
     loader = DataLoader(train_dataset, num_workers=1)
     next(iter(loader))
-    loader = get_serial_or_distributed_dataloaders(valid_dataset)
+    loader = get_serial_or_distributed_dataloaders(valid_dataset, valid_dataset)
     next(iter(loader))
 
     test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test)
@@ -413,10 +411,18 @@ def hdb1_mio_check_dataloader():
     assert len(test_dataset.labels) == 20 + 423, f'Err:\n{len(test_dataset.labels)=}'
     loader = DataLoader(train_dataset, num_workers=1)
     next(iter(loader))
-    loader = get_serial_or_distributed_dataloaders(test_dataset)
+    loader = get_serial_or_distributed_dataloaders(test_dataset, test_dataset)
     next(iter(loader))
 
-    print()
+    # - my dataloader get function test
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(train_dataset, valid_dataset)
+    test_loader, _ = get_serial_or_distributed_dataloaders(test_dataset, test_dataset)
+    next(iter(train_loader))
+    next(iter(val_loader))
+    next(iter(test_loader))
+
+    # - done
+    print('-- done hdb1 tests')
 
 
 if __name__ == '__main__':
