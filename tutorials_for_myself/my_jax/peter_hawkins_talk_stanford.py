@@ -27,6 +27,8 @@ A:you can't type jax, jit, grad.
     - both push batch dimensions, but in different wants
     - pmap =
     - vmap =
+
+colab link: 
 """
 #%%
 
