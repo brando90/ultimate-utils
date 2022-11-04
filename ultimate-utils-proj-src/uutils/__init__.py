@@ -1036,7 +1036,7 @@ def save_to_json_pretty(data: Any, path2filename: Union[str, Path], mode='w', in
         json.dump(data, f, indent=indent, sort_keys=sort_keys)
 
 
-def expanduser(path: Union[str, Path]):
+def expanduser(path: Union[str, Path]) -> Path:
     """
 
     note: if you give in a path no need to get the output of this function because it mutates path. If you
@@ -1667,6 +1667,171 @@ def get_anonymous_function_attributes_recursive(anything: Any, path: str = '', p
             print(f'{k=}')
             print(f'{v=}')
     return anons
+
+
+def download_and_unzip(url: str,
+                       path_2_ziplike: Path = Path('~/data/'),
+                       path_2_dataset: Path = Path('~/data/tmp/'),
+                       ):
+    """
+
+    extend some day to use google drive when it's relevant, torchvision has this function: download_and_unzip_with_tar_xczf_py_shell_cmd
+    """
+    path_2_ziplike: Path = expanduser(path_2_ziplike)
+    path_2_dataset: Path = expanduser(path_2_dataset)
+    # - download data
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    print("downloading dataset from ", url)
+    import urllib
+    import http
+    response: http.client.HTTPResponse = urllib.request.urlopen(url, context=ctx)
+    print(f'{type(response)=}')
+    data = response
+    # save zipfile like data to path given
+    filename  = url.rpartition('/')[2]
+    print(f'{filename=}')
+    if filename.endswith('.zip'):
+        path_2_ziplike.mkdir(parents=True, exist_ok=True)
+        path_2_zip_with_filename = path_2_ziplike / filename
+        print(f'about to save: {path_2_zip_with_filename=}')
+        # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
+        with open(path_2_zip_with_filename, 'wb+') as f:
+            f.write(data.read())
+        print(f'done saving: {path_2_zip_with_filename=}')
+    elif filename.endswith('.gz'):
+        # inspired from tinfer, idk why but they don't save the zip file anywhere...cool I suppose?
+        # import tarfile
+        # try:
+        #     file = tarfile.open(fileobj=response, mode="r|gz")
+        # except Exception as e:
+        #     logging.warning(e)
+        #     print('if this fails look at the file extension and try something else '
+        #           'e.g. tar cmd or other options in tar module above')
+        pass  # do all work in the extraction step
+    # elif is_tar_file(filename):
+    #     os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
+    else:
+        raise ValueError(f'File type {filename=} not supported.')
+
+    # - unzip
+    extract_to = path_2_dataset
+    print(f'about to extract: {path_2_zip_with_filename=}')
+    print(f'extract to target: {extract_to=}')
+    if filename.endswith('.zip'):
+        import zipfile   #this one is for zip files, inspired from l2l
+        zip_ref = zipfile.ZipFile(path_2_zip_with_filename, 'r')
+        zip_ref.extractall(extract_to)
+        zip_ref.close()
+    elif filename.endswith('.gz'):
+        import tarfile
+        file = tarfile.open(fileobj=response, mode="r|gz")
+        file.extractall(path=extract_to)
+        file.close()
+    else:
+        path_2_zip_with_filename = path_2_ziplike / filename
+        os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
+        raise ValueError(f'File type {filename=} not supported.')
+    print(f'done extracting: {path_2_zip_with_filename=}')
+    print(f'extracted at location:{path_2_dataset=}')
+
+
+
+def download_url_no_ctx():
+    data = urllib.request.urlopen(url)
+    filename = url.rpartition('/')[2]
+    file_path = os.path.join(root, raw_folder, filename)
+    with open(file_path, 'wb') as f:
+        f.write(data.read())
+    file_processed = os.path.join(root, processed_folder)
+
+def download_and_unzip_with_tar_xvzf_py_shell_cmd(url: str, extract_to: Path = Path('~/data/tmp/'),
+                                                  mode="r|gz") -> Path:
+    """
+
+    this is based on my download_and_extract_miniimagenet but that one uses google to get data so idk if this will work.
+    """
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    print("downloading dataset from ", url)
+    import urllib
+    response = urllib.request.urlopen(url, context=ctx)
+    # data = urllib.request.urlopen(url)  # note: l2l just does this without ctx
+    # from torchvision.datasets.utils import download_file_from_google_drive, extract_archive
+    # path = path.expanduser()
+    # file_id = '1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
+    # filename_zip = 'miniImagenet.tgz'
+    # if zip not there re-download it
+    # path_2_zip = path / filename_zip
+    # if not path_2_zip.exists():
+    #     download_file_from_google_drive(file_id, path, filename_zip)
+
+    with open(response, mode='r') as file:
+        print("extracting to ", extract_to)
+        path_2_zip: str = str(expanduser(extract_to / str(file.name)).name)
+        print("path_2_zip is ", path_2_zip)
+        os.system(f'tar -xvzf {path_2_zip} -C {extract_to}/')
+        return extract_to / str(file.name)
+
+
+def download_and_unzip_tinfer(url: str, extract_to: Path = Path('~/data/tmp/')) -> Path:
+    """download and unzip ala tinfer proj & returns the path it extracted to."""
+    extract_to: Path = expanduser(extract_to)
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    print("downloading dataset from ", url)
+    import urllib
+    response = urllib.request.urlopen(url, context=ctx)
+    import tarfile
+    file = tarfile.open(fileobj=response, mode="r|gz")
+    print("extracting to ", extract_to)
+    file.extractall(path=extract_to)
+    file.close()
+
+    path_2_zip = extract_to / str(file.name)
+    return path_2_zip
+
+
+def download_ala_l2l_their_original_code(urls, root, raw_folder, processed_folder):
+    from six.moves import urllib
+    import zipfile
+
+    # if self._check_exists():
+    #     return
+
+    # download files
+    try:
+        os.makedirs(os.path.join(root, raw_folder))
+        os.makedirs(os.path.join(root, processed_folder))
+    except OSError as e:
+        import errno
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise
+
+    for url in urls:
+        print('== Downloading ' + url)
+        data = urllib.request.urlopen(url)
+        filename = url.rpartition('/')[2]
+        file_path = os.path.join(root, raw_folder, filename)
+        with open(file_path, 'wb') as f:
+            f.write(data.read())
+        file_processed = os.path.join(root, processed_folder)
+        print("== Unzip from " + file_path + " to " + file_processed)
+
+        zip_ref = zipfile.ZipFile(file_path, 'r')
+        zip_ref.extractall(file_processed)
+        zip_ref.close()
+    print("Download finished.")
 
 
 # -- regex
