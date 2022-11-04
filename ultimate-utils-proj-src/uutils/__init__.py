@@ -1669,13 +1669,19 @@ def get_anonymous_function_attributes_recursive(anything: Any, path: str = '', p
     return anons
 
 
-def download_and_unzip(url: str,
-                       path_2_ziplike: Path = Path('~/data/'),
-                       path_2_dataset: Path = Path('~/data/tmp/'),
-                       ):
+def download_and_extract(url: str,
+                         path_2_ziplike: Path = Path('~/data/'),
+                         path_2_dataset: Path = Path('~/data/tmp/'),
+                         rm_zip_file: bool = True
+                         ):
     """
+    Downloads data and tries to extract it according to different protocols/file types.
 
-    extend some day to use google drive when it's relevant, torchvision has this function: download_and_unzip_with_tar_xczf_py_shell_cmd
+    Tested with:
+    - zip files, yes!
+
+    Later:
+    - todo: tar, gz, gdrive
     """
     path_2_ziplike: Path = expanduser(path_2_ziplike)
     path_2_dataset: Path = expanduser(path_2_dataset)
@@ -1691,7 +1697,7 @@ def download_and_unzip(url: str,
     print(f'{type(response)=}')
     data = response
     # save zipfile like data to path given
-    filename  = url.rpartition('/')[2]
+    filename = url.rpartition('/')[2]
     print(f'{filename=}')
     # if gdrive_download:  todo, later
     #     from torchvision.datasets.utils import download_file_from_google_drive, extract_archive
@@ -1729,34 +1735,43 @@ def download_and_unzip(url: str,
     print(f'about to extract: {path_2_zip_with_filename=}')
     print(f'extract to target: {extract_to=}')
     if filename.endswith('.zip'):
-        import zipfile   #this one is for zip files, inspired from l2l
+        import zipfile  # this one is for zip files, inspired from l2l
         zip_ref = zipfile.ZipFile(path_2_zip_with_filename, 'r')
         zip_ref.extractall(extract_to)
         zip_ref.close()
+        if rm_zip_file:
+            path_2_zip_with_filename.unlink()
+            # path_2_zip_with_filename.unlink(missing_ok=True)
     elif filename.endswith('.gz'):
         import tarfile
         file = tarfile.open(fileobj=response, mode="r|gz")
         file.extractall(path=extract_to)
         file.close()
     else:
-        path_2_zip_with_filename = path_2_ziplike / filename
-        os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
-        raise ValueError(f'File type {filename=} not supported.')
+        raise ValueError(f'File type {filename=} not supported, edit code to support it.')
+
+        # path_2_zip_with_filename = path_2_ziplike / filename
+        # os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
+        # if rm_zip_file:
+        #     path_2_zip_with_filename.unlink()
+        #     # path_2_zip_with_filename.unlink(missing_ok=True)
+        # # raise ValueError(f'File type {filename=} not supported.')
     print(f'done extracting: {path_2_zip_with_filename=}')
     print(f'extracted at location:{path_2_dataset=}')
 
 
+def _download_url_no_ctx(url):
+    # data = urllib.request.urlopen(url)
+    # filename = url.rpartition('/')[2]
+    # file_path = os.path.join(root, raw_folder, filename)
+    # with open(file_path, 'wb') as f:
+    #     f.write(data.read())
+    # file_processed = os.path.join(root, processed_folder)
+    pass
 
-def download_url_no_ctx():
-    data = urllib.request.urlopen(url)
-    filename = url.rpartition('/')[2]
-    file_path = os.path.join(root, raw_folder, filename)
-    with open(file_path, 'wb') as f:
-        f.write(data.read())
-    file_processed = os.path.join(root, processed_folder)
 
-def download_and_unzip_with_tar_xvzf_py_shell_cmd(url: str, extract_to: Path = Path('~/data/tmp/'),
-                                                  mode="r|gz") -> Path:
+def _download_and_unzip_with_tar_xvzf_py_shell_cmd(url: str, extract_to: Path = Path('~/data/tmp/'),
+                                                   mode="r|gz") -> Path:
     """
 
     this is based on my download_and_extract_miniimagenet but that one uses google to get data so idk if this will work.
@@ -1787,7 +1802,7 @@ def download_and_unzip_with_tar_xvzf_py_shell_cmd(url: str, extract_to: Path = P
         return extract_to / str(file.name)
 
 
-def download_and_unzip_tinfer(url: str, extract_to: Path = Path('~/data/tmp/')) -> Path:
+def _download_and_unzip_tinfer(url: str, extract_to: Path = Path('~/data/tmp/')) -> Path:
     """download and unzip ala tinfer proj & returns the path it extracted to."""
     extract_to: Path = expanduser(extract_to)
     import ssl
@@ -1804,11 +1819,12 @@ def download_and_unzip_tinfer(url: str, extract_to: Path = Path('~/data/tmp/')) 
     file.extractall(path=extract_to)
     file.close()
 
+    # todo test bellow to see if file.name is actually correct/works as I expect
     path_2_zip = extract_to / str(file.name)
     return path_2_zip
 
 
-def download_ala_l2l_their_original_code(urls, root, raw_folder, processed_folder):
+def _download_ala_l2l_their_original_code(urls, root, raw_folder, processed_folder):
     from six.moves import urllib
     import zipfile
 
