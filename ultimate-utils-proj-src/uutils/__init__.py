@@ -1693,6 +1693,14 @@ def download_and_unzip(url: str,
     # save zipfile like data to path given
     filename  = url.rpartition('/')[2]
     print(f'{filename=}')
+    # if gdrive_download:  todo, later
+    #     from torchvision.datasets.utils import download_file_from_google_drive, extract_archive
+    #     file_id = '1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
+    #     filename_zip = 'miniImagenet.tgz'
+    #     # if zip not there re-download it
+    #     path_2_zip = path / filename_zip
+    #     if not path_2_zip.exists():
+    #         download_file_from_google_drive(file_id, path, filename_zip)
     if filename.endswith('.zip'):
         path_2_ziplike.mkdir(parents=True, exist_ok=True)
         path_2_zip_with_filename = path_2_ziplike / filename
