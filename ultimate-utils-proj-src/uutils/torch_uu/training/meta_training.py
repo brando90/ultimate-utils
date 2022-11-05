@@ -62,7 +62,7 @@ def meta_train_agent_fit_single_batch(args: Namespace,
     halt: bool = False
     while not halt:
         opt.zero_grad()
-        train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(train_batch, call_backward=True)
+        train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(train_batch, call_backward=True)
         # train_loss.backward()  # each process synchronizes its gradients in the backward pass
         assert opt.param_groups[0]['params'][0].grad is not None
         gradient_clip(args, opt)
@@ -117,7 +117,7 @@ def meta_train_fixed_iterations(args: Namespace,
         for batch_idx, batch in enumerate(dataloaders['train']):
             outer_opt.zero_grad()
             assert outer_opt is args.opt
-            train_loss, train_acc, train_loss_std, train_acc_std = meta_learner(batch, call_backward=True)
+            train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(batch, call_backward=True)
             # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
             assert outer_opt.param_groups[0]['params'][0].grad is not None
             gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
@@ -142,8 +142,6 @@ def meta_train_fixed_iterations(args: Namespace,
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
                 break
-
-    return train_loss, train_acc, train_loss_std, train_acc_std
 
 
 def meta_train_iterations_ala_l2l(args: Namespace,
@@ -177,7 +175,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # - forward pass. Since the data fetching is different for l2l we do it this way
         task_dataset: TaskDataset = args.tasksets.train
         # print_inside_halt(args, halt, 2)  # todo: remove? temporary for debugging
-        train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset, call_backward=True)
+        train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(task_dataset, call_backward=True)
         # print_inside_halt(args, halt, 3)  # todo: remove? temporary for debugging
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
@@ -218,4 +216,3 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
         if halt:
             break
-    return train_loss, train_acc, train_loss_std, train_acc_std

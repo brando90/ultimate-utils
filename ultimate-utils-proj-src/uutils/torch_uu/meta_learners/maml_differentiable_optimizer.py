@@ -292,6 +292,8 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     dists_per_batch_per_layer: list[OrderedDict[LayerIdentifier, float]] = []
     for t in range(B):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        # assert spt_x_t.size() == torch.Size([5*5, 84, 3, 3])
+        # assert qry_x_t.size() == torch.Size([5*15, 84, 3, 3])
         #
         adapted_mdl: FuncModel = get_maml_adapted_model_with_higher_one_task(mdl,
                                                                              inner_opt,
@@ -513,7 +515,6 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
 
         # collect losses & accs
         meta_losses.append(qry_loss_t.item())
-        # meta_losses.append(qry_loss_t)
         meta_accs.append(qry_acc_t)
 
     assert len(meta_losses) == meta_batch_size
