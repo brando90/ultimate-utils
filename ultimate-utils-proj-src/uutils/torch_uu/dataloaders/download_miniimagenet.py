@@ -48,9 +48,11 @@ def download_and_extract_miniimagenet(path):
     extracted_dataset_path = path / 'miniImagenet'
     if not extracted_dataset_path.exists():
         # improve: https://stackoverflow.com/questions/3451111/unzipping-files-in-python
-        os.system(f'tar -xvzf {path_2_zip} -C {path}/')  # extract data set in above location i.e at path / 'miniImagenet'
+        os.system(
+            f'tar -xvzf {path_2_zip} -C {path}/')  # extract data set in above location i.e at path / 'miniImagenet'
     else:
         print(f'Extracted data set from zip is there already! Check it at: {extracted_dataset_path}')
+
 
 def download_and_extract_miniimagenet_rfs(path):
     """ Function to download miniImagent from google drive link.
@@ -68,16 +70,18 @@ def download_and_extract_miniimagenet_rfs(path):
     path_2_zip = path / filename_zip
     if not path_2_zip.exists():
         # download_file_from_google_drive(file_id, path, filename_zip)
-        assert(False)
+        assert (False)
     else:
         print(f'Zip file to data set is already there at {path_2_zip}')
     # if actual data is not in appriopriate location extract it from zip to location
     extracted_dataset_path = path / 'miniImagenet'
     if not extracted_dataset_path.exists():
         # improve: https://stackoverflow.com/questions/3451111/unzipping-files-in-python
-        os.system(f'tar -xvzf {path_2_zip} -C {path}/')  # extract data set in above location i.e at path / 'miniImagenet'
+        os.system(
+            f'tar -xvzf {path_2_zip} -C {path}/')  # extract data set in above location i.e at path / 'miniImagenet'
     else:
         print(f'Extracted data set from zip is there already! Check it at: {extracted_dataset_path}')
+
 
 if __name__ == "__main__":
     start = time.time()
