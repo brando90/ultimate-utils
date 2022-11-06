@@ -309,3 +309,50 @@ mv ~/wandb /shared/rsaas/miranda9
 ln -s /shared/rsaas/miranda9/wandb ~/wandb 
 ```
 to check real path (for soft links) do e.g. `realpath /home`.
+
+# SNAP servers
+
+## GPU
+
+```
+ssh brando9@whale.stanford.edu
+
+# Titan X
+hyperion1
+
+# 2080
+turing1
+
+# RTX 8000 48GB, local storage 11TB
+ssh brando9@hyperturing1.stanford.edu
+
+# a100 80GB, local storage 56TB
+ssh brando9@ampere1.stanford.edu
+```
+
+using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
+
+```
+source cuda9.0
+source cuda10.0
+source cuda11.1
+
+# To see Cuda version in use
+nvcc -V
+```
+
+TODO, to reuse code, have something that checks
+the name of the cluster (if it's one of SNAPS, i.e. put the prefixes of snap ampere etc
+and run the code bellow, else do nothing let slurm, condor do it):
+```python
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+# likely as above, set HOME on the script you are running to log correctly
+
+```
+
+## CPU
+
+ref: https://ilwiki.stanford.edu/doku.php?id=snap-servers:snap-servers#compute_servers
