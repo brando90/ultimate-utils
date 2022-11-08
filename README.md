@@ -317,17 +317,31 @@ to check real path (for soft links) do e.g. `realpath /home`.
 ```
 ssh brando9@whale.stanford.edu
 
-# Titan X
+# -- Titan X, 12 GB
 hyperion1
+hyperion3
 
-# 2080
+# -- 2080, 11 GB
 turing1
+turing2
+turing3
 
-# RTX 8000 48GB, local storage 11TB
+# -- A4000 16 GB [SK]
+mercury1
+mercury2
+
+# -- RTX 8000 48GB, local storage 11TB
 ssh brando9@hyperturing1.stanford.edu
+ssh brando9@hyperturing2.stanford.edu
 
-# a100 80GB, local storage 56TB
+# -- a100 80GB, local storage 56TB
 ssh brando9@ampere1.stanford.edu
+...
+ssh brando9@ampere4.stanford.edu
+
+# -- a100 80GB, local storage ... [SK]
+...
+
 ```
 
 using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu

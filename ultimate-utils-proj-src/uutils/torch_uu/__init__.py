@@ -105,13 +105,14 @@ def device_name():
     return gpu_name_otherwise_cpu()
 
 
-def gpu_name_otherwise_cpu():
+def gpu_name_otherwise_cpu(print_to_stdout: bool = False):
     gpu_name_or_cpu = None
     try:
         gpu_name_or_cpu = torch.cuda.get_device_name(0)
     except:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         gpu_name_or_cpu = device
+    print(f'{gpu_name_or_cpu=}') if print_to_stdout else None
     return gpu_name_or_cpu
 
 
@@ -464,6 +465,23 @@ def norm(f: nn.Module, l: int = 2, detach: bool = False):
     return lp_norm(f, p=l, detach=detach)
 
 
+def count_number_of_parameters(model: nn.Module, only_trainable: bool = True) -> int:
+    """
+    Counts the number of trainable params. If all params, specify only_trainable = False.
+
+    Ref:
+        - https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/9?u=brando_miranda
+        - https://stackoverflow.com/questions/49201236/check-the-total-number-of-parameters-in-a-pytorch-model/62764464#62764464
+    :return:
+    """
+    if only_trainable:
+        num_params: int = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    else:  # counts trainable and none-traibale
+        num_params: int = sum(p.numel() for p in model.parameters() if p)
+    assert num_params > 0, f'Err: {num_params=}'
+    return int(num_params)
+
+
 def normalize(x: Tensor) -> Tensor:
     """
     Normalizes to unit circle.
@@ -473,6 +491,7 @@ def normalize(x: Tensor) -> Tensor:
     norm = x.pow(2).sum(1, keepdim=True).pow(1. / 2)
     out = x.div(norm)
     return out
+
 
 def check_two_models_equal(model1, model2):
     '''
