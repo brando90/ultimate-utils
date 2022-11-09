@@ -315,6 +315,10 @@ to check real path (for soft links) do e.g. `realpath /home`.
 Logging in/sshing:
 ```bash
 ssh brando9@whale.stanford.edu
+mkdir /dfs/scratch0/brando9
+cd /dfs/scratch0/brando9
+# ln -s file1 link1
+#ln -s /dfs/scratch0/brando9 /afs/cs.stanford.edu/u/brando9/dfs/scratch0/brando9
 
 # -- Titan X, 12 GB
 hyperion1
@@ -413,6 +417,15 @@ git clone git@github.com:brando90/ultimate-utils.git
 git clone git@github.com:brando90/diversity-for-predictive-success-of-meta-learning.git
 git clone git@github.com:brando90/pycoq.git
 git clone git@github.com:FormalML/iit-term-synthesis.git
+
+/afs/cs.stanford.edu/u/brando9
+/dfs/scratch0/brando9
+# ln -s file1 link1
+ln -s /dfs/scratch0/brando9/ultimate-utils /afs/cs.stanford.edu/u/brando9/ultimate-utils 
+ln -s /dfs/scratch0/brando9/diversity-for-predictive-success-of-meta-learning /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning
+ln -s /dfs/scratch0/brando9/pycoq /afs/cs.stanford.edu/u/brando9/pycoq 
+ln -s /dfs/scratch0/brando9/iit-term-synthesis /afs/cs.stanford.edu/u/brando9/iit-term-synthesis 
+ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data
 ```
 
 Using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
