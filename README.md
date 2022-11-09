@@ -312,9 +312,8 @@ to check real path (for soft links) do e.g. `realpath /home`.
 
 # SNAP servers
 
-## GPU
-
-```
+Logging in/sshing:
+```bash
 ssh brando9@whale.stanford.edu
 
 # -- Titan X, 12 GB
@@ -322,7 +321,7 @@ hyperion1
 hyperion3
 
 # -- 2080, 11 GB
-turing1
+ssh brando9@turing1.stanford.edu
 turing2
 turing3
 
@@ -340,13 +339,84 @@ ssh brando9@ampere1.stanford.edu
 ssh brando9@ampere4.stanford.edu
 
 # -- a100 80GB, local storage ... [SK]
-...
-
+ssh brando9@...stanford.edu
 ```
 
-using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
+Getting started:
+```bash
+# - create home
+mkdir /dfs/scratch0/brando9
 
+# note, export sets it for current shell and all subshells created
+# - cd to home dfs
+cd /dfs/scratch0/brando9
+export HOME=/dfs/scratch0/brando9
+
+# - to edit .bashrc.user
+cd /afs/cs.stanford.edu/u/brando9
+vim /afs/cs.stanford.edu/u/brando9/.bashrc.user
+echo $HOME
+ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.user ~/.bashrc.user 
+
+# - get hostname without stanford to set lfs for wandb
+python -c "import uutils; print(uutils); uutils.hello()"
+export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
+export WANDB_DIR=LOCAL_MACHINE_PWD
+echo $WANDB_DIR
 ```
+
+Installing conda:
+```bash
+echo $HOME
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+bash ~/miniconda.sh -b -p $HOME/miniconda
+ls -la ~
+
+export PATH="$HOME/miniconda/bin:$PATH"
+conda
+
+source ~/miniconda/bin/activate
+conda init
+conda init bash
+conda update -n base -c defaults conda
+conda install conda-build
+
+conda create -n metalearning_gpu python=3.9
+conda activate metalearning_gpu
+#conda create -n iit_synthesis python=3.9
+#conda activate iit_synthesis
+conda list
+```
+
+Git cloning your code:
+```bash
+echo $HOME
+mkdir ~/.ssh
+#touch ~/.ssh/id_ed25519
+ssh-keygen -t ed25519 -C "brandojazz@gmail.com"
+# copy paste the bellow path (needs absolute path to $HOME unfortuantely)
+/dfs/scratch0/brando9/.ssh/id_ed25519
+# press enter twice or type passphrase twice
+
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# add public key to your github
+cat ~/.ssh/id_ed25519.pub
+# copy contents of terminal
+# paste to your github keys under settings under SSH and GPG keys
+```
+
+gitclone projs:
+```bash
+git clone git@github.com:brando90/ultimate-utils.git
+git clone git@github.com:brando90/diversity-for-predictive-success-of-meta-learning.git
+git clone git@github.com:brando90/pycoq.git
+git clone git@github.com:FormalML/iit-term-synthesis.git
+```
+
+Using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
+```bash
 source cuda9.0
 source cuda10.0
 source cuda11.1
@@ -364,6 +434,12 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 # likely as above, set HOME on the script you are running to log correctly
+
+```
+cd /dfs/scratch0/ 
+mkdir brando9
+cd /dfs/scratch0/brando9
+```
 
 ```
 

@@ -1185,6 +1185,22 @@ def save_args(args: Namespace, args_filename: str = 'args.json'):
     save_opts(args, args_filename)
 
 
+def get_home_pwd_local_machine_snap():
+    """
+
+    python -c "import uutils; get_home_pwd_local_machine_snap()"
+
+    one liner:
+python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/');"
+    """
+    import socket
+    hostname: str = socket.gethostname()
+    hostname: str = hostname.split('.')[0]
+    local_pwd: str = f'/lfs/{hostname}/0/'
+    print(local_pwd)  # returns to terminal
+    # return local_pwd
+
+
 def load_cluster_jobids_to(args):
     import os
 
