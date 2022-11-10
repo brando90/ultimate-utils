@@ -10,6 +10,7 @@ import subprocess
 import time
 
 import math
+import torch
 from datetime import datetime
 from pprint import pprint
 
@@ -1185,7 +1186,7 @@ def save_args(args: Namespace, args_filename: str = 'args.json'):
     save_opts(args, args_filename)
 
 
-def get_home_pwd_local_machine_snap():
+def get_home_pwd_local_machine_snap() -> None:
     """
 
     python -c "import uutils; get_home_pwd_local_machine_snap()"
@@ -1196,7 +1197,7 @@ python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lf
     import socket
     hostname: str = socket.gethostname()
     hostname: str = hostname.split('.')[0]
-    local_pwd: str = f'/lfs/{hostname}/0/'
+    local_pwd: str = f'/lfs/{hostname}/0/brando9'
     print(local_pwd)  # returns to terminal
     # return local_pwd
 
@@ -1686,9 +1687,11 @@ def get_anonymous_function_attributes_recursive(anything: Any, path: str = '', p
 
 
 def download_and_extract(url: str,
-                         path_2_ziplike: Path = Path('~/data/'),
-                         path_2_dataset: Path = Path('~/data/tmp/'),
-                         rm_zip_file: bool = True
+                         path_used_for_zip: Path = Path('~/data/'),
+                         path_used_for_dataset: Path = Path('~/data/tmp/'),
+                         rm_zip_file: bool = True,
+                         gdrive_file_id: Optional[str] = None,
+                         gdrive_filename: Optional[str] = None,
                          ):
     """
     Downloads data and tries to extract it according to different protocols/file types.
@@ -1699,81 +1702,83 @@ def download_and_extract(url: str,
     Later:
     - todo: tar, gz, gdrive
     """
-    path_2_ziplike: Path = expanduser(path_2_ziplike)
-    path_2_dataset: Path = expanduser(path_2_dataset)
+    path_used_for_zip: Path = expanduser(path_used_for_zip)
+    path_used_for_zip.mkdir(parents=True, exist_ok=True)
+    path_used_for_dataset: Path = expanduser(path_used_for_dataset)
+    path_used_for_dataset.mkdir(parents=True, exist_ok=True)
     # - download data
-    import ssl
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    print("downloading dataset from ", url)
-    import urllib
-    import http
-    response: http.client.HTTPResponse = urllib.request.urlopen(url, context=ctx)
-    print(f'{type(response)=}')
-    data = response
-    # save zipfile like data to path given
-    filename = url.rpartition('/')[2]
+    if gdrive_filename is None:  # not a gdrive download
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        print("downloading dataset from url: ", url)
+        import urllib
+        import http
+        response: http.client.HTTPResponse = urllib.request.urlopen(url, context=ctx)
+        print(f'{type(response)=}')
+        data = response
+        # save zipfile like data to path given
+        filename = url.rpartition('/')[2]
+        path2file: Path = path_used_for_zip / filename
+    else:
+        from torchvision.datasets.utils import download_file_from_google_drive
+        # if zip not there re-download it
+        path2file: Path = path_used_for_zip / gdrive_filename
+        if not path2file.exists():
+            download_file_from_google_drive(gdrive_file_id, path_used_for_zip, gdrive_filename)
+        filename = gdrive_filename
+    print(f'{path2file=}')
     print(f'{filename=}')
-    # if gdrive_download:  todo, later
-    #     from torchvision.datasets.utils import download_file_from_google_drive, extract_archive
-    #     file_id = '1rV3aj_hgfNTfCakffpPm7Vhpr1in87CR'
-    #     filename_zip = 'miniImagenet.tgz'
-    #     # if zip not there re-download it
-    #     path_2_zip = path / filename_zip
-    #     if not path_2_zip.exists():
-    #         download_file_from_google_drive(file_id, path, filename_zip)
-    if filename.endswith('.zip'):
-        path_2_ziplike.mkdir(parents=True, exist_ok=True)
-        path_2_zip_with_filename = path_2_ziplike / filename
-        print(f'about to save: {path_2_zip_with_filename=}')
-        # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
-        with open(path_2_zip_with_filename, 'wb+') as f:
-            f.write(data.read())
-        print(f'done saving: {path_2_zip_with_filename=}')
+    if filename.endswith('.zip') or filename.endswith('.pkl'):
+        if not path2file.exists():
+            print(f'about to download data to: {path2file=}')
+            # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
+            with open(path2file, 'wb+') as f:
+            # with open(path2file, 'w+') as f:
+                f.write(data.read())
+            print(f'done downloading data to: {path2file=}')
     elif filename.endswith('.gz'):
-        # inspired from tinfer, idk why but they don't save the zip file anywhere...cool I suppose?
-        # import tarfile
-        # try:
-        #     file = tarfile.open(fileobj=response, mode="r|gz")
-        # except Exception as e:
-        #     logging.warning(e)
-        #     print('if this fails look at the file extension and try something else '
-        #           'e.g. tar cmd or other options in tar module above')
-        pass  # do all work in the extraction step
+        pass  # the download of the data doesn't seem to be explicitly handled by me, that is done in the extract step by a magic function tarfile.open
     # elif is_tar_file(filename):
     #     os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
     else:
         raise ValueError(f'File type {filename=} not supported.')
 
     # - unzip
-    extract_to = path_2_dataset
-    print(f'about to extract: {path_2_zip_with_filename=}')
+    extract_to = path_used_for_dataset
+    print(f'about to extract: {path2file=}')
     print(f'extract to target: {extract_to=}')
     if filename.endswith('.zip'):
         import zipfile  # this one is for zip files, inspired from l2l
-        zip_ref = zipfile.ZipFile(path_2_zip_with_filename, 'r')
+        zip_ref = zipfile.ZipFile(path2file, 'r')
         zip_ref.extractall(extract_to)
         zip_ref.close()
         if rm_zip_file:
-            path_2_zip_with_filename.unlink()
+            path2file.unlink()
             # path_2_zip_with_filename.unlink(missing_ok=True)
     elif filename.endswith('.gz'):
         import tarfile
         file = tarfile.open(fileobj=response, mode="r|gz")
         file.extractall(path=extract_to)
         file.close()
+    elif filename.endswith('.pkl'):
+        # no need to extract it, but when you use the data make sure you torch.load it or pickle.load it.
+        print(f'about to test torch.load of: {path2file=}')
+        data = torch.load(path2file)  # just to test
+        assert data is not None
+        print(f'{data=}')
+        pass
     else:
         raise ValueError(f'File type {filename=} not supported, edit code to support it.')
-
         # path_2_zip_with_filename = path_2_ziplike / filename
         # os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
         # if rm_zip_file:
         #     path_2_zip_with_filename.unlink()
         #     # path_2_zip_with_filename.unlink(missing_ok=True)
         # # raise ValueError(f'File type {filename=} not supported.')
-    print(f'done extracting: {path_2_zip_with_filename=}')
-    print(f'extracted at location:{path_2_dataset=}')
+    print(f'done extracting: {path2file=}')
+    print(f'extracted at location:{path_used_for_dataset=}')
 
 
 def _download_url_no_ctx(url):
@@ -2066,5 +2071,5 @@ if __name__ == '__main__':
     # test_good_progressbar()
     # xor_test()
     # merge_args_test()
-    _map_args_fields_from_string_to_usable_value_test()
+    # _map_args_fields_from_string_to_usable_value_test()
     print('Done!\a')

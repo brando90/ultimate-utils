@@ -321,13 +321,14 @@ cd /dfs/scratch0/brando9
 #ln -s /dfs/scratch0/brando9 /afs/cs.stanford.edu/u/brando9/dfs/scratch0/brando9
 
 # -- Titan X, 12 GB
-hyperion1
-hyperion3
+ssh brando9@hyperion1.stanford.edu
+ssh brando9@hyperion3.stanford.edu
 
 # -- 2080, 11 GB
 ssh brando9@turing1.stanford.edu
-turing2
-turing3
+ssh brando9@turing2.stanford.edu
+ssh brando9@turing3.stanford.edu
+ssh brando9@turing4.stanford.edu
 
 # -- A4000 16 GB [SK]
 mercury1
@@ -346,10 +347,35 @@ ssh brando9@ampere4.stanford.edu
 ssh brando9@...stanford.edu
 ```
 
+My folder set up:
+```bash
+HOME -> /dfs/scratch0/brando9/ so that ckpting/logging works (wanbd logs to local lfs)
+ls /dfs/scratch0/brando9
+AFS -> /afs/cs.stanford.edu/u/brando9, export AFS=/afs/cs.stanford.edu/u/brando9, alias afs='cd $AFS'
+bashrc.user -> afs with symlynk to dfs (since HOME is at dfs), cat ~/.bashrc.user
+ssh -> for now in afs because previous stuff broke when it was in dfs, need to test a little more
+code/git -> code in /afs/cs.stanford.edu/u/brando9, so that push/sftp on save works in pycharm. Symlink them to afs so that they are visible at home=dfs/...
+push on save -> root of projs /afs/cs.stanford.edu/u/brando9, make sure if you have root set automatically that you give the relative path on the deployment mapping (avoid putting root of hpc twice by accident)
+wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD 
+conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
+
+data -> /dfs/scratch0/brando9/ but with a symlink to /afs/cs.stanford.edu/u/brando9/data, TODO: https://intellij-support.jetbrains.com/hc/en-us/requests/4447850
+# ln -s file1 link1
+# ULTIMATE GOAL, fix pycharm not working https://intellij-support.jetbrains.com/hc/en-us/requests/4447850?page=1
+ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
+
+# for now since it seems my afs has 2tb lets put the data there for now
+mkdir /afs/cs.stanford.edu/u/brando9/data
+# ln -s file1 link1
+ln -s /afs/cs.stanford.edu/u/brando9/data /dfs/scratch0/brando9/data
+
+```
+
 Getting started:
 ```bash
 # - create home
 mkdir /dfs/scratch0/brando9
+ls /dfs/scratch0/brando9
 
 # note, export sets it for current shell and all subshells created
 # - cd to home dfs
@@ -357,15 +383,13 @@ cd /dfs/scratch0/brando9
 export HOME=/dfs/scratch0/brando9
 
 # - to edit .bashrc.user
-cd /afs/cs.stanford.edu/u/brando9
 vim /afs/cs.stanford.edu/u/brando9/.bashrc.user
-echo $HOME
+# ln -s file1 link1
 ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.user ~/.bashrc.user 
 
 # - get hostname without stanford to set lfs for wandb
-python -c "import uutils; print(uutils); uutils.hello()"
-export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
-export WANDB_DIR=LOCAL_MACHINE_PWD
+export LOCAL_MACHINE_PWD=$(python -c "import uutils;uutils.get_home_pwd_local_machine_snap()")
+export WANDB_DIR=$LOCAL_MACHINE_PWD
 echo $WANDB_DIR
 ```
 
@@ -374,9 +398,10 @@ Installing conda:
 echo $HOME
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
 bash ~/miniconda.sh -b -p $HOME/miniconda
-ls -la ~
+ls -lah ~
 
 export PATH="$HOME/miniconda/bin:$PATH"
+bash ~/miniconda.sh -b -p $HOME/miniconda
 conda
 
 source ~/miniconda/bin/activate
@@ -387,26 +412,30 @@ conda install conda-build
 
 conda create -n metalearning_gpu python=3.9
 conda activate metalearning_gpu
-#conda create -n iit_synthesis python=3.9
-#conda activate iit_synthesis
+conda create -n iit_synthesis python=3.9
+conda activate iit_synthesis
 conda list
 ```
 
-Git cloning your code:
+Git cloning your code & SHH keys:
 ```bash
 echo $HOME
-mkdir ~/.ssh
+mkdir /afs/cs.stanford.edu/u/brando9/.ssh
+cd /afs/cs.stanford.edu/u/brando9/.ssh
 #touch ~/.ssh/id_ed25519
 ssh-keygen -t ed25519 -C "brandojazz@gmail.com"
 # copy paste the bellow path (needs absolute path to $HOME unfortuantely)
-/dfs/scratch0/brando9/.ssh/id_ed25519
+### (no for now) /dfs/scratch0/brando9/.ssh/id_ed25519
+# just enter send it to /afs/cs.stanford.edu/u/brando9/.ssh/id_ed25519
 # press enter twice or type passphrase twice
 
 eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
+### (no for now) ssh-add /dfs/scratch0/brando9/.ssh/id_ed25519
+ssh-add /afs/cs.stanford.edu/u/brando9/.ssh/id_ed25519
 
 # add public key to your github
-cat ~/.ssh/id_ed25519.pub
+### (no for now) cat /dfs/scratch0/brando9/.ssh/id_ed25519.pub
+cat /afs/cs.stanford.edu/u/brando9/.ssh/id_ed25519.pub
 # copy contents of terminal
 # paste to your github keys under settings under SSH and GPG keys
 ```
@@ -417,23 +446,21 @@ git clone git@github.com:brando90/ultimate-utils.git
 git clone git@github.com:brando90/diversity-for-predictive-success-of-meta-learning.git
 git clone git@github.com:brando90/pycoq.git
 git clone git@github.com:FormalML/iit-term-synthesis.git
+mkdir /dfs/scratch0/brando9/data
 
 /afs/cs.stanford.edu/u/brando9
 /dfs/scratch0/brando9
 # ln -s file1 link1
-ln -s /dfs/scratch0/brando9/ultimate-utils /afs/cs.stanford.edu/u/brando9/ultimate-utils 
-ln -s /dfs/scratch0/brando9/diversity-for-predictive-success-of-meta-learning /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning
-ln -s /dfs/scratch0/brando9/pycoq /afs/cs.stanford.edu/u/brando9/pycoq 
-ln -s /dfs/scratch0/brando9/iit-term-synthesis /afs/cs.stanford.edu/u/brando9/iit-term-synthesis 
-ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data
+ln -s /afs/cs.stanford.edu/u/brando9/ultimate-utils /dfs/scratch0/brando9/ultimate-utils
+ln -s /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning /dfs/scratch0/brando9/diversity-for-predictive-success-of-meta-learning 
+ln -s /afs/cs.stanford.edu/u/brando9/pycoq /dfs/scratch0/brando9/pycoq  
+ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis /dfs/scratch0/brando9/iit-term-synthesis 
+ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
 ```
 
 Using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
 ```bash
-source cuda9.0
-source cuda10.0
 source cuda11.1
-
 # To see Cuda version in use
 nvcc -V
 ```
@@ -454,6 +481,34 @@ mkdir brando9
 cd /dfs/scratch0/brando9
 ```
 
+```
+
+check quota in afs
+```bash 
+(metalearning_gpu) brando9~ $ fs lq $AFS
+Volume Name                    Quota       Used %Used   Partition
+user.brando9                 5000000    1963301   39%          6% 
+```
+
+weird bug activate doesn't work
+```bash
+export PATH="$HOME/miniconda/bin:$PATH"
+echo $PATH
+source ~/miniconda/bin/activate
+conda activate metalearning_gpu
+conda
+
+#mv activate.c~ activate.c
+#mv deactivate.c~ deactivate.c
+#mv conda.c~ conda.c
+#
+#gcc -Wall activate.c -o activate
+#gcc -Wall deactivate.c -o deactivate
+#gcc -Wall conda.c -o conda
+
+sh activate.c
+sh deactivate.c
+python conda.c
 ```
 
 ## CPU

@@ -31,10 +31,10 @@ def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_origi
     ref: https://github.com/camillegontier/DELAUNAY_dataset/issues/2
     """
     extract_to: Path = expanduser(extract_to)
-    download_and_extract(url_all, path_2_ziplike=path_2_zip, path_2_dataset=extract_to)
-    download_and_extract(url_train, path_2_ziplike=path_2_zip, path_2_dataset=extract_to)
-    download_and_extract(url_test, path_2_ziplike=path_2_zip, path_2_dataset=extract_to)
-    download_and_extract(url_img_urls, path_2_ziplike=path_2_zip, path_2_dataset=extract_to)
+    download_and_extract(url_all, path_used_for_zip=path_2_zip, path_used_for_dataset=extract_to)
+    download_and_extract(url_train, path_used_for_zip=path_2_zip, path_used_for_dataset=extract_to)
+    download_and_extract(url_test, path_used_for_zip=path_2_zip, path_used_for_dataset=extract_to)
+    download_and_extract(url_img_urls, path_used_for_zip=path_2_zip, path_used_for_dataset=extract_to)
 
     # urls = [url_all, url_train, url_test, url_img_urls]
     # # - download data (could be made faster with mp or asyncio, whatever)
