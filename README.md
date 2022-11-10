@@ -357,7 +357,9 @@ ssh -> for now in afs because previous stuff broke when it was in dfs, need to t
 code/git -> code in /afs/cs.stanford.edu/u/brando9, so that push/sftp on save works in pycharm. Symlink them to afs so that they are visible at home=dfs/...
 push on save -> root of projs /afs/cs.stanford.edu/u/brando9, make sure if you have root set automatically that you give the relative path on the deployment mapping (avoid putting root of hpc twice by accident)
 wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD 
-conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
+
+conda -> /afs.../ since it broke in dfs and I dont know what else to blame
+# conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
 
 data -> /dfs/scratch0/brando9/ but with a symlink to /afs/cs.stanford.edu/u/brando9/data, TODO: https://intellij-support.jetbrains.com/hc/en-us/requests/4447850
 # ln -s file1 link1
@@ -395,13 +397,14 @@ echo $WANDB_DIR
 
 Installing conda:
 ```bash
+# - in dfs when home is dfs
 echo $HOME
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
 bash ~/miniconda.sh -b -p $HOME/miniconda
 ls -lah ~
 
 export PATH="$HOME/miniconda/bin:$PATH"
-bash ~/miniconda.sh -b -p $HOME/miniconda
+echo $PATH
 conda
 
 source ~/miniconda/bin/activate
@@ -415,6 +418,31 @@ conda activate metalearning_gpu
 conda create -n iit_synthesis python=3.9
 conda activate iit_synthesis
 conda list
+
+
+# - in afs when home is dfs but miniconda is installed to afs
+echo $AFS
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $AFS/miniconda.sh
+bash $AFS/miniconda.sh -b -p $AFS/miniconda
+ls -lah $AFS
+
+export PATH="$AFS/miniconda/bin:$PATH"
+echo $PATH
+conda
+
+source $AFS/miniconda/bin/activate
+conda init
+conda init bash
+conda update -n base -c defaults conda
+conda install conda-build
+
+conda create -n metalearning_gpu python=3.9
+conda activate metalearning_gpu
+conda create -n iit_synthesis python=3.9
+conda activate iit_synthesis
+conda list
+
+export PATH=/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/condabin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/dfs/scratch0/brando9/miniconda/bin:/usr/local/cuda-11.1/bin:/home/miranda9/miniconda3/bin:/usr/kerberos/sbin:/usr/kerberos/bin:/afs/cs/software/sbin:/afs/cs/software/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/dfs/scratch0/brando9/my_bins
 ```
 
 Git cloning your code & SHH keys:
