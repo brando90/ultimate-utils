@@ -419,8 +419,8 @@ conda create -n iit_synthesis python=3.9
 conda activate iit_synthesis
 conda list
 
-
-# - in afs when home is dfs but miniconda is installed to afs
+# - in afs when home is dfs but miniconda is installed to afs 
+# WARNING (DISK QUOTA, DONT USE)
 echo $AFS
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $AFS/miniconda.sh
 bash $AFS/miniconda.sh -b -p $AFS/miniconda
@@ -438,11 +438,54 @@ conda install conda-build
 
 conda create -n metalearning_gpu python=3.9
 conda activate metalearning_gpu
+conda info -e
+
+conda create -n iit_synthesis python=3.9
+conda activate iit_synthesis
+conda info -e
+
+conda list
+
+# - installing full anaconda
+echo $HOME
+wget https://repo.anaconda.com/archive/Anaconda3-2022.10-Linux-x86_64.sh -O ~/anaconda.sh
+#wget https://repo.continuum.io/conda/Anaconda3-latest-Linux-x86_64.sh -O ~/anaconda.sh
+#bash ~/anaconda.sh -b -p $HOME/anaconda
+nohup bash ~/anaconda.sh -b -p $HOME/anaconda > anaconda_install.out &
+tail -f anaconda_install.out
+ls -lah ~
+
+export PATH="$HOME/anaconda/bin:$PATH"
+echo $PATH
+conda
+
+source ~/anaconda/bin/activate
+conda init
+conda init bash
+conda update -n base -c defaults conda
+conda install conda-build
+
+conda create -n metalearning_gpu python=3.9
+conda activate metalearning_gpu
+nohup sh ~/diversity-for-predictive-success-of-meta-learning/install.sh > div_install.out &
+tail -f div_install.out
+
 conda create -n iit_synthesis python=3.9
 conda activate iit_synthesis
 conda list
 
+# - making a backup
+# cp -R <source_folder> <destination_folder>
+nohup cp -R anaconda anaconda_backup &
+nohup cp -R miniconda miniconda_backup &
+
+
+# - in case you need the path if you broke it
 export PATH=/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/condabin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/dfs/scratch0/brando9/miniconda/bin:/usr/local/cuda-11.1/bin:/home/miranda9/miniconda3/bin:/usr/kerberos/sbin:/usr/kerberos/bin:/afs/cs/software/sbin:/afs/cs/software/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/dfs/scratch0/brando9/my_bins
+# Use this command to check your afs quota and usage 
+fs lq ~/
+fs lq $AFS
+
 ```
 
 Git cloning your code & SHH keys:
