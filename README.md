@@ -357,16 +357,10 @@ code/git -> code in /afs/cs.stanford.edu/u/brando9, so that push/sftp on save wo
 push on save -> root of projs /afs/cs.stanford.edu/u/brando9, make sure if you have root set automatically that you give the relative path on the deployment mapping (avoid putting root of hpc twice by accident)
 wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD 
 
-# conda -> /afs.../ since it broke in dfs and I dont know what else to blame
+# conda ->  dfs and two back ups 
 conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
 
 data -> /dfs/scratch0/brando9/ but with a symlink to /afs/cs.stanford.edu/u/brando9/data, TODO: https://intellij-support.jetbrains.com/hc/en-us/requests/4447850
-# ln -s file1 link1
-# ULTIMATE GOAL, fix pycharm not working https://intellij-support.jetbrains.com/hc/en-us/requests/4447850?page=1
-ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
-
-# for now since it seems my afs has 2tb lets put the data there for now
-mkdir /afs/cs.stanford.edu/u/brando9/data
 # ln -s file1 link1
 ln -s /afs/cs.stanford.edu/u/brando9/data /dfs/scratch0/brando9/data
 ```
