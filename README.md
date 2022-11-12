@@ -350,16 +350,15 @@ ssh brando9@...stanford.edu
 My folder set up:
 ```bash
 HOME -> /dfs/scratch0/brando9/ so that ckpting/logging works (wanbd logs to local lfs)
-ls /dfs/scratch0/brando9
-AFS -> /afs/cs.stanford.edu/u/brando9, export AFS=/afs/cs.stanford.edu/u/brando9, alias afs='cd $AFS'
+AFS -> /afs/cs.stanford.edu/u/brando9, export AFS=/afs/cs.stanford.edu/u/brando9, alias afs='cd $AFS' (where code is, need to fix data -> symlink to dfs data folder)
 bashrc.user -> afs with symlynk to dfs (since HOME is at dfs), cat ~/.bashrc.user
 ssh -> for now in afs because previous stuff broke when it was in dfs, need to test a little more
 code/git -> code in /afs/cs.stanford.edu/u/brando9, so that push/sftp on save works in pycharm. Symlink them to afs so that they are visible at home=dfs/...
 push on save -> root of projs /afs/cs.stanford.edu/u/brando9, make sure if you have root set automatically that you give the relative path on the deployment mapping (avoid putting root of hpc twice by accident)
 wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD 
 
-conda -> /afs.../ since it broke in dfs and I dont know what else to blame
-# conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
+# conda -> /afs.../ since it broke in dfs and I dont know what else to blame
+conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
 
 data -> /dfs/scratch0/brando9/ but with a symlink to /afs/cs.stanford.edu/u/brando9/data, TODO: https://intellij-support.jetbrains.com/hc/en-us/requests/4447850
 # ln -s file1 link1
@@ -370,7 +369,6 @@ ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data
 mkdir /afs/cs.stanford.edu/u/brando9/data
 # ln -s file1 link1
 ln -s /afs/cs.stanford.edu/u/brando9/data /dfs/scratch0/brando9/data
-
 ```
 
 Getting started:
@@ -467,18 +465,34 @@ conda install conda-build
 
 conda create -n metalearning_gpu python=3.9
 conda activate metalearning_gpu
+
 nohup sh ~/diversity-for-predictive-success-of-meta-learning/install.sh > div_install.out &
 tail -f div_install.out
+
+nohup sh ~/diversity-for-predictive-success-of-meta-learning/install.sh > div_install_miniconda.out &
+tail -f div_install_miniconda.out
 
 conda create -n iit_synthesis python=3.9
 conda activate iit_synthesis
 conda list
+
 
 # - making a backup
 # cp -R <source_folder> <destination_folder>
 nohup cp -R anaconda anaconda_backup &
 nohup cp -R miniconda miniconda_backup &
 
+# /dfs/scratch0/brando9
+nohup cp -R /dfs/scratch0/brando9/anaconda /dfs/scratch0/brando9/anaconda_backup &
+nohup cp -R /dfs/scratch0/brando9/miniconda /dfs/scratch0/brando9/miniconda_backup &
+
+
+nohup pip install -e ~/ultimate-utils/ &
+nohup pip install -e ~/diversity-for-predictive-success-of-meta-learning/ &
+
+mkdir /lfs/madmax/0/brando9
+nohup cp -R ~/anaconda /lfs/madmax/0/brando9/anaconda_backup &
+nohup cp -R ~/miniconda /lfs/madmax/0/brando9/miniconda_backup &
 
 # - in case you need the path if you broke it
 export PATH=/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/brando9/miniconda/condabin:/afs/cs.stanford.edu/u/brando9/miniconda/bin:/dfs/scratch0/brando9/miniconda/bin:/usr/local/cuda-11.1/bin:/home/miranda9/miniconda3/bin:/usr/kerberos/sbin:/usr/kerberos/bin:/afs/cs/software/sbin:/afs/cs/software/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/dfs/scratch0/brando9/my_bins
@@ -486,6 +500,14 @@ export PATH=/afs/cs.stanford.edu/u/brando9/miniconda/bin:/afs/cs.stanford.edu/u/
 fs lq ~/
 fs lq $AFS
 
+# - try using pyenv
+conda deactivate metalearning_gpu
+virtualenv -p /usr/local/bin/python3.p metalearning_gpu_pyenv
+source metalearning_gpu_pyenv/bin/activate
+which pip
+
+nohup sh ~/diversity-for-predictive-success-of-meta-learning/install.sh > div_install_pyenv.out &
+tail -f div_install_pyenv.out
 ```
 
 Git cloning your code & SHH keys:
