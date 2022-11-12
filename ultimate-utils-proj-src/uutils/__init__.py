@@ -1708,6 +1708,14 @@ def download_and_extract(url: str,
     """
     Downloads data and tries to extract it according to different protocols/file types.
 
+    note:
+        - to force a download do:
+            force_rewrite_data_from_url_to_file = True
+            clean_old_zip_file = True
+        - to NOT remove file after extraction:
+            rm_zip_file_after_extraction = False
+
+
     Tested with:
     - zip files, yes!
 
