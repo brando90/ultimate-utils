@@ -1322,7 +1322,7 @@ def draw_nx_with_pygraphviz_attribtes_as_labels(g, attribute_name, path2file=Non
 
     # remove file https://stackoverflow.com/questions/6996603/how-to-delete-a-file-or-folder
     if not save_file:
-        path2file.unlink()
+        path2file.unlink(missing_ok=True)
 
 
 def visualize_lark(string: str, parser: Lark, path2filename: Union[str, Path]):
@@ -1701,7 +1701,7 @@ def download_and_extract(url: str,
                          path_used_for_dataset: Path = Path('~/data/tmp/'),
                          rm_zip_file_after_extraction: bool = True,
                          force_rewrite_data_from_url_to_file: bool = False,
-                         clean_old_file: bool = False,
+                         clean_old_zip_file: bool = False,
                          gdrive_file_id: Optional[str] = None,
                          gdrive_filename: Optional[str] = None,
                          ):
@@ -1713,6 +1713,7 @@ def download_and_extract(url: str,
 
     Later:
     - todo: tar, gz, gdrive
+    force_rewrite_data_from_url_to_file = remvoes the data from url (likely a zip file) and redownloads the zip file.
     """
     path_used_for_zip: Path = expanduser(path_used_for_zip)
     path_used_for_zip.mkdir(parents=True, exist_ok=True)
@@ -1743,13 +1744,13 @@ def download_and_extract(url: str,
     # -- write downloaded data from the url to a file
     print(f'{path2file=}')
     print(f'{filename=}')
-    if clean_old_file:
-        path2file.unlink()
+    if clean_old_zip_file:
+        path2file.unlink(missing_ok=True)
     if filename.endswith('.zip') or filename.endswith('.pkl'):
         # if path to file does not exist or force to write down the data
         if not path2file.exists() or force_rewrite_data_from_url_to_file:
             # delete file if there is one if your going to force a rewrite
-            path2file.unlink() if force_rewrite_data_from_url_to_file else None
+            path2file.unlink(missing_ok=True) if force_rewrite_data_from_url_to_file else None
             print(f'about to write downloaded data from url to: {path2file=}')
             # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
             with open(path2file, 'wb+') as f:
@@ -1775,7 +1776,7 @@ def download_and_extract(url: str,
         zip_ref.extractall(extract_to)
         zip_ref.close()
         if rm_zip_file_after_extraction:
-            path2file.unlink()
+            path2file.unlink(missing_ok=True)
     elif filename.endswith('.gz'):
         import tarfile
         file = tarfile.open(fileobj=response, mode="r|gz")
@@ -1793,8 +1794,7 @@ def download_and_extract(url: str,
         # path_2_zip_with_filename = path_2_ziplike / filename
         # os.system(f'tar -xvzf {path_2_zip_with_filename} -C {path_2_dataset}/')
         # if rm_zip_file:
-        #     path_2_zip_with_filename.unlink()
-        #     # path_2_zip_with_filename.unlink(missing_ok=True)
+        #     path_2_zip_with_filename.unlink(missing_ok=True)
         # # raise ValueError(f'File type {filename=} not supported.')
     print(f'done extracting: {path2file=}')
     print(f'extracted at location: {path_used_for_dataset=}')

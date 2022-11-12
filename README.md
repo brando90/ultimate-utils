@@ -383,7 +383,7 @@ ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.user ~/.bashrc.user
 
 # - get hostname without stanford to set lfs for wandb
 # export LOCAL_MACHINE_PWD=$(python -c "import uutils;uutils.get_home_pwd_local_machine_snap()")
-export HOSTNAME = hostname
+export HOSTNAME=$(hostname)
 export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
 echo LOCAL_MACHINE_PWD = $LOCAL_MACHINE_PWD
 ```
