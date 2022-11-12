@@ -11,7 +11,9 @@ of sources, images vary significantly in their resolution, from
 80px × 80px for the smallest sample to 3365px × 4299px for
 the largest.
 
-ref: https://arxiv.org/abs/2201.12123
+ref:
+- https://arxiv.org/abs/2201.12123
+- data set to learn2learn task set: https://github.com/learnables/learn2learn/issues/375
 """
 from pathlib import Path
 

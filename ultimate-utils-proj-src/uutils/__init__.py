@@ -1193,6 +1193,16 @@ def get_home_pwd_local_machine_snap() -> None:
 
     one liner:
 python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/');"
+
+
+bash command:
+# SNAP
+export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
+export HOSTNAME = hostname
+export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
+export WANDB_DIR=$LOCAL_MACHINE_PWD
+
+I think works, one liner: https://stackoverflow.com/questions/27658675/how-to-remove-last-n-characters-from-a-string-in-bash
     """
     import socket
     hostname: str = socket.gethostname()
@@ -1689,7 +1699,9 @@ def get_anonymous_function_attributes_recursive(anything: Any, path: str = '', p
 def download_and_extract(url: str,
                          path_used_for_zip: Path = Path('~/data/'),
                          path_used_for_dataset: Path = Path('~/data/tmp/'),
-                         rm_zip_file: bool = True,
+                         rm_zip_file_after_extraction: bool = True,
+                         force_rewrite_data_from_url_to_file: bool = False,
+                         clean_old_file: bool = False,
                          gdrive_file_id: Optional[str] = None,
                          gdrive_filename: Optional[str] = None,
                          ):
@@ -1706,13 +1718,13 @@ def download_and_extract(url: str,
     path_used_for_zip.mkdir(parents=True, exist_ok=True)
     path_used_for_dataset: Path = expanduser(path_used_for_dataset)
     path_used_for_dataset.mkdir(parents=True, exist_ok=True)
-    # - download data
-    if gdrive_filename is None:  # not a gdrive download
+    # - download data from url
+    if gdrive_filename is None:  # get data from url, not using gdrive
         import ssl
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        print("downloading dataset from url: ", url)
+        print("downloading data from url: ", url)
         import urllib
         import http
         response: http.client.HTTPResponse = urllib.request.urlopen(url, context=ctx)
@@ -1721,23 +1733,31 @@ def download_and_extract(url: str,
         # save zipfile like data to path given
         filename = url.rpartition('/')[2]
         path2file: Path = path_used_for_zip / filename
-    else:
+    else:  # gdrive case
         from torchvision.datasets.utils import download_file_from_google_drive
-        # if zip not there re-download it
+        # if zip not there re-download it or force get the data
         path2file: Path = path_used_for_zip / gdrive_filename
         if not path2file.exists():
             download_file_from_google_drive(gdrive_file_id, path_used_for_zip, gdrive_filename)
         filename = gdrive_filename
+    # -- write downloaded data from the url to a file
     print(f'{path2file=}')
     print(f'{filename=}')
+    if clean_old_file:
+        path2file.unlink()
     if filename.endswith('.zip') or filename.endswith('.pkl'):
-        if not path2file.exists():
-            print(f'about to download data to: {path2file=}')
+        # if path to file does not exist or force to write down the data
+        if not path2file.exists() or force_rewrite_data_from_url_to_file:
+            # delete file if there is one if your going to force a rewrite
+            path2file.unlink() if force_rewrite_data_from_url_to_file else None
+            print(f'about to write downloaded data from url to: {path2file=}')
             # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
             with open(path2file, 'wb+') as f:
             # with open(path2file, 'w+') as f:
+                print(f'{f=}')
+                print(f'{f.name=}')
                 f.write(data.read())
-            print(f'done downloading data to: {path2file=}')
+            print(f'done writing downloaded from url to: {path2file=}')
     elif filename.endswith('.gz'):
         pass  # the download of the data doesn't seem to be explicitly handled by me, that is done in the extract step by a magic function tarfile.open
     # elif is_tar_file(filename):
@@ -1745,7 +1765,7 @@ def download_and_extract(url: str,
     else:
         raise ValueError(f'File type {filename=} not supported.')
 
-    # - unzip
+    # - unzip data written in the file
     extract_to = path_used_for_dataset
     print(f'about to extract: {path2file=}')
     print(f'extract to target: {extract_to=}')
@@ -1754,9 +1774,8 @@ def download_and_extract(url: str,
         zip_ref = zipfile.ZipFile(path2file, 'r')
         zip_ref.extractall(extract_to)
         zip_ref.close()
-        if rm_zip_file:
+        if rm_zip_file_after_extraction:
             path2file.unlink()
-            # path_2_zip_with_filename.unlink(missing_ok=True)
     elif filename.endswith('.gz'):
         import tarfile
         file = tarfile.open(fileobj=response, mode="r|gz")
@@ -1778,7 +1797,8 @@ def download_and_extract(url: str,
         #     # path_2_zip_with_filename.unlink(missing_ok=True)
         # # raise ValueError(f'File type {filename=} not supported.')
     print(f'done extracting: {path2file=}')
-    print(f'extracted at location:{path_used_for_dataset=}')
+    print(f'extracted at location: {path_used_for_dataset=}')
+    print(f'-->Succes downloading & extracting dataset at location: {path_used_for_dataset=}')
 
 
 def _download_url_no_ctx(url):

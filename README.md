@@ -355,7 +355,7 @@ bashrc.user -> afs with symlynk to dfs (since HOME is at dfs), cat ~/.bashrc.use
 ssh -> for now in afs because previous stuff broke when it was in dfs, need to test a little more
 code/git -> code in /afs/cs.stanford.edu/u/brando9, so that push/sftp on save works in pycharm. Symlink them to afs so that they are visible at home=dfs/...
 push on save -> root of projs /afs/cs.stanford.edu/u/brando9, make sure if you have root set automatically that you give the relative path on the deployment mapping (avoid putting root of hpc twice by accident)
-wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD 
+wandb -> to local lfs of cluster, since that file really doesnt matter to me, just has to be somewhere so wandb works, see echo $LOCAL_MACHINE_PWD or/and ls $LOCAL_MACHINE_PWD, (if it fails put to dfs)
 
 # conda ->  dfs and two back ups 
 conda -> /dfs/scratch0/brando9 so any server has access to it, plus they are big so dont want to overwhelm afs (does symlinking conda to afs makes sense?), ls /dfs/scratch0/brando9/miniconda/envs & python -c "import uutils;uutils.get_home_pwd_local_machine_snap()" should work 
@@ -382,9 +382,10 @@ vim /afs/cs.stanford.edu/u/brando9/.bashrc.user
 ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.user ~/.bashrc.user 
 
 # - get hostname without stanford to set lfs for wandb
-export LOCAL_MACHINE_PWD=$(python -c "import uutils;uutils.get_home_pwd_local_machine_snap()")
-export WANDB_DIR=$LOCAL_MACHINE_PWD
-echo $WANDB_DIR
+# export LOCAL_MACHINE_PWD=$(python -c "import uutils;uutils.get_home_pwd_local_machine_snap()")
+export HOSTNAME = hostname
+export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
+echo LOCAL_MACHINE_PWD = $LOCAL_MACHINE_PWD
 ```
 
 Installing conda:
