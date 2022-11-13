@@ -134,6 +134,9 @@ def parse_args_standard_sl() -> Namespace:
     # - manual loads
     parser.add_argument('--manual_loads_name', type=str, default='None')
 
+    # - 5CNN args
+    parser.add_argument('--filter_size', type=int, default=-1, help="Filter size for 5CNN.")
+
     # - parse arguments
     args: Namespace = parser.parse_args()
     args.criterion = args.loss
