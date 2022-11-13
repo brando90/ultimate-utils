@@ -1,12 +1,14 @@
 # from torch_uu.utils.tensorboard import SummaryWriter  # https://deeplizard.com/learn/video/psexxmdrufm
 from pathlib import Path
 
+
 def log_2_tb(tb, args, it, tag1: str, loss: float, tag2: str, acc: float):
     # tb = SummaryWriter(log_dir=args.current_logs_path)  # uncomment for documentation to work
     # tag1 = tag1.replace(' ', '_')
     # tag2 = tag2.replace(' ', '_')
     tb.add_scalar(tag1, float(loss), it)
     tb.add_scalar(tag2, float(acc), it)
+
 
 def log_2_tb_supervisedlearning(tb, args, it, loss, acc, split):
     """
@@ -34,6 +36,7 @@ def log_2_tb_supervisedlearning(tb, args, it, loss, acc, split):
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc, it)
 
+
 def log_2_tb_metalearning(tb, args, it, loss, acc, split):
     """
     :param tb:
@@ -59,6 +62,7 @@ def log_2_tb_metalearning(tb, args, it, loss, acc, split):
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc, it)
 
+
 def log_2_tb_metalearning_old(tb, args, it, loss, acc_err, split):
     """
     :param acc:
@@ -80,6 +84,7 @@ def log_2_tb_metalearning_old(tb, args, it, loss, acc_err, split):
     tb.add_scalar(tag1, loss, it)
     tb.add_scalar(tag2, acc_err, it)
 
+
 def tensorboard_run_list_2_matplotlib_list(data: list[tuple], smoothing_weight: float) -> tuple[list, list]:
     """
     :param data: data in format [..., [time, it, value], ...]
@@ -94,6 +99,7 @@ def tensorboard_run_list_2_matplotlib_list(data: list[tuple], smoothing_weight: 
     values = my_tb_smooth(scalars=values, weight=smoothing_weight)
     return its, values
 
+
 def my_tb_smooth(scalars: list[float], weight: float) -> list[float]:  # Weight between 0 and 1
     """
 
@@ -107,9 +113,10 @@ def my_tb_smooth(scalars: list[float], weight: float) -> list[float]:  # Weight 
     smoothed: list = []
     for point in scalars:
         smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
-        smoothed.append(smoothed_val)                        # Save it
-        last = smoothed_val                                  # Anchor the last smoothed value
+        smoothed.append(smoothed_val)  # Save it
+        last = smoothed_val  # Anchor the last smoothed value
     return smoothed
+
 
 # -- tests
 

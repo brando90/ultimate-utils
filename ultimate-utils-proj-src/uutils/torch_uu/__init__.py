@@ -40,7 +40,6 @@ from argparse import Namespace
 # from torch.optim.lr_scheduler import _LRScheduler
 
 # from uutils.torch_uu.optim_uu.optimizers import get_default_uu_adafactor_optimizer_and_scheduler_fairseq
-from uutils.torch_uu.tensorboard import log_2_tb
 
 import gc
 
@@ -1987,6 +1986,7 @@ def train_one_batch(opts, model, train_batch, val_batch, optimizer, tolerance=0.
     :param tolerance:
     :return:
     """
+    from uutils.torch_uu.tensorboard import log_2_tb
     avg_loss = AverageMeter('train loss')
     avg_acc = AverageMeter('train accuracy')
 

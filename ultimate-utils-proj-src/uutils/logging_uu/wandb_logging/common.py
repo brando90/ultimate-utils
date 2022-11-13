@@ -1,7 +1,9 @@
+from pathlib import Path
+
 import os
 import sys
 from argparse import Namespace
-from typing import Union
+from typing import Union, Optional
 
 import wandb
 
@@ -57,19 +59,36 @@ def setup_wandb(args: Namespace):
         wandb.config.update(args)
 
 
-def cleanup_wandb(args: Namespace):
+def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
+    """
+
+    It might be a bad idea to remove the wandb folder becuase other jobs might be needing it.
+    Only safe to delete it if no other job is running.
+    """
     from uutils.torch_uu.distributed import is_lead_worker
 
-    if hasattr(args, 'log_to_wandb'):
-        import wandb
-        if args.log_to_wandb:
-            if hasattr(args, 'rank'):
-                if is_lead_worker(args.rank):
+    if is_lead_worker(args.rank):
+        if hasattr(args, 'log_to_wandb'):
+            import wandb
+            if args.log_to_wandb:
+                if hasattr(args, 'rank'):
                     wandb.finish()
-                else:
-                    pass  # nop, your not lead so you shouldn't need to close wandb
-        else:
-            wandb.finish()
+                    remove_wandb_dir(args) if delete_wandb_dir else None
+            else:
+                wandb.finish()
+                remove_wandb_dir(args) if delete_wandb_dir else None
+    else:
+        pass  # nop, your not lead so you shouldn't need to close wandb
+
+
+def remove_wandb_dir(args: Optional[Namespace] = None):
+    import os
+    import shutil
+    wandb_dir: Path = Path(os.environ['WANDB_DIR']).expanduser()
+    if wandb_dir.exists():
+        print(f'deleting wanbd_dir at: WANDB_DIR={wandb_dir}')
+        shutil.rmtree(wandb_dir)
+        print(f'deletion successful≈ wanbd_dir at: WANDB_DIR={wandb_dir}')
 
 
 def log_2_wanbd(it: int,

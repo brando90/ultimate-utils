@@ -361,6 +361,9 @@ ssh brando9@...stanford.edu
 
 My folder set up:
 ```bash
+chmod a+x ~/diversity-for-predictive-success-of-meta-learning/main.sh
+#chmod a+x /shared/rsaas/miranda9/diversity-for-predictive-success-of-meta-learning/main.sh
+
 HOME -> /dfs/scratch0/brando9/ so that ckpting/logging works (wanbd logs to local lfs)
 AFS -> /afs/cs.stanford.edu/u/brando9, export AFS=/afs/cs.stanford.edu/u/brando9, alias afs='cd $AFS' (where code is, need to fix data -> symlink to dfs data folder)
 bashrc.user -> afs with symlynk to dfs (since HOME is at dfs), cat ~/.bashrc.user
