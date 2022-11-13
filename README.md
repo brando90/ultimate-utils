@@ -260,6 +260,18 @@ python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 
 #### Data storage at UIUC vision cluster IC
 
+```bash
+home -> /home/miranda9 (export HOME=/home/miranda9, echo $HOME)
+code/git -> home
+ssh -> home
+push on save -> home
+.bashrc -> home
+conda -> shared (miniconda)
+
+data & logs & ckpts -> home (mkdir ~/data)
+wandb -> home but delete folder after each run (rm -rf $WANDB_DIR)
+```
+
 My goal is to put the large heavy stuff (e.g. conda, data, ) at `/shared/rsaas/miranda9/`.
 Warning: due to the vpn if you run one of this commands and you lose connection you will have to do it again and might
 have half a transfer of files. 
