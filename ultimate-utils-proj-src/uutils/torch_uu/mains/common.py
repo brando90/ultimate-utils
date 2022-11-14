@@ -158,6 +158,8 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     if model_option == "None":
         # pass
         args.model, args.model_hps = None, None
+    elif model_option == '5CNN_opt_as_model_for_few_shot':
+        args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs':  # resnet12_rfs for backward compat

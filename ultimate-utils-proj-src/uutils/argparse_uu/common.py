@@ -211,6 +211,12 @@ def setup_args_for_experiment(args: Namespace,
     args.pin_memory = False
     args.num_workers = num_workers if num_workers is not None else args.num_workers
 
+    # - run re-auth if in stanford cluster
+    from socket import gethostname
+    if 'stanford' in gethostname():
+        from uutils import stanford_reauth
+        stanford_reauth()
+
     # - return
     uutils.print_args(args)
     uutils.save_args(args)

@@ -529,6 +529,16 @@ def run_bash_command(cmd: str) -> Any:
         return output
 
 
+def stanford_reauth():
+    # def stanford_rauth(password: Optional[str] = None):
+    # password: str = os.environ['SU_PASSWORD'] if password is None else None
+    # assert password is not None, f'Err: {password=}'
+    reauth_cmd: str = f'echo $SU_PASSWORD | /afs/cs/software/bin/reauth'
+    out = run_bash_command(reauth_cmd)
+    print('Output of reauth (/afs/cs/software/bin/reauth with password)')
+    print(f'{out=}')
+
+
 def get_nvidia_smi_output() -> str:
     out = run_bash_command('nvidia-smi')
     return out
@@ -1762,7 +1772,7 @@ def download_and_extract(url: str,
             print(f'about to write downloaded data from url to: {path2file=}')
             # wb+ is used sinze the zip file was in bytes, otherwise w+ is fine if the data is a string
             with open(path2file, 'wb+') as f:
-            # with open(path2file, 'w+') as f:
+                # with open(path2file, 'w+') as f:
                 print(f'{f=}')
                 print(f'{f.name=}')
                 f.write(data.read())
