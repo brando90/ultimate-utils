@@ -637,16 +637,28 @@ def remove_folders_recursively(path):
         pass
 
 
-def move_folders_recursively(root: Union[str, Path], dirnames: list[Union[str, Path]]):
-    root: Path = expanduser(root)
+def copy_folders_recursively(src_root: Union[str, Path], root4dst: Union[str, Path], dirnames4dst: list[Union[str, Path]]):
+    """
+    Copying dirnames in src_root into roo4dst. Note dirnames4dst should be the same as the dirnames in the sorc.
+
+    note: copying the files was fast locally! Likely the downloading of the data from network + extracting is what causes
+    things to be slow.
+
+    :param src_root:
+    :param root4dst:
+    :param dirnames4dst:
+    :return:
+    """
+    root: Path = expanduser(root4dst)
+    src_root: Path = expanduser(src_root)
     from distutils.dir_util import copy_tree
-    for dirname in dirnames:
+    for dirname in dirnames4dst:
         dirname: Path = expanduser(dirname)
-        src: Path = root / expanduser(dirname)
+        src: Path = src_root / expanduser(dirname)
         dst: Path = root / expanduser(dirname)
         src: str = str(src)
         dst: str = str(dst)
-        print(f'moving: {src=} -> {dst=}')
+        print(f'copying: {src=} -> {dst=}')
         copy_tree(src, dst)
 
 

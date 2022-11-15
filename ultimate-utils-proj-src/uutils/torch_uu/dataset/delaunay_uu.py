@@ -30,7 +30,7 @@ from typing import Union
 
 from pathlib import Path
 
-from uutils import download_and_extract, expanduser, move_folders_recursively
+from uutils import download_and_extract, expanduser, copy_folders_recursively
 
 mean = [0.5853, 0.5335, 0.4950]
 std = [0.2348, 0.2260, 0.2242]
@@ -189,14 +189,16 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     the diversity for this arbitrary split is: mu +- ci.
     - make sure .labels is set i.e. the 34, 8, 11 & asserts there.
     """
-    # - get path to union of all images & sort based on alphabetical path to folder [likely first name] (might be useful for usl!)
     path_to_all_data: Path = expanduser(path_to_all_data)
+    path_for_splits: Path = expanduser(path_for_splits)
+    # - get path to union of all images & sort based on alphabetical path to folder [likely first name] (might be useful for usl!)
     dirpath, dirnames, filenames = next(iter(os.walk(path_to_all_data)))
     print(f'{dirpath=}, {path_to_all_data=}')
-    # assert dirpath == path_to_all_data
+    print(f'{dirnames=}')
     assert len(dirnames) == 53
     # - split into 34, 8, 11 splits (based on previous sorting list)
     sorted_dirnames: list = list(sorted(dirnames))
+    print(f'{sorted_dirnames=}')
     train_val = sorted_dirnames[:42]
     train = train_val[:34]
     val = train_val[34:]
@@ -205,23 +207,54 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     assert len(val) == 8
     assert len(test) == 11
     # - save the few-shot learning 34, 8, 11 splits as folders with images (based on previous sorting list)
-    path_for_splits: Path = expanduser(path_for_splits)
     path2train: Path = path_for_splits / 'delauny_train_split_dir'
-    move_folders_recursively(root=path_for_splits / 'delauny_train_split_dir', dirnames=train)
+    copy_folders_recursively(src_root=path_to_all_data, root4dst=path2train, dirnames4dst=train)
     path2val: Path = path_for_splits / 'delauny_validation_split_dir'
-    move_folders_recursively(root=path_for_splits / 'delauny_validation_split_dir', dirnames=val)
+    copy_folders_recursively(src_root=path_to_all_data, root4dst=path2val, dirnames4dst=val)
     path2test: Path = path_for_splits / 'delauny_test_split_dir'
-    move_folders_recursively(root=path_for_splits / 'delauny_test_split_dir', dirnames=test)
-    # - print the paths to the 3 splits. Check them manually (or print ls to them and print the lst)
+    copy_folders_recursively(src_root=path_to_all_data, root4dst=path2test, dirnames4dst=test)
+    # print the paths to the 3 splits. Check them manually (or print ls to them and print the lst)
     print(f'{path2train=}')
     print(f'{path2val=}')
     print(f'{path2test=}')
+    # assert the splits at dst for fsl/lsl are the right sizes e.g. 34, 8, 11
+    assert len(next(iter(os.walk(path2train)))[1]) == 34
+    assert len(next(iter(os.walk(path2val)))[1]) == 8
+    assert len(next(iter(os.walk(path2test)))[1]) == 11
     # - later, compute the task2vec div of the train 34 and test 11 splits.
-    # args: Namespace = load_args()
-    # args: Namespace = Namespace()
-    # args: Namespace = diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet()
-    # compute_div_and_plot_distance_matrix_for_fsl_benchmark(args, show_plots=False)
-    # ## compute_div_and_plot_distance_matrix_for_fsl_benchmark(args)
+    print('computing delauny div for this split')
+    from uutils.argparse_uu.common import create_default_log_root
+    from diversity_src.experiment_mains.main_diversity_with_task2vec import \
+        compute_div_and_plot_distance_matrix_for_fsl_benchmark
+    from uutils.argparse_uu.meta_learning import parse_args_meta_learning
+    from uutils import setup_wandb
+
+    args: Namespace = parse_args_meta_learning()
+    args: Namespace = diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args)
+    setup_wandb(args)
+    create_default_log_root(args)
+    compute_div_and_plot_distance_matrix_for_fsl_benchmark(args, show_plots=False)
+
+
+def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace) -> Namespace:
+    args.batch_size = 5
+    args.data_option = 'delauny_uu_l2l_bm_split'
+    args.data_path = Path('~/data/delauny_l2l_bm_split').expanduser()
+
+    # - probe_network
+    args.model_option = 'resnet18_pretrained_imagenet'
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    args.experiment_name = f'diversity_ala_task2vec_{args.data_option}_{args.model_option}'
+    args.run_name = f'{args.experiment_name} {args.batch_size=}'
+    # args.log_to_wandb = True
+    args.log_to_wandb = False
+
+    from uutils.argparse_uu.meta_learning import fix_for_backwards_compatibility
+    args = fix_for_backwards_compatibility(args)
+    return args
 
 
 # - tests
@@ -269,10 +302,21 @@ def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_s
     for i, (x, _) in enumerate(concat):
         print(f'{x=}')
         print(f'{x.size()=}')
-        # size = x.size()
+        print(f'{x.norm()=}')
+        print(f'{x.norm()/3=}')
         break
     # - print min & max sizes
     print('decided not to print it since the current data transform went through all the images without issues')
+
+
+def loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader():
+    pass
+
+
+def create_my_fsl_splits_from_original_delauny_splits():
+    path_to_all_data: str = '~/data/delauny_original_data/DELAUNAY'
+    path_for_splits: str = '~/data/delauny_l2l_bm_split'
+    create_your_splits(path_to_all_data, path_for_splits)
 
 
 if __name__ == "__main__":
@@ -282,6 +326,8 @@ if __name__ == "__main__":
     start = time.time()
     # - run experiment
     # download_delauny_original_data()
-    loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
+    create_my_fsl_splits_from_original_delauny_splits()
+    # loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
+    # loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

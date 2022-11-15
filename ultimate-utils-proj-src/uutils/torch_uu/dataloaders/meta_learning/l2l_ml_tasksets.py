@@ -122,6 +122,17 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'delauny_uu_l2l_bm_split':
+        raise NotImplementedError
+        # from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hdb2_cifarfs_omniglot_tasksets
+        # args.tasksets: BenchmarkTasksets = hdb2_cifarfs_omniglot_tasksets(
+        #     train_samples=args.k_shots + args.k_eval,
+        #     train_ways=args.n_cls,
+        #     test_samples=args.k_shots + args.k_eval,
+        #     test_ways=args.n_cls,
+        #     root=args.data_path,
+        #     data_augmentation=args.data_augmentation,
+        # )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
