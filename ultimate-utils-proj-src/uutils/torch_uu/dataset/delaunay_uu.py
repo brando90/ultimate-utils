@@ -22,7 +22,8 @@ from argparse import Namespace
 import os
 from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
-from torchvision.transforms import transforms
+from torchvision.transforms import transforms, Compose, ToPILImage, RandomCrop, ColorJitter, RandomHorizontalFlip, \
+    ToTensor
 
 from typing import Union
 
@@ -32,7 +33,23 @@ from uutils import download_and_extract, expanduser, move_folders_recursively
 
 mean = [0.5853, 0.5335, 0.4950]
 std = [0.2348, 0.2260, 0.2242]
+normalize = transforms.Normalize(mean=mean,
+                                 std=std)
 
+
+# classes = ('Ad Reinhardt', 'Alberto Magnelli', 'Alfred Manessier', 'Anthony Caro',
+#             'Antoine Pevsner', 'Auguste Herbin', 'Aurélie Nemours', 'Berto Lardera',
+#             'Charles Lapicque', 'Charmion Von Wiegand', 'César Domela', 'Ellsworth Kelly',
+#             'Emilio Vedova', 'Fernand Léger', 'František Kupka', 'Franz Kline',
+#             'François Morellet', 'Georges Mathieu', 'Georges Vantongerloo',
+#             'Gustave Singier', 'Hans Hartung', 'Jean Arp', 'Jean Bazaine', 'Jean Degottex',
+#             'Jean Dubuffet', 'Jean Fautrier', 'Jean Gorin', 'Joan Mitchell',
+#             'Josef Albers', 'Kenneth Noland', 'Leon Polk Smith', 'Lucio Fontana',
+#             'László Moholy-Nagy', 'Léon Gischia', 'Maria Helena Vieira da Silva',
+#             'Mark Rothko', 'Morris Louis', 'Naum Gabo', 'Olle Bærtling', 'Otto Freundlich',
+#             'Pierre Soulages', 'Pierre Tal Coat', 'Piet Mondrian', 'Richard Paul Lohse',
+#             'Roger Bissière', 'Sam Francis', 'Sonia and Robert Delaunay', 'Sophie Taeuber-Arp',
+#             'Theo van Doesburg', 'Vassily Kandinsky', 'Victor Vasarely', 'Yves Klein', 'Étienne Béothy')
 
 def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_original_data/'),
                                    path_2_zip=Path('~/data/delauny_original_data/'),
@@ -43,6 +60,9 @@ def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_origi
                                    ):
     """
     Downloads the abstract art delauny data set for ML and other research.
+
+python -u ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/dataset/delaunay_uu.py
+nohup python -u ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/dataset/delaunay_uu.py > delauny.out &
 
     ref: https://github.com/camillegontier/DELAUNAY_dataset/issues/2
     """
@@ -73,6 +93,54 @@ def get_min_max_size_of_images_delany() -> tuple[int, int]:
 
 def get_data_augmentation():
     pass  # todo
+
+
+def _original_data_transforms_delauny(size: int = 256) -> transforms.Compose:
+    transform = transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean,
+                             std=std),
+    ])
+    return transform
+
+
+def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
+                                   size: int = 84,
+                                   ) -> tuple[Compose, Compose, Compose]:
+    """
+
+    Notes:
+        - RandomCrop has padding = 8 because this likely makes it more robust against images with surrounding contours/padding.
+        - val transform == test transform because: I agree to use test transforms on validation. It reduces the variance on the validation and since your not fitting them anyway there is likely little benefit to early stop with complicated train data augmentation for valitation. Better to have a low variance estimate of an unknown distribution so to early stop more precisely.
+
+    ref:
+        - https://github.com/learnables/learn2learn/issues/309
+        - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
+    """
+    if data_augmentation is None:
+        raise NotImplementedError
+        # return original delauny transforms
+    elif data_augmentation == 'delauny_uu':
+        train_data_transform = Compose([
+            ToPILImage(),
+            RandomCrop(size, padding=8),
+            # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
+            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            RandomHorizontalFlip(),
+            ToTensor(),
+            normalize,
+        ])
+        test_data_transform = transforms.Compose([
+            transforms.Resize((size, size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean,
+                                 std=std),
+        ])
+        validation_data_transform = test_data_transform
+    else:
+        raise ValueError(f'Err: {data_augmentation=}')
+    return train_data_transform, validation_data_transform, test_data_transform
 
 
 def get_my_delauny_dataset_splits(path2train: str,
