@@ -15,13 +15,27 @@ ref:
 - https://arxiv.org/abs/2201.12123
 - data set to learn2learn task set: https://github.com/learnables/learn2learn/issues/375
 """
+from datetime import datetime
+
+from argparse import Namespace
+
+import os
+from torch.utils.data import Dataset
+from torchvision.datasets import ImageFolder
+from torchvision.transforms import transforms
+
+from typing import Union
+
 from pathlib import Path
 
-from uutils import download_and_extract, expanduser
+from uutils import download_and_extract, expanduser, move_folders_recursively
+
+mean = [0.5853, 0.5335, 0.4950]
+std = [0.2348, 0.2260, 0.2242]
 
 
 def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_original_data/'),
-                                   path_2_zip=Path('~/data/'),
+                                   path_2_zip=Path('~/data/delauny_original_data/'),
                                    url_all: str = 'https://physiologie.unibe.ch/supplementals/delaunay.zip',
                                    url_train: str = 'https://physiologie.unibe.ch/supplementals/delaunay_train.zip',
                                    url_test: str = 'https://physiologie.unibe.ch/supplementals/delaunay_test.zip',
@@ -44,7 +58,132 @@ def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_origi
     #     download_and_unzip(url, extract_to)
 
 
+def process_delanauny_into_pickle_files():
+    """not going to do it for now, just keep the folder per image setup. Effortless. Unless it becomes a problem."""
+    pass
+    # NOP
+
+
+def get_min_max_size_of_images_delany() -> tuple[int, int]:
+    """
+    Loop through data sets (all images) and collect the min and max sizes. Also print the channels, assert it to be 3.
+    """
+    pass  # todo
+
+
+def get_data_augmentation():
+    pass  # todo
+
+
+def get_my_delauny_dataset_splits(path2train: str,
+                                  path2val: str,
+                                  path2test: str,
+                                  size: int = 84,  # todo
+                                  ) -> tuple[Dataset, Dataset, Dataset]:
+    path2train: Path = expanduser(path2train)
+    path2val: Path = expanduser(path2val)
+    path2test: Path = expanduser(path2test)
+    # Loads the train and test data ###############################################
+    train_dataset = ImageFolder(path2train, transform=transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean,
+                             std=std),
+    ]))
+    valid_dataset = ImageFolder(path2val, transform=transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean,
+                             std=std),
+    ]))
+    # train_dataset, val_dataset = torch.utils.data.random_split(dataset_base,
+    #                                                            [7362, 1840],
+    #                                                            generator=torch.Generator().manual_seed(42))
+
+    test_dataset = ImageFolder(path2test, transform=transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean,
+                             std=std),
+    ]))
+    # todo: check all the data transforms are alright by seeing the mi, in particular check data augmentation for mi and this: https://github.com/camillegontier/DELAUNAY_dataset/issues/3
+    return train_dataset, valid_dataset, test_dataset
+
+
+def create_your_splits(path_to_all_data: Union[str, Path],
+                       path_for_splits: Union[str, Path],
+                       ):
+    """
+    Details on my Delauny few-shot learning data set splits:
+    - 34, 8, 11
+    - split is deterministic (and arbitrary) based on sorting -- to guarantee determinisim. Hopefully this is diverse enough,
+    the diversity for this arbitrary split is: mu +- ci.
+    - make sure .labels is set i.e. the 34, 8, 11 & asserts there.
+    """
+    # - get path to union of all images & sort based on alphabetical path to folder [likely first name] (might be useful for usl!)
+    path_to_all_data: Path = expanduser(path_to_all_data)
+    dirpath, dirnames, filenames = next(iter(os.walk(path_to_all_data)))
+    print(f'{dirpath=}, {path_to_all_data=}')
+    # assert dirpath == path_to_all_data
+    assert len(dirnames) == 53
+    # - split into 34, 8, 11 splits (based on previous sorting list)
+    sorted_dirnames: list = list(sorted(dirnames))
+    train_val = sorted_dirnames[:42]
+    train = train_val[:34]
+    val = train_val[34:]
+    test = sorted_dirnames[42:]
+    assert len(train) == 34
+    assert len(val) == 8
+    assert len(test) == 11
+    # - save the few-shot learning 34, 8, 11 splits as folders with images (based on previous sorting list)
+    path_for_splits: Path = expanduser(path_for_splits)
+    path2train: Path = path_for_splits / 'delauny_train_split_dir'
+    move_folders_recursively(root=path_for_splits / 'delauny_train_split_dir', dirnames=train)
+    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
+    move_folders_recursively(root=path_for_splits / 'delauny_validation_split_dir', dirnames=val)
+    path2test: Path = path_for_splits / 'delauny_test_split_dir'
+    move_folders_recursively(root=path_for_splits / 'delauny_test_split_dir', dirnames=test)
+    # - print the paths to the 3 splits. Check them manually (or print ls to them and print the lst)
+    print(f'{path2train=}')
+    print(f'{path2val=}')
+    print(f'{path2test=}')
+    # - later, compute the task2vec div of the train 34 and test 11 splits.
+    # args: Namespace = load_args()
+    # args: Namespace = Namespace()
+    # args: Namespace = diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet()
+    # compute_div_and_plot_distance_matrix_for_fsl_benchmark(args, show_plots=False)
+    # ## compute_div_and_plot_distance_matrix_for_fsl_benchmark(args)
+
+
 # - tests
+
+def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace) -> Namespace:
+    # args.batch_size = 500
+    args.batch_size = 2
+    args.data_option = 'delauny'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
+    args.data_path = Path('~/data/l2l_data/').expanduser()
+    args.data_augmentation = 'delauny'
+
+    # - probe_network
+    args.model_option = 'resnet18_pretrained_imagenet'
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+    args.experiment_name = f'diversity_ala_task2vec_mi_resnet18'
+    args.run_name = f'{args.experiment_name} {args.batch_size=} {args.data_option} {args.model_option} {current_time}'
+    # args.log_to_wandb = True
+    args.log_to_wandb = False
+
+    from uutils.argparse_uu.meta_learning import fix_for_backwards_compatibility
+    args = fix_for_backwards_compatibility(args)
+    return args
+
+
+def loop_raw_pytorch_delauny_dataset():
+    pass
+
 
 if __name__ == "__main__":
     import time

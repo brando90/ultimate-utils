@@ -634,6 +634,19 @@ def remove_folders_recursively(path):
         pass
 
 
+def move_folders_recursively(root: Union[str, Path], dirnames: list[Union[str, Path]]):
+    root: Path = expanduser(root)
+    from distutils.dir_util import copy_tree
+    for dirname in dirnames:
+        dirname: Path = expanduser(dirname)
+        src: Path = root / expanduser(dirname)
+        dst: Path = root / expanduser(dirname)
+        src: str = str(src)
+        dst: str = str(dst)
+        print(f'moving: {src=} -> {dst=}')
+        copy_tree(src, dst)
+
+
 def oslist_for_path(path):
     return [f for f in path.iterdir() if f.is_dir()]
 
