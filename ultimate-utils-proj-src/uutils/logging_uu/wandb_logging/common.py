@@ -72,16 +72,19 @@ def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
             import wandb
             if args.log_to_wandb:
                 if hasattr(args, 'rank'):
-                    wandb.finish()
-                    remove_wandb_dir(args) if delete_wandb_dir else None
+                    remove_current_wandb_run_dir(call_wandb_finish=True)
+                    # remove_wandb_root_dir(args) if delete_wandb_dir else None
             else:
-                wandb.finish()
-                remove_wandb_dir(args) if delete_wandb_dir else None
+                remove_current_wandb_run_dir(call_wandb_finish=True)
+                # remove_wandb_root_dir(args) if delete_wandb_dir else None
     else:
         pass  # nop, your not lead so you shouldn't need to close wandb
 
 
-def remove_wandb_dir(args: Optional[Namespace] = None):
+def remove_wandb_root_dir(args: Optional[Namespace] = None):
+    """
+    Remove the main wandb dir that you set in the environment variables e.g. in env variable WANDB_DIR.
+    """
     import os
     import shutil
     wandb_dir: Path = Path(os.environ['WANDB_DIR']).expanduser()
@@ -89,6 +92,40 @@ def remove_wandb_dir(args: Optional[Namespace] = None):
         print(f'deleting wanbd_dir at: WANDB_DIR={wandb_dir}')
         shutil.rmtree(wandb_dir)
         print(f'deletion successful≈ wanbd_dir at: WANDB_DIR={wandb_dir}')
+
+    # delete it
+
+
+def remove_current_wandb_run_dir(args: Optional[Namespace] = None, call_wandb_finish: bool = True):
+    """
+    Delete the current wandb run dir.
+
+    note: I think it's better to only delete the current wandb run so that the other wandb runs are unaffected.
+
+    Yep, wandb.run.dir in python only after wandb.init(...) has been called and before wandb.finish() is called. Every run has it's own unique directory so deleting this won't impact other runs. Here's some psuedo code:
+    Pseudo code:
+        import wandb
+        dir_to_delete = None
+        wandb.init()
+        #...
+        dir_to_delete = wandb.run.dir
+        wandb.finish()
+        if dir_to_delete is not None:
+          # delete it
+    """
+    import wandb
+    wandb_dir_to_delete = None
+    # wandb.init() this should have been ran already
+    wandb_dir_to_delete = wandb.run.dir
+    print(f'{wandb_dir_to_delete=} {type(wandb_dir_to_delete)=}')
+    if call_wandb_finish:
+        wandb.finish()  # seem we should finish wandb first before deleting the dir todo; why? https://github.com/wandb/wandb/issues/4409
+    if wandb_dir_to_delete is not None:
+        import shutil
+        shutil.rmtree(wandb_dir_to_delete)
+
+
+# delete it
 
 
 def log_2_wanbd(it: int,
