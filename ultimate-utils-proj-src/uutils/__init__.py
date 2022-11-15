@@ -530,12 +530,15 @@ def run_bash_command(cmd: str) -> Any:
 
 
 def stanford_reauth():
-    # def stanford_rauth(password: Optional[str] = None):
-    # password: str = os.environ['SU_PASSWORD'] if password is None else None
-    # assert password is not None, f'Err: {password=}'
+    """"
+    re-authenticates the python process in the kerberos system so that the
+    python process is not killed randomly.
+
+    ref: https://unix.stackexchange.com/questions/724902/how-does-one-send-new-commands-to-run-to-an-already-running-nohup-process-or-run
+    """
     reauth_cmd: str = f'echo $SU_PASSWORD | /afs/cs/software/bin/reauth'
     out = run_bash_command(reauth_cmd)
-    print('Output of reauth (/afs/cs/software/bin/reauth with password)')
+    print('Output of reauth (/afs/cs/software/bin/reauth with password): ')
     print(f'{out=}')
 
 

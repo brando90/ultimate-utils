@@ -15,12 +15,13 @@ ref:
 - https://arxiv.org/abs/2201.12123
 - data set to learn2learn task set: https://github.com/learnables/learn2learn/issues/375
 """
+import torch
 from datetime import datetime
 
 from argparse import Namespace
 
 import os
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms, Compose, ToPILImage, RandomCrop, ColorJitter, RandomHorizontalFlip, \
     ToTensor
@@ -36,20 +37,20 @@ std = [0.2348, 0.2260, 0.2242]
 normalize = transforms.Normalize(mean=mean,
                                  std=std)
 
+classes = ('Ad Reinhardt', 'Alberto Magnelli', 'Alfred Manessier', 'Anthony Caro',
+           'Antoine Pevsner', 'Auguste Herbin', 'Aurélie Nemours', 'Berto Lardera',
+           'Charles Lapicque', 'Charmion Von Wiegand', 'César Domela', 'Ellsworth Kelly',
+           'Emilio Vedova', 'Fernand Léger', 'František Kupka', 'Franz Kline',
+           'François Morellet', 'Georges Mathieu', 'Georges Vantongerloo',
+           'Gustave Singier', 'Hans Hartung', 'Jean Arp', 'Jean Bazaine', 'Jean Degottex',
+           'Jean Dubuffet', 'Jean Fautrier', 'Jean Gorin', 'Joan Mitchell',
+           'Josef Albers', 'Kenneth Noland', 'Leon Polk Smith', 'Lucio Fontana',
+           'László Moholy-Nagy', 'Léon Gischia', 'Maria Helena Vieira da Silva',
+           'Mark Rothko', 'Morris Louis', 'Naum Gabo', 'Olle Bærtling', 'Otto Freundlich',
+           'Pierre Soulages', 'Pierre Tal Coat', 'Piet Mondrian', 'Richard Paul Lohse',
+           'Roger Bissière', 'Sam Francis', 'Sonia and Robert Delaunay', 'Sophie Taeuber-Arp',
+           'Theo van Doesburg', 'Vassily Kandinsky', 'Victor Vasarely', 'Yves Klein', 'Étienne Béothy')
 
-# classes = ('Ad Reinhardt', 'Alberto Magnelli', 'Alfred Manessier', 'Anthony Caro',
-#             'Antoine Pevsner', 'Auguste Herbin', 'Aurélie Nemours', 'Berto Lardera',
-#             'Charles Lapicque', 'Charmion Von Wiegand', 'César Domela', 'Ellsworth Kelly',
-#             'Emilio Vedova', 'Fernand Léger', 'František Kupka', 'Franz Kline',
-#             'François Morellet', 'Georges Mathieu', 'Georges Vantongerloo',
-#             'Gustave Singier', 'Hans Hartung', 'Jean Arp', 'Jean Bazaine', 'Jean Degottex',
-#             'Jean Dubuffet', 'Jean Fautrier', 'Jean Gorin', 'Joan Mitchell',
-#             'Josef Albers', 'Kenneth Noland', 'Leon Polk Smith', 'Lucio Fontana',
-#             'László Moholy-Nagy', 'Léon Gischia', 'Maria Helena Vieira da Silva',
-#             'Mark Rothko', 'Morris Louis', 'Naum Gabo', 'Olle Bærtling', 'Otto Freundlich',
-#             'Pierre Soulages', 'Pierre Tal Coat', 'Piet Mondrian', 'Richard Paul Lohse',
-#             'Roger Bissière', 'Sam Francis', 'Sonia and Robert Delaunay', 'Sophie Taeuber-Arp',
-#             'Theo van Doesburg', 'Vassily Kandinsky', 'Victor Vasarely', 'Yves Klein', 'Étienne Béothy')
 
 def download_delauny_original_data(extract_to: Path = Path('~/data/delauny_original_data/'),
                                    path_2_zip=Path('~/data/delauny_original_data/'),
@@ -87,8 +88,12 @@ def process_delanauny_into_pickle_files():
 def get_min_max_size_of_images_delany() -> tuple[int, int]:
     """
     Loop through data sets (all images) and collect the min and max sizes. Also print the channels, assert it to be 3.
+
+    ref:
+        - ask for recommended size form original authors https://github.com/camillegontier/DELAUNAY_dataset/issues/4
+        decided to stick with 84 since looping through it worked without issues.
     """
-    pass  # todo
+    print('decided not to print it since the current data transform went through all the images without issues')
 
 
 def get_data_augmentation():
@@ -118,12 +123,14 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         - https://github.com/learnables/learn2learn/issues/309
         - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
     """
+    print(f'{size=} for my delauny.')
     if data_augmentation is None:
         raise NotImplementedError
         # return original delauny transforms
     elif data_augmentation == 'delauny_uu':
+        # is it ok to do ToTransform (and normalize) before other data gumentation techniques? https://stackoverflow.com/questions/74451955/is-it-safe-to-do-a-totensor-data-transform-before-a-colorjitter-and-randomhori
         train_data_transform = Compose([
-            ToPILImage(),
+            # ToPILImage(),
             RandomCrop(size, padding=8),
             # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
             ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
@@ -143,38 +150,32 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def get_my_delauny_dataset_splits(path2train: str,
-                                  path2val: str,
-                                  path2test: str,
-                                  size: int = 84,  # todo
-                                  ) -> tuple[Dataset, Dataset, Dataset]:
+def get_delauny_dataset_splits(path2train: str,
+                               path2val: str,
+                               path2test: str,
+                               data_augmentation: str = 'delauny_uu',
+                               size: int = 84,
+                               random_split: bool = False,
+                               ) -> tuple[Dataset, Dataset, Dataset]:
+    """ """
+    # - expand paths
     path2train: Path = expanduser(path2train)
     path2val: Path = expanduser(path2val)
     path2test: Path = expanduser(path2test)
-    # Loads the train and test data ###############################################
-    train_dataset = ImageFolder(path2train, transform=transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=mean,
-                             std=std),
-    ]))
-    valid_dataset = ImageFolder(path2val, transform=transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=mean,
-                             std=std),
-    ]))
-    # train_dataset, val_dataset = torch.utils.data.random_split(dataset_base,
-    #                                                            [7362, 1840],
-    #                                                            generator=torch.Generator().manual_seed(42))
-
-    test_dataset = ImageFolder(path2test, transform=transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=mean,
-                             std=std),
-    ]))
-    # todo: check all the data transforms are alright by seeing the mi, in particular check data augmentation for mi and this: https://github.com/camillegontier/DELAUNAY_dataset/issues/3
+    # - data transforms
+    train_data_transform, validation_data_transform, test_data_transform = get_my_delauny_data_transforms(
+        data_augmentation, size)
+    # -
+    train_dataset = ImageFolder(path2train, transform=train_data_transform)
+    if random_split:
+        print(f'printing path2val since your using random split, make sure its the empty string: {str(path2val)=}')
+        train_dataset, valid_dataset = torch.utils.data.random_split(train_dataset,
+                                                                     [7362, 1840],
+                                                                     generator=torch.Generator().manual_seed(42))
+        assert str(path2val) != '', f'Err: you have a path2val but we are randomly splitting: {path2val=}'
+    else:
+        valid_dataset = ImageFolder(path2val, transform=validation_data_transform)
+    test_dataset = ImageFolder(path2test, transform=test_data_transform)
     return train_dataset, valid_dataset, test_dataset
 
 
@@ -249,8 +250,29 @@ def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace)
     return args
 
 
-def loop_raw_pytorch_delauny_dataset():
-    pass
+def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size():
+    path2train: str = '~/data/delauny_original_data/DELAUNAY_train'
+    path2val: str = ''
+    path2test: str = '/Users/brandomiranda/data/delauny_original_data/DELAUNAY_test'
+    random_split = True
+    train_dataset, valid_dataset, test_dataset = get_delauny_dataset_splits(path2train, path2val, path2test,
+                                                                            random_split=random_split)
+    train_loader: DataLoader = DataLoader(train_dataset, num_workers=1)
+    valid_loader: DataLoader = DataLoader(valid_dataset, num_workers=1)
+    test_loader: DataLoader = DataLoader(test_dataset, num_workers=1)
+    next(iter(train_loader))
+    next(iter(valid_loader))
+    next(iter(test_loader))
+    # -
+    concat = ConcatDataset([train_dataset, valid_dataset, test_dataset])
+    assert len(concat) == len(train_dataset) + len(valid_dataset) + len(test_dataset)
+    for i, (x, _) in enumerate(concat):
+        print(f'{x=}')
+        print(f'{x.size()=}')
+        # size = x.size()
+        break
+    # - print min & max sizes
+    print('decided not to print it since the current data transform went through all the images without issues')
 
 
 if __name__ == "__main__":
@@ -259,245 +281,7 @@ if __name__ == "__main__":
 
     start = time.time()
     # - run experiment
-    download_delauny_original_data()
+    # download_delauny_original_data()
+    loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
-
-    # # %%
-    # """
-    # Copy pasted, perhaps todo later perhaps, adapt to my library.
-    # ref: https://github.com/camillegontier/DELAUNAY_dataset/blob/main/CNN_training/training.py
-    # """
-    # # -*- coding: utf-8 -*-
-    # """
-    # Created on Wed Nov 10 19:44:17 2021
-    # @author: gontier
-    # """
-    #
-    # # Relevant packages ##########################################################
-    #
-    # from __future__ import print_function
-    # import torch
-    # import torch.nn as nn
-    # import torch.optim as optim
-    # import torchvision.transforms as transforms
-    # from torchvision.datasets import ImageFolder
-    # import os
-    # from torchvision import models
-    #
-    # torch.cuda.empty_cache()
-    # import numpy as np
-    # import random
-    #
-    # # Parameters ##################################################################
-    #
-    # batch_size = 20
-    # nb_epoch = 300
-    # size = 256
-    # weight_decay = 0.0025
-    #
-    # torch.manual_seed(1234)
-    # np.random.seed(31)
-    # random.seed(32)
-    # torch.cuda.manual_seed_all(33)
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
-    #
-    # # Sets device #################################################################
-    #
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(device)
-    #
-    # # Train and test data directory ###############################################
-    #
-    # data_dir_train = os.getcwd() + "/DELAUNAY_train"
-    # data_dir_test = os.getcwd() + "/DELAUNAY_test"
-    #
-    # # Loads the train and test data ###############################################
-    #
-    # dataset_base = ImageFolder(data_dir_train, transform=transforms.Compose([
-    #     transforms.Resize((size, size)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.5853, 0.5335, 0.4950],
-    #                          std=[0.2348, 0.2260, 0.2242]),
-    # ]))
-    # train_dataset, val_dataset = torch.utils.data.random_split(dataset_base,
-    #                                                            [7362, 1840],
-    #                                                            generator=torch.Generator().manual_seed(42))
-    #
-    # test_dataset = ImageFolder(data_dir_test, transform=transforms.Compose([
-    #     transforms.Resize((size, size)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.5853, 0.5335, 0.4950],
-    #                          std=[0.2348, 0.2260, 0.2242]),
-    # ]))
-    #
-    # train_loader = torch.utils.data.DataLoader(
-    #     train_dataset, batch_size=batch_size, shuffle=True, num_workers=4,
-    #     pin_memory=True,
-    #     generator=torch.Generator().manual_seed(43)
-    # )
-    #
-    # val_loader = torch.utils.data.DataLoader(
-    #     val_dataset, batch_size=batch_size, shuffle=True, num_workers=4,
-    #     pin_memory=True,
-    #     generator=torch.Generator().manual_seed(44)
-    # )
-    #
-    # test_loader = torch.utils.data.DataLoader(
-    #     test_dataset, batch_size=batch_size, shuffle=True, num_workers=4,
-    #     pin_memory=True,
-    #     generator=torch.Generator().manual_seed(45)
-    # )
-    #
-    # # Classes ####################################################################
-    #
-    # classes = ('Ad Reinhardt', 'Alberto Magnelli', 'Alfred Manessier', 'Anthony Caro',
-    #            'Antoine Pevsner', 'Auguste Herbin', 'Aurélie Nemours', 'Berto Lardera',
-    #            'Charles Lapicque', 'Charmion Von Wiegand', 'César Domela', 'Ellsworth Kelly',
-    #            'Emilio Vedova', 'Fernand Léger', 'František Kupka', 'Franz Kline',
-    #            'François Morellet', 'Georges Mathieu', 'Georges Vantongerloo',
-    #            'Gustave Singier', 'Hans Hartung', 'Jean Arp', 'Jean Bazaine', 'Jean Degottex',
-    #            'Jean Dubuffet', 'Jean Fautrier', 'Jean Gorin', 'Joan Mitchell',
-    #            'Josef Albers', 'Kenneth Noland', 'Leon Polk Smith', 'Lucio Fontana',
-    #            'László Moholy-Nagy', 'Léon Gischia', 'Maria Helena Vieira da Silva',
-    #            'Mark Rothko', 'Morris Louis', 'Naum Gabo', 'Olle Bærtling', 'Otto Freundlich',
-    #            'Pierre Soulages', 'Pierre Tal Coat', 'Piet Mondrian', 'Richard Paul Lohse',
-    #            'Roger Bissière', 'Sam Francis', 'Sonia and Robert Delaunay', 'Sophie Taeuber-Arp',
-    #            'Theo van Doesburg', 'Vassily Kandinsky', 'Victor Vasarely', 'Yves Klein', 'Étienne Béothy')
-
-    # CNN ########################################################################
-
-    # net = models.resnet152(pretrained=False)
-    # net.to(device)
-    #
-    # # Loss function and optimizer ################################################
-    #
-    # criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.Adam(net.parameters(), lr=0.003, weight_decay=weight_decay)
-    #
-    # # Training ###################################################################
-    #
-    # train_error_values = []
-    # val_error_values = []
-    #
-    # for epoch in range(nb_epoch):
-    #
-    #     # Train ##################################################################
-    #     running_loss = 0.0
-    #
-    #     for i, data in enumerate(train_loader, 0):
-    #         inputs, labels = data[0].to(device), data[1].to(device)
-    #
-    #         optimizer.zero_grad()
-    #
-    #         outputs = net(inputs)
-    #         loss = criterion(outputs, labels)
-    #         loss.backward()
-    #         optimizer.step()
-    #
-    #         running_loss += loss.item()
-    #
-    #     running_loss = running_loss / len(train_loader)
-    #
-    #     # display the epoch training loss
-    #     print("epoch : {}/{}, loss_recons = {:.6f}".format(epoch + 1, nb_epoch, running_loss))
-    #
-    #     # Compute training error #################################################
-    #
-    #     correct = 0
-    #     total = 0
-    #
-    #     with torch.no_grad():
-    #         for data in train_loader:
-    #             images, labels = data[0].to(device), data[1].to(device)
-    #
-    #             outputs = net(images)
-    #
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             total += labels.size(0)
-    #             correct += (predicted == labels).sum().item()
-    #
-    #     print('Accuracy of the network on the training images: %d %%' % (
-    #             100 * correct / total))
-    #     train_error_values.append(100 - 100 * correct / total)
-    #
-    #     ###################################################################
-    #
-    #     # Val ###################################################################
-    #     correct = 0
-    #     total = 0
-    #
-    #     with torch.no_grad():
-    #         for data in val_loader:
-    #             images, labels = data[0].to(device), data[1].to(device)
-    #
-    #             outputs = net(images)
-    #
-    #             _, predicted = torch.max(outputs.data, 1)
-    #             total += labels.size(0)
-    #             correct += (predicted == labels).sum().item()
-    #
-    #     print('Accuracy of the network on the validation images: %d %%' % (
-    #             100 * correct / total))
-    #     val_error_values.append(100 - 100 * correct / total)
-    #
-    # # Test ###################################################################
-    #
-    # correct = 0
-    # total = 0
-    #
-    # with torch.no_grad():
-    #     for data in test_loader:
-    #         images, labels = data[0].to(device), data[1].to(device)
-    #
-    #         outputs = net(images)
-    #
-    #         _, predicted = torch.max(outputs.data, 1)
-    #         total += labels.size(0)
-    #         correct += (predicted == labels).sum().item()
-    # print('Accuracy of the network on the test images: %d %%' % (
-    #         100 * correct / total))
-    # test_error_values = (100 - 100 * correct / total)
-    #
-    # print('Finished Training')
-    #
-    # # Final results ##############################################################
-    #
-    # correct_pred = {classname: 0 for classname in classes}
-    # total_pred = {classname: 0 for classname in classes}
-    #
-    # with torch.no_grad():
-    #     for data in test_loader:
-    #         images, labels = data
-    #         images, labels = images.to(device), labels.to(device)
-    #         outputs = net(images)
-    #         _, predictions = torch.max(outputs, 1)
-    #
-    #         for label, prediction in zip(labels, predictions):
-    #             if label == prediction:
-    #                 correct_pred[classes[label]] += 1
-    #             total_pred[classes[label]] += 1
-    #
-    # accuracy_values = []
-    #
-    # for classname, correct_count in correct_pred.items():
-    #     accuracy = 100 * float(correct_count) / total_pred[classname]
-    #     print("Accuracy for class {:5s} is: {:.1f} %".format(classname,
-    #                                                          accuracy))
-    #     accuracy_values.append(accuracy)
-    #
-    # # Confusion matrix ##############################################################
-    #
-    # y_pred = []
-    # y_true = []
-    #
-    # for inputs, labels in test_loader:
-    #     inputs, labels = inputs.to(device), labels.to(device)
-    #     output = net(inputs)
-    #
-    #     output = (torch.max(torch.exp(output), 1)[1]).data.cpu().numpy()
-    #     y_pred.extend(output)
-    #
-    #     labels = labels.data.cpu().numpy()
-    #     y_true.extend(labels)
