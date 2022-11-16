@@ -129,8 +129,14 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         # return original delauny transforms
     elif data_augmentation == 'delauny_uu':
         # is it ok to do ToTransform (and normalize) before other data gumentation techniques? https://stackoverflow.com/questions/74451955/is-it-safe-to-do-a-totensor-data-transform-before-a-colorjitter-and-randomhori
+        # read slightly more carefully the type of resizes, downsample, pil interpolation, etc
+        # maybe for some of the images that have this error of Required crop size (84, 84) is larger then input image size (46, 616) its ok to resize on one dim or both and then crop?
+        # for now resize all to 256, then crop
+        # I think we will resize only the ones that give issues to 256 and then crop to 84. Everyone else just crop. Count number of data points where the resizing is being done.
+        # other things could to resize lowest side to 84 and the do normal crop. Then put if statement in data transform.
         train_data_transform = Compose([
             # ToPILImage(),
+            transforms.Resize((256, 256)),  # todo think about this, is this what we want to do? https://github.com/camillegontier/DELAUNAY_dataset/issues/4
             RandomCrop(size, padding=8),
             # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
             ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
@@ -305,13 +311,15 @@ def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_s
     # -
     concat = ConcatDataset([train_dataset, valid_dataset, test_dataset])
     assert len(concat) == len(train_dataset) + len(valid_dataset) + len(test_dataset)
-    for i, (x, _) in enumerate(concat):
+    for i, (x, y) in enumerate(concat):
         print(f'{x=}')
+        print(f'{y=}')
         print(f'{x.size()=}')
         print(f'{x.norm()=}')
         print(f'{x.norm()/3=}')
         assert x.size(0) == 3
         break
+    # assert i == len(concat)
     # - print min & max sizes
     print('decided not to print it since the current data transform went through all the images without issues')
 
@@ -334,7 +342,7 @@ if __name__ == "__main__":
     # - run experiment
     # download_delauny_original_data()
     # create_my_fsl_splits_from_original_delauny_splits()
-    # loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
+    loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
     # loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

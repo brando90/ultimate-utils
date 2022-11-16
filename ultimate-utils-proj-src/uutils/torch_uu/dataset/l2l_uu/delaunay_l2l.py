@@ -10,7 +10,8 @@ import os
 
 import learn2learn
 from learn2learn.vision.benchmarks import BenchmarkTasksets
-from torchmeta.utils.data import MetaDataset
+from learn2learn.data import MetaDataset
+from torch.utils.data import Dataset
 
 from uutils.torch_uu.dataset.delaunay_uu import get_l2l_bm_split_paths, get_delauny_dataset_splits
 
@@ -103,17 +104,17 @@ def get_delauny_tasksets(
     train_transforms, validation_transforms, test_transforms = transforms
 
     # Instantiate the tasksets
-    train_tasks = learn2learn.TaskDataset(
+    train_tasks = learn2learn.data.TaskDataset(
         dataset=train_dataset,
         task_transforms=train_transforms,
         num_tasks=num_tasks,
     )
-    validation_tasks = learn2learn.TaskDataset(
+    validation_tasks = learn2learn.data.TaskDataset(
         dataset=validation_dataset,
         task_transforms=validation_transforms,
         num_tasks=num_tasks,
     )
-    test_tasks = learn2learn.TaskDataset(
+    test_tasks = learn2learn.data.TaskDataset(
         dataset=test_dataset,
         task_transforms=test_transforms,
         num_tasks=num_tasks,
@@ -126,7 +127,7 @@ def get_delauny_tasksets(
 def loop_through_delaunay():
     print(f'test: {loop_through_delaunay=}')
     # - for determinism
-    from random import random
+    import random
     random.seed(0)
     import torch
     torch.manual_seed(0)
