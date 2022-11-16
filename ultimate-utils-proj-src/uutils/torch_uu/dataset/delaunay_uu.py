@@ -165,7 +165,7 @@ def get_delauny_dataset_splits(path2train: str,
     # - data transforms
     train_data_transform, validation_data_transform, test_data_transform = get_my_delauny_data_transforms(
         data_augmentation, size)
-    # -
+    # - get normal pytorch data set with data transforms already in it
     train_dataset = ImageFolder(path2train, transform=train_data_transform)
     if random_split:
         print(f'printing path2val since your using random split, make sure its the empty string: {str(path2val)=}')
@@ -207,11 +207,9 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     assert len(val) == 8
     assert len(test) == 11
     # - save the few-shot learning 34, 8, 11 splits as folders with images (based on previous sorting list)
-    path2train: Path = path_for_splits / 'delauny_train_split_dir'
+    path2train, path2val, path2test = get_l2l_bm_split_paths(path_for_splits)
     copy_folders_recursively(src_root=path_to_all_data, root4dst=path2train, dirnames4dst=train)
-    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
     copy_folders_recursively(src_root=path_to_all_data, root4dst=path2val, dirnames4dst=val)
-    path2test: Path = path_for_splits / 'delauny_test_split_dir'
     copy_folders_recursively(src_root=path_to_all_data, root4dst=path2test, dirnames4dst=test)
     # print the paths to the 3 splits. Check them manually (or print ls to them and print the lst)
     print(f'{path2train=}')
@@ -239,7 +237,7 @@ def create_your_splits(path_to_all_data: Union[str, Path],
 def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace) -> Namespace:
     args.batch_size = 5
     args.data_option = 'delauny_uu_l2l_bm_split'
-    args.data_path = Path('~/data/delauny_l2l_bm_split').expanduser()
+    args.data_path = Path('~/data/delauny_l2l_bm_splitss').expanduser()
 
     # - probe_network
     args.model_option = 'resnet18_pretrained_imagenet'
@@ -255,6 +253,14 @@ def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace)
     from uutils.argparse_uu.meta_learning import fix_for_backwards_compatibility
     args = fix_for_backwards_compatibility(args)
     return args
+
+
+def get_l2l_bm_split_paths(path_for_splits: Path) -> tuple[Path, Path, Path]:
+    path_for_splits: Path = expanduser(path_for_splits)
+    path2train: Path = path_for_splits / 'delauny_train_split_dir'
+    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
+    path2test: Path = path_for_splits / 'delauny_test_split_dir'
+    return path2train, path2val, path2test
 
 
 # - tests
@@ -304,6 +310,7 @@ def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_s
         print(f'{x.size()=}')
         print(f'{x.norm()=}')
         print(f'{x.norm()/3=}')
+        assert x.size(0) == 3
         break
     # - print min & max sizes
     print('decided not to print it since the current data transform went through all the images without issues')
@@ -315,7 +322,7 @@ def loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader():
 
 def create_my_fsl_splits_from_original_delauny_splits():
     path_to_all_data: str = '~/data/delauny_original_data/DELAUNAY'
-    path_for_splits: str = '~/data/delauny_l2l_bm_split'
+    path_for_splits: str = '~/data/delauny_l2l_bm_splitss'
     create_your_splits(path_to_all_data, path_for_splits)
 
 
@@ -326,7 +333,7 @@ if __name__ == "__main__":
     start = time.time()
     # - run experiment
     # download_delauny_original_data()
-    create_my_fsl_splits_from_original_delauny_splits()
+    # create_my_fsl_splits_from_original_delauny_splits()
     # loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
     # loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader()
     # - Done
