@@ -26,6 +26,26 @@ I'm trying to see how the diversity of a data set affects the meta-learning. For
 We use data augementation so our conclusions apply to what is done in practice but use the data augmentation strategy
 that is most consistent as possible (to not have it be a source of diversity and instead having the data itself be the
 main source).
+
+def get_imagenet_data_transform():
+    # train_dataset = datasets.ImageFolder(
+    #     traindir,
+    #     transforms.Compose([
+    #         transforms.RandomResizedCrop(224),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    #
+    # val_dataset = datasets.ImageFolder(
+    #     valdir,
+    #     transforms.Compose([
+    #         transforms.Resize(256),
+    #         transforms.CenterCrop(224),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    pass
 """
 import torch
 from datetime import datetime
@@ -108,37 +128,26 @@ def get_min_max_size_of_images_delany() -> tuple[int, int]:
     print('decided not to print it since the current data transform went through all the images without issues')
 
 
-def get_data_augmentation():
-    pass  # todo
+def _original_data_transforms_delauny(size: int = 256) -> tuple[Compose, Compose, Compose]:
+    """
 
-def get_imagenet_data_transform():
-    # train_dataset = datasets.ImageFolder(
-    #     traindir,
-    #     transforms.Compose([
-    #         transforms.RandomResizedCrop(224),
-    #         transforms.RandomHorizontalFlip(),
-    #         transforms.ToTensor(),
-    #         normalize,
-    #     ]))
-    #
-    # val_dataset = datasets.ImageFolder(
-    #     valdir,
-    #     transforms.Compose([
-    #         transforms.Resize(256),
-    #         transforms.CenterCrop(224),
-    #         transforms.ToTensor(),
-    #         normalize,
-    #     ]))
-    pass
+    Note:
+        - original delauny basically only uses resize.
+        - they also only have a train split in their data set so they only have a train and test transform. But its
+        not a big deal we can put all three transforms the same here.
 
-def _original_data_transforms_delauny(size: int = 256) -> transforms.Compose:
-    transform = transforms.Compose([
+    ref:
+        - https://github.com/camillegontier/DELAUNAY_dataset/blob/main/CNN_training/training.py#L26
+    """
+    train_data_transform = transforms.Compose([
         transforms.Resize((size, size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=mean,
                              std=std),
     ])
-    return transform
+    validation_data_transform = train_data_transform
+    test_data_transform = train_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
 
 
 def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) -> tuple[Compose, Compose, Compose]:
@@ -176,9 +185,8 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
     """
     print(f'{size=} for my delauny.')
-    if data_augmentation is None:
-        raise NotImplementedError
-        # return original delauny transforms
+    if data_augmentation is None or data_augmentation == 'original_delauny':
+        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny()
     elif data_augmentation == 'delauny_uu':
         train_data_transform = Compose([
             # ToPILImage(),
