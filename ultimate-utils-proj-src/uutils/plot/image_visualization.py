@@ -102,7 +102,7 @@ def visualize_pytorch_tensor_img(tensor_image: torch.Tensor, show_img_now: bool 
     assert len(tensor_image.size()) == 3, f'Err your tensor is the wrong shape {tensor_image.size()=}' \
                                           f'likely it should have been a single tensor with 3 channels' \
                                           f'i.e. CHW.'
-    if tensor_image.resize(0) == 3:  # three chanels
+    if tensor_image.size(0) == 3:  # three chanels
         plt.imshow(tensor_image.permute(1, 2, 0))
     else:
         plt.imshow(tensor_image)

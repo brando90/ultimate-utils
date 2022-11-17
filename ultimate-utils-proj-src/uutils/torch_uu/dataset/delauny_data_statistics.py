@@ -108,6 +108,48 @@ def check_size_of_mini_imagenet_original_img():
         break
 
 
+def check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size():
+    """
+    So height -> heigh + padding * 2
+    """
+    from pathlib import Path
+    root = Path('~/data/').expanduser()
+    import torch
+    import torchvision
+    # - test 1, imgs (not the recommended use)
+    # train = torchvision.datasets.CIFAR100(root=root, train=True, download=True)
+    # test = torchvision.datasets.CIFAR100(root=root, train=False, download=True)
+    # - test 2, tensor imgs
+    from torchvision.transforms import Resize
+    from torchvision.transforms import Pad
+    from torchvision.transforms import ToTensor
+    from torchvision.transforms import Compose
+    transform = Compose([Resize((32, 32)), Pad(padding=4), ToTensor()])
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                          transform=transform,
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    transform = Compose([Resize((32, 32)), Pad(padding=8), ToTensor()])
+    test = torchvision.datasets.CIFAR100(root=root, train=False, download=True,
+                                         transform=transform,
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    # - test padding doubles length
+    #
+    from torch.utils.data import DataLoader
+    loader = DataLoader(train)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x[0].size(2) == 32 + 4 * 2
+    assert x[0].size(2) == 32 + 8
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+    #
+    loader = DataLoader(test)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x.size(2) == 32 + 8 * 2
+    assert x.size(2) == 32 + 16
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+
+
 if __name__ == "__main__":
     import time
 
@@ -115,7 +157,8 @@ if __name__ == "__main__":
     # - run experiment
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
     # plot_some_delauny_images_data_augmentation_visualization_experiments()
-    check_size_of_mini_imagenet_original_img()
+    # check_size_of_mini_imagenet_original_img()
+    check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size()
     # - Done
     from uutils import report_times
 

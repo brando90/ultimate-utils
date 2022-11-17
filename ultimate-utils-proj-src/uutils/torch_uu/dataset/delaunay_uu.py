@@ -56,7 +56,7 @@ import os
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms, Compose, ToPILImage, RandomCrop, ColorJitter, RandomHorizontalFlip, \
-    ToTensor, RandomResizedCrop
+    ToTensor, RandomResizedCrop, Resize, Normalize, Pad
 
 from typing import Union
 
@@ -66,8 +66,6 @@ from uutils import download_and_extract, expanduser, copy_folders_recursively
 
 mean = [0.5853, 0.5335, 0.4950]
 std = [0.2348, 0.2260, 0.2242]
-normalize = transforms.Normalize(mean=mean,
-                                 std=std)
 
 classes = ('Ad Reinhardt', 'Alberto Magnelli', 'Alfred Manessier', 'Anthony Caro',
            'Antoine Pevsner', 'Auguste Herbin', 'Aurélie Nemours', 'Berto Lardera',
@@ -117,17 +115,6 @@ def process_delanauny_into_pickle_files():
     # NOP
 
 
-def get_min_max_size_of_images_delany() -> tuple[int, int]:
-    """
-    Loop through data sets (all images) and collect the min and max sizes. Also print the channels, assert it to be 3.
-
-    ref:
-        - ask for recommended size form original authors https://github.com/camillegontier/DELAUNAY_dataset/issues/4
-        decided to stick with 84 since looping through it worked without issues.
-    """
-    print('decided not to print it since the current data transform went through all the images without issues')
-
-
 def _original_data_transforms_delauny(size: int = 256) -> tuple[Compose, Compose, Compose]:
     """
 
@@ -151,41 +138,64 @@ def _original_data_transforms_delauny(size: int = 256) -> tuple[Compose, Compose
 
 
 def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) -> tuple[Compose, Compose, Compose]:
-    """forces a size size_out output no matter what"""
+    """
+    Forces img to be of size_out no matter what
+
+    padding comment: going to keep it since that's what MI does. But usually it's not needed, mostly added when zoom/resize
+    screws up with your imag or including both padding and NONE padding to get more data e.g. to make it robust to padding/frames.
+    """
     train_data_transform = Compose([
-        transforms.Resize((size, size)),
+        Resize((size, size)),
         RandomCrop(size_out, padding=8),
-        # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
         ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         RandomHorizontalFlip(),
         ToTensor(),
-        normalize,
+        Normalize(mean=mean, std=std),
     ])
     test_data_transform = transforms.Compose([
-        transforms.Resize((size, size)),
+        Resize((size, size)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=mean,
-                             std=std),
+        Normalize(mean=mean, std=std),
     ])
     validation_data_transform = test_data_transform
     return train_data_transform, validation_data_transform, test_data_transform
 
-def data_transform_based_on_randomresized_crop():
+
+def data_transform_based_on_random_resized_crop_yxw(size: int = 84,
+                                                    scale: tuple[int, int] = (0.18, 1.0),
+                                                    padding: int = 8,
+                                                    ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+                                                    ):
     """
+    Applies an approximation to the MI data augmentation using RandomResizedCrop.
 
-    idea:
-        - we want to data transform be as similar to the one that mini-imagenet uses -- so that the difference btw the
-        when concatenated comes mostly from the data and not from the data transform.
-
-    84/
+    Details & decisions:
+    Since we want to data difference btw MI & delauny to be due to the data and not data transform we approximate what
+    MI does as much as possible. They only crop to 84 with padding to give 84. We do something similar be resize the
+    image first (according to the percentages of image resizing of Mini-Imagenet which they do for all images 0.18
+    since they do 469 -> 84 which is 0.1781, not imagenet does 469 -> 256 ~ 0.328).
+    RandomCrop says that it pads with the given int on both sides: "If a single int is provided this is used to pad all borders."
+    so since MI uses 8 but output is 84 it means the size of the actual image is 84 - 8 - 8 on both height and width --
+    so we will imitate this.
+    Mini imagenet only normalizes:         test_data_transforms = Compose([normalize,]). And yes, it does seem that
+    the padding size is added to both sides. Check code check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size
+    by searching in pycharm to find it. It passes the size tests I'd expect.
     """
     train_data_transform = Compose([
-      RandomResizedCrop((84, 84), scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)),
-      ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-      RandomHorizontalFlip(),
-      ToTensor(),
-      normalize,
+        RandomResizedCrop((size - padding*2, size - padding*2), scale=scale, ratio=ratio),
+        Pad(padding=padding),
+        ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
     ])
+    test_data_transform = transforms.Compose([
+        Resize((size, size)),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    validation_data_transform = test_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
 
 
 def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
@@ -202,28 +212,22 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
     """
     print(f'{size=} for my delauny.')
-    if data_augmentation is None or data_augmentation == 'original_delauny':
-        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny()
-    elif data_augmentation == 'original_delauny_84':
+    if data_augmentation is None or data_augmentation == 'original_delauny_84':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(84)
-    elif data_augmentation == 'delauny_uu':
-        train_data_transform = Compose([
-            # ToPILImage(),
-            transforms.Resize((256, 256)),
-            RandomCrop(size, padding=8),
-            # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
-            ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-            RandomHorizontalFlip(),
-            ToTensor(),
-            normalize,
-        ])
-        test_data_transform = transforms.Compose([
-            transforms.Resize((size, size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean,
-                                 std=std),
-        ])
-        validation_data_transform = test_data_transform
+    elif data_augmentation == 'original_delauny':
+        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny()
+    elif data_augmentation == 'delauny_random_resized_crop_yxw':
+        # this one is for training model only on delauny, when combined with other data sets we might need to rethink
+        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw()
+    elif data_augmentation == 'hdb_mid_mi_delauny':
+        # either reuse delauny_random_resized_crop_yxw or do what you wrote to derek hoiem.
+        # if the diversity looks high enough we won't implement the idea sent to Derek Hoiem.
+        """
+        he output is always 84 x 84. So yes it would upsample 46 to 84 (using Resize(84, 616)) and get a [84, 616] image (no padding). Then it would do a normal RandomCrop. This would be an alternative to doing:
+torchvision.transforms.RandomResizedCrop(size, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333), interpolation=InterpolationMode.BILINEAR, antialias: Optional[bool] = None
+which scales both dimensions without "control". My goal is to make the data augmentation most similar to what is being done in another data set to make comparisons of the role of the data more fair (and to minimize difference in performance due to data augmentation). 
+        """
+        pass
     else:
         raise ValueError(f'Err: {data_augmentation=}')
     return train_data_transform, validation_data_transform, test_data_transform

@@ -87,6 +87,7 @@ def get_delauny_tasksets(
         test_samples=10,
         num_tasks=-1,  # let it be -1 for continual tasks https://github.com/learnables/learn2learn/issues/315
         root='~/data/delauny_l2l_bm_splits',
+        data_augmentation: str = 'delauny_random_resized_crop_yxw',
         device=None,
         **kwargs,
 ) -> BenchmarkTasksets:
@@ -98,6 +99,7 @@ def get_delauny_tasksets(
                                                                         test_ways=test_ways,
                                                                         test_samples=test_samples,
                                                                         root=root,
+                                                                        data_augmentation=data_augmentation,
                                                                         device=device,
                                                                         **kwargs)
     train_dataset, validation_dataset, test_dataset = datasets
@@ -126,6 +128,7 @@ def get_delauny_tasksets(
 
 def loop_through_delaunay():
     print(f'test: {loop_through_delaunay=}')
+    from uutils.plot.image_visualization import visualize_pytorch_tensor_img
     # - for determinism
     import random
     random.seed(0)
@@ -138,7 +141,8 @@ def loop_through_delaunay():
     batch_size = 2
 
     # - get benchmark
-    benchmark: BenchmarkTasksets = get_delauny_tasksets()
+    # benchmark: BenchmarkTasksets = get_delauny_tasksets()
+    benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw')
     splits = ['train', 'validation', 'test']
     tasksets = [getattr(benchmark, split) for split in splits]
 
@@ -160,8 +164,13 @@ def loop_through_delaunay():
 
             X, y = taskset.sample()
             print(f'{X.size()=}')
+            assert X.size(2) == 84
             print(f'{y.size()=}')
             print(f'{y=}')
+            for img_idx in range(X.size(0)):
+                visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+                if img_idx >= 5:  # print 5 images only
+                    break
 
             y_pred = model(X)
             loss = criterion(y_pred, y)
