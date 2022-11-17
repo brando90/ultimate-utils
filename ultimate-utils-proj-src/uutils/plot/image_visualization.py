@@ -6,6 +6,8 @@ import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 
+from uutils.torch_uu import make_code_deterministic
+
 
 def plot(imgs, with_orig=True, row_title=None, **imshow_kwargs):
     """
@@ -117,7 +119,7 @@ def visualize_pytorch_batch_of_imgs(imgs: torch.Tensor, show_img_now: bool = Fal
     # - make the vertical subplots
     batch_size = imgs.size(0)
     nrows, ncols = 1, batch_size
-    fig, axes = plt.subplots(nrows=1, ncols=ncols)
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols)
     assert isinstance(axes, np.ndarray)
     axes: np.ndarray = axes.reshape((nrows, ncols))
     assert axes.shape == (nrows, ncols)
@@ -126,13 +128,17 @@ def visualize_pytorch_batch_of_imgs(imgs: torch.Tensor, show_img_now: bool = Fal
     for row_idx in range(nrows):
         for col_idx in range(ncols):
             img = imgs[col_idx]
-            print(type(img))
+            img = img.permute(1, 2, 0)
+            # print(f'{type(img)=}')
+            # print(f'{img=}')
             assert len(img.size()) == 3
             ax = axes[row_idx, col_idx]
+            ax.imshow(img)
             # img = np.asarray(img)
-            img = img.permute(1, 2, 0)
-            ax.imshow(np.asarray(img))
+            # ax.imshow(np.asarray(img))
+            # ax.imshow(np.asarray(img))
             # ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+            print()
 
     # - show images
     if show_img_now:
@@ -151,8 +157,7 @@ def visualize_pytorch_tensor_img_playground():
     splits = ['train', 'validation', 'test']
 
     # - print size & plot a few images using HDB1 data augmentation, does the data augmenation look similar to omniglot & delauny?
-    from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import BenchmarkTasksets
-    benchmark: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(**kwargs)
+    benchmark: learn2learn.BenchmarkTasksets = hdb1_mi_omniglot_tasksets(**kwargs)
     tasksets = [getattr(benchmark, split) for split in splits]
     for i, taskset in enumerate(tasksets):
         for task_num in range(batch_size):
@@ -171,22 +176,33 @@ def visualize_pytorch_tensor_batch_imgs_playground():
         'cifarfs': cifarfs_tasksets,
     }
     """
-    print(visualize_pytorch_tensor_batch_imgs_playground)
+    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
+
+    make_code_deterministic(0)
     # -
     batch_size = 5
-    kwargs: dict = dict(name='mini-imagenet', train_ways=4, train_samples=4, test_ways=1, test_samples=1)
+    # kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    print(f'total number of plots: {batch_size=}')
+    print(f"total number of image classes: {kwargs['train_ways']=}")
+    print(f"total number of images per classes: {kwargs['train_samples']=}")
     splits = ['train', 'validation', 'test']
 
     # - print size & plot a few images using HDB1 data augmentation, does the data augmenation look similar to omniglot & delauny?
-    benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets('mini-imagenet')
+    # benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(**kwargs)
+    benchmark: learn2learn.BenchmarkTasksets = hdb1_mi_omniglot_tasksets(**kwargs)
     tasksets = [getattr(benchmark, split) for split in splits]
     for i, taskset in enumerate(tasksets):
         print(f'{taskset=}')
+        print(f'{taskset.dataset.dataset.datasets[0].dataset.transform=}')
+        # print(f'{taskset.dataset.dataset.datasets[1].dataset.transform=}')
         for task_num in range(batch_size):
             X, y = taskset.sample()
-            print(f'{X.size()=}')
+            # print(f'{X.size()=}')
             visualize_pytorch_batch_of_imgs(X, show_img_now=True)
-            break
+            print()
+        break
+
 
 if __name__ == '__main__':
     import time
@@ -198,5 +214,6 @@ if __name__ == '__main__':
     visualize_pytorch_tensor_batch_imgs_playground()
     # - Done
     from uutils import report_times
+
     print(f"\nSuccess Done!: {report_times(start)}\a")
     pass
