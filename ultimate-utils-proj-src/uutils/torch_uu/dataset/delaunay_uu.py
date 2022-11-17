@@ -1,5 +1,5 @@
 """
-
+Some comments about the original Delauny data set:
 The final dataset comprises 11, 503 samples across 53
 classes, i.e., artists (mean number of samples per artist: 217.04;
 standard deviation: 58.55), along with their source URLs.
@@ -14,6 +14,18 @@ the largest.
 ref:
 - https://arxiv.org/abs/2201.12123
 - data set to learn2learn task set: https://github.com/learnables/learn2learn/issues/375
+
+Comments on previous experiments:
+I'm trying to see how the diversity of a data set affects the meta-learning. For the conclusions to be consistent/sound in my experiments the experimental settings have to be similar for all experiments. Meaning:
+- 1. since I used train models with data augmentation (hypothesized to make more diverse data sets) evaluate models on test without data augmentation & computed/evaluated the diversity on data sets without data augmentation, we should keep that consistent in future experiments.
+    - diversities for train can be computed out of curiosity but should not be used for conclusion unless previous evaluations are repeated, in particular, train diversities have to be computed.
+
+- Hypothesis: data set diversity is affect by data augmentation. For now all training is done with data augmentation since that is what I did in training (consistent/sound conclusions). Also, data augmentation is done in practice so it helps our experiments be more representative of what is done in practice.
+    - will compute train diversities out of curiosity, put in appendix, but unlikely to do much with them unless I recompute them for previous experiments.
+
+We use data augementation so our conclusions apply to what is done in practice but use the data augmentation strategy
+that is most consistent as possible (to not have it be a source of diversity and instead having the data itself be the
+main source).
 """
 import torch
 from datetime import datetime
@@ -99,6 +111,25 @@ def get_min_max_size_of_images_delany() -> tuple[int, int]:
 def get_data_augmentation():
     pass  # todo
 
+def get_imagenet_data_transform():
+    # train_dataset = datasets.ImageFolder(
+    #     traindir,
+    #     transforms.Compose([
+    #         transforms.RandomResizedCrop(224),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    #
+    # val_dataset = datasets.ImageFolder(
+    #     valdir,
+    #     transforms.Compose([
+    #         transforms.Resize(256),
+    #         transforms.CenterCrop(224),
+    #         transforms.ToTensor(),
+    #         normalize,
+    #     ]))
+    pass
 
 def _original_data_transforms_delauny(size: int = 256) -> transforms.Compose:
     transform = transforms.Compose([
@@ -108,6 +139,27 @@ def _original_data_transforms_delauny(size: int = 256) -> transforms.Compose:
                              std=std),
     ])
     return transform
+
+
+def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) -> tuple[Compose, Compose, Compose]:
+    """forces a size size_out output no matter what"""
+    train_data_transform = Compose([
+        transforms.Resize((size, size)),
+        RandomCrop(size_out, padding=8),
+        # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
+        ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        normalize,
+    ])
+    test_data_transform = transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean,
+                             std=std),
+    ])
+    validation_data_transform = test_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
 
 
 def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
@@ -128,15 +180,9 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         raise NotImplementedError
         # return original delauny transforms
     elif data_augmentation == 'delauny_uu':
-        # is it ok to do ToTransform (and normalize) before other data gumentation techniques? https://stackoverflow.com/questions/74451955/is-it-safe-to-do-a-totensor-data-transform-before-a-colorjitter-and-randomhori
-        # read slightly more carefully the type of resizes, downsample, pil interpolation, etc
-        # maybe for some of the images that have this error of Required crop size (84, 84) is larger then input image size (46, 616) its ok to resize on one dim or both and then crop?
-        # for now resize all to 256, then crop
-        # I think we will resize only the ones that give issues to 256 and then crop to 84. Everyone else just crop. Count number of data points where the resizing is being done.
-        # other things could to resize lowest side to 84 and the do normal crop. Then put if statement in data transform.
         train_data_transform = Compose([
             # ToPILImage(),
-            transforms.Resize((256, 256)),  # todo think about this, is this what we want to do? https://github.com/camillegontier/DELAUNAY_dataset/issues/4
+            transforms.Resize((256, 256)),
             RandomCrop(size, padding=8),
             # decided 8 due to https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
             ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
