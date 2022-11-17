@@ -33,7 +33,8 @@ def plot_some_delauny_images_data_augmentation_visualization_experiments():
     # kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
     kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2, root='~/data/delauny_l2l_bm_splits')
     kwargs['data_augmentation'] = 'original_delauny'
-
+    kwargs['data_augmentation'] = 'original_delauny_84'
+    print(f"{kwargs['data_augmentation']=}")
 
     print(f'total number of plots: {batch_size=}')
     print(f"total number of image classes: {kwargs['train_ways']=}")
@@ -41,17 +42,18 @@ def plot_some_delauny_images_data_augmentation_visualization_experiments():
     splits = ['train', 'validation', 'test']
 
     # - print size & plot a few images using HDB1 data augmentation, does the data augmenation look similar to omniglot & delauny?
-    benchmark: BenchmarkTasksets = get_delauny_tasksets()
+    benchmark: BenchmarkTasksets = get_delauny_tasksets(**kwargs)
     tasksets = [(split, getattr(benchmark, split)) for split in splits]
     for i, (split, taskset) in enumerate(tasksets):
         print(f'{taskset=}')
-        print(f'{taskset.dataset.dataset.datasets[0].dataset.transform=}')
+        print(f'{taskset.dataset.dataset.transform=}')
         # print(f'{taskset.dataset.dataset.datasets[1].dataset.transform=}')
         for task_num in range(batch_size):
             X, y = taskset.sample()
-            # print(f'{X.size()=}')
+            print(f'{X.size()=}')
             visualize_pytorch_batch_of_imgs(X, show_img_now=True)
             print()
+            break
         break
 
 
@@ -87,13 +89,33 @@ def plot_some_mi_images_using_l2l_hdb1_data_augmentation():
         break
 
 
+def check_size_of_mini_imagenet_original_img():
+    # - not using .jpg because torchmeta & l2l rfs use pickle files
+    # orig_img = Image.open(Path('assets') / 'astronaut.jpg')
+    # -
+    batch_size = 5
+    kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(**kwargs)
+    tasksets = [(split, getattr(benchmark, split)) for split in splits]
+    for i, (split, taskset) in enumerate(tasksets):
+        print(f'{taskset=}')
+        print(f'{taskset.dataset.dataset.transform=}')
+        for task_num in range(batch_size):
+            X, y = taskset.sample()
+            print(f'{X.size()=}')
+            visualize_pytorch_batch_of_imgs(X, show_img_now=True)
+            break
+        break
+
+
 if __name__ == "__main__":
     import time
 
     start = time.time()
     # - run experiment
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
-    plot_some_delauny_images_data_augmentation_visualization_experiments()
+    # plot_some_delauny_images_data_augmentation_visualization_experiments()
+    check_size_of_mini_imagenet_original_img()
     # - Done
     from uutils import report_times
 

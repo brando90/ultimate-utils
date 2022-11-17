@@ -56,7 +56,7 @@ import os
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms, Compose, ToPILImage, RandomCrop, ColorJitter, RandomHorizontalFlip, \
-    ToTensor
+    ToTensor, RandomResizedCrop
 
 from typing import Union
 
@@ -170,6 +170,23 @@ def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) 
     validation_data_transform = test_data_transform
     return train_data_transform, validation_data_transform, test_data_transform
 
+def data_transform_based_on_randomresized_crop():
+    """
+
+    idea:
+        - we want to data transform be as similar to the one that mini-imagenet uses -- so that the difference btw the
+        when concatenated comes mostly from the data and not from the data transform.
+
+    84/
+    """
+    train_data_transform = Compose([
+      RandomResizedCrop((84, 84), scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)),
+      ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+      RandomHorizontalFlip(),
+      ToTensor(),
+      normalize,
+    ])
+
 
 def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
                                    size: int = 84,
@@ -187,6 +204,8 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
     print(f'{size=} for my delauny.')
     if data_augmentation is None or data_augmentation == 'original_delauny':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny()
+    elif data_augmentation == 'original_delauny_84':
+        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(84)
     elif data_augmentation == 'delauny_uu':
         train_data_transform = Compose([
             # ToPILImage(),
