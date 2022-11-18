@@ -79,6 +79,12 @@ def get_delauny_l2l_datasets_and_task_transforms(train_ways=5,
     _transforms = (train_transforms, valid_transforms, test_transforms)
     return _datasets, _transforms
 
+def setup_dot_labels_field():
+    """ see delauny_uu
+
+    just call the other one, assert it worked.
+    """
+    raise NotImplementedError
 
 def get_delauny_tasksets(
         train_ways=5,

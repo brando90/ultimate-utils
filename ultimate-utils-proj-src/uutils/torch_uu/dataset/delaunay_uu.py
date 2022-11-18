@@ -318,7 +318,49 @@ def get_delauny_dataset_splits(path2train: str,
     else:
         valid_dataset = ImageFolder(path2val, transform=validation_data_transform)
     test_dataset = ImageFolder(path2test, transform=test_data_transform)
+    # - setup .labels field
+    num_train_labels, num_val_labels, num_test_labels = get_num_labels_per_split(path2train, path2val, path2test)
+    total_num_labels: int = num_train_labels + num_val_labels + num_test_labels
+    setup_dot_labels_field(train_dataset, valid_dataset, test_dataset,
+                           num_train_labels, num_val_labels, num_test_labels)
+    assert len(train_dataset.labels) + len(train_dataset.labels) + len(train_dataset.labels) == total_num_labels
+    assert hasattr(train_dataset, 'labels')
+    assert hasattr(valid_dataset, 'labels')
+    assert hasattr(valid_dataset, 'labels')
     return train_dataset, valid_dataset, test_dataset
+
+
+def setup_dot_labels_field(train_dataset: Dataset, valid_dataset: Dataset, test_dataset: Dataset,
+                           num_train_labels: int = 34, num_val_labels: int = 8, num_test_labels: int = 11,
+                           total_num_labels: int = 53,
+                           ) -> None:
+    """ Puts a .labels field to the data sets"""
+    train_dataset.labels = list(range(num_train_labels))
+    valid_dataset.labels = list(range(num_val_labels))
+    test_dataset.labels = list(range(num_test_labels))
+    # -
+    assert len(train_dataset.labels) + len(train_dataset.labels) + len(train_dataset.labels) == total_num_labels
+    assert hasattr(train_dataset, 'labels')
+    assert hasattr(valid_dataset, 'labels')
+    assert hasattr(valid_dataset, 'labels')
+
+
+def get_num_labels_per_split(path2train: str,
+                             path2val: str,
+                             path2test: str) -> tuple[int, int, int]:
+    """ get number of labels based on number of folder per class. """
+    # - expand paths
+    path2train: Path = expanduser(path2train)
+    path2val: Path = expanduser(path2val)
+    path2test: Path = expanduser(path2test)
+    # -
+    dirpath, dirnames, filenames = next(iter(os.walk(path2train)))
+    num_train_labels: int = len(dirnames)
+    dirpath, dirnames, filenames = next(iter(os.walk(path2val)))
+    num_val_labels: int = len(dirnames)
+    dirpath, dirnames, filenames = next(iter(os.walk(path2test)))
+    num_test_labels: int = len(dirnames)
+    return num_train_labels, num_val_labels, num_test_labels
 
 
 def create_your_splits(path_to_all_data: Union[str, Path],
