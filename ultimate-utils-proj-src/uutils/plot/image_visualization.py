@@ -99,6 +99,7 @@ def visualize_pytorch_tensor_img(tensor_image: torch.Tensor, show_img_now: bool 
 
     ref: https://stackoverflow.com/questions/53623472/how-do-i-display-a-single-image-in-pytorch
     """
+    from matplotlib import pyplot as plt
     assert len(tensor_image.size()) == 3, f'Err your tensor is the wrong shape {tensor_image.size()=}' \
                                           f'likely it should have been a single tensor with 3 channels' \
                                           f'i.e. CHW.'

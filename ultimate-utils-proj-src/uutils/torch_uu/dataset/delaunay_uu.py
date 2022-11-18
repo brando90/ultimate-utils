@@ -137,7 +137,8 @@ def _original_data_transforms_delauny(size: int = 256) -> tuple[Compose, Compose
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) -> tuple[Compose, Compose, Compose]:
+def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256, padding: int = 8) -> tuple[
+    Compose, Compose, Compose]:
     """
     Forces img to be of size_out no matter what
 
@@ -146,14 +147,14 @@ def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256) 
     """
     train_data_transform = Compose([
         Resize((size, size)),
-        RandomCrop(size_out, padding=8),
+        RandomCrop(size_out, padding=padding),
         ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         RandomHorizontalFlip(),
         ToTensor(),
         Normalize(mean=mean, std=std),
     ])
     test_data_transform = transforms.Compose([
-        Resize((size, size)),
+        Resize((size_out, size_out)),
         transforms.ToTensor(),
         Normalize(mean=mean, std=std),
     ])
@@ -182,7 +183,7 @@ def data_transform_based_on_random_resized_crop_yxw(size: int = 84,
     by searching in pycharm to find it. It passes the size tests I'd expect.
     """
     train_data_transform = Compose([
-        RandomResizedCrop((size - padding*2, size - padding*2), scale=scale, ratio=ratio),
+        RandomResizedCrop((size - padding * 2, size - padding * 2), scale=scale, ratio=ratio),
         Pad(padding=padding),
         ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         RandomHorizontalFlip(),
@@ -215,19 +216,29 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
     if data_augmentation is None or data_augmentation == 'original_delauny_84':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(84)
     elif data_augmentation == 'original_delauny':
-        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny()
-    elif data_augmentation == 'delauny_random_resized_crop_yxw':
+        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(
+            size=256)
+    elif data_augmentation == 'resize256_then_random_crop_to_84_and_padding_8':
+        train_data_transform, validation_data_transform, test_data_transform = \
+            _force_to_size_data_transforms_delauny(size_out=84, size=256, padding=8)
+    elif data_augmentation == 'delauny_random_resized_crop_yxw_padding_8':
         # this one is for training model only on delauny, when combined with other data sets we might need to rethink
-        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw()
+        train_data_transform, validation_data_transform, test_data_transform = \
+            data_transform_based_on_random_resized_crop_yxw(padding=8)
     elif data_augmentation == 'hdb_mid_mi_delauny':
         # either reuse delauny_random_resized_crop_yxw or do what you wrote to derek hoiem.
         # if the diversity looks high enough we won't implement the idea sent to Derek Hoiem.
         """
-        he output is always 84 x 84. So yes it would upsample 46 to 84 (using Resize(84, 616)) and get a [84, 616] image (no padding). Then it would do a normal RandomCrop. This would be an alternative to doing:
+        The output is always 84 x 84. So yes it would upsample 46 to 84 (using Resize(84, 616)) and get a [84, 616] image (no padding). Then it would do a normal RandomCrop. This would be an alternative to doing:
 torchvision.transforms.RandomResizedCrop(size, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333), interpolation=InterpolationMode.BILINEAR, antialias: Optional[bool] = None
 which scales both dimensions without "control". My goal is to make the data augmentation most similar to what is being done in another data set to make comparisons of the role of the data more fair (and to minimize difference in performance due to data augmentation). 
         """
         pass
+        raise NotImplementedError
+    elif data_augmentation == 'delauny_random_resized_crop_yxw_zero_padding':
+        # this one is for training model only on delauny, when combined with other data sets we might need to rethink
+        train_data_transform, validation_data_transform, test_data_transform = \
+            data_transform_based_on_random_resized_crop_yxw(padding=0)
     else:
         raise ValueError(f'Err: {data_augmentation=}')
     return train_data_transform, validation_data_transform, test_data_transform

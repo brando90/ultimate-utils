@@ -142,7 +142,10 @@ def loop_through_delaunay():
 
     # - get benchmark
     # benchmark: BenchmarkTasksets = get_delauny_tasksets()
-    benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw')
+    # benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw_padding_8')
+    # benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw_zero_padding')
+    benchmark: BenchmarkTasksets = get_delauny_tasksets(
+        data_augmentation='resize256_then_random_crop_to_84_and_padding_8')
     splits = ['train', 'validation', 'test']
     tasksets = [getattr(benchmark, split) for split in splits]
 
@@ -158,10 +161,73 @@ def loop_through_delaunay():
     from torch import nn
     criterion = nn.CrossEntropyLoss()
     for i, taskset in enumerate(tasksets):
-        print(f'-- {splits[i]=}')
         for task_num in range(batch_size):
             print(f'{task_num=}')
+            print(f'-- {splits[i]=}')
+            print(f'{taskset.dataset.dataset.transform=}')
 
+            X, y = taskset.sample()
+            print(f'{X.size()=}')
+            print(f'{y.size()=}')
+            print(f'{y=}')
+            for img_idx in range(X.size(0)):
+                visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+                if img_idx >= 5:  # print 5 images only
+                    break
+
+            assert X.size(2) == 84
+            y_pred = model(X)
+            loss = criterion(y_pred, y)
+            print(f'{loss=}')
+            print()
+            break
+    print(f'done test: {loop_through_delaunay=}')
+    # - print some mi examples too
+    plot_some_mi_images_using_l2l_hdb1_data_augmentation()
+
+
+def plot_some_mi_images_using_l2l_hdb1_data_augmentation():
+    """
+    So prints some MI & hdb1 images.
+
+    https://stackoverflow.com/questions/74482017/why-isnt-randomcrop-inserting-the-padding-in-pytorch
+    """
+    # - for determinism
+    import random
+    random.seed(0)
+    import torch
+    torch.manual_seed(0)
+    import numpy as np
+    np.random.seed(0)
+
+    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
+    from uutils.plot.image_visualization import visualize_pytorch_tensor_img
+    from uutils.torch_uu import make_code_deterministic
+
+    make_code_deterministic(0)
+    # -
+    batch_size = 5
+    # kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    print(f'total number of plots: {batch_size=}')
+    print(f"total number of image classes: {kwargs['train_ways']=}")
+    print(f"total number of images per classes: {kwargs['train_samples']=}")
+    splits = ['train', 'validation', 'test']
+
+    # - print size & plot a few images using HDB1 data augmentation, does the data augmenation look similar to omniglot & delauny?
+    # benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(**kwargs)
+    benchmark: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(**kwargs)
+    tasksets = [(split, getattr(benchmark, split)) for split in splits]
+    for i, (split, taskset) in enumerate(tasksets):
+        print(f'-- {splits[i]=}')
+        print(f'{taskset=}')
+        print(f'{taskset.dataset.dataset.datasets[0].dataset.transform=}')
+        print(f'{taskset.dataset.dataset.datasets[1].dataset.dataset.transform=}')
+        for task_num in range(batch_size):
+            print(f'-- {splits[i]=}')
+            print(f'{task_num=}')
+            print(f'{taskset.dataset.dataset.datasets[0].dataset.transform=}')
+            print(f'{taskset.dataset.dataset.datasets[1].dataset.dataset.transform=}')
             X, y = taskset.sample()
             print(f'{X.size()=}')
             assert X.size(2) == 84
@@ -171,21 +237,73 @@ def loop_through_delaunay():
                 visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
                 if img_idx >= 5:  # print 5 images only
                     break
-
-            y_pred = model(X)
-            loss = criterion(y_pred, y)
-            print(f'{loss=}')
             print()
-            break
-    print(f'done test: {loop_through_delaunay=}')
+            if task_num >= 4:  # so to get a MI image finally (note omniglot does not have padding at train...oops!)
+                break
+        # break
+
+
+def torchmeta_plot_images_is_the_padding_there():
+    """ Padding should be there look at torchmeta_ml_dataloaders.py """
+    from uutils.torch_uu import process_meta_batch
+    from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import \
+        get_minimum_args_for_torchmeta_mini_imagenet_dataloader
+    from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import \
+        get_miniimagenet_dataloaders_torchmeta
+    from diversity_src.experiment_mains.main_experiment_analysis_sl_vs_maml_performance_comp_distance import \
+        resnet12rfs_mi
+
+    from uutils.plot.image_visualization import visualize_pytorch_tensor_img
+    # - for determinism
+    import random
+    random.seed(0)
+    import torch
+    torch.manual_seed(0)
+    import numpy as np
+    np.random.seed(0)
+
+    # -
+    args = get_minimum_args_for_torchmeta_mini_imagenet_dataloader()
+    args = resnet12rfs_mi(args)
+    print(f'{args=}')
+    dataloaders = get_miniimagenet_dataloaders_torchmeta(args)
+
+    print(f'{len(dataloaders)}')
+    for split, datalaoder in dataloaders.items():
+        for batch_idx, batch in enumerate(datalaoder):
+            spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+            print(f'Train inputs shape: {spt_x.size()}')  # e.g. (2, 25, 3, 28, 28)
+            print(f'Train targets shape: {spt_y.size()}'.format(spt_y.shape))  # e.g. (2, 25)
+            batch_size = spt_x.size(0)
+            for task_num in range(batch_size):
+                print(f'-- {split=}')
+                print(f'{task_num=}')
+                print(f'{datalaoder.dataset.dataset.transform}')
+                X: torch.Tensor = spt_x[task_num]
+                print(f'{X.size()=}')
+                assert X.size(2) == 84
+                for img_idx in range(X.size(0)):
+                    visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+                    if img_idx >= 5:  # print 5 images only
+                        break
+                print()
+                if task_num >= 4:  # so to get a MI image finally (note omniglot does not have padding at train...oops!)
+                    break
 
 
 if __name__ == "__main__":
     import time
     from uutils import report_times
 
+    import sys
+    print(f'python version: {sys.version=}')
+    import torch
+    print(f'{torch.__version__=}')
+
     start = time.time()
     # - run experiment
-    loop_through_delaunay()
+    # loop_through_delaunay()
+    # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
+    torchmeta_plot_images_is_the_padding_there()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

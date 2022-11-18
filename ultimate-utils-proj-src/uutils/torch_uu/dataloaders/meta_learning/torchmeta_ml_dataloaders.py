@@ -265,12 +265,13 @@ def load_all_parmas_for_torchmeta_mini_imagenet_dataloader_into_args(args: Names
     return args
 
 
-def get_minimum_args_for_torchmeta_mini_imagenet_dataloader(data_path: Path = Path('//'),
-                                                            k_eval: int = 15, k_shots: int = 5,
-                                                            n_classes: int = 5,
-                                                            meta_batch_size_train: int = 2,
-                                                            meta_batch_size_eval: int = 2,
-                                                            num_workers: int = 0) -> Namespace:
+def get_minimum_args_for_torchmeta_mini_imagenet_dataloader(
+        data_path: Path = Path('~/data/torchmeta_data/miniimagenet'),
+        k_eval: int = 15, k_shots: int = 5,
+        n_classes: int = 5,
+        meta_batch_size_train: int = 2,
+        meta_batch_size_eval: int = 2,
+        num_workers: int = 0) -> Namespace:
     """
     Gets the minimum args for torchmeta mini imagenet dataloader to work.
 
@@ -285,6 +286,12 @@ def get_minimum_args_for_torchmeta_mini_imagenet_dataloader(data_path: Path = Pa
     args.meta_batch_size_eval = meta_batch_size_eval
     args.num_workers = num_workers
     args.device = uutils.torch_uu.get_device()
+    # - new to force seeing torchmeta imgs
+    args.jobid = -1
+    args.log_freq = 1
+    args.lr = None
+    args.n_cls = 5
+    args.seed = 0
     return args
 
 

@@ -57,44 +57,31 @@ def plot_some_delauny_images_data_augmentation_visualization_experiments():
         break
 
 
-def plot_some_mi_images_using_l2l_hdb1_data_augmentation():
+def plot_some_mi_images_using_l2l_hdb1_data_augmentation2():
     """
     So prints some MI & hdb1 images.
     """
-    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
-
-    make_code_deterministic(0)
-    # -
-    batch_size = 5
-    # kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
-    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2)
-    print(f'total number of plots: {batch_size=}')
-    print(f"total number of image classes: {kwargs['train_ways']=}")
-    print(f"total number of images per classes: {kwargs['train_samples']=}")
-    splits = ['train', 'validation', 'test']
-
-    # - print size & plot a few images using HDB1 data augmentation, does the data augmenation look similar to omniglot & delauny?
-    # benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(**kwargs)
-    benchmark: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(**kwargs)
-    tasksets = [(split, getattr(benchmark, split)) for split in splits]
-    for i, (split, taskset) in enumerate(tasksets):
-        print(f'{taskset=}')
-        print(f'{taskset.dataset.dataset.datasets[0].dataset.transform=}')
-        # print(f'{taskset.dataset.dataset.datasets[1].dataset.transform=}')
-        for task_num in range(batch_size):
-            X, y = taskset.sample()
-            # print(f'{X.size()=}')
-            visualize_pytorch_batch_of_imgs(X, show_img_now=True)
-            print()
-        break
+    from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import plot_some_mi_images_using_l2l_hdb1_data_augmentation
+    plot_some_mi_images_using_l2l_hdb1_data_augmentation()
 
 
 def check_size_of_mini_imagenet_original_img():
-    # - not using .jpg because torchmeta & l2l rfs use pickle files
-    # orig_img = Image.open(Path('assets') / 'astronaut.jpg')
-    # -
+    import random
+    import numpy as np
+    import torch
+    import os
+    seed = 0
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)
+
+    import learn2learn
     batch_size = 5
     kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
+    kwargs['data_augmentation'] = 'lee2019'
     benchmark: learn2learn.BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(**kwargs)
     tasksets = [(split, getattr(benchmark, split)) for split in splits]
     for i, (split, taskset) in enumerate(tasksets):
@@ -103,7 +90,17 @@ def check_size_of_mini_imagenet_original_img():
         for task_num in range(batch_size):
             X, y = taskset.sample()
             print(f'{X.size()=}')
-            visualize_pytorch_batch_of_imgs(X, show_img_now=True)
+            assert X.size(2) == 84
+            print(f'{y.size()=}')
+            print(f'{y=}')
+            for img_idx in range(X.size(0)):
+                visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+                if img_idx >= 5:  # print 5 images only
+                    break
+            # visualize_pytorch_batch_of_imgs(X, show_img_now=True)
+            print()
+            if task_num >= 4:  # co to get a MI image finally (note omniglot does not have padding at train...oops!)
+                break
             break
         break
 
@@ -155,10 +152,11 @@ if __name__ == "__main__":
 
     start = time.time()
     # - run experiment
-    # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
+    # plot_some_mi_images_using_l2l_hdb1_data_augmentation2()
     # plot_some_delauny_images_data_augmentation_visualization_experiments()
-    # check_size_of_mini_imagenet_original_img()
-    check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size()
+    check_size_of_mini_imagenet_original_img()
+    # check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size()
+
     # - Done
     from uutils import report_times
 
