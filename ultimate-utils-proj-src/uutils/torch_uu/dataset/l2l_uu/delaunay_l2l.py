@@ -291,19 +291,102 @@ def torchmeta_plot_images_is_the_padding_there():
                     break
 
 
+def check_padding_random_crop_cifar_pure_torch():
+    # -
+    import sys
+    print(f'python version: {sys.version=}')
+    import torch
+    print(f'{torch.__version__=}')
+    # -
+    from uutils.plot.image_visualization import visualize_pytorch_tensor_img
+    from torchvision.transforms import RandomCrop
+
+    # - for determinism
+    import random
+    random.seed(0)
+    import torch
+    torch.manual_seed(0)
+    import numpy as np
+    np.random.seed(0)
+
+    # -
+    from pathlib import Path
+    root = Path('~/data/').expanduser()
+    import torch
+    import torchvision
+    # - test tensor imgs
+    from torchvision.transforms import Resize
+    from torchvision.transforms import Pad
+    from torchvision.transforms import ToTensor
+    from torchvision.transforms import Compose
+
+    # -- see if pad doubles length
+    print(f'--- test padding doubles length with Pad(...)')
+    transform = Compose([Resize((32, 32)), Pad(padding=4), ToTensor()])
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                          transform=transform,
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    transform = Compose([Resize((32, 32)), Pad(padding=8), ToTensor()])
+    test = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                         transform=transform,
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    # - test padding doubles length
+    from torch.utils.data import DataLoader
+    loader = DataLoader(train)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x[0].size(2) == 32 + 4 * 2
+    assert x[0].size(2) == 32 + 8
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+    #
+    loader = DataLoader(test)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x.size(2) == 32 + 8 * 2
+    assert x.size(2) == 32 + 16
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+
+    # -- see if RandomCrop also puts the pad
+    print(f'--- test RandomCrop indeed puts padding')
+    transform = Compose([Resize((32, 32)), RandomCrop(28, padding=8), ToTensor()])
+    train = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                          transform=transform,
+                                          target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    transform = Compose([Resize((32, 32)), RandomCrop(28), ToTensor()])
+    test = torchvision.datasets.CIFAR100(root=root, train=True, download=True,
+                                         transform=transform,
+                                         target_transform=lambda data: torch.tensor(data, dtype=torch.long))
+    # - test that the padding is there visually
+    from torch.utils.data import DataLoader
+    loader = DataLoader(train)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x[0].size(2) == 28
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+    #
+    loader = DataLoader(test)
+    x, y = next(iter(loader))
+    print(f'{x[0].size()=}')
+    assert x.size(2) == 28
+    visualize_pytorch_tensor_img(x[0], show_img_now=True)
+
+
 if __name__ == "__main__":
     import time
     from uutils import report_times
 
     import sys
+
     print(f'python version: {sys.version=}')
     import torch
+
     print(f'{torch.__version__=}')
 
     start = time.time()
     # - run experiment
     # loop_through_delaunay()
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
-    torchmeta_plot_images_is_the_padding_there()
+    # torchmeta_plot_images_is_the_padding_there()
+    check_padding_random_crop_cifar_pure_torch()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

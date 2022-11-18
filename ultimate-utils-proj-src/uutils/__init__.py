@@ -81,6 +81,12 @@ def print_file(path_or_str: Union[str, Path]) -> None:
     cat_file(path2filename=path_or_str)
 
 
+def print_python_version():
+    import sys
+
+    print(f'python version: {sys.version=}')
+
+
 # - getting args for expts
 
 def setup_args_for_experiment(args: Namespace,
@@ -637,7 +643,8 @@ def remove_folders_recursively(path):
         pass
 
 
-def copy_folders_recursively(src_root: Union[str, Path], root4dst: Union[str, Path], dirnames4dst: list[Union[str, Path]]):
+def copy_folders_recursively(src_root: Union[str, Path], root4dst: Union[str, Path],
+                             dirnames4dst: list[Union[str, Path]]):
     """
     Copying dirnames in src_root into roo4dst. Note dirnames4dst should be the same as the dirnames in the sorc.
 

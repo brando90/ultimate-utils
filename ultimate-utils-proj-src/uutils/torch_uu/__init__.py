@@ -69,6 +69,13 @@ def hello():
     print(f'\nhello from torch_uu __init__.py in:\n{torch_uu}\n')
 
 
+def print_python_and_torch_version():
+    import sys
+    print(f'python version: {sys.version=}')
+    import torch
+    print(f'{torch.version=}')
+
+
 def gpu_test_torch_any_device():
     """
     python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
