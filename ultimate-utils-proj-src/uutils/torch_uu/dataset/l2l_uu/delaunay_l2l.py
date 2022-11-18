@@ -87,7 +87,7 @@ def get_delauny_tasksets(
         test_samples=10,
         num_tasks=-1,  # let it be -1 for continual tasks https://github.com/learnables/learn2learn/issues/315
         root='~/data/delauny_l2l_bm_splits',
-        data_augmentation: str = 'delauny_random_resized_crop_yxw',
+        data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
         device=None,
         **kwargs,
 ) -> BenchmarkTasksets:
@@ -141,11 +141,8 @@ def loop_through_delaunay():
     batch_size = 2
 
     # - get benchmark
-    # benchmark: BenchmarkTasksets = get_delauny_tasksets()
-    # benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw_padding_8')
-    # benchmark: BenchmarkTasksets = get_delauny_tasksets(data_augmentation='delauny_random_resized_crop_yxw_zero_padding')
-    benchmark: BenchmarkTasksets = get_delauny_tasksets(
-        data_augmentation='resize256_then_random_crop_to_84_and_padding_8')
+    benchmark: BenchmarkTasksets = get_delauny_tasksets()
+    # benchmark: BenchmarkTasksets = get_delauny_tasksets('delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs')
     splits = ['train', 'validation', 'test']
     tasksets = [getattr(benchmark, split) for split in splits]
 
@@ -384,9 +381,9 @@ if __name__ == "__main__":
 
     start = time.time()
     # - run experiment
-    # loop_through_delaunay()
+    loop_through_delaunay()
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
     # torchmeta_plot_images_is_the_padding_there()
-    check_padding_random_crop_cifar_pure_torch()
+    # check_padding_random_crop_cifar_pure_torch()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

@@ -162,11 +162,11 @@ def _force_to_size_data_transforms_delauny(size_out: int = 84, size: int = 256, 
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def data_transform_based_on_random_resized_crop_yxw(size: int = 84,
-                                                    scale: tuple[int, int] = (0.18, 1.0),
-                                                    padding: int = 8,
-                                                    ratio: tuple[float, float] = (0.75, 1.3333333333333333),
-                                                    ):
+def _data_transform_based_on_random_resized_crop_yxw(size: int = 84,
+                                                     scale: tuple[int, int] = (0.18, 1.0),
+                                                     padding: int = 8,
+                                                     ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+                                                     ):
     """
     Applies an approximation to the MI data augmentation using RandomResizedCrop.
 
@@ -199,9 +199,58 @@ def data_transform_based_on_random_resized_crop_yxw(size: int = 84,
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
-                                   size: int = 84,
-                                   ) -> tuple[Compose, Compose, Compose]:
+def data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding(
+        size: int = 84,
+        scale: tuple[
+            int, int] = (
+                0.18, 1.0),
+        padding: int = 8,
+        ratio: tuple[
+            float, float] = (
+                0.75,
+                1.3333333333333333),
+):
+    """
+    Does a random resized crop and a random crop with pad that 1. doesn't break if one of the images is smaller than
+    84 (size) and that adds a pad 84+8 then does the random crop. This means the cropped image might only have a pad on
+    one side. Also, the images should always be of sze 84 (size). This matches what mini-imagenet does in l2l, torchmeta, rfs.
+
+    ref:
+        - https://github.com/learnables/learn2learn/issues/376
+        - https://github.com/pytorch/pytorch/issues/89253
+
+    explanation:
+        -1. random resized crop: first it crops based on x \in sclae = (0.18, 1.0) to give an image of size*x size.
+        This is so that images that are less than < 84 in some dimension don't break. 0.18 is based on imagenet 84/469.
+        Then there is a resizing so output is always of size 84. Ratio is the default one (and it controls the stretch
+        before resizing).
+        -2. Now that we have the image to be of size 84 (even if one of the sizes was to small) we do the RandomCrop
+        that inserts the padding only on one size. According to Seba what this does is ad the pad to 84+8 and then
+        crop back to 84. This should add random pad, sometimes just to one side. I think this happens because the
+        image is padded to 84+8 and then a crop is done with the image with a pad, ref: https://github.com/learnables/learn2learn/issues/376#issuecomment-1319405466
+        - 3... usual data augmentations
+    """
+    train_data_transform = Compose([
+        RandomResizedCrop((size, size), scale=scale, ratio=ratio),
+        RandomCrop(size=size, padding=padding),
+        ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    test_data_transform = transforms.Compose([
+        Resize((size, size)),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    validation_data_transform = test_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
+
+
+def get_my_delauny_data_transforms(
+        data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
+        size: int = 84,
+) -> tuple[Compose, Compose, Compose]:
     """
 
     Notes:
@@ -209,36 +258,35 @@ def get_my_delauny_data_transforms(data_augmentation: str = 'delauny_uu',
         - val transform == test transform because: I agree to use test transforms on validation. It reduces the variance on the validation and since your not fitting them anyway there is likely little benefit to early stop with complicated train data augmentation for valitation. Better to have a low variance estimate of an unknown distribution so to early stop more precisely.
 
     ref:
-        - https://github.com/learnables/learn2learn/issues/309
+        - delauny discussion on my data augmentations: https://github.com/camillegontier/DELAUNAY_dataset/issues/3
+        - l2l: https://github.com/learnables/learn2learn/issues/309
         - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
     """
     print(f'{size=} for my delauny.')
-    if data_augmentation is None or data_augmentation == 'original_delauny_84':
+    if data_augmentation is None or data_augmentation == '_original_delauny_only_resize_to_84':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(84)
-    elif data_augmentation == 'original_delauny':
-        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(
-            size=256)
-    elif data_augmentation == 'resize256_then_random_crop_to_84_and_padding_8':
+    elif data_augmentation == '_original_delauny_only_resize_256':
+        train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(256)
+    elif data_augmentation == '_resize256_then_random_crop_padding_8_size_out_84':
         train_data_transform, validation_data_transform, test_data_transform = \
             _force_to_size_data_transforms_delauny(size_out=84, size=256, padding=8)
-    elif data_augmentation == 'delauny_random_resized_crop_yxw_padding_8':
+    elif data_augmentation == '_delauny_yxw_random_resized_crop_pad_padding_8_size_out_84':
         # this one is for training model only on delauny, when combined with other data sets we might need to rethink
         train_data_transform, validation_data_transform, test_data_transform = \
-            data_transform_based_on_random_resized_crop_yxw(padding=8)
-    elif data_augmentation == 'hdb_mid_mi_delauny':
-        # either reuse delauny_random_resized_crop_yxw or do what you wrote to derek hoiem.
-        # if the diversity looks high enough we won't implement the idea sent to Derek Hoiem.
-        """
-        The output is always 84 x 84. So yes it would upsample 46 to 84 (using Resize(84, 616)) and get a [84, 616] image (no padding). Then it would do a normal RandomCrop. This would be an alternative to doing:
-torchvision.transforms.RandomResizedCrop(size, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333), interpolation=InterpolationMode.BILINEAR, antialias: Optional[bool] = None
-which scales both dimensions without "control". My goal is to make the data augmentation most similar to what is being done in another data set to make comparisons of the role of the data more fair (and to minimize difference in performance due to data augmentation). 
-        """
-        pass
-        raise NotImplementedError
+            _data_transform_based_on_random_resized_crop_yxw(padding=8)
+    elif data_augmentation == '_delauny_yxw_random_resized_crop_pad_padding_8_size_out_84':
+        # this one is for training model only on delauny, when combined with other data sets we might need to rethink
+        train_data_transform, validation_data_transform, test_data_transform = \
+            _data_transform_based_on_random_resized_crop_yxw(padding=8)
     elif data_augmentation == 'delauny_random_resized_crop_yxw_zero_padding':
         # this one is for training model only on delauny, when combined with other data sets we might need to rethink
         train_data_transform, validation_data_transform, test_data_transform = \
-            data_transform_based_on_random_resized_crop_yxw(padding=0)
+            _data_transform_based_on_random_resized_crop_yxw(padding=0)
+    elif data_augmentation == 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs':
+        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding()
+    elif data_augmentation == 'hdb_mid_mi_delauny':
+        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding()
+        raise NotImplementedError
     else:
         raise ValueError(f'Err: {data_augmentation=}')
     return train_data_transform, validation_data_transform, test_data_transform
@@ -247,7 +295,7 @@ which scales both dimensions without "control". My goal is to make the data augm
 def get_delauny_dataset_splits(path2train: str,
                                path2val: str,
                                path2test: str,
-                               data_augmentation: str = 'delauny_uu',
+                               data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
                                size: int = 84,
                                random_split: bool = False,
                                ) -> tuple[Dataset, Dataset, Dataset]:
@@ -326,27 +374,6 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     setup_wandb(args)
     create_default_log_root(args)
     compute_div_and_plot_distance_matrix_for_fsl_benchmark(args, show_plots=False)
-
-
-def diversity_ala_task2vec_delauny_resnet18_pretrained_imagenet(args: Namespace) -> Namespace:
-    args.batch_size = 5
-    args.data_option = 'delauny_uu_l2l_bm_split'
-    args.data_path = Path('~/data/delauny_l2l_bm_splitss').expanduser()
-
-    # - probe_network
-    args.model_option = 'resnet18_pretrained_imagenet'
-
-    # -- wandb args
-    args.wandb_project = 'entire-diversity-spectrum'
-    # - wandb expt args
-    args.experiment_name = f'diversity_ala_task2vec_{args.data_option}_{args.model_option}'
-    args.run_name = f'{args.experiment_name} {args.batch_size=}'
-    # args.log_to_wandb = True
-    args.log_to_wandb = False
-
-    from uutils.argparse_uu.meta_learning import fix_for_backwards_compatibility
-    args = fix_for_backwards_compatibility(args)
-    return args
 
 
 def get_l2l_bm_split_paths(path_for_splits: Path) -> tuple[Path, Path, Path]:
