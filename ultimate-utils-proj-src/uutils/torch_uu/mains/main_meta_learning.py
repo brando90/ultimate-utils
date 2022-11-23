@@ -33,7 +33,7 @@ def manual_args_load() -> Namespace:
     """
     Manually load args.
 
-    Divided into three parts (due to legacy code)
+    Divided into three parts (due to legacy_mains code)
     1. parse args from terminal
     2. manually load args in this script
     3. add remaining common setup args to experiment
