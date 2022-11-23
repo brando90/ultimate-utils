@@ -240,13 +240,13 @@ def _data_transform_based_on_random_resized_crop_yxw(size: int = 84,
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def delauny_pad_random_resized_crop_a(size: int = 84,
-                                      scale: tuple[int, int] = (0.18, 1.0),
-                                      padding: int = 8,
-                                      ratio: tuple[float, float] = (0.75, 1.3333333333333333),
-                                      ):
+def delauny_pad_random_resized_crop(size: int = 84,
+                                    scale: tuple[int, int] = (0.18, 1.0),
+                                    padding: int = 8,
+                                    ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+                                    ):
     """
-
+    Data augmentation based on pad -> crop (scale, ration/stretch) -> resized (84).
     """
     train_data_transform = Compose([
         Pad(padding=padding),
@@ -405,9 +405,9 @@ def get_my_delauny_data_transforms(
         # don't think this needs to be checked since it has no padding and MI has padding.
         train_data_transform, validation_data_transform, test_data_transform = _data_transform_delauny_random_resized_crop()
     # --
-    elif data_augmentation == 'delauny_pad_random_resized_crop_a':
+    elif data_augmentation == 'delauny_pad_random_resized_crop':
         # don't think this needs to be checked since it has no padding and MI has padding.
-        train_data_transform, validation_data_transform, test_data_transform = delauny_pad_random_resized_crop_a()
+        train_data_transform, validation_data_transform, test_data_transform = delauny_pad_random_resized_crop()
     # elif data_augmentation == 'delauny_random_crop_b':
     # not sure if it will crash due to some of the size <84, would need to do resize all or resize if size(i) < 84 or guard pruning images with size(i) < 84
     #     train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding_c()

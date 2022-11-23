@@ -36,7 +36,7 @@ def plot_some_delauny_images_data_augmentation_visualization_experiments():
     kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2, root='~/data/delauny_l2l_bm_splits')
     # kwargs['data_augmentation'] = '_original_delauny_only_resize_to_84'
     # kwargs['data_augmentation'] = '_original_delauny_only_resize_256'
-    kwargs['data_augmentation'] = 'delauny_pad_random_resized_crop_a'
+    kwargs['data_augmentation'] = 'delauny_pad_random_resized_crop'
     print(f"{kwargs['data_augmentation']=}")
 
     print(f'total number of plots: {batch_size=}')
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     # plot_some_delauny_images_data_augmentation_visualization_experiments()
     # check_size_of_mini_imagenet_original_img()
     # check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size()
-    histograms_heigh_width_of_imgs_in_delauny()
+    # histograms_heigh_width_of_imgs_in_delauny()
     # - Done
     from uutils import report_times
 

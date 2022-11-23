@@ -123,18 +123,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'delauny_uu_l2l_bm_split':
-        print(f'Note: {args.data_augmentation=}')
-        from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import get_delauny_tasksets
-        args.tasksets: BenchmarkTasksets = get_delauny_tasksets(
-            train_samples=args.k_shots + args.k_eval,
-            train_ways=args.n_cls,
-            test_samples=args.k_shots + args.k_eval,
-            test_ways=args.n_cls,
-            root=args.data_path,
-            data_augmentation=args.data_augmentation,
-        )
-    elif args.data_option == 'delauny_uu_l2l_delauny_random_resized_crop_yxw':
-        args.data_augmentation = 'delauny_random_resized_crop_yxw'
+        print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import get_delauny_tasksets
         args.tasksets: BenchmarkTasksets = get_delauny_tasksets(
             train_samples=args.k_shots + args.k_eval,

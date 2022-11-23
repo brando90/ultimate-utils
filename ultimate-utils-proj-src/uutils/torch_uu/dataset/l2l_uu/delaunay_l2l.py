@@ -13,6 +13,7 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 from learn2learn.data import MetaDataset
 from torch.utils.data import Dataset
 
+from uutils.torch_uu import make_code_deterministic
 from uutils.torch_uu.dataset.delaunay_uu import get_l2l_bm_split_paths, get_delauny_dataset_splits
 
 from learn2learn.data.transforms import TaskTransform
@@ -79,12 +80,14 @@ def get_delauny_l2l_datasets_and_task_transforms(train_ways=5,
     _transforms = (train_transforms, valid_transforms, test_transforms)
     return _datasets, _transforms
 
+
 def setup_dot_labels_field():
     """ see delauny_uu
 
     just call the other one, assert it worked.
     """
     raise NotImplementedError
+
 
 def get_delauny_tasksets(
         train_ways=5,
@@ -93,7 +96,7 @@ def get_delauny_tasksets(
         test_samples=10,
         num_tasks=-1,  # let it be -1 for continual tasks https://github.com/learnables/learn2learn/issues/315
         root='~/data/delauny_l2l_bm_splits',
-        data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
+        data_augmentation: str = '',
         device=None,
         **kwargs,
 ) -> BenchmarkTasksets:
@@ -137,23 +140,21 @@ def loop_through_delaunay():
     print(f'test: {loop_through_delaunay=}')
     from uutils.plot.image_visualization import visualize_pytorch_tensor_img
     # - for determinism
-    import random
-    random.seed(0)
-    import torch
-    torch.manual_seed(0)
-    import numpy as np
-    np.random.seed(0)
-
-    # - options for number of tasks/meta-batch size
-    batch_size = 2
+    seed = 0
+    make_code_deterministic(seed)
 
     # - get benchmark
-    benchmark: BenchmarkTasksets = get_delauny_tasksets()
-    # benchmark: BenchmarkTasksets = get_delauny_tasksets('delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs')
-    splits = ['train', 'validation', 'test']
-    tasksets = [getattr(benchmark, split) for split in splits]
+    batch_size = 5
+    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2, root='~/data/delauny_l2l_bm_splits')
+    kwargs['data_augmentation'] = 'delauny_pad_random_resized_crop'
+    print(f"{kwargs['data_augmentation']=}")
 
-    # - loop through tasks
+    print(f'total number of plots: {batch_size=}')
+    print(f"total number of image classes: {kwargs['train_ways']=}")
+    print(f"total number of images per classes: {kwargs['train_samples']=}")
+    splits = ['train', 'validation', 'test']
+
+    # - get model
     device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
     # from models import get_model
     # model = get_model('resnet18', pretrained=False, num_classes=5).to(device)
@@ -164,20 +165,23 @@ def loop_through_delaunay():
     model.to(device)
     from torch import nn
     criterion = nn.CrossEntropyLoss()
-    for i, taskset in enumerate(tasksets):
+    # - loop through tasks
+    benchmark: BenchmarkTasksets = get_delauny_tasksets(**kwargs)
+    tasksets = [(split, getattr(benchmark, split)) for split in splits]
+    for i, (split, taskset) in enumerate(tasksets):
         for task_num in range(batch_size):
             print(f'{task_num=}')
-            print(f'-- {splits[i]=}')
+            print(f'-- {split=}')
             print(f'{taskset.dataset.dataset.transform=}')
 
             X, y = taskset.sample()
             print(f'{X.size()=}')
             print(f'{y.size()=}')
             print(f'{y=}')
-            for img_idx in range(X.size(0)):
-                visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
-                if img_idx >= 5:  # print 5 images only
-                    break
+            # for img_idx in range(X.size(0)):
+            #     visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+            #     if img_idx >= 5:  # print 5 images only
+            #         break
 
             assert X.size(2) == 84
             y_pred = model(X)
@@ -185,9 +189,11 @@ def loop_through_delaunay():
             print(f'{loss=}')
             print()
             break
+        # break
     print(f'done test: {loop_through_delaunay=}')
     # - print some mi examples too
-    plot_some_mi_images_using_l2l_hdb1_data_augmentation()
+    # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
+    return
 
 
 def plot_some_mi_images_using_l2l_hdb1_data_augmentation():

@@ -18,6 +18,9 @@ def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
 
     args.outer_lr = args.lr
     args.n_classes = args.n_cls
+
+    if not hasattr(args, 'rank'):
+        args.rank = -1
     return args
 
 

@@ -116,11 +116,11 @@ def remove_current_wandb_run_dir(args: Optional[Namespace] = None, call_wandb_fi
     import wandb
     wandb_dir_to_delete = None
     # wandb.init() this should have been ran already
-    wandb_dir_to_delete = wandb.run.dir
     print(f'{wandb_dir_to_delete=} {type(wandb_dir_to_delete)=}')
     if call_wandb_finish:
         wandb.finish()  # seem we should finish wandb first before deleting the dir todo; why? https://github.com/wandb/wandb/issues/4409
     if wandb_dir_to_delete is not None:
+        wandb_dir_to_delete = wandb.run.dir
         import shutil
         shutil.rmtree(wandb_dir_to_delete)
 
