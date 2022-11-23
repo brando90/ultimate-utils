@@ -46,6 +46,33 @@ def get_imagenet_data_transform():
     #         normalize,
     #     ]))
     pass
+
+----
+RandomResizedCrop:
+i, j, h, w = self.get_params(img, self.scale, self.ratio)
+return F.resized_crop(img, i, j, h, w, self.size, self.interpolation, antialias=self.antialias)
+img = crop(img, top, left, height, width)
+img = resize(img, size, interpolation, antialias=antialias)
+return img
+# summary
+- resize/stretch based on self.scale & self.ratio (so size * (0.18, 1.0))
+- crop (prev step already made sure it won't crash)
+- resize to fixed size given
+ref: https://pytorch.org/vision/main/generated/torchvision.transforms.RandomResizedCrop.html, https://pytorch.org/vision/main/_modules/torchvision/transforms/transforms.html#RandomResizedCrop, https://github.com/pytorch/vision/blob/main/torchvision/transforms/functional.py,
+
+RandomCrop(padding=padding)
+img = F.pad(img, padding, ...)
+i, j, h, w = self.get_params(img, self.size)
+return F.crop(img, i, j, h, w)
+# summary
+- pad
+- crop (to fixed size, will crash if img to small)
+ref: https://pytorch.org/vision/stable/generated/torchvision.transforms.RandomCrop.html, https://pytorch.org/vision/stable/_modules/torchvision/transforms/transforms.html#RandomCrop
+
+
+maybe (not for now):
+- guard resize -> pad -> crop
+- guard resize -> random crop (padding)
 """
 import torch
 from datetime import datetime
@@ -58,7 +85,7 @@ from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms, Compose, ToPILImage, RandomCrop, ColorJitter, RandomHorizontalFlip, \
     ToTensor, RandomResizedCrop, Resize, Normalize, Pad
 
-from typing import Union
+from typing import Union, Optional
 
 from pathlib import Path
 
@@ -107,6 +134,20 @@ nohup python -u ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/dataset
     # # - download data (could be made faster with mp or asyncio, whatever)
     # for url in urls:
     #     download_and_unzip(url, extract_to)
+
+
+def get_all_delauny_dataset(path_to_all_data: Union[str, Path] = '~/data/delauny_original_data/DELAUNAY',
+                            data_augmentation: Optional[str] = None,
+                            ) -> Dataset:
+    """
+    fyi:
+        path_to_all_data: str = '~/data/delauny_original_data/DELAUNAY'
+        path_for_splits: str = '~/data/delauny_l2l_bm_splitss'
+    """
+    path_to_all_data: Path = expanduser(path_to_all_data)
+    transform, _, _ = get_my_delauny_data_transforms(data_augmentation)
+    dataset: Dataset = ImageFolder(path_to_all_data, transform=transform)
+    return dataset
 
 
 def process_delanauny_into_pickle_files():
@@ -199,16 +240,64 @@ def _data_transform_based_on_random_resized_crop_yxw(size: int = 84,
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding(
+def delauny_pad_random_resized_crop_a(size: int = 84,
+                                      scale: tuple[int, int] = (0.18, 1.0),
+                                      padding: int = 8,
+                                      ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+                                      ):
+    """
+
+    """
+    train_data_transform = Compose([
+        Pad(padding=padding),
+        RandomResizedCrop((size, size), scale=scale, ratio=ratio),
+        ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    test_data_transform = transforms.Compose([
+        Resize((size, size)),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    validation_data_transform = test_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
+
+
+def _data_transform_delauny_random_resized_crop(
         size: int = 84,
-        scale: tuple[
-            int, int] = (
-                0.18, 1.0),
+        scale: tuple[int, int] = (0.18, 1.0),
         padding: int = 8,
-        ratio: tuple[
-            float, float] = (
-                0.75,
-                1.3333333333333333),
+        ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+):
+    """
+    ref:
+        - https://github.com/learnables/learn2learn/issues/376
+        - https://github.com/pytorch/pytorch/issues/89253
+    """
+    train_data_transform = Compose([
+        RandomResizedCrop((size, size), scale=scale, ratio=ratio),
+        # RandomCrop(size=size, padding=padding),
+        ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        RandomHorizontalFlip(),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    test_data_transform = transforms.Compose([
+        Resize((size, size)),
+        ToTensor(),
+        Normalize(mean=mean, std=std),
+    ])
+    validation_data_transform = test_data_transform
+    return train_data_transform, validation_data_transform, test_data_transform
+
+
+def delauny_random_resized_crop_random_crop_c(
+        size: int = 84,
+        scale: tuple[int, int] = (0.18, 1.0),
+        padding: int = 8,
+        ratio: tuple[float, float] = (0.75, 1.3333333333333333),
 ):
     """
     Does a random resized crop and a random crop with pad that 1. doesn't break if one of the images is smaller than
@@ -246,6 +335,33 @@ def data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l
     validation_data_transform = test_data_transform
     return train_data_transform, validation_data_transform, test_data_transform
 
+# def delauny_random_resized_crop_random_crop_c(
+#         size: int = 84,
+#         scale: tuple[int, int] = (0.18, 1.0),
+#         padding: int = 8,
+#         ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+# ):
+#     """
+#     ref:
+#         - https://github.com/learnables/learn2learn/issues/376
+#         - https://github.com/pytorch/pytorch/issues/89253
+#     """
+#     train_data_transform = Compose([
+#         GuardResize(tolerance=85, size_limits=(256, 256)),  # if any size < 84 then resize that to 256 leave the other as is,
+#         Pad(padding),
+#         RandomResizedCrop((size, size), scale=scale, ratio=ratio),
+#         ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+#         RandomHorizontalFlip(),
+#         ToTensor(),
+#         Normalize(mean=mean, std=std),
+#     ])
+#     test_data_transform = transforms.Compose([
+#         Resize((size, size)),
+#         ToTensor(),
+#         Normalize(mean=mean, std=std),
+#     ])
+#     validation_data_transform = test_data_transform
+#     return train_data_transform, validation_data_transform, test_data_transform
 
 def get_my_delauny_data_transforms(
         data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
@@ -263,7 +379,10 @@ def get_my_delauny_data_transforms(
         - padding for random crop discussion: https://datascience.stackexchange.com/questions/116201/when-to-use-padding-when-randomly-cropping-images-in-deep-learning
     """
     print(f'{size=} for my delauny.')
-    if data_augmentation is None or data_augmentation == '_original_delauny_only_resize_to_84':
+    if data_augmentation is None:
+        # train_data_transform, validation_data_transform, test_data_transform = None, None, None
+        train_data_transform, validation_data_transform, test_data_transform = ToTensor(), ToTensor(), ToTensor()
+    elif data_augmentation == '_original_delauny_only_resize_to_84':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(84)
     elif data_augmentation == '_original_delauny_only_resize_256':
         train_data_transform, validation_data_transform, test_data_transform = _original_data_transforms_delauny(256)
@@ -282,10 +401,21 @@ def get_my_delauny_data_transforms(
         # this one is for training model only on delauny, when combined with other data sets we might need to rethink
         train_data_transform, validation_data_transform, test_data_transform = \
             _data_transform_based_on_random_resized_crop_yxw(padding=0)
-    elif data_augmentation == 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs':
-        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding()
+    elif data_augmentation == '_delauny_random_resized_crop_a':
+        # don't think this needs to be checked since it has no padding and MI has padding.
+        train_data_transform, validation_data_transform, test_data_transform = _data_transform_delauny_random_resized_crop()
+    # --
+    elif data_augmentation == 'delauny_pad_random_resized_crop_a':
+        # don't think this needs to be checked since it has no padding and MI has padding.
+        train_data_transform, validation_data_transform, test_data_transform = delauny_pad_random_resized_crop_a()
+    # elif data_augmentation == 'delauny_random_crop_b':
+    # not sure if it will crash due to some of the size <84, would need to do resize all or resize if size(i) < 84 or guard pruning images with size(i) < 84
+    #     train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding_c()
+    elif data_augmentation == 'delauny_random_resized_crop_random_crop_c':
+        train_data_transform, validation_data_transform, test_data_transform = delauny_random_resized_crop_random_crop_c()
+    # --
     elif data_augmentation == 'hdb_mid_mi_delauny':
-        train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding()
+        # train_data_transform, validation_data_transform, test_data_transform = get_data_transform_hdb_mid()
         raise NotImplementedError
     else:
         raise ValueError(f'Err: {data_augmentation=}')
@@ -323,7 +453,7 @@ def get_delauny_dataset_splits(path2train: str,
     total_num_labels: int = num_train_labels + num_val_labels + num_test_labels
     setup_dot_labels_field(train_dataset, valid_dataset, test_dataset,
                            num_train_labels, num_val_labels, num_test_labels)
-    assert len(train_dataset.labels) + len(train_dataset.labels) + len(train_dataset.labels) == total_num_labels
+    assert len(train_dataset.labels) + len(valid_dataset.labels) + len(test_dataset.labels) == total_num_labels
     assert hasattr(train_dataset, 'labels')
     assert hasattr(valid_dataset, 'labels')
     assert hasattr(valid_dataset, 'labels')
@@ -339,7 +469,7 @@ def setup_dot_labels_field(train_dataset: Dataset, valid_dataset: Dataset, test_
     valid_dataset.labels = list(range(num_val_labels))
     test_dataset.labels = list(range(num_test_labels))
     # -
-    assert len(train_dataset.labels) + len(train_dataset.labels) + len(train_dataset.labels) == total_num_labels
+    assert len(train_dataset.labels) + len(valid_dataset.labels) + len(test_dataset.labels) == total_num_labels
     assert hasattr(train_dataset, 'labels')
     assert hasattr(valid_dataset, 'labels')
     assert hasattr(valid_dataset, 'labels')

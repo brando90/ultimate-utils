@@ -170,6 +170,7 @@ def plot_with_error_bands(x: np.ndarray, y: np.ndarray, yerr: np.ndarray,
     if show:
         plt.show()
 
+
 # def pdist(embeddings, distance='cosine') -> np.ndarray:
 #     distance_fn = _DISTANCES[distance]
 #     n = len(embeddings)
@@ -199,6 +200,7 @@ def plot_distance_matrix(distance_matrix, labels=None, show_plot=True):
     sns.clustermap(distance_matrix, row_linkage=linkage_matrix, col_linkage=linkage_matrix, cmap='viridis_r')
     if show_plot:
         plt.show()
+
 
 def plot_distance_matrix_heatmap_only(distance_matrix, labels=None, show_plot=True):
     import seaborn as sns
@@ -1024,19 +1026,21 @@ def plot_with_error_bands_xticks_test():
     plot_with_error_bands(x=x, y=y2mean, yerr=y2err, xlabel='x', ylabel='y', title='Custom Seaborn',
                           x_vals_as_symbols=x_vals_as_symbols)
     plt.show()
-    
-def smooth(scalars, weight = 0.8):  # Weight between 0 and 1
+
+
+def smooth(scalars, weight=0.8):  # Weight between 0 and 1
     # Curve smoothing function, for noisy plots, etc
     # From https://stackoverflow.com/questions/42281844/what-is-the-mathematics-behind-the-smoothing-parameter-in-tensorboards-scalar
     last = scalars[0]  # First value in the plot (first timestep)
     smoothed = list()
     for point in scalars:
         smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
-        smoothed.append(smoothed_val)                        # Save it
-        last = smoothed_val                                  # Anchor the last smoothed value
+        smoothed.append(smoothed_val)  # Save it
+        last = smoothed_val  # Anchor the last smoothed value
 
     return smoothed
-    
+
+
 if __name__ == '__main__':
     # save_plot_test()
     # default_seabron_example()

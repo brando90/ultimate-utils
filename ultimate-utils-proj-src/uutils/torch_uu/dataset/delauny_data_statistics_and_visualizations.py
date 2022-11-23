@@ -16,6 +16,7 @@ options:
 import learn2learn
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 
+from uutils.plot.histograms_uu import histograms_heigh_width_of_imgs_in_dataset, print_compute_useful_size_stats
 from uutils.plot.image_visualization import visualize_pytorch_tensor_img, visualize_pytorch_batch_of_imgs
 from uutils.torch_uu import make_code_deterministic
 
@@ -26,14 +27,16 @@ splits = ['train', 'validation', 'test']
 
 def plot_some_delauny_images_data_augmentation_visualization_experiments():
     from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import get_delauny_tasksets
+    print(f'--- {plot_some_delauny_images_data_augmentation_visualization_experiments=}')
 
     make_code_deterministic(0)
     # -
     batch_size = 5
     # kwargs: dict = dict(name='mini-imagenet', train_ways=2, train_samples=2, test_ways=2, test_samples=2)
     kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2, root='~/data/delauny_l2l_bm_splits')
-    kwargs['data_augmentation'] = 'original_delauny'
-    kwargs['data_augmentation'] = 'original_delauny_84'
+    # kwargs['data_augmentation'] = '_original_delauny_only_resize_to_84'
+    # kwargs['data_augmentation'] = '_original_delauny_only_resize_256'
+    kwargs['data_augmentation'] = 'delauny_pad_random_resized_crop_a'
     print(f"{kwargs['data_augmentation']=}")
 
     print(f'total number of plots: {batch_size=}')
@@ -51,10 +54,14 @@ def plot_some_delauny_images_data_augmentation_visualization_experiments():
         for task_num in range(batch_size):
             X, y = taskset.sample()
             print(f'{X.size()=}')
+            for img_idx in range(X.size(0)):
+                visualize_pytorch_tensor_img(X[img_idx], show_img_now=True)
+                if img_idx >= 5:  # print 5 images only
+                    break
             visualize_pytorch_batch_of_imgs(X, show_img_now=True)
             print()
             break
-        break
+        # break
 
 
 def plot_some_mi_images_using_l2l_hdb1_data_augmentation2():
@@ -147,6 +154,13 @@ def check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size(
     visualize_pytorch_tensor_img(x[0], show_img_now=True)
 
 
+def histograms_heigh_width_of_imgs_in_delauny():
+    from uutils.torch_uu.dataset.delaunay_uu import get_all_delauny_dataset
+    dataset = get_all_delauny_dataset(path_to_all_data='~/data/delauny_original_data/DELAUNAY')
+    # histograms_heigh_width_of_imgs_in_dataset(dataset, show_hist_now=True)
+    print_compute_useful_size_stats(dataset)
+
+
 if __name__ == "__main__":
     import time
 
@@ -154,9 +168,9 @@ if __name__ == "__main__":
     # - run experiment
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation2()
     # plot_some_delauny_images_data_augmentation_visualization_experiments()
-    check_size_of_mini_imagenet_original_img()
+    # check_size_of_mini_imagenet_original_img()
     # check_that_padding_is_added_on_both_sides_so_in_one_dim_it_doubles_the_size()
-
+    histograms_heigh_width_of_imgs_in_delauny()
     # - Done
     from uutils import report_times
 

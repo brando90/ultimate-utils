@@ -98,6 +98,7 @@ def get_delauny_tasksets(
         **kwargs,
 ) -> BenchmarkTasksets:
     """ """
+    print(f'-> {data_augmentation=}')
     root = os.path.expanduser(root)
     # Load task-specific data and transforms
     datasets, transforms = get_delauny_l2l_datasets_and_task_transforms(train_ways=train_ways,
