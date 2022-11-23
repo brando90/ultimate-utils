@@ -2,15 +2,14 @@ from argparse import Namespace
 from torch.nn import Module
 from typing import Optional
 
-import task2vec
-from task2vec import ProbeNetwork
+from diversity_src.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
 
 
 def get_probe_network(args: Namespace,
 
                       model_option: Optional[str] = None,
                       **model_hps
-                      ) -> task2vec.ProbeNetwork:
+                      ) -> ProbeNetwork:
     """
     Note: a model is not the same as a probe network. Make sure you respect the probe network interface.
 
@@ -44,7 +43,7 @@ def get_probe_network(args: Namespace,
     else:
         raise ValueError(f'')
 
-    assert isinstance(probe_network, task2vec.ProbeNetwork), f'Make sure your model is of type ProbeNework & respects' \
+    assert isinstance(probe_network, ProbeNetwork), f'Make sure your model is of type ProbeNework & respects' \
                                                              f'its API. Got type: {type(probe_network)}'
     return probe_network
 
