@@ -45,6 +45,9 @@ def get_probe_network(args: Namespace,
 
     assert isinstance(probe_network, ProbeNetwork), f'Make sure your model is of type ProbeNework & respects' \
                                                              f'its API. Got type: {type(probe_network)}'
+    # -
+    from uutils.torch_uu.distributed import move_model_to_dist_device_or_serial_device
+    probe_network = move_model_to_dist_device_or_serial_device(args.rank, args, probe_network)
     return probe_network
 
 

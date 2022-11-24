@@ -37,7 +37,7 @@ def set_gpu_id_if_available_simple(args):
         args.gpu = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def set_devices(args):
+def set_devices(args, verbose: bool = False):
     """
     Set device to the gpu id if its distributed pytorch parallel otherwise to the device available.
 
@@ -48,6 +48,9 @@ def set_devices(args):
         args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
         args.device = args.rank
+
+    if verbose:
+        print(f'{args.device=}, {args.rank=}')
 
     # todo - I'm not sure if the code bellow should be here...
     if is_running_parallel(args.rank):

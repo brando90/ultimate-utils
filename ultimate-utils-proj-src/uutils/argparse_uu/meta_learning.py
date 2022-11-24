@@ -175,7 +175,7 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--filter_size', type=int, default=-1, help="Filter size for 5CNN.")
 
     # - task2vec args
-    parser.add_argument('--classifier_opts', type=int, default=None, help="The classifier options to fit the final layer"
+    parser.add_argument('--classifier_opts', type=dict, default=None, help="The classifier options to fit the final layer"
                                                                           "when computing the embeding of a task using"
                                                                           "task2vec. Note that the FIM is currently "
                                                                           "being run to completion (so no break points"
