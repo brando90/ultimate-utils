@@ -570,12 +570,14 @@ note:
 # - run expt with krbtmux 
 ssh ...
 
+top -u brando9
 tmux ls
 pkill -9 tmux -u brando9; pkill -9 krbtmux -u brando9; pkill -9 reauth -u brando9; pkill -9 python -u brando9; pkill -9 wandb-service* -u brando9;
 
 # - start krbtmux
 krbtmux
 reauth
+cd diversity-for-predictive-success-of-meta-learning
 #source ~/.bashrc.user
 # now you have a krbtmux that won't die, so you can 0. perhaps running reauth inside the main_krbtmux.sh script 1. run a python job for each krbtmux or 2. run multiple python jobs inside this krbtmux session
 
