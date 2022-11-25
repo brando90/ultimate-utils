@@ -1075,7 +1075,7 @@ def save_to_json_pretty(data: Any, path2filename: Union[str, Path], mode='w', in
     """
     import json
 
-    path2filename = expanduser(path2filename)
+    path2filename: Path = expanduser(path2filename)
 
     data = to_json(data) if force else data
     with open(path2filename, mode) as f:

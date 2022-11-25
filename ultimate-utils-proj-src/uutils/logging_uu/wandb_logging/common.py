@@ -55,6 +55,13 @@ def setup_wandb(args: Namespace):
             name=run_name,
             group=args.experiment_name
         )
+        # - print local run (to be deleted later https://github.com/wandb/wandb/issues/4409)
+        try:
+            args.wandb_run = wandb.run.dir
+            print(f'{wandb.run.dir=}')
+        except Exception as e:
+            args.wandb_run = 'no wandb run path'
+            print(f'{args.wandb_run=}')
         # - save args in wandb
         wandb.config.update(args)
 

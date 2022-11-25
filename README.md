@@ -550,6 +550,7 @@ git clone git@github.com:brando90/diversity-for-predictive-success-of-meta-learn
 git clone git@github.com:brando90/pycoq.git
 git clone git@github.com:FormalML/iit-term-synthesis.git
 mkdir /dfs/scratch0/brando9/data
+mkdir /dfs/scratch2/brando9/data
 
 /afs/cs.stanford.edu/u/brando9
 /dfs/scratch0/brando9
@@ -568,6 +569,11 @@ source cuda11.1
 nvcc -V
 ```
 
+Check disk space/quota:
+```bash
+df -h /dfs/scratch0
+```
+
 TODO, to reuse code, have something that checks
 the name of the cluster (if it's one of SNAPS, i.e. put the prefixes of snap ampere etc
 and run the code bellow, else do nothing let slurm, condor do it):
@@ -577,8 +583,8 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 # likely as above, set HOME on the script you are running to log correctly
-
 ```
+
 cd /dfs/scratch0/ 
 mkdir brando9
 cd /dfs/scratch0/brando9

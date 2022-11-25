@@ -214,8 +214,10 @@ def setup_args_for_experiment(args: Namespace,
     # - run re-auth if in stanford cluster
     from socket import gethostname
     if 'stanford' in gethostname():
+        print(f'In stanford hostname: {gethostname()=}, about to do stanford reauth in python')
         from uutils import stanford_reauth
         stanford_reauth()
+        print(f'finished calling stanford reauth inside python')
 
     # - return
     uutils.print_args(args)
