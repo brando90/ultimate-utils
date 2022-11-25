@@ -562,6 +562,65 @@ ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis /dfs/scratch0/brando9/ii
 ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
 ```
 
+Using kerberos tmux (https://ilwiki.stanford.edu/doku.php?id=hints:long-jobs):
+note:
+- need to run krbtmux per server
+- to reattach and other tmux commands use tmux prefix not krbtmux
+```bash
+# - run expt with krbtmux 
+ssh ...
+
+tmux ls
+pkill -9 tmux -u brando9; pkill -9 krbtmux -u brando9; pkill -9 reauth -u brando9; pkill -9 python -u brando9; pkill -9 wandb-service* -u brando9;
+
+# - start krbtmux
+krbtmux
+reauth
+#source ~/.bashrc.user
+# now you have a krbtmux that won't die, so you can 0. perhaps running reauth inside the main_krbtmux.sh script 1. run a python job for each krbtmux or 2. run multiple python jobs inside this krbtmux session
+
+# - run expt
+sh main_krbtmux.sh &
+# - end of run expt
+
+tmux detach
+tmux attach -t 0
+# 
+
+# --
+# if the above doesn't work then I will have to have a script that sets up the environment variables correctly for me & then manually type the python main:
+# sh main_setup_jobid_and_out_files.sh
+# python main.py &
+# sh echo_jobid_and_out_files.sh
+
+# type password, later how to pass it from terminal automatically https://unix.stackexchange.com/questions/724880/how-to-run-a-job-in-the-background-using-tmux-without-interacting-with-tmux-lik
+
+# note that settip up the jobid & outfile for err and stdout can be done within python too if the current sh main_krbtmux.sh & doesn't work and we move to python main.py &
+
+# -- some useful tmux commands & keystrokes
+tmux new -s mysession
+tmux kill-session -t mysession
+tmux switch -t <session name or number>
+tmux attach -t <session number>
+tmux ls
+tmux detach
+
+C-b ) = next session
+C-b ( = previous session
+C-b [ = to scroll history
+C-b d = detach from tmux without closing/killing the session but return normally to the terminal :) 
+```
+todo: https://unix.stackexchange.com/questions/724880/how-to-run-a-job-in-the-background-using-tmux-without-interacting-with-tmux-lik
+
+
+
+Using nohup for long running jobs in snap TODO: https://unix.stackexchange.com/questions/724902/how-does-one-send-new-commands-to-run-to-an-already-running-nohup-process-or-run 
+```bash
+TODO bellow doesn't work
+##nohup sh -c 'echo $SU_PASSWORD | /afs/cs/software/bin/reauth; python -u ~/diversity-for-predictive-success-of-meta-learning/div_src/diversity_src/experiment_mains/main_diversity_with_task2vec.py --manual_loads_name diversity_ala_task2vec_hdb1_mio > $OUT_FILE 2> $ERR_FILE' > $PWD/main.sh.nohup.out$SLURM_JOBID &
+```
+todo: perhaps opening a `krbtmux` and running commands there e.g. `python main.sh &` would work? (perhaps we don't even need nohup)
+
 Using gpus snap: https://ilwiki.stanford.edu/doku.php?id=hints:gpu
 ```bash
 source cuda11.1
@@ -585,11 +644,11 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 # likely as above, set HOME on the script you are running to log correctly
 ```
 
+Creating folders in scratch with lots of space.
+```bash
 cd /dfs/scratch0/ 
 mkdir brando9
 cd /dfs/scratch0/brando9
-```
-
 ```
 
 check quota in afs
