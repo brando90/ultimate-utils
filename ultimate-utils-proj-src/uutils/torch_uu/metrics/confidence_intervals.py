@@ -86,6 +86,7 @@ def compute_ci(std: float, confidence: float, n: int) -> np.ndarray:
 def nth_central_moment_and_its_confidence_interval(data: np.ndarray,
                                                    moment_idx: int,
                                                    confidence: float = 0.95,
+                                                   centered: bool = True,
                                                    ) -> tuple[float, np.ndarray]:
     """
     Compute the nth central moment and it's confidence interval.
@@ -99,10 +100,16 @@ def nth_central_moment_and_its_confidence_interval(data: np.ndarray,
     from scipy.stats import moment
 
     a: np.ndarray = 1.0 * np.array(data)
-    mom: float = moment(a=data, moment=moment_idx)
-
     n: int = len(a)
-    var_mom: float = moment(a=data, moment=2 * moment_idx)
+
+    if centered:
+        mom: float = moment(a=data, moment=moment_idx)
+        var_mom: float = moment(a=data, moment=2 * moment_idx)
+    else:
+        from uutils.numpy_uu.common import compute_uncentered_moments
+        mom: float = compute_uncentered_moments(a=data, moment_idx=moment_idx)
+        var_mom: float = compute_uncentered_moments(a=data, moment_idx=2 * moment_idx)
+
     std: float = var_mom ** 0.5
     ci: np.ndarray = compute_ci(std, confidence, n)
     return mom, ci

@@ -4,19 +4,28 @@ import numpy as np
 
 from dataclasses import dataclass
 
+
 @dataclass
 class MomentCI:
     mom: float
     ci: float
     moment_idx: int
 
-def _my_compute_central_moment(a: np.ndarray, moment_idx: int = 1) -> float:
+
+def _my_compute_central_moment(a: np.ndarray, moment_idx: int = 1, centered: bool = True) -> float:
     """
     Computes central moment: mom_n = E_x[(X - mu)^n], note, first central moment is always zero.
     """
-    centered_a: np.ndarray = a - a.mean()
-    centered_a_n: np.ndarray = centered_a ** moment_idx
-    mom: float = float(centered_a_n.mean())
+    if centered:
+        a: np.ndarray = a - a.mean()
+    a_n: np.ndarray = a ** moment_idx
+    mom: float = float(a_n.mean())
+    return mom
+
+
+def compute_uncentered_moments(a: np.ndarray, moment_idx: int = 1) -> float:
+    """"""
+    mom: float = _my_compute_central_moment(a, moment_idx, centered=False)
     return mom
 
 
@@ -50,7 +59,11 @@ def get_diagonal(matrix: np.ndarray,
     return flatten, triu, tril
 
 
-def compute_central_moments(array: np.ndarray, moment_idxs: list[int] = [1], confidence: float = 0.95) -> dict[dict]:
+def compute_moments(array: np.ndarray,
+                    moment_idxs: list[int] = [1],
+                    confidence: float = 0.95,
+                    centered: bool = True,
+                    ) -> dict[dict]:
     """
     Moment:
     0 = total
@@ -69,7 +82,7 @@ def compute_central_moments(array: np.ndarray, moment_idxs: list[int] = [1], con
     moments: dict[dict] = {}
     moment_idx: int
     for moment_idx in moment_idxs:
-        mom, ci = nth_central_moment_and_its_confidence_interval(array, moment_idx, confidence=confidence)
+        mom, ci = nth_central_moment_and_its_confidence_interval(array, moment_idx, confidence, centered)
         moments[moment_idx] = MomentCI(mom=mom, ci=ci, moment_idx=moment_idx)
     return moments
 
@@ -81,11 +94,12 @@ def standardized_moments():
 
 # - test
 
-def compute_central_moments_test():
+def compute_moments_test():
     n: int = 500
-    a: np.ndarray = np.random.normal(loc=0.0, scale=1.0, size=n)
-    moments: dict = compute_central_moments(a, moment_idxs=[1, 2, 3, 4])
-    # print(moments)
+    a: np.ndarray = np.random.normal(loc=2.0, scale=8.0, size=n)
+    moments: dict = compute_moments(a, moment_idxs=[1, 2, 3, 4])
+    pprint(moments)
+    moments: dict = compute_moments(a, moment_idxs=[1, 2, 3, 4], centered=False)
     pprint(moments)
 
 
@@ -95,6 +109,6 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run experiment
-    compute_central_moments_test()
+    compute_moments_test()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
