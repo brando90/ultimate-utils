@@ -1,5 +1,14 @@
+from pprint import pprint
+
 import numpy as np
 
+from dataclasses import dataclass
+
+@dataclass
+class MomentCI:
+    mom: float
+    ci: float
+    moment_idx: int
 
 def _my_compute_central_moment(a: np.ndarray, moment_idx: int = 1) -> float:
     """
@@ -41,7 +50,7 @@ def get_diagonal(matrix: np.ndarray,
     return flatten, triu, tril
 
 
-def compute_moments(array: np.ndarray, moment_idxs: list[int] = [1]) -> list:
+def compute_central_moments(array: np.ndarray, moment_idxs: list[int] = [1], confidence: float = 0.95) -> dict[dict]:
     """
     Moment:
     0 = total
@@ -49,7 +58,7 @@ def compute_moments(array: np.ndarray, moment_idxs: list[int] = [1]) -> list:
     2 = variance
     3 = skewness
     4 = kurtosis
-    :return:
+    ...
     """
     from uutils.torch_uu.metrics.confidence_intervals import nth_central_moment_and_its_confidence_interval
     # - check is of size (N,)
@@ -57,25 +66,35 @@ def compute_moments(array: np.ndarray, moment_idxs: list[int] = [1]) -> list:
     assert len(array.shape) == 1
     assert isinstance(array.shape[0], int)
     # - compute moments
-    moments: dict = {}
+    moments: dict[dict] = {}
     moment_idx: int
     for moment_idx in moment_idxs:
-        mom, ci = nth_central_moment_and_its_confidence_interval(a=array, moment=moment_idx)
-        moments[moment_idx] = dict(mom=mom, ci=ci, moment_idx=moment_idx)
+        mom, ci = nth_central_moment_and_its_confidence_interval(array, moment_idx, confidence=confidence)
+        moments[moment_idx] = MomentCI(mom=mom, ci=ci, moment_idx=moment_idx)
     return moments
 
 
 def standardized_moments():
+    """ mom / std^n"""
     pass
 
 
-# -
+# - test
+
+def compute_central_moments_test():
+    n: int = 500
+    a: np.ndarray = np.random.normal(loc=0.0, scale=1.0, size=n)
+    moments: dict = compute_central_moments(a, moment_idxs=[1, 2, 3, 4])
+    # print(moments)
+    pprint(moments)
+
 
 if __name__ == '__main__':
     import time
+    from uutils import report_times
 
     start = time.time()
     # - run experiment
-    # main()
+    compute_central_moments_test()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")
