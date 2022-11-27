@@ -545,7 +545,7 @@ def stanford_reauth():
     reauth_cmd: str = f'echo $SU_PASSWORD | /afs/cs/software/bin/reauth'
     out = run_bash_command(reauth_cmd)
     print('Output of reauth (/afs/cs/software/bin/reauth with password): ')
-    print(f'{out=}')
+    print(f'--> {out=}')
 
 
 def get_nvidia_smi_output() -> str:

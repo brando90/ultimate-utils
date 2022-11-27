@@ -1,11 +1,81 @@
+from typing import Optional, Union
+
+import numpy as np
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
+import seaborn as sns
 from pandas import DataFrame
 from torch.utils.data import Dataset, DataLoader
 
 from uutils.plot import save_to_desktop
 from uutils.torch_uu import make_code_deterministic
+
+
+def get_num_bins(n: int, option: Optional[str] = None) -> Union[int, str]:
+    """
+
+    refs:
+        - https://www.quora.com/How-do-you-determine-the-number-of-bins-in-a-histogram
+        - https://stats.stackexchange.com/questions/798/calculating-optimal-number-of-bins-in-a-histogram
+    """
+    if option is None:
+        return len(n) // 5
+    elif option == 'log':
+        return int(np.log(n))
+    elif option == 'square_root':
+        return int(n ** 0.5)
+    elif option == 'auto':
+        return 'auto'  # from seaborn https://seaborn.pydata.org/generated/seaborn.histplot.html
+    else:
+        raise ValueError(f'Number of bins: {option=} not implemented')
+
+
+def get_histogram(array: np.ndarray,
+                  xlabel: str,
+                  ylabel: str,
+                  title: str,
+
+                  dpi=200,  # dots per inch,
+                  facecolor: str = 'white',
+                  bins: int = None,
+                  show: bool = False,
+                  tight_layout=False,
+                  linestyle: Optional[str] = '--',
+                  alpha: float = 0.75,
+                  edgecolor: str = "black",
+                  stat: Optional = 'count',
+                  color: Optional[str] = None,
+                  ):
+    """ """
+    # - check it's of size (N,)
+    if isinstance(array, list):
+        array: np.ndarray = np.array(array)
+    assert array.shape == (array.shape[0],)
+    assert len(array.shape) == 1
+    assert isinstance(array.shape[0], int)
+    # -
+    # n: int = array.shape[0]
+    # if bins is None:
+    #     bins: int = get_num_bins(n, option='square_root')
+    #     # bins: int = get_num_bins(n, option='square_root')
+    # print(f'using this number of {bins=} and data size is {n=}')
+    # -
+    fig = plt.figure(dpi=dpi)
+    fig.patch.set_facecolor(facecolor)
+
+    import seaborn as sns
+    p = sns.histplot(array, stat=stat, color=color)
+    # n, bins, patches = plt.hist(array, bins=bins, facecolor='b', alpha=alpha, edgecolor=edgecolor, density=True)
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    # plt.xlim(40, 160)
+    # plt.ylim(0, 0.03)
+    plt.grid(linestyle=linestyle) if linestyle else None
+    plt.tight_layout() if tight_layout else None
+    plt.show() if show else None
 
 
 def histograms_heigh_width_of_imgs_in_dataset(dataset: Dataset,
@@ -137,13 +207,42 @@ def useful_stats_test():
     print_compute_useful_size_stats(ds)
 
 
+def dummy_task2vec_test():
+    from uutils.numpy_uu.common import get_diagonal
+    distance_matrix = np.array([[0., 0.24079067, 0.23218697, 0.1620301, 0.16845202],
+                                [0.24079067, 0., 0.12441093, 0.26010787, 0.27561545],
+                                [0.23218697, 0.12441093, 0., 0.2537393, 0.26971972],
+                                [0.1620301, 0.26010787, 0.2537393, 0., 0.174303],
+                                [0.16845202, 0.27561545, 0.26971972, 0.174303, 0.]])
+    print(f'{distance_matrix.shape}')
+    distances_as_flat_array, _, _ = get_diagonal(distance_matrix, check_if_symmetric=True)
+    distances_as_flat_array: np.ndarray = np.random.randn(500)
+    print(f'{distances_as_flat_array.shape=}')
+    #
+    title: str = 'Distribution of Task2Vec Distances'
+    xlabel: str = 'Cosine Distance between Task Pairs'
+    ylabel = 'Frequency Density (pmf)'
+    # ylabel = 'Normalized Frequency'
+    # ylabel = 'Percent'
+    # - Frequency Density (pmf)
+    # get_histogram(distances_as_flat_array, xlabel, ylabel, title, stat='probability')
+    get_histogram(distances_as_flat_array, xlabel, ylabel, title, stat='probability', linestyle=None, color='b')
+    plt.show()
+    # - counts/frequency
+    ylabel = 'Frequency'
+    # get_histogram(distances_as_flat_array, xlabel, ylabel, title)
+    get_histogram(distances_as_flat_array, xlabel, ylabel, title, linestyle=None, color='b')
+    plt.show()
+
+
 if __name__ == "__main__":
     import time
 
     start = time.time()
     # - run experiment
     # hist_test()
-    useful_stats_test()
+    # useful_stats_test()
+    dummy_task2vec_test()
     # - Done
     from uutils import report_times
 

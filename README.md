@@ -349,6 +349,8 @@ mercury2
 # -- RTX 8000 48GB, local storage 11TB
 ssh brando9@hyperturing1.stanford.edu
 ssh brando9@hyperturing2.stanford.edu
+ssh brando9@hyperturing3.stanford.edu
+ssh brando9@hyperturing4.stanford.edu
 
 # -- a100 80GB, local storage 56TB
 ssh brando9@ampere1.stanford.edu

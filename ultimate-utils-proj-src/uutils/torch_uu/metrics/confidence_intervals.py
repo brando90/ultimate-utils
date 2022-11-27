@@ -47,7 +47,7 @@ todo:
 """
 from typing import Union
 
-import numpy
+import numpy as np
 import scipy
 import torch
 from torch import Tensor
@@ -72,7 +72,43 @@ Conclusion: yes, using t(p) raises the multiplier of the ci in ci=t(p)*std/sqrt(
 """
 
 
-def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, numpy.ndarray]:
+def compute_ci(std: float, confidence: float, n: int) -> np.ndarray:
+    """
+    Computes confidence interval:
+        ci = z(p) * std/ sqrt(n)
+    """
+    tp: float = scipy.stats.t.ppf((1 + confidence) / 2., n - 1)
+    se: float = std / (n ** 0.5)
+    ci: float = tp * se
+    return ci
+
+
+def nth_central_moment_and_its_confidence_interval(data: np.ndarray,
+                                                   moment_idx: int,
+                                                   confidence: float = 0.95,
+                                                   ) -> tuple[float, np.ndarray]:
+    """
+    Compute the nth central moment and it's confidence interval.
+
+    ci formula: z(p) * s / sqrt(n)
+    Central moments are computed using mom_n = E[X^n]. To compute their CI we need their variance which is the next next moment
+    i.e. var_mom_n = E[X^2n] so std_mom_n = sqrt(E[X^2n]) = sqrt(var_mom_n) which can be then plugged in to the
+    ci formula as normal.
+    """
+    import numpy as np
+    from scipy.stats import moment
+
+    a: np.ndarray = 1.0 * np.array(data)
+    mom: float = moment(a=data, moment=moment_idx)
+
+    n: int = len(a)
+    var_mom: float = moment(a=data, moment=2 * moment_idx)
+    std: float = var_mom ** 0.5
+    ci: np.ndarray = compute_ci(std, confidence, n)
+    return mom, ci
+
+
+def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, np.ndarray]:
     """
     Returns (tuple of) the mean and confidence interval for given data.
     Data is a np.arrayable iterable.
@@ -219,7 +255,9 @@ def ci_test_regression():
     n: int = 30
     x: Tensor = torch.randn(n) - 10
     mean, ci_95 = mean_confidence_interval(x, confidence=0.95)
-    mean, ci_95_torch = torch_compute_confidence_interval(x, confidence=0.95)
+    mean_torch, ci_95_torch = torch_compute_confidence_interval(x, confidence=0.95)
+    print(f'{mean=}')
+    print(f'{mean_torch=}')
     print(f'{x.std()=}')
     print(f'{ci_95=}')
     print(f'{ci_95_torch=}')
@@ -277,10 +315,61 @@ def ci_test_float():
     print(m, ci)
 
 
+def moments_test():
+    from uutils.numpy_uu.common import _my_compute_central_moment
+    from uutils.torch_uu import approx_equal
+    n: int = 500
+    x: np.ndarray = np.random.normal(loc=0.0, scale=1.0, size=n)
+    # -
+    mom, ci_95_mom = nth_central_moment_and_its_confidence_interval(x, 0, confidence=0.95)
+    my_mom = _my_compute_central_moment(x, 0)
+    print(f'{mom=}')
+    print(f'{my_mom=}')
+    assert approx_equal(my_mom, mom, tolerance=1e-2)
+    # -
+    mean, ci_95 = mean_confidence_interval(x, confidence=0.95)
+    mom, ci_95_mom = nth_central_moment_and_its_confidence_interval(x, 1, confidence=0.95)
+    my_mom = _my_compute_central_moment(x, 1)
+    print('--')
+    print(f'{mean=} (not exactly zero because this is the actual mean of the data, not the mean of the centered data)')
+    print(f'{mom=} (should be zero)')
+    print(f'{my_mom=}')
+    assert approx_equal(my_mom, mom, tolerance=1e-2)
+    print(f'{ci_95=}')
+    print(f'{ci_95_mom=}')
+    # the assert is not quite right because we need to do the ci of the centered data but this shift doens't actually matter so it works
+    assert approx_equal(ci_95, ci_95_mom, tolerance=1e-2)
+
+    mom, ci_95_mom = nth_central_moment_and_its_confidence_interval(x, 2, confidence=0.95)
+    my_mom = _my_compute_central_moment(x, 2)
+    print(f'-- should be close to 1.0 since data has std 1.0')
+    print(f'{mom=}')
+    print(f'{my_mom=}')
+    assert approx_equal(my_mom, mom, tolerance=1e-2)
+    print(f'{ci_95_mom=}')
+
+    mom, ci_95_mom = nth_central_moment_and_its_confidence_interval(x, 3, confidence=0.95)
+    my_mom = _my_compute_central_moment(x, 3)
+    print(f'--')
+    print(f'{mom=}')
+    print(f'{my_mom=}')
+    assert approx_equal(my_mom, mom, tolerance=1e-2)
+    print(f'{ci_95_mom=}')
+
+    mom, ci_95_mom = nth_central_moment_and_its_confidence_interval(x, 4, confidence=0.95)
+    my_mom = _my_compute_central_moment(x, 4)
+    print(f'--')
+    print(f'{mom=}')
+    print(f'{my_mom=}')
+    assert approx_equal(my_mom, mom, tolerance=1e-2)
+    print(f'{ci_95_mom=}')
+
+
 if __name__ == '__main__':
     # ci_test()
     # ci_test_regression()
     # prob_of_truth_being_inside_when_using_ci_as_std()
     # print_tps()
-    ci_test_float()
+    # ci_test_float()
+    moments_test()
     print('Done, success! \a')
