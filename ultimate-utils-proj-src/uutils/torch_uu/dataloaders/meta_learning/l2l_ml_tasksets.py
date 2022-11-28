@@ -36,6 +36,8 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
+    # - get benchmark tasksets loader
+    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING you didnt set data augmentation flag in args' )
     if args.data_option == 'cifarfs':
         args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
@@ -49,6 +51,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         raise NotImplemented
     elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
         # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
+        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
+        print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
         args.tasksets: BenchmarkTasksets = get_tasksets(
             args.data_option.split('_')[0],  # returns cifarfs or fc100 string
@@ -61,7 +65,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         )
     elif args.data_option == 'mini-imagenet' or args.data_option == 'tiered-imagenet':
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
-        # from uutils.torch_uu.dataloaders.meta_learning.l2l_mini_imagenet_mi import get_tasksets
+        print(f'{args.data_augmentation=}')
         args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
@@ -103,6 +107,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
     elif args.data_option == 'hdb1':
+        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
+        print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
         args.tasksets: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
@@ -113,6 +119,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'hdb2':
+        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
+        print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hdb2_cifarfs_omniglot_tasksets
         args.tasksets: BenchmarkTasksets = hdb2_cifarfs_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
@@ -123,6 +131,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'delauny_uu_l2l_bm_split':
+        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import get_delauny_tasksets
         args.tasksets: BenchmarkTasksets = get_delauny_tasksets(
