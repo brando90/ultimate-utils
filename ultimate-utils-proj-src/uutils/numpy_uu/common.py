@@ -41,7 +41,13 @@ def get_diagonal(matrix: np.ndarray,
     tril: np.ndarray = np.tril(matrix)
     # distance_matrix = distance_matrix[~np.eye(distance_matrix.shape[0], dtype=bool)].reshape(distance_matrix.shape[0], -1)
     # remove diagonal and dummy zeros where the other triangular matrix was artificially placed.
-    distance_matrix = triu[triu != 0.0]
+    distance_matrix: np.ndarray = triu[triu != 0.0]
+
+    # - check we are returning diagonal so sit's samller than full matrix
+    size_full_matrix: int = matrix.size
+    size_diag: int = distance_matrix.size
+    assert size_diag < size_full_matrix, f'The diagonal matrix is not being extracted correct:' \
+                                         f'\n{size_diag=}, {size_full_matrix=}'
 
     # - flatten
     flatten: np.ndarray = distance_matrix.flatten()
