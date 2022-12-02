@@ -96,6 +96,7 @@ def clear_file_contents(path2file: Union[str, Path]):
     # f = open('file.txt', 'r+')
     # f.truncate(0)  # need '0' when using r+
 
+
 def print_python_version():
     import sys
 
@@ -1021,6 +1022,7 @@ def print_args(args: Namespace, sort_keys: bool = True):
 def pprint_args(args: Namespace):
     print(f'args=')
     print_args(args)
+    print()
 
 
 def pprint_dict(dic):
