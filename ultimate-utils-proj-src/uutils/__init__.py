@@ -81,6 +81,21 @@ def print_file(path_or_str: Union[str, Path]) -> None:
     cat_file(path2filename=path_or_str)
 
 
+def clear_file_contents(path2file: Union[str, Path]):
+    """
+    Clears contents of a file.
+
+
+    reason it works from SO:
+        the reason this works (in both C++ and python) is because by default when you open a file for writing, it truncates the existing contents. So really it's sorta a side effect, and thus I would prefer the explicit call to truncate() for clarity reasons, even though it is unnecessary.
+
+    ref: https://stackoverflow.com/questions/2769061/how-to-erase-the-file-contents-of-text-file-in-python
+    """
+    path2file: Path = expanduser(path2file)
+    open(path2file, "w").close()
+    # f = open('file.txt', 'r+')
+    # f.truncate(0)  # need '0' when using r+
+
 def print_python_version():
     import sys
 
@@ -1004,6 +1019,7 @@ def print_args(args: Namespace, sort_keys: bool = True):
 
 
 def pprint_args(args: Namespace):
+    print(f'args=')
     print_args(args)
 
 

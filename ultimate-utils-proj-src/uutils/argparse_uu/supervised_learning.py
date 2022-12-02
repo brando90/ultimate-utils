@@ -15,9 +15,9 @@ def parse_args_standard_sl() -> Namespace:
     parser = argparse.ArgumentParser()
 
     # -- create argument options
-    parser.add_argument('--debug', action='store_true', help='if debug')
-    # parser.add_argument('--serial', action='store_true', help='if running serially')
-    parser.add_argument('--parallel', action='store_true', help='if running in parallel')
+    parser.add_argument('--debug', action='store_true', help='if debug', default=False)
+    # parser.add_argument('--serial', action='store_true', help='if running serially', default=False)
+    parser.add_argument('--parallel', action='store_true', help='if running in parallel', default=False)
 
     # - path to log_root
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
@@ -86,7 +86,7 @@ def parse_args_standard_sl() -> Namespace:
                              'setup method and log_root.')
     parser.add_argument('--data_augmentation', type=str, default=None)
     parser.add_argument('--not_augment_train', action='store_false', default=True)
-    parser.add_argument('--augment_val', action='store_true', default=True)
+    parser.add_argument('--augment_val', action='store_true', default=False)
     parser.add_argument('--augment_test', action='store_true', default=False)
     # parser.add_argument('--l2', type=float, default=0.0)
 
@@ -105,7 +105,7 @@ def parse_args_standard_sl() -> Namespace:
                                                                  'either log every epoch or log ever ~100 iterations')
     parser.add_argument('--seed', type=int, default=-1)
     parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
-                        help='tries to make pytorch fully deterministic')
+                        help='tries to make pytorch fully deterministic', default=False)
     parser.add_argument('--num_workers', type=int, default=-1,
                         help='the number of data_lib-loading threads (when running serially')
     parser.add_argument('--pin_memory', action='store_true', default=False, help="Using pinning is an"
@@ -118,10 +118,10 @@ def parse_args_standard_sl() -> Namespace:
                                                                                  "essential, likely over"
                                                                                  "optimizing. See:"
                                                                                  "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
-    parser.add_argument('--log_to_tb', action='store_true', help='store to weights and biases')
+    parser.add_argument('--log_to_tb', action='store_true', help='store to weights and biases', default=False)
 
     # - wandb
-    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
+    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases', default=False)
     parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
     parser.add_argument('--wandb_entity', type=str, default='brando')
     # parser.add_argument('--wandb_project', type=str, default='test-project')
