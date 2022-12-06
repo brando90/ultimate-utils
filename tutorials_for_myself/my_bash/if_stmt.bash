@@ -1,14 +1,29 @@
 #!/usr/bin/env bash
 
 # --
-#host_v=$(hostname)
-#if [ $host_v = vision-submit.cs.illinois.edu ]; then
-##    echo "Strings are equal."
-#    conda activate metalearning11.1
-#else
-##    echo "Strings are not equal."
-#    conda activate metalearningpy1.7.1c10.2
-#fi
+
+if ! command -v ruby &> /dev/null
+then
+    ruby -v
+else
+    echo "no ruby"
+fi
+
+# This script will first check if the mycommand command exists using the command -v built-in. If the command is not found, the command built-in will return a non-zero exit code, which will be negated by the ! operator in the if statement. This will cause the if statement to be executed, and the echo command will be run to print "hello" to the terminal.
+if ! command -v mycommand >/dev/null 2>&1; then
+  # If the command does not exist, echo "hello"
+  echo "hello"
+fi
+
+# --
+host_v=$(hostname)
+if [ $host_v = vision-submit.cs.illinois.edu ]; then
+#    echo "Strings are equal."
+    conda activate metalearning11.1
+else
+#    echo "Strings are not equal."
+    conda activate metalearningpy1.7.1c10.2
+fi
 
 # --
 #sudo apt-get install lsb_release
@@ -75,6 +90,8 @@ then
     cd ~/.rbenv
     git clone https://github.com/rbenv/rbenv.git .
 
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init -)"
     echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc.user
     echo 'eval "$(rbenv init -)"' >> ~/.bashrc.user
 #    exec $SHELL
@@ -87,6 +104,7 @@ then
     cd ~/.ruby-build
     git clone https://github.com/rbenv/ruby-build.git .
 
+    export PATH="$HOME/.ruby-build/bin:$PATH"
     echo 'export PATH="$HOME/.ruby-build/bin:$PATH"' >> ~/.bashrc.user
 #    exec $SHELL
     bash
@@ -95,8 +113,8 @@ then
 
     # - install ruby without sudo -- now that ruby build was install
     mkdir -p ~/.local
-    ruby-build 3.1.2 ~/.local/
-    # rbenv install 3.1.2
+#    ruby-build 3.1.2 ~/.local/
+    rbenv install 3.1.2
     rbenv global 3.1.2
 
     ruby -v

@@ -683,6 +683,55 @@ sh deactivate.c
 python conda.c
 ```
 
+Seems current meta-learning uses:
+```
+torch                     1.9.1+cu111              pypi_0    pypi
+```
+let's try for iit
+```
+# pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+#pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113 --upgrade
+```
+
+## Installing ruby (snap)
+
+```bash
+mkdir ~/.rbenv
+cd ~/.rbenv
+git clone https://github.com/rbenv/rbenv.git .
+
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init -)"
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc.user
+echo 'eval "$(rbenv init -)"' >> ~/.bashrc.user
+#    exec $SHELL
+bash
+
+rbenv -v
+
+# - install ruby-build
+mkdir ~/.ruby-build
+cd ~/.ruby-build
+git clone https://github.com/rbenv/ruby-build.git .
+
+export PATH="$HOME/.ruby-build/bin:$PATH"
+echo 'export PATH="$HOME/.ruby-build/bin:$PATH"' >> ~/.bashrc.user
+#    exec $SHELL
+bash
+
+ruby-build --version
+
+# - install ruby without sudo -- now that ruby build was install
+mkdir -p ~/.local
+#    ruby-build 3.1.2 ~/.local/
+rbenv install 3.1.2
+rbenv global 3.1.2
+
+ruby -v
+```
+
 ## CPU
 
 ref: https://ilwiki.stanford.edu/doku.php?id=snap-servers:snap-servers#compute_servers
