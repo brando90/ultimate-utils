@@ -18,7 +18,7 @@ from torch import optim
 from torch import Tensor
 from torch.optim.optimizer import required
 
-from anatome.helper import LayerIdentifier, dist_data_set_per_layer
+# from anatome.helper import LayerIdentifier, dist_data_set_per_layer
 # from meta_learning.meta_learners.pretrain_convergence import get_adapted_according_to_ffl
 
 from pdb import set_trace as st
@@ -260,7 +260,8 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
         training: bool = True,
         copy_initial_weights: bool = False,
         track_higher_grads: bool = False
-) -> list[OrderedDict[LayerIdentifier, float]]:
+) -> list[OrderedDict[str, float]]:
+    # ) -> list[OrderedDict[LayerIdentifier, float]]:
     """
     :param mdl:
     :param spt_x: not as a tuple due to having to move them to gpu potentially.
@@ -286,10 +287,12 @@ def dist_batch_tasks_for_all_layer_mdl_vs_adapted_mdl(
     :param track_higher_grads:
     :return:
     """
+    from anatome.helper import LayerIdentifier, dist_data_set_per_layer
     # - [B, M, C, H, W] -> [B, L]
     L: int = len(layer_names)
     B: int = spt_x.size(0)
-    dists_per_batch_per_layer: list[OrderedDict[LayerIdentifier, float]] = []
+    # dists_per_batch_per_layer: list[OrderedDict[LayerIdentifier, float]] = []
+    dists_per_batch_per_layer: list[OrderedDict[str, float]] = []
     for t in range(B):
         spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
         # assert spt_x_t.size() == torch.Size([5*5, 84, 3, 3])
@@ -355,7 +358,8 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
         training: bool = True,
         copy_initial_weights: bool = False,
         track_higher_grads: bool = False
-) -> list[OrderedDict[LayerIdentifier, float]]:
+) -> list[OrderedDict[str, float]]:
+    # ) -> list[OrderedDict[LayerIdentifier, float]]:
     """
     todo:
         - modify code so that it takes two meta-learners and returns the adapted model according to the meta-learner
@@ -363,6 +367,7 @@ def dist_batch_tasks_for_all_layer_different_mdl_vs_adapted_mdl(
         you eventually need to pattern the class to the function being used (or have the object carry that function
         intrinsically).
     """
+    from anatome.helper import LayerIdentifier, dist_data_set_per_layer
     # - [B, M, C, H, W] -> [B, L]
     L: int = len(layer_names)
     B: int = spt_x.size(0)
