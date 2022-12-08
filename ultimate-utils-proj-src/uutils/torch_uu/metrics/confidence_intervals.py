@@ -233,6 +233,41 @@ def prob_of_truth_being_inside_when_using_ci_as_std():
     print('Integration bewteen {} and {} --> '.format(x1, x2), res)
 
 
+def confidence_intervals_intersect(pair0: tuple[float, float], pair1: tuple[float, float]) -> bool:
+    """
+    Tells you if the confidence intervals intersect. The first value in the tuple is the expected value and the second
+    one is the confidence interval CI. Code will do
+    ```python
+        larger_adjusted: float = larger[0] - larger[1]
+        smaller_adjusted: float = smaller[0] + smaller[1]
+        # - they intersect if the larger became smaller and the smaller became larger
+        intersect: bool = larger_adjusted < smaller_adjusted
+    ```
+
+    Examples:
+        - to detect "equivalence" then the CI's intersect (and num tasks is high, since it's trivial for this to be
+        true with N~small e.g. 1)
+        - to detect statistically significant difference, then the CI's don't intersect (and num tasks is high)
+    :param pair0:
+    :param pair1:
+    :return:
+    """
+    larger: float
+    smaller: float
+    if pair0[0] > pair1[0]:
+        larger = pair0
+        smaller = pair1
+    else:
+        larger = pair1
+        smaller = pair0
+    assert larger[0] > smaller[0], f'Err: {larger=}, {smaller=}'
+    # - check intersection
+    larger_adjusted: float = larger[0] - larger[1]
+    smaller_adjusted: float = smaller[0] + smaller[1]
+    # - they intersect if the larger became smaller and the smaller became larger
+    intersect: bool = larger_adjusted < smaller_adjusted
+    return intersect
+
 # - tests
 
 def ci_test():
@@ -372,11 +407,36 @@ def moments_test():
     print(f'{ci_95_mom=}')
 
 
+def statistically_significant_test():
+    """
+    For high div expts we need:
+        - there is a difference btw the two accuracies
+        - so the errors do not intersect
+
+    :return:
+    """
+    pair1 = (90, 5)
+    pair2 = (80, 1)
+    assert not confidence_intervals_intersect(pair1, pair2)
+    assert not confidence_intervals_intersect(pair2, pair1)
+    print(f'{(pair1, pair2)=}')
+    print(f'{confidence_intervals_intersect(pair1, pair2)=}')
+
+
+    pair1 = (93, 3)
+    pair2 = (89, 2)
+    assert confidence_intervals_intersect(pair1, pair2)
+    assert confidence_intervals_intersect(pair2, pair1)
+    print(f'{(pair1, pair2)=}')
+    print(f'{confidence_intervals_intersect(pair1, pair2)=}')
+
+
 if __name__ == '__main__':
     # ci_test()
     # ci_test_regression()
     # prob_of_truth_being_inside_when_using_ci_as_std()
     # print_tps()
     # ci_test_float()
-    moments_test()
+    # moments_test()
+    statistically_significant_test()
     print('Done, success! \a')
