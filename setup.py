@@ -82,9 +82,9 @@ setup(
         # 'seaborn'
         # 'nltk'
 
-        'torch',
-        'torchvision',
-        'torchaudio'
+        # 'torch',
+        # 'torchvision',
+        # 'torchaudio'
 
         # at the end because it might fail + you might need to pip install it directly for your cuda version
         # see read me if your using an old version of uutils and need these version instead for some reason:
