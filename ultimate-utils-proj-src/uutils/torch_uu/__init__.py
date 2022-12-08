@@ -95,6 +95,12 @@ def gpu_test():
     """
     python -c "import uutils; uutils.torch_uu.gpu_test()"
     """
+    import sys
+    print(f'python version: {sys.version=}')
+    import torch
+    print(f'{torch.version=}')
+    print(f'torch.__version__={torch.__version__}')
+
     from torch import Tensor
 
     print(f'device name: {device_name()}')
