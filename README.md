@@ -319,6 +319,10 @@ ln -s /shared/rsaas/miranda9/automl-meta-learning ~/automl-meta-learning
 
 mv ~/wandb /shared/rsaas/miranda9
 ln -s /shared/rsaas/miranda9/wandb ~/wandb 
+
+cd /shared/rsaas/miranda9/
+git clone git@github.com:brando90/proverbot9001.git
+ln -s /shared/rsaas/miranda9/proverbot9001 ~/proverbot9001 
 ```
 to check real path (for soft links) do e.g. `realpath /home`.
 
@@ -551,6 +555,8 @@ git clone git@github.com:brando90/ultimate-utils.git
 git clone git@github.com:brando90/diversity-for-predictive-success-of-meta-learning.git
 git clone git@github.com:brando90/pycoq.git
 git clone git@github.com:FormalML/iit-term-synthesis.git
+git clone git@github.com:brando90/proverbot9001.git
+git checkout develop
 mkdir /dfs/scratch0/brando9/data
 mkdir /dfs/scratch2/brando9/data
 
@@ -562,6 +568,7 @@ ln -s /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-le
 ln -s /afs/cs.stanford.edu/u/brando9/pycoq /dfs/scratch0/brando9/pycoq  
 ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis /dfs/scratch0/brando9/iit-term-synthesis 
 ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
+ln -s /afs/cs.stanford.edu/u/brando9/proverbot9001 /dfs/scratch0/brando9/proverbot9001 
 ```
 
 Using kerberos tmux (https://ilwiki.stanford.edu/doku.php?id=hints:long-jobs):
