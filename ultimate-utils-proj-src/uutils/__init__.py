@@ -1251,21 +1251,26 @@ def save_args(args: Namespace, args_filename: str = 'args.json'):
 
 def get_home_pwd_local_machine_snap() -> None:
     """
-
-    python -c "import uutils; get_home_pwd_local_machine_snap()"
-
-    one liner:
-python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/');"
-
+    Gets the path to local machine in snap (lfs) with user name appended at the end.
 
 bash command:
-# SNAP
-export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
-export HOSTNAME = hostname
-export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
+# Local machine as Home
+export LOCAL_MACHINE_PWD=$(python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
+mkdir -p $LOCAL_MACHINE_PWD
 export WANDB_DIR=$LOCAL_MACHINE_PWD
+export HOME=$LOCAL_MACHINE_PWD
 
-I think works, one liner: https://stackoverflow.com/questions/27658675/how-to-remove-last-n-characters-from-a-string-in-bash
+# Without python, doesn't work fix some day...
+# export LOCAL_MACHINE_PWD=$(python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
+# export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
+export HOSTNAME=$(hostname)
+export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
+mkdir -p $LOCAL_MACHINE_PWD
+export WANDB_DIR=$LOCAL_MACHINE_PWD
+export HOME=$LOCAL_MACHINE_PWD
+
+ref:
+    - one liner: https://stackoverflow.com/questions/27658675/how-to-remove-last-n-characters-from-a-string-in-bash
     """
     import socket
     hostname: str = socket.gethostname()
@@ -1273,6 +1278,8 @@ I think works, one liner: https://stackoverflow.com/questions/27658675/how-to-re
     local_pwd: str = f'/lfs/{hostname}/0/brando9'
     print(local_pwd)  # returns to terminal
     # return local_pwd
+    # on liner
+    # import socket;hostname = socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');
 
 
 def load_cluster_jobids_to(args):

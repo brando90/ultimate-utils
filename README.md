@@ -562,6 +562,7 @@ mkdir /dfs/scratch2/brando9/data
 
 /afs/cs.stanford.edu/u/brando9
 /dfs/scratch0/brando9
+# - DFS setup
 # ln -s file1 link1
 ln -s /afs/cs.stanford.edu/u/brando9/ultimate-utils /dfs/scratch0/brando9/ultimate-utils
 ln -s /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning /dfs/scratch0/brando9/diversity-for-predictive-success-of-meta-learning 
@@ -569,6 +570,20 @@ ln -s /afs/cs.stanford.edu/u/brando9/pycoq /dfs/scratch0/brando9/pycoq
 ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis /dfs/scratch0/brando9/iit-term-synthesis 
 ln -s /dfs/scratch0/brando9/data /afs/cs.stanford.edu/u/brando9/data 
 ln -s /afs/cs.stanford.edu/u/brando9/proverbot9001 /dfs/scratch0/brando9/proverbot9001 
+
+# lfs conda lfs -> dfs conda
+# ln -s file1 link1
+ln -s /dfs/scratch0/brando9/anaconda /dfs/scratch0/brando9/proverbot9001 
+
+# LFS setup
+# ln -s file1 link1
+echo $HOME
+ln -s /afs/cs.stanford.edu/u/brando9/ultimate-utils $HOME/ultimate-utils
+ln -s /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning $HOME/diversity-for-predictive-success-of-meta-learning 
+ln -s /afs/cs.stanford.edu/u/brando9/pycoq $HOME/pycoq  
+ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis $HOME/iit-term-synthesis 
+ln -s /dfs/scratch0/brando9/data $HOME/data 
+ln -s /afs/cs.stanford.edu/u/brando9/proverbot9001 $HOME/proverbot9001 
 ```
 
 Using kerberos tmux (https://ilwiki.stanford.edu/doku.php?id=hints:long-jobs):
@@ -758,6 +773,31 @@ tr ':' '\n' <<< "$PATH"
 opam --version
 ```
 
+
+## LFS
+
+```bash
+idea2: use lfs, simplest
+- repos: symlink lfs -> afs 
+- conda symlink: lfs -> afs
+    - later, migrate to miniconda (over winter break)
+- data: lfs -> dfs (effortless)
+- my bins/locals: in lfs
+    - opam
+    - ruby
+- deployment path: to ampere4 -> dfs (effortless)
+    - since data is pointing to dfs (effortless) nothing to be done
+    - once it changes to lfs then we change the deployment path
+    - only need hyperion1 to work for repos/code sending since code is in afs & lfs -> afs for those on the snap config
+- [sounds confusing, solving a problem I don't have, maybe creating the data sets to dfs is fine
+	- only need data in pycharm to point to lfs (not dfs)]
+```
+
+```bash
+# ln -s file1 link1
+ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.user /dfs/scratch0/brando9/.bashrc.user
+ln -s /afs/cs.stanford.edu/u/brando9/.bashrc.lfs /dfs/scratch0/brando9/.bashrc.lfs
+```
 ## CPU
 
 ref: https://ilwiki.stanford.edu/doku.php?id=snap-servers:snap-servers#compute_servers
