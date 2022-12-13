@@ -540,15 +540,34 @@ def try_to_get_git_revision_hash_long():
         return f'{e}'
 
 
-def run_bash_command(cmd: str) -> Any:
-    import subprocess
+def run_bash_command(cmd: str, use_run: bool = True) -> Any:
+    """
+    Runs a given command in bash from within python.
 
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    if error:
-        raise Exception(error)
+    Details (from SO):
+        The main difference is that subprocess.run() executes a command and waits for it to finish, while with
+        subprocess.Popen you can continue doing your stuff while the process finishes and then just repeatedly call
+        Popen.communicate() yourself to pass and receive data to your process. Secondly, subprocess.run() returns
+        subprocess.CompletedProcess.
+        subprocess.run() just wraps Popen and Popen.communicate() so you don't need to make a loop to pass/receive data
+        or wait for the process to finish.
+
+    ref:
+        - https://stackoverflow.com/questions/39187886/what-is-the-difference-between-subprocess-popen-and-subprocess-run#:~:text=The%20main%20difference%20is%20that,receive%20data%20to%20your%20process.
+    """
+    import subprocess
+    if use_run:
+        # - recommended, see comment above. My understanding is that this blocks until done
+        res = subprocess.run(cmd.split(), check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return res
     else:
-        return output
+        # - I think this is fine for simple commands but I think one has to loop through the communicate until done
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
+        if error:
+            raise Exception(error)
+        else:
+            return output
 
 
 def stanford_reauth():

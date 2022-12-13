@@ -22,7 +22,7 @@ def parse_args_iit() -> Namespace:
                                                                                                    "'~/data/compcert/'"
                                                                                                    "'~/data/coqgym/'"
                         )
-    parser.add_argument('--split', type=str, default='train', help='Example values: "train", "test".')
+    parser.add_argument('--split', type=str, default=None, help='Example values: "train", "test".')
     parser.add_argument('--save_flatten_data_set_as_single_json_file', action='store_true', default=False)
 
     # - parse arguments
