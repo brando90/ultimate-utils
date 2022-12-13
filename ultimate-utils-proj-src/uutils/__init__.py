@@ -1274,14 +1274,14 @@ def get_home_pwd_local_machine_snap() -> None:
 
 bash command:
 # Local machine as Home
-export LOCAL_MACHINE_PWD=$(python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
+export LOCAL_MACHINE_PWD=$(python3 -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
 mkdir -p $LOCAL_MACHINE_PWD
 export WANDB_DIR=$LOCAL_MACHINE_PWD
 export HOME=$LOCAL_MACHINE_PWD
 
 # Without python, doesn't work fix some day...
-# export LOCAL_MACHINE_PWD=$(python -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
-# export LOCAL_MACHINE_PWD=$(python -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
+# export LOCAL_MACHINE_PWD=$(python3 -c "import socket;hostname=socket.gethostname().split('.')[0];print(f'/lfs/{hostname}/0/brando9');")
+# export LOCAL_MACHINE_PWD=$(python3 -c "import uutils; uutils.get_home_pwd_local_machine_snap()")
 export HOSTNAME=$(hostname)
 export LOCAL_MACHINE_PWD="/lfs/${HOSTNAME::-13}/0/brando9"
 mkdir -p $LOCAL_MACHINE_PWD
