@@ -582,7 +582,8 @@ ln -s /afs/cs.stanford.edu/u/brando9/ultimate-utils $HOME/ultimate-utils
 ln -s /afs/cs.stanford.edu/u/brando9/diversity-for-predictive-success-of-meta-learning $HOME/diversity-for-predictive-success-of-meta-learning 
 ln -s /afs/cs.stanford.edu/u/brando9/pycoq $HOME/pycoq  
 ln -s /afs/cs.stanford.edu/u/brando9/iit-term-synthesis $HOME/iit-term-synthesis 
-ln -s /dfs/scratch0/brando9/data $HOME/data 
+# ln -s /dfs/scratch0/brando9/data $HOME/data 
+mkdir -p $HOME/data
 ln -s /afs/cs.stanford.edu/u/brando9/proverbot9001 $HOME/proverbot9001 
 ```
 
