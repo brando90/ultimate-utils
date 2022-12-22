@@ -150,7 +150,7 @@ def train_agent_epochs(args: Namespace,
 
     # - train in epochs
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
-    log_zeroth_step(args, model)
+    #log_zeroth_step(args, model)
     halt: bool = False
 
     # ----added - 0th iter---#
@@ -168,6 +168,8 @@ def train_agent_epochs(args: Namespace,
         avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
         if args.debug:
             print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+        if (args.data_option == 'MDS' and i == 100): #MDS is an infinite iterator so need to manually break
+            break
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
     args.epochs_num = 1
@@ -177,6 +179,7 @@ def train_agent_epochs(args: Namespace,
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
+            #print("batch usl", batch)
             opt.zero_grad()
             train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
@@ -187,6 +190,8 @@ def train_agent_epochs(args: Namespace,
             avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
             if args.debug:
                 print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+            if (args.data_option == 'MDS' and i == 100):  #MDS is an infinite iterator so need to manually break
+                break
 
         # - scheduler, not in first/0th epoch though
         if (args.epoch_num % args.log_scheduler_freq == 0) or args.debug:

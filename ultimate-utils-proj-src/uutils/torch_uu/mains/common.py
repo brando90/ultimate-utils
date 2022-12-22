@@ -158,11 +158,9 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     if model_option == "None":
         # pass
         args.model, args.model_hps = None, None
-    elif model_option == '5CNN_opt_as_model_for_few_shot':
-        args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
-    elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs':  # resnet12_rfs for backward compat
+    elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs' or model_option == 'resnet24_rfs':  # resnet12_rfs for backward compat
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
     elif model_option == 'resnet12_rfs_cifarfs_fc100':
@@ -197,7 +195,6 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         # same as the one in MI since Omni has been resized to that size [3, 84, 84].
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
         assert model_hps['num_classes'] != 64
-        assert model_hps['num_classes'] != 1100
         assert model_hps['num_classes'] == 64 + 1100
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
     elif model_option == 'vit_mi':
