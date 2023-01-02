@@ -89,7 +89,7 @@ def train_agent_iterations(args: Namespace,
                            scheduler: _LRScheduler,
                            ) -> tuple[Tensor, Tensor]:
     """
-    Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
+    Trains models wrt to number of iterations given. Should halt once the number of iterations desired is reached. 
     """
     print_dist('Starting training...', args.rank)
 
@@ -100,6 +100,7 @@ def train_agent_iterations(args: Namespace,
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
+    # -- continually try to train accross the an entire epoch but stop once the number of iterations desired is reached
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
