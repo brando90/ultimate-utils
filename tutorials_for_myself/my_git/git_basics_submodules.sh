@@ -1,5 +1,9 @@
 # decided against this because it seems complicated
 
+# - note to clone uutils with its submodule do (cmd not tested):
+cd $HOME
+git clone --recurse-submodules git@github.com:brando90/ultimate-utils.git
+
 # - git submodules
 cd $HOME/diversity-for-predictive-success-of-meta-learning
 
@@ -18,6 +22,7 @@ git submodule add -f -b hdb --name meta-dataset git@github.com:brando90/meta-dat
 git submodule init
 # - git submodule update --init initializes your local configuration file and clones the submodules for you, using the commit specified in the main repository.
 #   note, command bellow will not pull the right branch -- even if it's in your .gitmodules file, for that you need remote. Likely because it looks at the origin (pointer to remote) in github for the available branches.
+#   note, bellow pulls the submodules if you didn't specify them when cloning parent project, ref: https://youtu.be/wTGIDDg0tK8?t=119
 git submodule update --init
 # - The --remote option tells Git to update the submodule to the commit specified in the upstream repository, rather than the commit specified in the main repository.
 #git submodule update --init --remote
