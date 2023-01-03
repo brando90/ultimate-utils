@@ -2,6 +2,9 @@
 # https://stackoverflow.com/questions/74988223/why-do-i-need-to-add-the-remote-to-gits-submodule-when-i-specify-the-branch
 # https://git-scm.com/docs/git-submodule/#Documentation/git-submodule.txt-foreach--recursiveltcommandgt
 
+# - in case it's needed for new branches made bellow
+git fetch
+
 # -- pretend you've add the submodules so far
 git submodule add -f -b hdb --name meta-dataset git@github.com:brando90/meta-dataset.git meta-dataset/
 git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/pytorch-meta-dataset.git pytorch-meta-dataset/
@@ -31,3 +34,6 @@ git submodule status
 cd meta-dataset
 git branch  # should show hdb
 cd ..
+
+# - clone & pull git submodules
+# git clone --recurse-submodules --remote-submodules <repo-URL>

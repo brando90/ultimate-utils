@@ -50,3 +50,5 @@ cd ..
 
 # pip install -r $HOME/pytorch-meta-dataset/requirements.txt
 
+# - clone & pull git submodules
+# git clone --recurse-submodules --remote-submodules <repo-URL>
