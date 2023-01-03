@@ -2,3 +2,7 @@
 	path = tutorials_for_myself/my_git/meta-dataset
 	url = git@github.com:brando90/meta-dataset.git
 	branch = hdb
+[submodule "pytorch-meta-dataset"]
+	path = tutorials_for_myself/my_git/pytorch-meta-dataset
+	url = git@github.com:brando90/pytorch-meta-dataset.git
+	branch = hdb
