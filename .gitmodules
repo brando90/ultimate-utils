@@ -1,0 +1,4 @@
+[submodule "meta-dataset"]
+	path = tutorials_for_myself/my_git/meta-dataset
+	url = git@github.com:brando90/meta-dataset.git
+	branch = hdb
