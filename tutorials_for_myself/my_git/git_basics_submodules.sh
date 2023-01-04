@@ -13,6 +13,7 @@ git fetch
 # -- first repo
 # - adds the repo to the .gitmodule & clones the repo
 git submodule add -f -b hdb --name meta-dataset git@github.com:brando90/meta-dataset.git meta-dataset/
+git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/pytorch-meta-dataset.git pytorch-meta-dataset/
 
 # - ref for init then update: https://stackoverflow.com/questions/3796927/how-do-i-git-clone-a-repo-including-its-submodules/3796947#3796947
 #git submodule init
@@ -34,13 +35,8 @@ cd meta-dataset
 git branch
 cd ..
 
-# pip install -r $HOME/meta-dataset/requirements.txt
-
-# -- 2nd repo, simplified commands from above
-git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/pytorch-meta-dataset.git pytorch-meta-dataset/
-
-git submodule init
-git submodule update --init --recursive --remote meta-dataset
+# - for each submodule pull from the right branch according to .gitmodule file. ref: https://stackoverflow.com/questions/74988223/why-do-i-need-to-add-the-remote-to-gits-submodule-when-i-specify-the-branch?noredirect=1&lq=1
+#git submodule foreach -q --recursive 'git switch $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master || echo main )'
 
 # - check it's in specified branch ref: https://stackoverflow.com/questions/74998463/why-does-git-submodule-status-not-match-the-output-of-git-branch-of-my-submodule
 git submodule status
