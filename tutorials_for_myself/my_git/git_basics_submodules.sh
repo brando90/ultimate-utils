@@ -31,7 +31,7 @@ git submodule update --init --recursive --remote meta-dataset
 # - check we are using the right branch https://stackoverflow.com/questions/74998463/why-does-git-submodule-status-not-match-the-output-of-git-branch-of-my-submodule
 git submodule status
 cd meta-dataset
-git branch  # should show hdb
+git branch
 cd ..
 
 # pip install -r $HOME/meta-dataset/requirements.txt
