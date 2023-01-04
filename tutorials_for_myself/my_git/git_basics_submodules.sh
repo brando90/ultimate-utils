@@ -24,7 +24,7 @@ git submodule init
 #   note, command bellow will not pull the right branch -- even if it's in your .gitmodules file, for that you need remote. Likely because it looks at the origin (pointer to remote) in github for the available branches.
 #   note, bellow pulls the submodules if you didn't specify them when cloning parent project, ref: https://youtu.be/wTGIDDg0tK8?t=119
 git submodule update --init
-# - The --remote option tells Git to update the submodule to the commit specified in the upstream repository, rather than the commit specified in the main repository.
+# - The --remote option tells Git to update the submodule to the commit specified in the upstream repository, rather than the commit specified in the main repository. ref: https://stackoverflow.com/questions/74988223/why-do-i-need-to-add-the-remote-to-gits-submodule-when-i-specify-the-branch?noredirect=1&lq=1
 #git submodule update --init --remote
 git submodule update --init --recursive --remote meta-dataset
 
@@ -45,7 +45,7 @@ git submodule update --init --recursive --remote meta-dataset
 # - check it's in specified branch
 git submodule status
 cd pytorch-meta-dataset
-git branch  # should show hdb
+git branch
 cd ..
 
 # pip install -r $HOME/pytorch-meta-dataset/requirements.txt
