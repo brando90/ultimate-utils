@@ -42,13 +42,15 @@ git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/
 git submodule init
 git submodule update --init --recursive --remote meta-dataset
 
-# - check it's in specified branch
+# - check it's in specified branch ref: https://stackoverflow.com/questions/74998463/why-does-git-submodule-status-not-match-the-output-of-git-branch-of-my-submodule
 git submodule status
-cd pytorch-meta-dataset
+cd meta-dataset
 git branch
 cd ..
 
-# pip install -r $HOME/pytorch-meta-dataset/requirements.txt
+# - pip install
+#pip install -e -r meta-dataset/requirements.txt
+#pip install -e -r pytorch-meta-dataset/requirements.txt
 
 # - clone & pull git submodules
 # git clone --recurse-submodules --remote-submodules <repo-URL>
