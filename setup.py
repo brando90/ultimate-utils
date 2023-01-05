@@ -67,7 +67,6 @@ setup(
         'scipy',
         'scikit-learn',
         'lark-parser',
-        'torchtext',
         'tensorboard',
         'pandas',
         'progressbar2',
@@ -79,21 +78,17 @@ setup(
         'plotly',
         'wandb',
         'matplotlib',
+        # - later check why we are not installing it...
         # 'seaborn'
         # 'nltk'
 
-        # 'torch',
-        # 'torchvision',
-        # 'torchaudio'
-
-        # at the end because it might fail + you might need to pip install it directly for your cuda version
-        # see read me if your using an old version of uutils and need these version instead for some reason:
-        # 'torch>=1.4.0,<1.10.0',
-        # 'torchvision>=0.5.0,<0.11.0',
-        # 'torchaudio>=0.9.1,<0.10.0',
-        # 'torch==1.9.1',
-        # 'torchvision==0.10.1',
-        # 'torchaudio==0.9.1',
+        # - user should install its own torch since their code might need a special version, hopefully it's compatible
+        #   with uutils pytorch, if not some torch code in uutils might need to bre re-written or a second version for
+        #   newer pytorch or legacy pytorch might be needed
+        'torch>=1.9.1',
+        'torchvision>=0.10.1',
+        'torchaudio>=0.9.1',
+        # 'torchtext',  # often gives issues so don't use it by default
     ]
 )
 

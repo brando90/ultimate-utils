@@ -91,7 +91,7 @@ def gpu_test_torch_any_device():
     print(f'Success, torch works with whatever device is shown in the output tensor:\n{out=}')
 
 
-def gpu_test():
+def gpu_test() -> None:
     """
     python -c "import uutils; uutils.torch_uu.gpu_test()"
     """
@@ -109,6 +109,17 @@ def gpu_test():
     out: Tensor = (x @ y)
     assert out.size() == torch.Size([2, 1])
     print(f'Success, no Cuda errors means it worked see:\n{out=}')
+
+
+def gpu_minimalist_test() -> None:
+    """
+    prints pytorch version & does some gpu/cuda 2D matrix multiplication computation.
+
+    python -c "import torch; print(torch.__version__); print((torch.randn(2, 4).cuda() @ torch.randn(4, 1).cuda()))"
+    """
+    import torch;
+    print(torch.__version__);
+    print((torch.randn(2, 4).cuda() @ torch.randn(4, 1).cuda()))
 
 
 # -
