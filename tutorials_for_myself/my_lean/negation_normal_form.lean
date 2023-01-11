@@ -27,9 +27,10 @@ def NNF.toWFF {α : Type} : NNF α → WFF α
 | (NNF.and a b) => WFF.and (NNF.toWFF a) (NNF.toWFF b)
 | (NNF.or a b) => WFF.or (NNF.toWFF a) (NNF.toWFF b)
 | (NNF.imp a b) => WFF.imp (NNF.toWFF a) (NNF.toWFF b)
-| (NNF.iff a b) => WFF.iff (NNF.toWFF a) (NNF.toWFF b)
+| (NNF.iff a b) > WFF.iff (NNF.toWFF a) (NNF.toWFF b)
 
 -- forall x1: f.Type, f(x1) = f(x2) implies x1 = x2
+--   injective: https://en.wikipedia.org/wiki/Injective_function#:~:text=In%20mathematics%2C%20an%20injective%20function,in%20the%20equivalent%20contrapositive%20statement.)
 -- goal: show NNF <= WFF
 theorem NNF_injective_to_WFF (x y : NNF α):
   -- NNF.toWFF x = NNF.toWFF y → x = y := 
