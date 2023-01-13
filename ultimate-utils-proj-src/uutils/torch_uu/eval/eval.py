@@ -1,3 +1,9 @@
+"""
+
+TODO: note we can change all the Agents to always return loss/accs-lists, then the forward pass returns the avgs, then
+    the eval returns the avs & cis. Then eval code here calls the eval_forward.
+    Ok there are issues with the Agent code. The forward & eval_forward are the same. We need to fix this & clarify it.
+"""
 import logging
 from argparse import Namespace
 from typing import Any, Optional
@@ -17,6 +23,8 @@ def eval_sl(args: Namespace,
     Evaluate the current model on the eval set (val set strongly recommended).
 
     note:
+        - note we have "get_eval" function cuz the api for data loaders for meta-learning is different from the SL one.
+        Despite the Agent having the same api as the MetaLearner object.
         - Training=True for eval only for meta-learning, here we do want .eval(). This is because .train()
         uses batch stats while .eval() uses the running means.
         See: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
@@ -45,7 +53,10 @@ def meta_eval(args: Namespace,
               ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
 
-    assumption: your agent has the .forward interface needed
+    note:
+        - note we have "get_eval" function cuz the api for data loaders for meta-learning is different from the SL one.
+        Despite the Agent having the same api as the MetaLearner object.
+        - assumption: your agent has the .forward interface needed
     """
     if training == False:
         print(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
@@ -77,7 +88,7 @@ def meta_eval(args: Namespace,
         batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
         return val_loss, val_loss_ci, val_acc, val_acc_ci
-    
+
     # - else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))
@@ -89,6 +100,64 @@ def meta_eval(args: Namespace,
         raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
                          f'dict or something else (perhaps train, val, test loader type objects).')
 
+
+def get_meta_eval_lists_accs_losses(args: Namespace,
+                                    model: Agent,
+                                    dataloaders,
+                                    split: str = 'val',
+                                    # training: bool = True,
+                                    training: bool = False,
+                                    ) -> type[list[float], list[float]]:
+    """
+    Get list of accuracies and losses for all task in a batch from the dataloader.
+
+    note:
+        - note we have "get_eval" function cuz the api for data loaders for meta-learning is different from the SL one.
+        Despite the Agent having the same api as the MetaLearner object.
+    """
+    meta_losses, meta_accs = [], []
+    if training == False:
+        print(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
+        logging.warning(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
+    # - hack for l2l using other maml for 5CNN1024
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
+    if isinstance(dataloaders[split], TorchMetaDLforL2L):
+        # dl needs to be in "torchmeta format"
+        batch: any = next(iter(dataloaders[split]))
+        meta_losses, meta_accs = model.get_lists_accs_losses(batch, training)
+        return meta_losses, meta_accs
+
+    # - l2l
+    if hasattr(args, 'tasksets'):
+        # hack for l2l
+        from learn2learn.data import TaskDataset
+        split: str = 'validation' if split == 'val' else split
+        task_dataset: TaskDataset = getattr(args.tasksets, split)
+        meta_losses, meta_accs = model.get_lists_accs_losses(task_dataset, training)
+        return meta_losses, meta_accs
+
+    # - rfs meta-loader
+    from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
+    if isinstance(dataloaders['val'].dataset, MetaImageNet):
+        eval_loader = dataloaders[split]
+        if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
+            raise NotImplementedError
+        batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
+        meta_losses, meta_accs = model.get_lists_accs_losses(batch, training)
+        return meta_losses, meta_accs
+
+    # - else normal data loader (so torchmeta, or normal pytorch data loaders)
+    if isinstance(dataloaders, dict):
+        batch: Any = next(iter(dataloaders[split]))
+        meta_losses, meta_accs = model.get_lists_accs_losses(batch, training)
+    else:
+        raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
+                         f'dict or something else (perhaps train, val, test loader type objects).')
+    # -- return
+    return meta_losses, meta_accs
+
+
+# --
 
 def get_meta_batch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """

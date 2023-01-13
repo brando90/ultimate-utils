@@ -24,16 +24,6 @@ from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidenc
     mean_confidence_interval
 from uutils.torch_uu.models import getattr_model
 
-# import torch
-# from sklearn import metrics
-# from sklearn.svm import SVC, LinearSVC
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.ensemble import RandomForestClassifier
-#
-# from sklearn.pipeline import make_pipeline
-# from sklearn.preprocessing import StandardScaler
-
 from pdb import set_trace as st, set_trace
 
 
@@ -58,6 +48,36 @@ class FitFinalLayer(nn.Module):
         training true since we want BN to use batch statistics (and not cheat, etc)
         """
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
+        meta_batch_size = spt_x.size(0)
+        # -- Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
+        # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
+        meta_losses, meta_accs = self.get_list_accs_losses(batch, training, is_norm)
+        assert (len(meta_losses) == meta_batch_size)
+
+        # -- return loss, acc with CIs
+        meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
+        meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
+        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+    def eval_forward(self, batch,
+                     training: bool = True,
+                     is_norm: bool = False,
+                     ):
+        """
+        note:
+            - Does a forward pass. It's the same as forward just so that all Agents have the same interface.
+            This one looks redundant and it is, but it's here for consistency with the SL agents.
+            The eval forward is different in SL agents.
+            - training true since we want BN to use batch statistics (and not cheat, etc)
+        """
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training, is_norm)
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+
+    def get_list_accs_losses(self, batch, training, is_norm):
+        """
+        Get the list of accuracies and losses for each task in the meta-batch
+        """
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         # Accumulate gradient of meta-loss wrt fmodel.param(t=0)
         meta_batch_size = spt_x.size(0)
         meta_losses, meta_accs = [], []
@@ -77,7 +97,6 @@ class FitFinalLayer(nn.Module):
                 qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
                 spt_y_t = spt_y_t.view(-1).cpu().numpy()
                 qry_y_t = qry_y_t.view(-1).cpu().numpy()
-                # set_trace()
                 # print(f'{spt_embeddings_t.shape=}')
 
                 # Inner-Adapt final layer with spt set
@@ -134,24 +153,10 @@ class FitFinalLayer(nn.Module):
             else:
                 raise ValueError(f'Not implement: {self.target_type}')
 
-            # collect losses & accs for logging/debugging
+            # collect losses & accs
             meta_losses.append(qry_loss_t.item())
-            # meta_losses.append(qry_loss_t)
             meta_accs.append(qry_acc_t)
-
-        # Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
-        # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
-        assert (len(meta_losses) == meta_batch_size)
-        meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
-        meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
-
-    def eval_forward(self, batch, training: bool = True):
-        """
-        training true since we want BN to use batch statistics (and not cheat, etc)
-        """
-        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training)
-        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+        return meta_losses, meta_accs
 
     def get_embedding(self, x: Tensor, base_model: nn.Module) -> Tensor:
         return get_embedding(x=x, base_model=base_model)
@@ -295,6 +300,7 @@ def Cosine(support, support_ys, query):
     pred = [support_ys[idx] for idx in max_idx]
     return pred
 
+
 def Proto(support, support_ys, query, opt):
     """Protonet classifier"""
     nc = support.shape[-1]
@@ -306,6 +312,7 @@ def Proto(support, support_ys, query, opt):
     pred = np.argmax(logits, axis=-1)
     pred = np.reshape(pred, (-1,))
     return pred
+
 
 # - tests
 

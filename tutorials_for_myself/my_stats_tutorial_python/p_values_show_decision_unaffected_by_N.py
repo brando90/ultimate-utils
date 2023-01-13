@@ -1,9 +1,10 @@
 """
 Goal: sanity check. As N->30, 100, 10_000, the p-value should be the same.
 """
-#%%
+# %%
 import numpy as np
 from scipy import stats
+
 
 def print_statisticall_significant(p, alpha=0.05):
     """
@@ -17,6 +18,7 @@ def print_statisticall_significant(p, alpha=0.05):
     else:
         # print(f'p > alpha so we can\'t reject H0, means are statistically the same.')
         print('H0')
+
 
 # Sample data
 mu_x, mu_y = 0, 10  # should reject null hypothesis i.e. statistically significant

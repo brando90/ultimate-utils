@@ -23,6 +23,8 @@ from uutils.torch_uu import tensorify
 
 import numpy as np
 
+from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
+    get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks
 from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
 
 from pdb import set_trace as st
@@ -91,8 +93,22 @@ class MAMLMetaLearner(nn.Module):
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
+        """
+        Does a forward pass ala l2l. It's the same as forward just so that all Agents have the same interface.
+        This one looks redundant and it is, but it's here for consistency with the SL agents.
+        The eval forward is different in SL agents.
+        """
         meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = self.forward(batch, training, call_backward)
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+    def get_lists_accs_losses(self, batch, training: bool = True, call_backward: bool = False):
+        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
+        # note bellow code is already in forward, but we need to call it here to get the lists explicitly (no redundant code! ;) )
+        meta_losses, meta_accs = get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
+                                                                                                 qry_x, qry_y,
+                                                                                                 training,
+                                                                                                 call_backward)
+        return meta_losses, meta_accs
 
     def eval(self):
         """
@@ -171,10 +187,32 @@ def forward(meta_learner,
     """
     Returns the acc & loss on the meta-batch from the task in task_dataset.
 
+    Note: see get_lists_accs_losses_l2l(...).
+    """
+    # - adapt
+    meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner, args, task_dataset, meta_batch_size, training,
+                                                       call_backward)
+    # - return
+    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
+    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+
+def get_lists_accs_losses_l2l(meta_learner,
+                              args: Namespace,
+                              task_dataset: TaskDataset,
+                              # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+                              meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
+
+                              training: bool = True,  # always true to avoid .eval()
+                              call_backward: bool = False,  # not needed during testing/inference
+                              ):
+    """
+    Returns the (meta) accs & losses on the meta-batch/task_dataset.
+
     Note:
-    - training true ensures .eval() is never called (due to BN, we always want batch stats)
-    - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option
-    to call it or not.
+        - training true ensures .eval() is never called (due to BN, we always want batch stats)
+        - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option to call it or not.
     """
     assert args is meta_learner.args
     assert args.meta_learner is meta_learner
@@ -183,7 +221,6 @@ def forward(meta_learner,
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
     meta_losses, meta_accs = [], []
-    # print('--start forward')
     for task in range(meta_batch_size):
         # print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
@@ -208,10 +245,7 @@ def forward(meta_learner,
         meta_accs.append(acc.item())
     assert len(meta_losses) == meta_batch_size
     assert len(meta_accs) == meta_batch_size
-    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
-    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
-    # print('-- done forward --')
-    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+    return meta_losses, meta_accs
 
 
 class MAMLMetaLearnerL2L(nn.Module):
@@ -260,16 +294,30 @@ class MAMLMetaLearnerL2L(nn.Module):
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
     def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
-        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
-                                                                 args=self.args,
-                                                                 task_dataset=task_dataset,  # eg args.tasksets.train
-                                                                 training=training,  # always true to avoid .eval()
-                                                                 meta_batch_size=meta_batch_size,
-
-                                                                 call_backward=call_backward,  # False for val/test
-                                                                 )
+        """
+        Does a forward pass ala l2l. It's the same as forward just so that all Agents have the same interface.
+        This one looks redundant and it is, but it's here for consistency with the SL agents.
+        The eval forward is different in SL agents.
+        """
+        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = self.forward(task_dataset=task_dataset, training=training,
+                                                                      call_backward=call_backward)
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+    def get_lists_accs_losses(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+        """
+        Returns the acc & loss on the meta-batch from the task in task_dataset.
+        """
+        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # note bellow code is already in forward, but we need to call it here to get the lists explicitly (no redundant code! ;) )
+        meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner=self,
+                                                           args=self.args,
+                                                           task_dataset=task_dataset,  # eg args.tasksets.train
+                                                           training=training,  # always true to avoid .eval()
+                                                           meta_batch_size=meta_batch_size,
+
+                                                           call_backward=call_backward,  # False for val/test
+                                                           )
+        return meta_losses, meta_accs
 
     def eval(self):
         """
