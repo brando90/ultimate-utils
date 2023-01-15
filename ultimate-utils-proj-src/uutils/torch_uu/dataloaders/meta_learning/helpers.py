@@ -33,6 +33,9 @@ def get_meta_learning_dataloader(args: Namespace) -> dict:
             from uutils.torch_uu.dataloaders.meta_learning.rfs_meta_learning_data_loaders import \
                 get_rfs_meta_learning_mi_dataloader
             args.dataloaders = get_rfs_meta_learning_mi_dataloader(args)
+        elif args.data_option == 'mds':
+            from diversity_src.dataloaders.metadataset_episodic_loader import get_mds_args, get_mds_loader
+            args.dataloaders: dict = get_mds_loader(args)
         elif 'l2l_data' in str(args.data_path):
             # note: this line is mainly intended for data ananlysis! not meant for ddp, see this if you want that but idk if it will work: https://github.com/learnables/learn2learn/issues/263
             # --> converts a l2l data set as torchmeta data loader
