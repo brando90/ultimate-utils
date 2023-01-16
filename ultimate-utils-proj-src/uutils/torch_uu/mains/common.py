@@ -3,6 +3,7 @@
 Note:
     - the move_to_dpp moves things .to(device)
 """
+import re
 from argparse import Namespace
 from typing import Optional, Any
 
@@ -160,7 +161,8 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         args.model, args.model_hps = None, None
     elif model_option == '5CNN_opt_as_model_for_few_shot_sl':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
-    elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs' or model_option == 'resnet24_rfs':  # resnet12_rfs for backward compat
+    elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs' or model_option == 'resnet24_rfs' or \
+            re.match(r'resnet[0-9]+_rfs', model_option):  # resnet12_rfs for backward compat
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
     elif model_option == 'resnet12_rfs_cifarfs_fc100':

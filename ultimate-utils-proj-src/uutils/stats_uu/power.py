@@ -36,4 +36,38 @@ ref:
     - https://www.youtube.com/watch?v=HPKcmEhP-4s&list=PLljPCllSdtzWop4iDNyyuZ2NZokOHeQqm&index=7
     - https://education.ucdenver.edu/about-us/faculty-directory/Donovan-Courtney-UCD6000147384
 """
+import numpy as np
 
+
+def compute_power_posthoc_t_test(alpha, n, d) -> float:
+    """
+    Compute power after a study has been done.
+    :args
+        alpha: the alpha level (e.g. 0.05)
+        n: the sample size
+        d: the effect size (e.g. Cohen's d)
+    """
+    from scipy.stats import norm
+
+    effect_size = d  # the difference in means divided by the pooled standard deviation
+    alpha = alpha  # significance level
+    sample_size = n  # number of observations per group
+
+    # power = norm.sf(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
+    power = norm.ttest_power(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
+    return power
+
+
+# -
+
+def compute_power_posthoc_test():
+    """
+    Compute power after a study has been done.
+    """
+    alpha, n, d = 0.05, 100, 0.5
+    power: float = compute_power_posthoc_t_test(alpha, n, d)
+    print(power)
+
+
+if __name__ == '__main__':
+    compute_power_posthoc_test()
