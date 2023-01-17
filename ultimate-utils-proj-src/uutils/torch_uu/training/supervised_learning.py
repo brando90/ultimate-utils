@@ -92,6 +92,7 @@ def train_agent_iterations(args: Namespace,
     Trains models wrt to number of iterations given. Should halt once the number of iterations desired is reached. 
     """
     print_dist('Starting training...', args.rank)
+    print_dist(f'{train_agent_iterations=}', args.rank)
 
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
@@ -144,6 +145,7 @@ def train_agent_epochs(args: Namespace,
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
     print_dist('Starting training...', args.rank)
+    print_dist(f'{train_agent_epochs=}', args.rank)
     B: int = args.batch_size
 
     # - create progress bar

@@ -104,6 +104,7 @@ def meta_train_fixed_iterations(args: Namespace,
     over the dataloader for the tasks.
     """
     print('Starting training!')
+    print(f'{meta_train_fixed_iterations=}')
 
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
     args.bar = uutils.get_good_progressbar(max_value=args.num_its)

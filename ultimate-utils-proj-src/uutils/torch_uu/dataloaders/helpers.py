@@ -79,6 +79,8 @@ def get_sl_dataloader(args: Namespace) -> dict:
         # todo, would be nice to move this code to uutils @patrick so import is from uutils
         from diversity_src.dataloaders.metadataset_batch_loader import get_mds_loader
         args.dataloaders: dict = get_mds_loader(args)
+        # assert args.model.cls.out_features == 3144
+        # assert args.model.cls.out_features == 712 + 70 + 140 + 33 + 994 + 883 + 241 + 71
     elif 'l2l' in data_path:
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders

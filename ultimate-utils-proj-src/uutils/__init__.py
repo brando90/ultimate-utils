@@ -846,6 +846,30 @@ def xor(a: Any, b: Any) -> bool:
     return xor_bool
 
 
+def check_number_of_files_open_vs_allowed_open():
+    """
+    Checks if the number of files open is close to the number of files that can be open.
+
+    ref: https://stackoverflow.com/questions/12090503/listing-open-files-using-python
+    """
+    import resource
+    soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+    print(f"soft_limit={soft_limit}, hard_limit={hard_limit}")
+    # import psutil
+    # p = psutil.Process()
+    # print(f"number of files open={p.num_fds()}")
+    import psutil
+    open_files = 0
+    for process in psutil.process_iter():
+        try:
+            files = process.open_files()
+            open_files += len(files)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    print(f"Number of open files: {open_files}")
+
+
 ##
 
 def make_and_check_dir2(path):
