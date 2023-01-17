@@ -34,7 +34,8 @@ def get_meta_learning_dataloader(args: Namespace) -> dict:
                 get_rfs_meta_learning_mi_dataloader
             args.dataloaders = get_rfs_meta_learning_mi_dataloader(args)
         elif args.data_option == 'mds':
-            from diversity_src.dataloaders.metadataset_episodic_loader import get_mds_args, get_mds_loader
+            # todo, would be nice to move this code to uutils @patrick so import is from uutils
+            from diversity_src.dataloaders.metadataset_episodic_loader import get_mds_loader
             args.dataloaders: dict = get_mds_loader(args)
         elif 'l2l_data' in str(args.data_path):
             # note: this line is mainly intended for data ananlysis! not meant for ddp, see this if you want that but idk if it will work: https://github.com/learnables/learn2learn/issues/263

@@ -5,8 +5,11 @@ Notes:
 
 """
 from argparse import Namespace
+from pathlib import Path
 
 from torch import nn
+
+from pdb import set_trace as st
 
 
 def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool = False):
@@ -28,15 +31,19 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
             # this confuses pytorch's backprop, see https://github.com/pytorch/pytorch/issues/73697
             # a solution could be to dynamically add the decorator (which seems to not confuse pytorch)
         else:
-            raise ValueError(f'Given model does not have a final cls layer. Check that your model is in the right format:'
-                             f'{type(args.model)=} do print(args.model) to see what your arch is and fix the error.')
+            raise ValueError(
+                f'Given model does not have a final cls layer. Check that your model is in the right format:'
+                f'{type(args.model)=} do print(args.model) to see what your arch is and fix the error.')
     else:
         raise ValueError('ERROR. DONT USE THIS CODE.')
 
 
 def get_sl_dataloader(args: Namespace) -> dict:
-    args.data_path.expanduser()
-    data_path: str = str(args.data_path)
+    if hasattr(args, 'data_path'):
+        args.data_path.expanduser() if isinstance(args.data_path, Path) else args.data_path
+        data_path: str = str(args.data_path)
+    else:
+        args.data_path = ''
     if args.data_option == 'n_way_gaussians_sl':  # next 3 lines added by Patrick 4/26/22. Everything else shouldn't have changed
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import \
             get_train_valid_test_data_loader_1d_gaussian
@@ -68,6 +75,10 @@ def get_sl_dataloader(args: Namespace) -> dict:
     elif 'miniImageNet_rfs' in data_path:
         from uutils.torch_uu.dataloaders.miniimagenet_rfs import get_train_valid_test_data_loader_miniimagenet_rfs
         args.dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
+    elif args.data_option == 'mds':
+        # todo, would be nice to move this code to uutils @patrick so import is from uutils
+        from diversity_src.dataloaders.metadataset_batch_loader import get_mds_loader
+        args.dataloaders: dict = get_mds_loader(args)
     elif 'l2l' in data_path:
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
