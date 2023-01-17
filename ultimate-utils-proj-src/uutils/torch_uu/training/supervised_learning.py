@@ -122,7 +122,7 @@ def train_agent_iterations(args: Namespace,
 
             # - log full stats
             # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
-            if args.epoch_num % args.log_freq == 0 or halt or args.debug:
+            if args.it % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
                 log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
                 args.convg_meter.update(train_loss)
