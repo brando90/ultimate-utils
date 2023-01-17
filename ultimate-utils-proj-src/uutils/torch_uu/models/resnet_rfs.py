@@ -261,6 +261,11 @@ class ResNet(nn.Module):
 
 def resnet12(keep_prob=1.0, avg_pool=False, **kwargs):
     """Constructs a ResNet-12 model.
+    indeed, only (1 + 1 + 1 + 1) * 3 + 1 = 12 + 1 layers
+
+    note:
+        - each block has 3 conv layers, so 1,1,1,1 blocks has 3,3,3,3 conv layers so 12 layers. When it says its
+        a resnet 12 it means it has 12 conv layers.
     """
     model = ResNet(BasicBlock, [1, 1, 1, 1], keep_prob=keep_prob, avg_pool=avg_pool, **kwargs)
     return model
@@ -268,6 +273,7 @@ def resnet12(keep_prob=1.0, avg_pool=False, **kwargs):
 
 def resnet18(keep_prob=1.0, avg_pool=False, **kwargs):
     """Constructs a ResNet-18 model.
+    indeed, only (1 + 1 + 2 + 2) * 3 + 1 = 19 layers
     """
     model = ResNet(BasicBlock, [1, 1, 2, 2], keep_prob=keep_prob, avg_pool=avg_pool, **kwargs)
     return model
@@ -282,7 +288,10 @@ def resnet24(keep_prob=1.0, avg_pool=False, **kwargs):
 
 def resnet50(keep_prob=1.0, avg_pool=False, **kwargs):
     """Constructs a ResNet-50 model.
-    indeed, only (3 + 4 + 6 + 3) * 3 + 1 = 49 layers
+    indeed, only (3 + 4 + 6 + 3) * 3 + 1 = 48+1 = 49 layers
+
+    note: it doesn't seem to be consistent with their own couting for resnet12. Sometimes they count the final layer
+    sometimes they dont't.
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], keep_prob=keep_prob, avg_pool=avg_pool, **kwargs)
     return model
@@ -383,7 +392,7 @@ def get_resnet_rfs_model_cifarfs_fc100(model_opt: str,
                                        ) -> tuple[nn.Module, dict]:
     """
     ref:
-        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/models/util.py#L7
+        - https://github.com/WangYueFt/rfs/blob/f8c837ba93c62dd0ac68a2f4019c619aa86b8421/models/util.py#L23
     """
     model_hps: dict = {'avg_pool': avg_pool,
                        'drop_rate': drop_rate,

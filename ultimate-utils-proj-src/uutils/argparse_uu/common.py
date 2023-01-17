@@ -176,6 +176,7 @@ def setup_args_for_experiment(args: Namespace,
 
     # - save PID
     args.PID = str(os.getpid())
+    print(f'{args.PID=}')
     if torch.cuda.is_available():
         args.nccl = torch.cuda.nccl.version()
 

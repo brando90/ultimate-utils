@@ -1,4 +1,5 @@
 from argparse import Namespace
+from typing import Optional
 
 import torch
 from torch import nn
@@ -13,6 +14,33 @@ from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learnin
 from uutils.torch_uu.distributed import is_lead_worker
 
 from pdb import set_trace as st
+
+
+def try_showing_imgage_size(args: Optional = None):
+    try:
+        # catch any exception in python
+        batch = next(iter(args.dataloaders['train']))  # this might advance the dataloader one step
+        print(f'{batch[0].size()=}')
+    except Exception as e:
+        pass  # nop
+    try:
+        # commented out cuz this samples data...perhaps it messes with l2l's trian loop? idk
+        # from dataset import TaskDataset
+        # task_dataset: TaskDataset = args.tasksets.train
+        # task_data: list = task_dataset.sample()
+        # data, labels = task_data
+        # shots = args.k_shot
+        # # shots = 5
+        # import learn2learn
+        # (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
+        #     data=data,
+        #     labels=labels,
+        #     shots=shots,  # shots to separate to two data sets of size shots and k_eval
+        # )
+        # print(f'{support_data.size()=}')
+        pass
+    except Exception as e:
+        pass  # nop
 
 
 def log_zeroth_step(args: Namespace, meta_learner: Agent):
