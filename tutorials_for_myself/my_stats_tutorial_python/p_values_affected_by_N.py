@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats
 
 
-def print_statisticall_significant(p, alpha=0.05):
+def _print_statisticall_significant(p, alpha=0.05):
     """
     Statistically significant means we can reject the null hypothesis (& accept our own e.g. means are different)
     so its statistically significant if the observation or more extreme under H0 is very unlikely i.e. p < 0.05
@@ -31,7 +31,7 @@ y = np.random.normal(mu_y, 12, N)
 t, p = stats.ttest_ind(x, y, equal_var=False)
 print(f'{p=} (Probability that this sample mean or more extreme is observerd, also type I error)')
 # print(f'{t=} (t-statistic, the difference btw the sample means in units of the sample standard deviation)')
-print_statisticall_significant(p)
+_print_statisticall_significant(p)
 
 N = 100
 x = np.random.normal(mu_x, 10, N)
@@ -41,7 +41,7 @@ y = np.random.normal(mu_y, 12, N)
 t, p = stats.ttest_ind(x, y, equal_var=False)
 print(f'{p=} (Probability that this sample mean or more extreme is observerd, also type I error)')
 # print(f'{t=} (t-statistic, the difference btw the sample means in units of the sample standard deviation)')
-print_statisticall_significant(p)
+_print_statisticall_significant(p)
 
 N = 10_000
 x = np.random.normal(mu_x, 10, N)
@@ -51,7 +51,7 @@ y = np.random.normal(mu_y, 12, N)
 t, p = stats.ttest_ind(x, y, equal_var=False)
 print(f'{p=} (Probability that this sample mean or more extreme is observerd, also type I error)')
 # print(f'{t=} (t-statistic, the difference btw the sample means in units of the sample standard deviation)')
-print_statisticall_significant(p)
+_print_statisticall_significant(p)
 
 """
 sample output:
