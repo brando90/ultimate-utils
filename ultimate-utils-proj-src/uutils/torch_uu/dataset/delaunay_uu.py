@@ -142,7 +142,7 @@ def get_all_delauny_dataset(path_to_all_data: Union[str, Path] = '~/data/delauny
     """
     fyi:
         path_to_all_data: str = '~/data/delauny_original_data/DELAUNAY'
-        path_for_splits: str = '~/data/delauny_l2l_bm_splitss'
+        path_for_splits: str = '~/data/l2l_data/delauny_l2l_bm_splits'
     """
     path_to_all_data: Path = expanduser(path_to_all_data)
     transform, _, _ = get_my_delauny_data_transforms(data_augmentation)
@@ -240,7 +240,7 @@ def _data_transform_based_on_random_resized_crop_yxw(size: int = 84,
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def delauny_pad_random_resized_crop(size: int = 84,
+def _delauny_pad_random_resized_crop(size: int = 84,
                                     scale: tuple[int, int] = (0.18, 1.0),
                                     padding: int = 8,
                                     ratio: tuple[float, float] = (0.75, 1.3333333333333333),
@@ -293,7 +293,7 @@ def _data_transform_delauny_random_resized_crop(
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def delauny_random_resized_crop_random_crop_c(
+def delauny_random_resized_crop_random_crop(
         size: int = 84,
         scale: tuple[int, int] = (0.18, 1.0),
         padding: int = 8,
@@ -335,6 +335,7 @@ def delauny_random_resized_crop_random_crop_c(
     validation_data_transform = test_data_transform
     return train_data_transform, validation_data_transform, test_data_transform
 
+
 # def delauny_random_resized_crop_random_crop_c(
 #         size: int = 84,
 #         scale: tuple[int, int] = (0.18, 1.0),
@@ -364,7 +365,7 @@ def delauny_random_resized_crop_random_crop_c(
 #     return train_data_transform, validation_data_transform, test_data_transform
 
 def get_my_delauny_data_transforms(
-        data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
+        data_augmentation: str = 'delauny_random_resized_crop_random_crop',
         size: int = 84,
 ) -> tuple[Compose, Compose, Compose]:
     """
@@ -397,22 +398,19 @@ def get_my_delauny_data_transforms(
         # this one is for training model only on delauny, when combined with other data sets we might need to rethink
         train_data_transform, validation_data_transform, test_data_transform = \
             _data_transform_based_on_random_resized_crop_yxw(padding=8)
-    elif data_augmentation == 'delauny_random_resized_crop_yxw_zero_padding':
-        # this one is for training model only on delauny, when combined with other data sets we might need to rethink
-        train_data_transform, validation_data_transform, test_data_transform = \
-            _data_transform_based_on_random_resized_crop_yxw(padding=0)
     elif data_augmentation == '_delauny_random_resized_crop_a':
         # don't think this needs to be checked since it has no padding and MI has padding.
         train_data_transform, validation_data_transform, test_data_transform = _data_transform_delauny_random_resized_crop()
-    # --
-    elif data_augmentation == 'delauny_pad_random_resized_crop':
+    elif data_augmentation == 'delauny_random_resized_crop_yxw_zero_padding':
+        # this one is for training model only on delauny, when combined with other data sets we might need to rethink
+        train_data_transform, validation_data_transform, test_data_transform = _data_transform_based_on_random_resized_crop_yxw(
+            padding=0)
+    elif data_augmentation == '_delauny_pad_random_resized_crop':
         # don't think this needs to be checked since it has no padding and MI has padding.
-        train_data_transform, validation_data_transform, test_data_transform = delauny_pad_random_resized_crop()
-    # elif data_augmentation == 'delauny_random_crop_b':
-    # not sure if it will crash due to some of the size <84, would need to do resize all or resize if size(i) < 84 or guard pruning images with size(i) < 84
-    #     train_data_transform, validation_data_transform, test_data_transform = data_transform_based_on_random_resized_crop_yxw_and_matching_random_crop_l2l_torchmeta_rfs_for_the_padding_c()
-    elif data_augmentation == 'delauny_random_resized_crop_random_crop_c':
-        train_data_transform, validation_data_transform, test_data_transform = delauny_random_resized_crop_random_crop_c()
+        train_data_transform, validation_data_transform, test_data_transform = _delauny_pad_random_resized_crop()
+    # --
+    elif data_augmentation == 'delauny_random_resized_crop_random_crop':
+        train_data_transform, validation_data_transform, test_data_transform = delauny_random_resized_crop_random_crop()
     # --
     elif data_augmentation == 'hdb_mid_mi_delauny':
         # train_data_transform, validation_data_transform, test_data_transform = get_data_transform_hdb_mid()
@@ -422,14 +420,17 @@ def get_my_delauny_data_transforms(
     return train_data_transform, validation_data_transform, test_data_transform
 
 
-def get_delauny_dataset_splits(path2train: str,
-                               path2val: str,
-                               path2test: str,
-                               data_augmentation: str = 'delauny_ywx_random_resized_random_crop_matches_l2l_torchmeta_rfs',
-                               size: int = 84,
-                               random_split: bool = False,
-                               ) -> tuple[Dataset, Dataset, Dataset]:
-    """ """
+def get_delauny_normal_torch_dataset_splits(path2train: str,
+                                            path2val: str,
+                                            path2test: str,
+                                            data_augmentation: str = 'delauny_random_resized_crop_random_crop',
+                                            size: int = 84,
+                                            random_split: bool = False,
+                                            ) -> tuple[Dataset, Dataset, Dataset]:
+    """ Returns a general pytorch data set.
+    If the paths point to bm's l2l version then the splits will be for l2l.
+    If the paths point to the original delauny then the splits will be for the original delauny.
+    """
     # - expand paths
     path2train: Path = expanduser(path2train)
     path2val: Path = expanduser(path2val)
@@ -521,6 +522,7 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     assert len(val) == 8
     assert len(test) == 11
     # - save the few-shot learning 34, 8, 11 splits as folders with images (based on previous sorting list)
+    from uutils.torch_uu.dataloaders.meta_learning.delaunay_l2l import get_l2l_bm_split_paths
     path2train, path2val, path2test = get_l2l_bm_split_paths(path_for_splits)
     copy_folders_recursively(src_root=path_to_all_data, root4dst=path2train, dirnames4dst=train)
     copy_folders_recursively(src_root=path_to_all_data, root4dst=path2val, dirnames4dst=val)
@@ -546,14 +548,6 @@ def create_your_splits(path_to_all_data: Union[str, Path],
     setup_wandb(args)
     create_default_log_root(args)
     compute_div_and_plot_distance_matrix_for_fsl_benchmark(args, show_plots=False)
-
-
-def get_l2l_bm_split_paths(path_for_splits: Path) -> tuple[Path, Path, Path]:
-    path_for_splits: Path = expanduser(path_for_splits)
-    path2train: Path = path_for_splits / 'delauny_train_split_dir'
-    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
-    path2test: Path = path_for_splits / 'delauny_test_split_dir'
-    return path2train, path2val, path2test
 
 
 # - tests
@@ -587,8 +581,8 @@ def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_s
     path2val: str = ''
     path2test: str = '/Users/brandomiranda/data/delauny_original_data/DELAUNAY_test'
     random_split = True
-    train_dataset, valid_dataset, test_dataset = get_delauny_dataset_splits(path2train, path2val, path2test,
-                                                                            random_split=random_split)
+    train_dataset, valid_dataset, test_dataset = get_delauny_normal_torch_dataset_splits(path2train, path2val, path2test,
+                                                                                         random_split=random_split)
     train_loader: DataLoader = DataLoader(train_dataset, num_workers=1)
     valid_loader: DataLoader = DataLoader(valid_dataset, num_workers=1)
     test_loader: DataLoader = DataLoader(test_dataset, num_workers=1)
@@ -617,7 +611,7 @@ def loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader():
 
 def create_my_fsl_splits_from_original_delauny_splits():
     path_to_all_data: str = '~/data/delauny_original_data/DELAUNAY'
-    path_for_splits: str = '~/data/delauny_l2l_bm_splitss'
+    path_for_splits: str = '~/data/l2l_data/delauny_l2l_bm_splits'
     create_your_splits(path_to_all_data, path_for_splits)
 
 

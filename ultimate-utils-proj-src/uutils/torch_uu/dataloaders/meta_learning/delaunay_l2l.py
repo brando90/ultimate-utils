@@ -7,6 +7,8 @@ note:
     - remember we have a l2l to torchmeta loader converter. So for now all code is written in l2l's api.
 """
 import os
+from pathlib import Path
+from typing import Callable
 
 import learn2learn
 from learn2learn.vision.benchmarks import BenchmarkTasksets
@@ -14,36 +16,62 @@ from learn2learn.data import MetaDataset
 from torch.utils.data import Dataset
 
 from uutils.torch_uu import make_code_deterministic
-from uutils.torch_uu.dataset.delaunay_uu import get_l2l_bm_split_paths, get_delauny_dataset_splits
+from uutils.torch_uu.dataset.delaunay_uu import get_delauny_normal_torch_dataset_splits
 
 from learn2learn.data.transforms import TaskTransform
 
 
-def get_remaining_delauny_l2l_task_transforms(dataset: MetaDataset, ways: int, samples: int) -> list[TaskTransform]:
+def get_l2l_bm_split_paths(path_for_splits: Path) -> tuple[Path, Path, Path]:
+    path_for_splits: Path = expanduser(path_for_splits)
+    path2train: Path = path_for_splits / 'delauny_train_split_dir'
+    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
+    path2test: Path = path_for_splits / 'delauny_test_split_dir'
+    return path2train, path2val, path2test
+
+
+def get_remaining_delauny_l2l_task_transforms_no_indexable(dataset: MetaDataset, ways: int, samples: int) -> list[
+    TaskTransform]:
     """
     Get delauny task transforms to create fsl tasks. Same as mi.
 
     Same as MI to create fsl tasks: NWays, KShots, LoadData, RemapLabels, ConsecutiveLabels.
     """
-    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_remaining_transforms_mi
+    from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
     remaining_task_transforms: TaskTransform = get_remaining_transforms_mi(dataset, ways, samples)
     return remaining_task_transforms
 
 
-def get_delauny_l2l_datasets_and_task_transforms(train_ways=5,
-                                                 train_samples=10,
-                                                 test_ways=5,
-                                                 test_samples=10,
-                                                 root: str = '~/data/delauny_l2l_bm_splits',
-                                                 data_augmentation: str = 'delauny_uu',
-                                                 device=None,
-                                                 **kwargs,
-                                                 ):
-    """ """
-    # - get data set with its data transfroms
-    path2train, path2val, path2test = get_l2l_bm_split_paths(root)
-    train_dataset, valid_dataset, test_dataset = get_delauny_dataset_splits(path2train, path2val, path2test,
-                                                                            data_augmentation)
+def get_delauny_l2l_task_transforms_no_indexable_tasksets(train_dataset: MetaDataset,
+                                                          valid_dataset: MetaDataset,
+                                                          test_dataset: MetaDataset,
+                                                          train_ways: int,
+                                                          test_ways: int,
+                                                          train_samples: int,
+                                                          test_samples: int,
+                                                          ) -> tuple[list[TaskTransform]]:
+    # - decided same as MI transforms because I don't appreciate the omniglot one + delauny seems more similar to mi? (since it has colours...?)
+    train_transforms = get_remaining_delauny_l2l_task_transforms_no_indexable(train_dataset, train_ways, train_samples)
+    valid_transforms = get_remaining_delauny_l2l_task_transforms_no_indexable(valid_dataset, test_ways, test_samples)
+    test_transforms = get_remaining_delauny_l2l_task_transforms_no_indexable(test_dataset, test_ways, test_samples)
+    _transforms = (train_transforms, valid_transforms, test_transforms)
+    return _transforms
+
+
+def get_delaunay_datasets(root: str = '~/data/l2l_data/',
+                          data_augmentation: str = 'data_augmentation',
+                          device=None,
+                          **kwargs,
+                          ) -> tuple[MetaDataset, MetaDataset, MetaDataset]:
+    """ Get the delaunay datasets for l2l.
+    note: it knows to get the delauny split assuming you gave the path to the delauny split.
+    """
+    # - get data set with its data transforms
+    paths: tuple[Path, Path, Path] = get_l2l_bm_split_paths(root)
+    path2train, path2val, path2test = paths
+    data_sets: tuple[Dataset, Dataset, Dataset] = get_delauny_normal_torch_dataset_splits(path2train, path2val,
+                                                                                          path2test,
+                                                                                          data_augmentation)
+    train_dataset, valid_dataset, test_dataset = data_sets
     if device is None:
         pass  # in the original l2l it hardcodes a side effect to change the data transforms for some reason, we already put the data transforms so do nothing
     else:
@@ -66,19 +94,13 @@ def get_delauny_l2l_datasets_and_task_transforms(train_ways=5,
     valid_dataset: MetaDataset = MetaDataset(valid_dataset)
     test_dataset: MetaDataset = MetaDataset(test_dataset)
 
-    # - decided same as MI transforms because I don't acppreciate the omniglot one + delauny seems more similar to mi? (since it has colours...?)
-    train_transforms = get_remaining_delauny_l2l_task_transforms(train_dataset, train_ways, train_samples)
-    valid_transforms = get_remaining_delauny_l2l_task_transforms(valid_dataset, test_ways, test_samples)
-    test_transforms = get_remaining_delauny_l2l_task_transforms(test_dataset, test_ways, test_samples)
-
     # - add names to be able to get the right task transform for the indexable dataset
     train_dataset.name = 'train_delauny_uu'
     valid_dataset.name = 'val_delauny_uu'
     test_dataset.name = 'test_delauny_uu'
 
     _datasets = (train_dataset, valid_dataset, test_dataset)
-    _transforms = (train_transforms, valid_transforms, test_transforms)
-    return _datasets, _transforms
+    return _datasets,
 
 
 def setup_dot_labels_field():
@@ -89,13 +111,13 @@ def setup_dot_labels_field():
     raise NotImplementedError
 
 
-def get_delauny_tasksets(
+def get_delaunay_tasksets(
         train_ways=5,
         train_samples=10,
         test_ways=5,
         test_samples=10,
         num_tasks=-1,  # let it be -1 for continual tasks https://github.com/learnables/learn2learn/issues/315
-        root='~/data/delauny_l2l_bm_splits',
+        root='~/data/l2l_data/delauny_l2l_bm_splits',
         data_augmentation: str = '',
         device=None,
         **kwargs,
@@ -104,15 +126,20 @@ def get_delauny_tasksets(
     print(f'-> {data_augmentation=}')
     root = os.path.expanduser(root)
     # Load task-specific data and transforms
-    datasets, transforms = get_delauny_l2l_datasets_and_task_transforms(train_ways=train_ways,
-                                                                        train_samples=train_samples,
-                                                                        test_ways=test_ways,
-                                                                        test_samples=test_samples,
-                                                                        root=root,
-                                                                        data_augmentation=data_augmentation,
-                                                                        device=device,
-                                                                        **kwargs)
+    datasets: tuple[MetaDataset, MetaDataset, MetaDataset] = get_delaunay_datasets(train_ways=train_ways,
+                                                                                   train_samples=train_samples,
+                                                                                   test_ways=test_ways,
+                                                                                   test_samples=test_samples,
+                                                                                   root=root,
+                                                                                   data_augmentation=data_augmentation,
+                                                                                   device=device,
+                                                                                   **kwargs)
     train_dataset, validation_dataset, test_dataset = datasets
+
+    # - get task transforms
+    transforms = get_delauny_l2l_task_transforms_no_indexable_tasksets(train_dataset, validation_dataset, test_dataset,
+                                                                       train_ways, test_ways, train_samples,
+                                                                       test_samples)
     train_transforms, validation_transforms, test_transforms = transforms
 
     # Instantiate the tasksets
@@ -134,6 +161,16 @@ def get_delauny_tasksets(
     return BenchmarkTasksets(train_tasks, validation_tasks, test_tasks)
 
 
+class Task_transform_delaunay(Callable):
+    def __init__(self, ways, samples):
+        self.ways = ways
+        self.samples = samples
+
+    def __call__(self, dataset):
+        from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
+        return get_remaining_transforms_mi(dataset, self.ways, self.samples)
+
+
 # -- Run experiment
 
 def loop_through_delaunay():
@@ -145,7 +182,8 @@ def loop_through_delaunay():
 
     # - get benchmark
     batch_size = 5
-    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2, root='~/data/delauny_l2l_bm_splits')
+    kwargs: dict = dict(train_ways=2, train_samples=2, test_ways=2, test_samples=2,
+                        root='~/data/l2l_data/delauny_l2l_bm_splits')
     kwargs['data_augmentation'] = 'delauny_pad_random_resized_crop'
     print(f"{kwargs['data_augmentation']=}")
 
@@ -166,7 +204,7 @@ def loop_through_delaunay():
     from torch import nn
     criterion = nn.CrossEntropyLoss()
     # - loop through tasks
-    benchmark: BenchmarkTasksets = get_delauny_tasksets(**kwargs)
+    benchmark: BenchmarkTasksets = get_delaunay_tasksets(**kwargs)
     tasksets = [(split, getattr(benchmark, split)) for split in splits]
     for i, (split, taskset) in enumerate(tasksets):
         for task_num in range(batch_size):
@@ -383,7 +421,7 @@ def check_padding_random_crop_cifar_pure_torch():
 
 if __name__ == "__main__":
     import time
-    from uutils import report_times
+    from uutils import report_times, expanduser
 
     import sys
 

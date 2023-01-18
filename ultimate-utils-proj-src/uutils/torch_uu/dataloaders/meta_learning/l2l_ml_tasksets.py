@@ -25,6 +25,7 @@ import torch
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 
 
+
 def get_all_l2l_official_benchmarks_supported() -> list:
     """
     dict_keys(['omniglot', 'mini-imagenet', 'tiered-imagenet', 'fc100', 'cifarfs'])
@@ -133,8 +134,8 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     elif args.data_option == 'delauny_uu_l2l_bm_split':
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
-        from uutils.torch_uu.dataset.l2l_uu.delaunay_l2l import get_delauny_tasksets
-        args.tasksets: BenchmarkTasksets = get_delauny_tasksets(
+        from uutils.torch_uu.dataloaders.meta_learning.delaunay_l2l import get_delaunay_tasksets
+        args.tasksets: BenchmarkTasksets = get_delaunay_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -142,6 +143,17 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'hdb4_micod':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.hdb4_micod_l2l import hdb4_micod_l2l_tasksets
+        args.tasksets: BenchmarkTasksets = hdb4_micod_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+    )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
