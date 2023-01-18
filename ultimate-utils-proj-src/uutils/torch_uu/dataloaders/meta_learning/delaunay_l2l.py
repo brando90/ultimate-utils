@@ -15,17 +15,20 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 from learn2learn.data import MetaDataset
 from torch.utils.data import Dataset
 
+from uutils import expanduser
 from uutils.torch_uu import make_code_deterministic
 from uutils.torch_uu.dataset.delaunay_uu import get_delauny_normal_torch_dataset_splits
 
 from learn2learn.data.transforms import TaskTransform
 
 
-def get_l2l_bm_split_paths(path_for_splits: Path) -> tuple[Path, Path, Path]:
-    path_for_splits: Path = expanduser(path_for_splits)
-    path2train: Path = path_for_splits / 'delauny_train_split_dir'
-    path2val: Path = path_for_splits / 'delauny_validation_split_dir'
-    path2test: Path = path_for_splits / 'delauny_test_split_dir'
+def get_l2l_bm_split_paths(root: Path,
+                           splits_folder_name: str = 'delauny_l2l_bm_splits',
+                           ) -> tuple[Path, Path, Path]:
+    path_for_splits: Path = expanduser(root)
+    path2train: Path = path_for_splits / f'{splits_folder_name}/delauny_train_split_dir'
+    path2val: Path = path_for_splits / f'{splits_folder_name}/delauny_validation_split_dir'
+    path2test: Path = path_for_splits / f'{splits_folder_name}/delauny_test_split_dir'
     return path2train, path2val, path2test
 
 
@@ -421,7 +424,7 @@ def check_padding_random_crop_cifar_pure_torch():
 
 if __name__ == "__main__":
     import time
-    from uutils import report_times, expanduser
+    from uutils import report_times
 
     import sys
 

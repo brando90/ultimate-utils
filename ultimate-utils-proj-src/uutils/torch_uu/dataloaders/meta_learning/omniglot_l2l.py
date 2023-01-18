@@ -114,7 +114,7 @@ def one_minus_x(x):
 
 def get_omniglot_datasets(
         root: str = '~/data/l2l_data/',
-        data_augmentation: str = 'hdb1',
+        data_augmentation: str = 'l2l_original_data_transform',
         device=None,
         **kwargs,
 ) -> tuple[MetaDataset, MetaDataset, MetaDataset]:
@@ -134,7 +134,7 @@ def get_omniglot_datasets(
             transforms.ToTensor(),
             one_minus_x,
         ])
-    elif data_augmentation == 'hdb1':
+    elif data_augmentation == 'hdb1' or data_augmentation == 'hdb4_micod':
         data_transforms = transforms.Compose([
             ToRGB(),
             transforms.Resize(84),
@@ -149,20 +149,28 @@ def get_omniglot_datasets(
             one_minus_x,
             # note: task2vec doesn't have this for mnist, wonder why...just flip background from black to white
         ])
-    elif data_augmentation == 'use_random_resized_crop':
-        train_data_transforms = transforms.Compose([
-            ToRGB(),
-            RandomResizedCrop((84, 84), scale=(0.18, 1.0), padding=8),
-            transforms.ToTensor(),
-            one_minus_x
-        ])
-        val_data_transforms = transforms.Compose([
-            ToRGB(),
-            transforms.Resize(84),
-            transforms.ToTensor(),
-            one_minus_x
-        ])
-        test_data_transforms = val_data_transforms
+    elif data_augmentation == 'use_random_resized_crop' :
+        # decided against RandomResizedCrop since omniglot uses same transforms in both and didn't want to use the train one in both that is complicated for consistency in experiments within my expts and others
+        # # see delauny delauny_random_resized_crop_random_crop for details, they aren't the same though, RandomCrop missing here on purpose
+        # size: int = 84
+        # scale: tuple[int, int] = (0.18, 1.0)
+        # # padding: int = 8
+        # ratio: tuple[float, float] = (0.75, 1.3333333333333333)
+        # train_data_transforms = transforms.Compose([
+        #     ToRGB(),
+        #     RandomResizedCrop((size, size), scale=scale, ratio=ratio),
+        #     # RandomCrop(size=size, padding=padding),
+        #     transforms.ToTensor(),
+        #     one_minus_x
+        #     # note: task2vec doesn't have this for mnist, wonder why...just flip background from black to white
+        # ])
+        # val_data_transforms = transforms.Compose([
+        #     ToRGB(),
+        #     transforms.Resize(84),
+        #     transforms.ToTensor(),
+        #     one_minus_x
+        # ])
+        # test_data_transforms = val_data_transforms
         raise NotImplementedError
     else:
         raise ValueError(f'Invalid data transform option for omniglot, got instead {data_augmentation=}')

@@ -37,7 +37,7 @@ def get_cifarfs_datasets(
             lambda x: x / 255.0,
         ])
         test_data_transforms = train_data_transforms
-    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2':
+    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2' or data_augmentation == 'hdb4_micod':
         train_data_transforms = get_transform(augment=True)
         test_data_transforms = get_transform(augment=False)
     else:

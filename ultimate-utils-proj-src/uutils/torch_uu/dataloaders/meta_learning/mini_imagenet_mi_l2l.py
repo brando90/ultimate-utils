@@ -61,7 +61,7 @@ def get_mi_datasets(
             mi_img_int_to_img_float,
         ])
         test_data_transforms = train_data_transforms
-    elif data_augmentation == 'lee2019' or data_augmentation == 'hdb1':
+    elif data_augmentation == 'lee2019' or data_augmentation == 'hdb1' or data_augmentation == 'hdb4_micod':
         # print(f'{data_augmentation=}')
         normalize = Normalize(
             mean=[120.39586422 / 255.0, 115.59361427 / 255.0, 104.54012653 / 255.0],
@@ -106,7 +106,7 @@ def get_mi_datasets(
             normalize
         ])
     else:
-        raise ('Invalid data_augmentation argument.')
+        raise ValueError(f'Invalid data_augmentation argument {data_augmentation=}')
 
     train_dataset = l2l.vision.datasets.MiniImagenet(
         root=root,

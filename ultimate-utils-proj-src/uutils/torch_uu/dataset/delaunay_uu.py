@@ -241,10 +241,10 @@ def _data_transform_based_on_random_resized_crop_yxw(size: int = 84,
 
 
 def _delauny_pad_random_resized_crop(size: int = 84,
-                                    scale: tuple[int, int] = (0.18, 1.0),
-                                    padding: int = 8,
-                                    ratio: tuple[float, float] = (0.75, 1.3333333333333333),
-                                    ):
+                                     scale: tuple[int, int] = (0.18, 1.0),
+                                     padding: int = 8,
+                                     ratio: tuple[float, float] = (0.75, 1.3333333333333333),
+                                     ):
     """
     Data augmentation based on pad -> crop (scale, ration/stretch) -> resized (84).
     """
@@ -409,12 +409,8 @@ def get_my_delauny_data_transforms(
         # don't think this needs to be checked since it has no padding and MI has padding.
         train_data_transform, validation_data_transform, test_data_transform = _delauny_pad_random_resized_crop()
     # --
-    elif data_augmentation == 'delauny_random_resized_crop_random_crop':
+    elif data_augmentation == 'hdb4_micod':
         train_data_transform, validation_data_transform, test_data_transform = delauny_random_resized_crop_random_crop()
-    # --
-    elif data_augmentation == 'hdb_mid_mi_delauny':
-        # train_data_transform, validation_data_transform, test_data_transform = get_data_transform_hdb_mid()
-        raise NotImplementedError
     else:
         raise ValueError(f'Err: {data_augmentation=}')
     return train_data_transform, validation_data_transform, test_data_transform
@@ -581,7 +577,8 @@ def loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_s
     path2val: str = ''
     path2test: str = '/Users/brandomiranda/data/delauny_original_data/DELAUNAY_test'
     random_split = True
-    train_dataset, valid_dataset, test_dataset = get_delauny_normal_torch_dataset_splits(path2train, path2val, path2test,
+    train_dataset, valid_dataset, test_dataset = get_delauny_normal_torch_dataset_splits(path2train, path2val,
+                                                                                         path2test,
                                                                                          random_split=random_split)
     train_loader: DataLoader = DataLoader(train_dataset, num_workers=1)
     valid_loader: DataLoader = DataLoader(valid_dataset, num_workers=1)
