@@ -56,6 +56,15 @@ def check_halt(args: Namespace) -> bool:
         halt: bool = args.convg_meter.check_converged()
     elif args.training_mode == 'epochs_train_convergence':
         halt: bool = args.convg_meter.check_converged()
+    # - my hunch is that convergence is better
+    elif args.training_mode == 'iterations_train_target_train_acc':
+        raise NotImplementedError
+    elif args.training_mode == 'epochs_train_target_train_acc':
+        raise NotImplementedError
+    elif args.training_mode == 'iterations_train_target_train_loss':
+        raise NotImplementedError
+    elif args.training_mode == 'epochs_train_target_train_loss':
+        raise NotImplementedError
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
     return halt

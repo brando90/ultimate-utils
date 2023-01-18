@@ -52,7 +52,7 @@ def train_agent_fit_single_batch(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
     while not halt:
@@ -97,11 +97,11 @@ def train_agent_iterations(args: Namespace,
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
-    # - train in epochs
+    # - train
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
-    # -- continually try to train accross the an entire epoch but stop once the number of iterations desired is reached
+    # - continually try to train accross the entire epoch but stop once the number of iterations desired is reached
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
@@ -151,37 +151,15 @@ def train_agent_epochs(args: Namespace,
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
-    # - train in epochs
-    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
-    #log_zeroth_step(args, model)
+    # - train
+    log_zeroth_step(args, model)
     halt: bool = False
-
-    # ----added - 0th iter---#
-    args.epochs_num = 0
-    avg_loss = AverageMeter('train loss')
-    avg_acc = AverageMeter('train accuracy')
-    for i, batch in enumerate(dataloaders['train']):
-        #opt.zero_grad()
-        train_loss, train_acc = model(batch, training=True)
-        #train_loss.backward()  # each process synchronizes its gradients in the backward pass
-        #gradient_clip(args, opt)
-        #opt.step()  # the right update is done since all procs have the right synced grads
-
-        # - meter updates
-        avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
-        if args.debug:
-            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
-
-    step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-    log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
-    args.epochs_num = 1
-    # --------#
+    # - continually train but one epoch at a time
     while not halt:
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
-            #print("batch usl", batch)
             opt.zero_grad()
             train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass

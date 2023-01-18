@@ -36,16 +36,6 @@ def meta_train_agent_fit_single_batch(args: Namespace,
     """
     Train for a single batch
     """
-    # get one fixed meta-batch
-    # if hasattr(args, 'tasksets'):
-    #    # hack for l2l
-    #    from learn2learn.data import TaskDataset
-    #    split: str = 'validation' if split == 'val' else split
-    #    task_dataset: TaskDataset = getattr(args.tasksets, split)
-    #    assert self.args.batch_size >= 1
-    #    train_batch = : list = [task_dataset.sample() for task_num in range(self.args.batch_size)]
-    #    # train_batch = task_dataset
-    # else:  # torchmeta which has same api as pytorch dataloader
     train_batch: Any = next(iter(dataloaders['train']))
 
     # first batch
@@ -56,9 +46,8 @@ def meta_train_agent_fit_single_batch(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss',
-                                                          convergence_patience=args.train_convergence_patience)
-    # log_zeroth_step(args, model)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    # log_zeroth_step(args, model) # not needed for fit single batch
     halt: bool = False
     while not halt:
         opt.zero_grad()
@@ -106,14 +95,15 @@ def meta_train_fixed_iterations(args: Namespace,
     print('Starting training!')
     print(f'{meta_train_fixed_iterations=}')
 
-    # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
-    args.bar = uutils.get_good_progressbar(max_value=args.num_its)
+    # - create progress bar
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
 
-    # ----added - 0th iter---#
+    # - meta-train
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, meta_learner)
-    # --------#
+    # - continually meta-train until halt condition is met (usually convergence or reaching max its)
     while not halt:
         for batch_idx, batch in enumerate(dataloaders['train']):
             outer_opt.zero_grad()
@@ -139,6 +129,7 @@ def meta_train_fixed_iterations(args: Namespace,
             if args.it % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
                 log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
+                args.convg_meter.update(train_loss)
 
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
@@ -154,48 +145,39 @@ def meta_train_iterations_ala_l2l(args: Namespace,
     """"""
     # torch.distributed.barrier()
     print('Starting training!')
+    print(f'{meta_train_iterations_ala_l2l=}')
     meta_batch_size: int = args.batch_size // args.world_size
     # meta_batch_size: int = max(args.batch_size // args.world_size, 1)
     # assert args.batch_size >= args.world_size, f'If batch size is smaller training might be slightly wrong when in distributed.'
 
-    # print(args.batch_size, meta_batch_size, "args and Meta BatchSize")
-    # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
-    args.bar = uutils.get_good_progressbar(max_value=args.num_its)
+    # - create progress bar
+    args.bar: ProgressBar = get_trainer_progress_bar(args)
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
 
-    # ----added - 0th iter---#
+    # - meta-train
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, meta_learner)
-    # --------#
+    # - continually meta-train until halt condition is met (usually convergence or reaching max its)
     while not halt:
-        # print(f'{args.rank=}')
-        # print_inside_halt(args, halt, 0)  # todo: remove? temporary for debugging
         outer_opt.zero_grad()
-        # print_inside_halt(args, halt, 1)  # todo: remove? temporary for debugging
 
         # - forward pass. Since the data fetching is different for l2l we do it this way
         task_dataset: TaskDataset = args.tasksets.train
-        # print_inside_halt(args, halt, 2)  # todo: remove? temporary for debugging
         train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(task_dataset, call_backward=True)
-        # print_inside_halt(args, halt, 3)  # todo: remove? temporary for debugging
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
-        # print_inside_halt(args, halt, 4)  # todo: remove? temporary for debugging
 
         # - Grad clip  (optional)
         gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
-        # print_inside_halt(args, halt, 5)  # todo: remove? temporary for debugging
 
         # - Opt Step - Average the accumulated gradients and optimize
         from uutils.torch_uu.distributed import is_running_parallel
-        # print_inside_halt(args, halt, 6)  # todo: remove? temporary for debugging
         if is_running_parallel(args.rank):
             for p in meta_learner.parameters():
                 if p.grad is not None:
                     p.grad.data.mul_(1.0 / meta_batch_size)
-        # print_inside_halt(args, halt, 7)  # todo: remove? temporary for debugging
         outer_opt.step()  # averages gradients across all workers
-        # print_inside_halt(args, halt, 8)  # todo: remove? temporary for debugging
 
         # - Scheduler
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
@@ -212,7 +194,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         if args.it % args.log_freq == 0 or halt or args.debug:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
             log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
-            # args.convg_meter.update(train_loss)
+            args.convg_meter.update(train_loss)
 
         # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
         if halt:
