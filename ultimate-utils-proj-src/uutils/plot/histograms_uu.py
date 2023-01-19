@@ -1,5 +1,6 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import torch
@@ -40,7 +41,8 @@ In general, the number of bars in a histogram equals the number of bins used but
     assert num_bars_in_histogram == y_data.shape[0]
     num_bins: int = len(ax.get_xticks()) - 1
     if verbose:
-        print(x_data)
+        print(f'{x_data=}')
+        print(f'{y_data=}')
         print(f'{sum(y_data)=}')
         print(f'{num_bars_in_histogram=}')
         print(f'{num_bins=}')
@@ -80,7 +82,7 @@ def get_histogram(array: np.ndarray,
                   edgecolor: str = "black",
                   stat: Optional = 'count',
                   color: Optional[str] = None,
-                  ):
+                  ) -> Any:
     """ """
     # - check it's of size (N,)
     if isinstance(array, list):
@@ -301,6 +303,9 @@ def do_test_lets_try_to_get_xs_ys_hist():
 
     # - plot
     plt.show()
+
+    # -
+    print(f'{type(ax)=}')
 
     # - end
     print()

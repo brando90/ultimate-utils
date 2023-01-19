@@ -34,12 +34,15 @@ you should be aware that pinning is often an expensive operation. Thus, will lea
 ref:
     - on pin_memory: https://pytorch.org/docs/stable/data.html
 """
-from typing import Callable, Optional, Union
+from argparse import Namespace
+from typing import Callable, Optional, Union, Any
 
 import numpy as np
 import torch
 from numpy.random import RandomState
 from torch.utils.data import Dataset, SubsetRandomSampler, random_split, DataLoader, RandomSampler
+
+from pdb import set_trace as st
 
 
 def get_train_val_split_random_sampler(
@@ -174,6 +177,86 @@ def split_inidices(indices: list,
                                                                           random_state=random_state,
                                                                           shuffle=shuffle)
     return train_indices, val_indices
+
+
+# - size of data sets from data loader
+
+def get_data_set_size_from_dataloader(dataloader: DataLoader) -> int:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a dataloader
+    """
+    return len(dataloader.dataset)
+
+
+def get_data_set_size_from_taskset(taskset) -> int:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a taskset
+
+    # cases:
+        - case 0: SingleDataset
+            -
+        - case 1: IndexableDataset
+            - sum( [ len(taskset.train.dataset.dataset.datasets[i].dataset) for i in range(len(taskset.train.dataset.dataset.datasets))] )
+    """
+    # - make type explicit
+    # already did the .train .validation or .test
+    from learn2learn.data import TaskDataset
+    taskset: TaskDataset = taskset
+
+    # -- Get size of data set
+    # - case 1: IndexableDataset
+    try:
+        # its easier to just fail this and try to do single than to do them "in order"
+        from diversity_src.dataloaders.common import IndexableDataSet
+        assert isinstance(taskset.dataset.dataset, IndexableDataSet)
+        # return sum([len(taskset.dataset.dataset.datasets[i].dataset) for i in range(len(taskset.dataset.dataset.datasets))])
+        datasets = taskset.dataset.dataset.datasets
+        size: int = 0
+        for metadataset in datasets:  # for i in range(len(taskset.dataset.dataset.datasets)
+            # print(metadataset)
+            # print(dataset)
+            # print(type(metadataset))
+            # print(type(dataset)
+            dataset = metadataset.dataset
+            size += len(dataset)
+        return size
+    except Exception as e:
+        # - case 0: SingleDataset
+        # do return len(metadataset.dataset)
+        dataset = metadataset.dataset
+        return len(dataset)
+
+
+def get_data_set_sizes_from_dataloaders(dataloaders: dict[str, DataLoader]) -> dict[str, int]:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a dataloader
+    """
+    return {k: get_data_set_size_from_dataloader(v) for k, v in dataloaders.items()}
+
+
+def get_data_set_sizes_from_tasksets(tasksets: dict[str, Any]) -> dict[str, int]:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a taskset
+    """
+    splits = ['train', 'validation', 'test']
+    # return {k: get_data_set_size_from_taskset(v) for k, v in tasksets.items()}
+    return {split: get_data_set_size_from_taskset(getattr(tasksets, split)) for split in splits}
+
+
+def get_dataset_size(args: Namespace) -> dict[str, int]:
+    split_2_size: dict[str, int] = None
+    try:
+        dataloaders = args.dataloaders
+        split_2_size = get_data_set_size_from_dataloader(dataloaders)
+    except Exception as e:
+        # print(f'{e=}')
+        tasksets = args.tasksets
+        split_2_size = get_data_set_sizes_from_tasksets(tasksets)
+    return N
 
 # - visualization help
 
