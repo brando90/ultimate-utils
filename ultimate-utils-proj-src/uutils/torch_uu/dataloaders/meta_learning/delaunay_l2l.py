@@ -103,7 +103,7 @@ def get_delaunay_datasets(root: str = '~/data/l2l_data/',
     test_dataset.name = 'test_delauny_uu'
 
     _datasets = (train_dataset, valid_dataset, test_dataset)
-    return _datasets,
+    return _datasets
 
 
 def setup_dot_labels_field():

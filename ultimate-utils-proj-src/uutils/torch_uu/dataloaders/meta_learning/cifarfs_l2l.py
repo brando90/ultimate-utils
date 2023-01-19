@@ -37,9 +37,21 @@ def get_cifarfs_datasets(
             lambda x: x / 255.0,
         ])
         test_data_transforms = train_data_transforms
-    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2' or data_augmentation == 'hdb4_micod':
+    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2':
         train_data_transforms = get_transform(augment=True)
         test_data_transforms = get_transform(augment=False)
+    elif data_augmentation == 'hdb4_micod':
+        size: int = 84,
+        scale: tuple[float, float] = (0.18, 1.0)
+        padding: int = 8
+        ratio: tuple[float, float] = (0.75, 1.3333333333333333)
+        from uutils.torch_uu.dataset.delaunay_uu import delauny_random_resized_crop_random_crop
+        train_data_transforms, _, test_data_transforms = delauny_random_resized_crop_random_crop(
+            size=size,
+            scale=scale,
+            padding=padding,
+            ratio=ratio,
+        )
     else:
         raise ValueError(f'Invalid data_augmentation argument. Got: {data_augmentation=}')
 

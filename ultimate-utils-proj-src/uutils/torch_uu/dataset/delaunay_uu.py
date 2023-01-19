@@ -295,7 +295,7 @@ def _data_transform_delauny_random_resized_crop(
 
 def delauny_random_resized_crop_random_crop(
         size: int = 84,
-        scale: tuple[int, int] = (0.18, 1.0),
+        scale: tuple[float, float] = (0.18, 1.0),
         padding: int = 8,
         ratio: tuple[float, float] = (0.75, 1.3333333333333333),
 ):
