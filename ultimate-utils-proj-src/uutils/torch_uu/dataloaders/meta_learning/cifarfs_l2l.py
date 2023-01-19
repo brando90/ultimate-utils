@@ -41,7 +41,7 @@ def get_cifarfs_datasets(
         train_data_transforms = get_transform(augment=True)
         test_data_transforms = get_transform(augment=False)
     elif data_augmentation == 'hdb4_micod':
-        size: int = 84,
+        size: int = 84
         scale: tuple[float, float] = (0.18, 1.0)
         padding: int = 8
         ratio: tuple[float, float] = (0.75, 1.3333333333333333)
