@@ -258,6 +258,29 @@ def get_dataset_size(args: Namespace) -> dict[str, int]:
         split_2_size = get_data_set_sizes_from_tasksets(tasksets)
     return split_2_size
 
+# - get num classes
+
+def get_num_classes_l2l_list_meta_dataset(dataset_list: list, verbose: bool = False) -> dict:
+    """ Get the number of classes in a list of l2l meta dataset"""
+    from learn2learn.data import MetaDataset
+    dataset_list: list[MetaDataset] = dataset_list
+    # - get num classes for each data set & total, total is one we really need
+    results: dict = dict(total=0)
+    for dataset in dataset_list:
+        num_classes = len(dataset.labels)
+        if hasattr(dataset, 'name'):
+            results[dataset.name] = num_classes
+        else:
+            results[str(type(dataset))] = num_classes
+        results['total'] += num_classes
+    if verbose:
+        print(f'Number of classes: \n {results=}')
+        from pprint import pprint
+        print(f'Number of classes:')
+        pprint(results)
+    return results
+
+
 # - visualization help
 
 # - tests
