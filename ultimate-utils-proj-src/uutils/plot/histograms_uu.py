@@ -29,7 +29,7 @@ On the other hand, the number of bars in a histogram is the number of rectangles
 In general, the number of bars in a histogram equals the number of bins used but the last bin might contain more than one bin, thus the number of bars is greater than the number of bins.
     ```
     """
-    # Extract the x and y axis data
+    # Extract the x and y axis data (by getting the
     x_data = [r.get_x() + r.get_width() / 2 for r in ax.patches]
     y_data = [r.get_height() for r in ax.patches]
 
@@ -283,6 +283,7 @@ def do_test_lets_try_to_get_xs_ys_hist():
 
     # Create a histogram plot with sns
     ax = sns.histplot(data)
+    print(f'{type(ax)=}')
 
     # Extract the x and y axis data
     x_data = [r.get_x() + r.get_width() / 2 for r in ax.patches]
@@ -301,11 +302,16 @@ def do_test_lets_try_to_get_xs_ys_hist():
     x_data, y_data, num_bars_in_histogram, num_bins = get_x_axis_y_axis_from_seaborn_histogram(ax, verbose=True)
     print(f'{x_data, y_data, num_bars_in_histogram, num_bins=}')
 
+    # - sanity check the binned x-axis we got from histograms
+    bins = np.linspace(np.min(data), np.max(data), num_bars_in_histogram)
+    # hist, bin_edges = np.histogram(data, bins)
+    bin_middles = (bins[:-1] + bins[1:]) / 2
+    print('next two approximately equal')
+    print(f'{bin_middles=}')
+    print(f'{x_data=}')
+
     # - plot
     plt.show()
-
-    # -
-    print(f'{type(ax)=}')
 
     # - end
     print()

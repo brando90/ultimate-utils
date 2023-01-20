@@ -256,7 +256,7 @@ def get_dataset_size(args: Namespace) -> dict[str, int]:
         # print(f'{e=}')
         tasksets = args.tasksets
         split_2_size = get_data_set_sizes_from_tasksets(tasksets)
-    return N
+    return split_2_size
 
 # - visualization help
 
