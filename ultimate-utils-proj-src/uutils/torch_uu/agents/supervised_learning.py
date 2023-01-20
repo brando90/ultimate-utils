@@ -77,6 +77,27 @@ class RegressionSLAgent(Agent):
         self.model = model
         self.loss = loss
 
+class GPT2SLAgent(Agent):
+    """
+    For training the GPT2 model
+    """
+
+
+    def __init__(self, args, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, batch, training = True):
+        print(batch)
+        if training:
+            loss, acc = self.model(batch[0], batch[1])
+        else:
+            loss, acc = self.model(batch[0])
+
+        return loss, acc
+
+
+
 
 class UnionClsSLAgent(Agent):
     """

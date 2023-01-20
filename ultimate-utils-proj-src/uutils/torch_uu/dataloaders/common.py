@@ -162,6 +162,20 @@ def get_serial_or_distributed_dataloaders(train_dataset: Dataset,
     # iter(train_dataloader)  # if this fails its likely your running in pycharm and need to set num_workers flag to 0
     return train_loader, val_loader
 
+# def get_iterable_dataloaders(train_dataset: Dataset,
+#                              val_dataset: Dataset,
+#                              batch_size: int = 128,
+#                              batch_size_eval: int = 64,
+#                              rank: int = -1,
+#                              world_size: int = 1,
+#                              merge: Optional[Callable] = None,
+#                              num_workers: int = -1,  # -1 means its running serially
+#                              pin_memory: bool = False,
+#                              ):
+#     from uutils.torch_uu.distributed import is_running_serially
+#     if is_running_serially(rank):
+        
+
 
 def split_inidices(indices: list,
                    test_size: Optional = None,

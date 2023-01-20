@@ -200,6 +200,9 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == 'vit_mi':
         from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_mi
         args.model, args.model_hps = get_vit_get_vit_model_and_model_hps_mi(**model_hps)
+    elif model_option == 'gpt2':
+        from uutils.torch_uu.models.hf_uu.gpt2_uu import get_gpt2_with_hps
+        args.model, args.model_hps = get_gpt2_with_hps(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:

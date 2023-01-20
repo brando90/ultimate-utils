@@ -52,6 +52,10 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 1100, f'hdb1 expects more classes but got {args.model.cls.out_features=},' \
                                                          f'\nfor model {type(args.model)=}'  # hdb1
+
+    elif args.data_option == 'webtext':
+        from uutils.torch_uu.dataloaders.webtext import get_dataloaders_for_webtext
+        args.dataloaders: dict = get_dataloaders_for_webtext(args)
     elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
