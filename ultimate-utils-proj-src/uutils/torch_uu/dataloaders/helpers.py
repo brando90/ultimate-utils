@@ -39,6 +39,7 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 
 
 def get_sl_dataloader(args: Namespace) -> dict:
+    print(f'{get_sl_dataloader=}')
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
     if hasattr(args, 'data_path'):
@@ -61,8 +62,8 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 1100, f'hdb1 expects more classes but got {args.model.cls.out_features=},' \
                                                          f'\nfor model {type(args.model)=}'  # hdb1
-    elif args.data_option == 'hdb4_micod_usl':
-        from uutils.torch_uu.dataloaders.usl import hdb4_micod_usl_all_splits_dataloaders
+    elif args.data_option == 'hdb4_micod':
+        from uutils.torch_uu.dataloaders.usl.usl_dataloaders import hdb4_micod_usl_all_splits_dataloaders
         args.dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 34 + 64 + 1100, f'hdb4 expects more classes but got {args.model.cls.out_features=},' \
                                                                    f'\nfor model {type(args.model)=}'

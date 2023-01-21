@@ -13,6 +13,7 @@ def hdb4_micod_usl_all_splits_dataloaders(
         device=None,
 ) -> dict:
     print(f'----> {data_augmentation=}')
+    print(f'{hdb4_micod_usl_all_splits_dataloaders=}')
     root = os.path.expanduser(root)
     from diversity_src.dataloaders.hdb4_micod_l2l import get_hdb4_micod_list_data_set_splits
     dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb4_micod_list_data_set_splits(root,
