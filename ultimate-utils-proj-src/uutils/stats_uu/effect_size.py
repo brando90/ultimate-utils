@@ -2,7 +2,12 @@
 Effect size = is a quantative measure of the strength of a phenomenon. Effect size emphasizes the size of the difference
     or relationship. e.g. the distance between the two means of two hyptoehsis H0, H1 (if they were Gaussian distributions).
 
-Remark: It's important to note that effect size seems to be a function of the application (todo: why)
+Cohen’s d measures the difference between the mean from two Gaussian-distributed variables.
+It is a standard score that summarizes the difference in terms of the number of standard deviations.
+Because the score is standardized, there is a table for the interpretation of the result, summarized as:
+    - Small Effect Size: d=0.20
+    - Medium Effect Size: d=0.50
+    - Large Effect Size: d=0.80
 
 note:
     - you usually look up the effect size in you application/field (todo why)
@@ -16,5 +21,160 @@ note:
 
 ref:
     - https://www.youtube.com/watch?v=9LVD9oLg1A0&list=PLljPCllSdtzWop4iDNyyuZ2NZokOHeQqm&index=6
+    - https://machinelearningmastery.com/effect-size-measures-in-python/
 
+
+todo: later
+    Two other popular methods for quantifying the difference effect size are:
+
+    Odds Ratio. Measures the odds of an outcome occurring from one treatment compared to another.
+    Relative Risk Ratio. Measures the probabilities of an outcome occurring from one treatment compared to another.
 """
+
+
+# function to calculate Cohen's d for independent samples
+def _cohen_d(d1, d2):
+    """
+    Compute Cohen's d for independent samples.
+
+    ref:
+        - from: https://machinelearningmastery.com/effect-size-measures-in-python/
+
+```
+# seed random number generator
+seed(1)
+# prepare data
+data1 = 10 * randn(10000) + 60
+data2 = 10 * randn(10000) + 55
+# calculate cohen's d
+d = cohend(data1, data2)
+print('Cohens d: %.3f' % d)
+```
+
+    Note:
+        -   ddof : int, optional
+            Means Delta Degrees of Freedom.  The divisor used in calculations
+            is ``N - ddof``, where ``N`` represents the number of elements.
+            By default `ddof` is zero.
+    """
+    # calculate the Cohen's d between two samples
+    from numpy.random import randn
+    from numpy.random import seed
+    from numpy import mean
+    from numpy import var
+    from math import sqrt
+
+    # calculate the size of samples
+    n1, n2 = len(d1), len(d2)
+    # calculate the variance of the samples
+    s1, s2 = var(d1, ddof=1), var(d2, ddof=1)
+    # calculate the pooled standard deviation
+    s = sqrt(((n1 - 1) * s1 + (n2 - 1) * s2) / (n1 + n2 - 2))
+    # calculate the means of the samples
+    u1, u2 = mean(d1), mean(d2)
+    # calculate the effect size
+    cohen_d: float = (u1 - u2) / s
+    return cohen_d
+
+
+def compute_effect_size_t_test_cohens_d(group1: iter, group2: iter) -> float:
+    """
+    Compute effect size for a t-test (Cohen's d). The distance in pooled std between the two means.
+
+    Note:
+        - The Cohen’s d calculation is not provided in Python; we can calculate it manually. ref: https://machinelearningmastery.com/effect-size-measures-in-python/
+        -
+    """
+    from numpy import mean
+    # calculate the pooled standard deviation
+    pooled_std: float = compute_pooled_std_two_groups(group1, group2)
+    # calculate the means of the samples
+    u1, u2 = mean(group1), mean(group2)
+    # calculate the effect size
+    cohen_d: float = (u1 - u2) / pooled_std
+    return cohen_d
+
+
+def compute_pooled_std_two_groups(group1: iter, group2: iter, ddof: int = 1) -> float:
+    """
+    Compute pooled std for two groups.
+
+    ref:
+        - https://machinelearningmastery.com/effect-size-measures-in-python/
+    """
+    import numpy as np
+    pooled_std: float = np.sqrt((np.std(group1, ddof=ddof) ** 2 + np.std(group2, ddof=ddof) ** 2) / 2)
+    return pooled_std
+
+
+def print_interpretation_of_cohends_d_decision_procedure(d: float):
+    """ Print interpretation of Cohen's d decision procedure. """
+    print(f'Decision: (is a minimal difference between the means of two groups or a minimal relationship between two variables?)')
+    d: float = abs(d)
+    if d < 0.35:
+        print(f"Small Effect Size: d~0.20 {d < 0.35=}")
+    elif 0.35 <= d < 0.65:
+        print(f"Medium Effect Size: d~0.50 {0.35 <= d < 0.65=}")
+    elif d >= 0.65:
+        print(f"Large Effect Size: d~0.80 {d >= 0.65=}")
+    else:
+        raise ValueError(f"Unexpected value for d: {d}")
+
+
+# - tests
+
+def my_test_using_stds_from_real_expts_():
+    """
+    std_maml = std_m ~ 0.061377
+    std_usl = std_u ~ 0.085221
+    """
+    import numpy as np
+
+    # Example data
+    std_m = 0.061377
+    std_u = 0.085221
+    N = 100
+    N_m = N
+    N_u = N
+    mu_m = 0.855
+    mu_u = 0.893
+    group1 = np.random.normal(mu_m, std_m, N_m)
+    group2 = np.random.normal(mu_u, std_u, N_u)
+    print(f'{std_m=}')
+    print(f'{std_u=}')
+    print(f'{N_m=}')
+    print(f'{N_u=}')
+    print(f'{mu_m=}')
+    print(f'{mu_u=}')
+
+    # Perform t-test
+    from scipy.stats import ttest_ind
+    t_stat, p_value = ttest_ind(group1, group2)
+
+    # Compute Cohen's d
+    cohen_d: float = compute_effect_size_t_test_cohens_d(group1, group2)
+    _cohen_d_val: float = _cohen_d(group1, group2)
+
+    print("Cohen's d: ", cohen_d)
+    print("_cohen_d: ", _cohen_d_val)
+    print_interpretation_of_cohends_d_decision_procedure(cohen_d)
+
+    # Print p-value
+    print("p-value: ", p_value)
+    alpha: float = 0.01  # significance level
+    from uutils.stats_uu.p_values_uu.t_test_uu import print_statistically_significant_decision_procedure
+    print_statistically_significant_decision_procedure(p_value, alpha)
+
+
+# - run it
+
+if __name__ == '__main__':
+    import time
+
+    start = time.time()
+    # - run it
+    my_test_using_stds_from_real_expts_()
+    # - Done
+    from uutils import report_times
+
+    print(f"\nSuccess Done!: {report_times(start)}\a")

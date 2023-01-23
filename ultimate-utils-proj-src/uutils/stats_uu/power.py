@@ -42,10 +42,12 @@ import numpy as np
 def compute_power_posthoc_t_test(alpha, n, d) -> float:
     """
     Compute power after a study has been done.
-    :args
-        alpha: the alpha level (e.g. 0.05)
-        n: the sample size
-        d: the effect size (e.g. Cohen's d)
+
+    - Given N, std -> Power
+        - tails
+        - alpha (significance level)
+        - effect size d (difference between means, e.g. Cohen's d)
+        - Power (probability of detecting a difference, 1 - beta)
     """
     from scipy.stats import norm
 

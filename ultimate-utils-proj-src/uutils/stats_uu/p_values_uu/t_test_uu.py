@@ -3,9 +3,24 @@ from scipy.stats import stats
 import matplotlib.pyplot as plt
 
 
+def print_statistically_significant_decision_procedure(p_value: float, alpha: float = 0.05):
+    """
+    Statistically significant means we can reject the null hypothesis (& accept our own e.g. means are different)
+    so its statistically significant if the observation or more extreme under H0 is very unlikely i.e. p < 0.05.
+
+    :arg p_value: p-value, probability that you observe the current your sample mean or more extreme under H0.
+    :arg alpha: significance level.
+    """
+    print(f'Decision: (Statistically significant?)')
+    if p_value <= alpha:
+        print(f'H1 (Reject H0, means are statistically different) {p_value=}, {alpha=}, {p_value < alpha=}')
+    else:
+        print(f'H0 (Can\'t reject H0, means are statistically the same) {p_value=}, {alpha=}, {p_value < alpha=}')
+
+
 # -
 
-def show_n_does_or_doesnt_affect_p_value():
+def show_n_does_or_doesnt_affect_p_value_test_():
     """
     plot p-value vs n. Does n affect p-value?
     """
@@ -34,5 +49,5 @@ def show_n_does_or_doesnt_affect_p_value():
 
 if __name__ == '__main__':
     print('Starting...')
-    show_n_does_or_doesnt_affect_p_value()
+    # show_n_does_or_doesnt_affect_p_value_test_()
     print(f'Done!\a\n')
