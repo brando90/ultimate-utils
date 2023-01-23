@@ -77,7 +77,7 @@ print('Cohens d: %.3f' % d)
     return cohen_d
 
 
-def compute_effect_size_t_test_cohens_d(group1: iter, group2: iter) -> float:
+def compute_effect_size_t_test_cohens_d(group1: iter, group2: iter) -> tuple[float, float]:
     """
     Compute effect size for a t-test (Cohen's d). The distance in pooled std between the two means.
 
@@ -92,7 +92,7 @@ def compute_effect_size_t_test_cohens_d(group1: iter, group2: iter) -> float:
     u1, u2 = mean(group1), mean(group2)
     # calculate the effect size
     cohen_d: float = (u1 - u2) / pooled_std
-    return cohen_d
+    return cohen_d, pooled_std
 
 
 def compute_pooled_std_two_groups(group1: iter, group2: iter, ddof: int = 1) -> float:
@@ -109,7 +109,8 @@ def compute_pooled_std_two_groups(group1: iter, group2: iter, ddof: int = 1) -> 
 
 def print_interpretation_of_cohends_d_decision_procedure(d: float):
     """ Print interpretation of Cohen's d decision procedure. """
-    print(f'Decision: (is a minimal difference between the means of two groups or a minimal relationship between two variables?)')
+    print(
+        f'Decision: (is a minimal difference between the means of two groups or a minimal relationship between two variables?)')
     d: float = abs(d)
     if d < 0.35:
         print(f"Small Effect Size: d~0.20 {d < 0.35=}")
@@ -119,6 +120,20 @@ def print_interpretation_of_cohends_d_decision_procedure(d: float):
         print(f"Large Effect Size: d~0.80 {d >= 0.65=}")
     else:
         raise ValueError(f"Unexpected value for d: {d}")
+
+
+def decision_based_on_effect_size(d: float, pooled_std: float, eps: float = 0.01):
+    """
+    Print can't reject null ("accept H1") if the effect size is large enough wrt to eps
+
+    Similar to the CIs test.
+
+    Note:
+        - eps - 1% or 2% based on ywx's suggestion (common acceptance for new method is SOTA in CVPR like papers).
+    """
+    # todo
+    d: float = abs(d)
+    return d >= eps
 
 
 # - tests
@@ -152,7 +167,7 @@ def my_test_using_stds_from_real_expts_():
     t_stat, p_value = ttest_ind(group1, group2)
 
     # Compute Cohen's d
-    cohen_d: float = compute_effect_size_t_test_cohens_d(group1, group2)
+    cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
     _cohen_d_val: float = _cohen_d(group1, group2)
 
     print("Cohen's d: ", cohen_d)
@@ -165,6 +180,27 @@ def my_test_using_stds_from_real_expts_():
     from uutils.stats_uu.p_values_uu.t_test_uu import print_statistically_significant_decision_procedure
     print_statistically_significant_decision_procedure(p_value, alpha)
 
+    # Print Power P_d (probability of detection, rejecting null if null is false)
+    from uutils.stats_uu.power import _compute_power_ttest
+    power: float = _compute_power_ttest(cohen_d, N, alpha)
+    # from uutils.stats_uu.power import compute_power_posthoc_t_test
+    # power2: float = compute_power_posthoc_t_test(cohen_d, N, alpha)
+    from uutils.stats_uu.power import _compute_power_ttest
+    power2: float = _compute_power_ttest(cohen_d, N, alpha)
+    from uutils.stats_uu.power import _compute_power_ttest2
+    # power3: float = _compute_power_ttest2(cohen_d, N, alpha)
+    print(f'{power=}')
+    print(f'{power2=}')
+    # print(f'{power3=}')
+
+
+    # print estimated number samples needed to get power, should be around the N we gave it
+    print('---- estimated number samples needed to get power ----')
+    print(f'true N used {N=}')
+    from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
+    N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
+    print(f'N_estimated {N_estimated=}')
+    print('(if gives numerical error ignore)')
 
 # - run it
 

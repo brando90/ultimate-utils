@@ -39,25 +39,97 @@ ref:
 import numpy as np
 
 
-def compute_power_posthoc_t_test(alpha, n, d) -> float:
+# def _compute_power_posthoc_ttest(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
+#     """
+#     Compute power after a study has been done.
+#
+#     - Given N, std -> Power
+#         - tails
+#         - alpha (significance level)
+#         - effect size d (difference between means, e.g. Cohen's d)
+#         - Power (probability of detecting a difference, 1 - beta)
+#     """
+#     # power = norm.sf(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
+#     # compute power with scipy
+#     from scipy.stats import norm
+#     power = norm.ttest_power(effect_size, nobs=n, alpha=alpha, alternative=alternative)
+#     # power = norm.ttest_power(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
+#     return power
+
+
+def _compute_power_ttest(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
     """
-    Compute power after a study has been done.
+    Compute power for a t-test from effect size, sample size, alpha, and type of alternative hypothesis.
 
-    - Given N, std -> Power
-        - tails
-        - alpha (significance level)
-        - effect size d (difference between means, e.g. Cohen's d)
-        - Power (probability of detecting a difference, 1 - beta)
+    Note:
+        alternative = 'two-sided' | 'smaller' | 'larger'.
+
+    ref:
+        - https://stackoverflow.com/questions/54067722/calculate-power-for-t-test-in-python
+
+    Note: uses
+        analysis = TTestIndPower()
+        result = analysis.solve_power(effect, power=power, nobs1=None, ratio=1.0, alpha=alpha)
+    form https://machinelearningmastery.com/statistical-power-and-power-analysis-in-python/ under the hood.
     """
-    from scipy.stats import norm
-
-    effect_size = d  # the difference in means divided by the pooled standard deviation
-    alpha = alpha  # significance level
-    sample_size = n  # number of observations per group
-
-    # power = norm.sf(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
-    power = norm.ttest_power(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
+    from statsmodels.stats.power import TTestIndPower
+    analysis = TTestIndPower()
+    power: float = analysis.power(effect_size, nobs=n, alpha=alpha, alternative=alternative)
     return power
+
+
+def _compute_power_ttest(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
+    """
+    Compute power for a t-test from effect size, sample size, alpha, and type of alternative hypothesis.
+
+    Note:
+        alternative = 'two-sided' | 'smaller' | 'larger'.
+
+    ref:
+        - https://machinelearningmastery.com/statistical-power-and-power-analysis-in-python/
+    """
+    import statsmodels.stats.power as smp
+    power: float = smp.tt_ind_solve_power(effect_size=effect_size, nobs1=n, alpha=alpha, alternative=alternative)
+    return power
+
+
+def _compute_power_ttest2(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
+    """
+    Compute power for a t-test from effect size, sample size, alpha, and type of alternative hypothesis.
+
+    Note:
+        alternative = 'two-sided' | 'smaller' | 'larger'.
+
+    ref:
+        - https://stackoverflow.com/questions/54067722/calculate-power-for-t-test-in-python/75215952#75215952
+    """
+    raise ValueError(
+        'Has an error for now see: https://stackoverflow.com/questions/54067722/calculate-power-for-t-test-in-python')
+    import statsmodels.stats.power as smp
+    power: float = smp.ttest_power(effect_size=effect_size, nobs=n, alpha=alpha, alternative=alternative)
+    return power
+
+
+def get_estimated_number_of_samples_needed_to_reach_certain_power(effect_size: float,
+                                                                  power: float,
+                                                                  alpha: float,
+                                                                  alternative: str = 'two-sided',
+                                                                  ) -> float:
+    """
+    Compute sample size needed to reach a certain power for a t-test. Note the result will be a float.
+
+    Note:
+        - Guess: number of observations is the number of observations for RV in question. So if your doing dif = mu1 - mu2
+        N estimated or given to power will be the number of difs, not the total from the two groups.
+
+    ref:
+        - https://machinelearningmastery.com/statistical-power-and-power-analysis-in-python/
+    """
+    # perform power analysis
+    from statsmodels.stats.power import TTestIndPower
+    analysis = TTestIndPower()
+    result = analysis.solve_power(effect_size, power=power, nobs1=None, ratio=1.0, alpha=alpha, alternative=alternative)
+    return result
 
 
 # -
@@ -66,9 +138,7 @@ def compute_power_posthoc_test():
     """
     Compute power after a study has been done.
     """
-    alpha, n, d = 0.05, 100, 0.5
-    power: float = compute_power_posthoc_t_test(alpha, n, d)
-    print(power)
+    pass
 
 
 if __name__ == '__main__':
