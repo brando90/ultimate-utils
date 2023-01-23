@@ -193,14 +193,16 @@ def my_test_using_stds_from_real_expts_():
     print(f'{power2=}')
     # print(f'{power3=}')
 
+    from uutils.stats_uu.power import print_interpretation_of_power
+    print_interpretation_of_power(power)
 
     # print estimated number samples needed to get power, should be around the N we gave it
-    print('---- estimated number samples needed to get power ----')
-    print(f'true N used {N=}')
-    from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
-    N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
-    print(f'N_estimated {N_estimated=}')
-    print('(if gives numerical error ignore)')
+    # print('---- estimated number samples needed to get power ----')
+    # print(f'true N used {N=}')
+    # from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
+    # N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
+    # print(f'N_estimated {N_estimated=}')
+    # print('(if gives numerical error ignore)')
 
 # - run it
 

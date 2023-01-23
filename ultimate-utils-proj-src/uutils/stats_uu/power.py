@@ -132,6 +132,27 @@ def get_estimated_number_of_samples_needed_to_reach_certain_power(effect_size: f
     return result
 
 
+def print_interpretation_of_power(power: float):
+    """
+    Print the interpretation of a power value.
+
+    ref:
+        - Courtney Donovan: https://www.youtube.com/watch?v=HPKcmEhP-4s&list=PLljPCllSdtzWop4iDNyyuZ2NZokOHeQqm&index=7
+    """
+    if power < 0.2:
+        print(f'Power is very low (power < 0.2) {power}')
+    elif power < 0.5:
+        print(f'Power is low  (power < 0.5) {power=}')
+    elif 0.8 > power >= 0.7:
+        print(f'Power is acceptable (>=0.7 is adequate) {power=}')
+    elif 0.9 > power >= 0.8:
+        print(f'Power is good (>=0.8 is acceptable) {power=}')
+    elif 1.0 >= power >= 0.9:
+        print(f'Power is excellent (>=0.9 is excellent) {power=}')
+    else:
+        raise ValueError(f'Power is not in range [0, 1] {power=}')
+
+
 # -
 
 def compute_power_posthoc_test():
