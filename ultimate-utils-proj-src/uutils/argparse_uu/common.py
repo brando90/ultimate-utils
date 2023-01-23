@@ -20,7 +20,7 @@ def create_default_log_root(args: Namespace):
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.log_root: Path = args.log_root.expanduser()
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
+    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}_pid_{args.PID}'
     args.log_root.mkdir(parents=True, exist_ok=True)
 
 
@@ -144,6 +144,12 @@ def setup_args_for_experiment(args: Namespace,
     # - get cluster info (including hostname)
     load_cluster_jobids_to(args)
 
+    # - save PID
+    args.PID = str(os.getpid())
+    print(f'{args.PID=}')
+    if torch.cuda.is_available():
+        args.nccl = torch.cuda.nccl.version()
+
     # - get log_root
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     create_default_log_root(args)
@@ -173,12 +179,6 @@ def setup_args_for_experiment(args: Namespace,
         args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         args.gpu_name = args.device
     print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
-
-    # - save PID
-    args.PID = str(os.getpid())
-    print(f'{args.PID=}')
-    if torch.cuda.is_available():
-        args.nccl = torch.cuda.nccl.version()
 
     # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
     # logging.warning('uutils email is not recommended! very unreliable, especially from cluster to cluster)
@@ -224,6 +224,3 @@ def setup_args_for_experiment(args: Namespace,
     uutils.print_args(args)
     uutils.save_args(args)
     return args
-
-
-
