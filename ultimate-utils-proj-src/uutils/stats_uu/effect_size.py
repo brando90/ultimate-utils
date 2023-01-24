@@ -165,8 +165,9 @@ def decision_based_on_effect_size_and_standardized_acceptable_difference(
 
 def my_test_using_stds_from_real_expts_():
     """
-    std_maml = std_m ~ 0.061377
-    std_usl = std_u ~ 0.085221
+    This is the tutorial for doing hypothesis testing for small and large samples.
+        - for small samples you can use everything including the p-value and eps = 0
+        - for large samples use everything except the p-value and eps=0 for CIs
     """
     import numpy as np
 
