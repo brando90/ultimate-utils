@@ -910,8 +910,10 @@ def seed_everything(seed: int = 42):
     """
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     """
-    import torch
     import random
+    import os
+    import numpy as np
+    import torch
 
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)

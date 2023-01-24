@@ -196,7 +196,8 @@ def my_test_using_stds_from_real_expts_():
     from uutils.stats_uu.power import print_interpretation_of_power
     print_interpretation_of_power(power)
 
-    # print estimated number samples needed to get power, should be around the N we gave it
+    # - guess number of samples
+    # print()
     # print('---- estimated number samples needed to get power ----')
     # print(f'true N used {N=}')
     # from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
