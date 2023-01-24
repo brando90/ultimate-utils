@@ -143,6 +143,8 @@ def print_interpretation_of_power(power: float):
         print(f'Power is very low (power < 0.2) {power}')
     elif power < 0.5:
         print(f'Power is low (power < 0.5) {power=}')
+    elif power < 0.7:
+        print(f'Power is low (power < 0.5) {power=}')
     elif 0.8 > power >= 0.7:
         print(f'Power is acceptable (>=0.7 is adequate) {power=}')
     elif 0.9 > power >= 0.8:

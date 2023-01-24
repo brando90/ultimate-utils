@@ -107,33 +107,58 @@ def compute_pooled_std_two_groups(group1: iter, group2: iter, ddof: int = 1) -> 
     return pooled_std
 
 
+def get_standardized_acceptable_difference(eps: float, group1: iter, group2: iter) -> float:
+    """
+    Get standardized acceptable difference/eps/epsilon. Recommended use: compare with effect size to see if your effect size is
+    in the range of acceptable difference. e.g. if effect size is "low" but it's close to the acceptable difference,
+    then there is an argument to accept your hypothesis (reject the null) i.e. there is a noticeable difference.
+    """
+    # calculate the pooled standard deviation
+    pooled_std: float = compute_pooled_std_two_groups(group1, group2)
+    # calculate the effect size
+    standardized_acceptable_difference: float = eps / pooled_std
+    return standardized_acceptable_difference
+
+
+# - decicion procedures
+
 def print_interpretation_of_cohends_d_decision_procedure(d: float):
     """ Print interpretation of Cohen's d decision procedure. """
     print(
-        f'Decision: (is a minimal difference between the means of two groups or a minimal relationship between two variables?)')
+        f'Decision: (is there a minimal difference between the means of two groups or a minimal relationship between two variables?)')
     d: float = abs(d)
     if d < 0.35:
-        print(f"Small Effect Size: d~0.20 {d < 0.35=}")
+        print(f"Small Effect Size: d~0.20, {d < 0.35=}, {d=}")
     elif 0.35 <= d < 0.65:
-        print(f"Medium Effect Size: d~0.50 {0.35 <= d < 0.65=}")
+        print(f"Medium Effect Size: d~0.50, {0.35 <= d < 0.65=}, {d=}")
     elif d >= 0.65:
-        print(f"Large Effect Size: d~0.80 {d >= 0.65=}")
+        print(f"Large Effect Size: d~0.80, {d >= 0.65=}, {d=}")
     else:
         raise ValueError(f"Unexpected value for d: {d}")
 
 
-def decision_based_on_effect_size(d: float, pooled_std: float, eps: float = 0.01):
+def decision_based_on_effect_size_and_standardized_acceptable_difference(
+        effect_size: float,
+        standardized_acceptable_difference: float) -> bool:
     """
-    Print can't reject null ("accept H1") if the effect size is large enough wrt to eps
+    Function that accepts or rejects null hypothesis based on effect size and accepted without using confidence intervals.
+    i.e. just compares the if the effect size is larger than the standardized acceptable difference.
+    Logic/Justification: if people accept papers/knowledge based on the (standardized) acceptable difference then we
+    can point out our difference is within that range and therefore we can "accept" our hypothesis (reject the null).
 
-    Similar to the CIs test.
+    Similar to the CIs test & CI tests are recommended to be also done
 
     Note:
         - eps - 1% or 2% based on ywx's suggestion (common acceptance for new method is SOTA in CVPR like papers).
     """
-    # todo
-    d: float = abs(d)
-    return d >= eps
+    effect_size: float = abs(effect_size)
+    if effect_size >= standardized_acceptable_difference:
+        print(f"H1 (Reject the null hypothesis, Effect size is larger than the standardized acceptable difference): "
+              f"{effect_size >= standardized_acceptable_difference=}")
+    else:
+        print(f"H0 (Accept the null hypothesis, Effect size is smaller than the standardized acceptable difference): "
+              f"{effect_size < standardized_acceptable_difference=}")
+    return effect_size >= standardized_acceptable_difference  # True if H1 else False H0
 
 
 # - tests
@@ -167,14 +192,39 @@ def my_test_using_stds_from_real_expts_():
     t_stat, p_value = ttest_ind(group1, group2)
 
     # Compute Cohen's d
+    print('---- effect size analysis ----')
     cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
     _cohen_d_val: float = _cohen_d(group1, group2)
 
-    print("Cohen's d: ", cohen_d)
-    print("_cohen_d: ", _cohen_d_val)
+    print("Cohen's d:", cohen_d)
+    print("_cohen_d:", _cohen_d_val)
+
+    # Compare with acceptable difference/epsilon
+    acceptable_difference1: float = 0.01  # 1% difference/epsilon
+    acceptable_difference2: float = 0.02  # 2% difference/epsilon
+    standardized_acceptable_difference1: float = get_standardized_acceptable_difference(acceptable_difference1, group1,
+                                                                                        group2)
+    standardized_acceptable_difference2: float = get_standardized_acceptable_difference(acceptable_difference2, group1,
+                                                                                        group2)
+    # print(f'{acceptable_difference1=}')
+    # print(f'{acceptable_difference2=}')
+    print(f'{standardized_acceptable_difference1=}')
+    print(f'{standardized_acceptable_difference2=}')
+    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference1)
+    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference2)
     print_interpretation_of_cohends_d_decision_procedure(cohen_d)
 
+    # CIs/Confidence Intervals
+    print('---- CIs/Confidence Intervals ----')
+    from uutils.stats_uu.ci_uu import mean_confidence_interval, decision_based_on_acceptable_difference_cis
+    m1, ci1 = mean_confidence_interval(group1)
+    m2, ci2 = mean_confidence_interval(group2)
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), 0.0)
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference1)
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference2)
+
     # Print p-value
+    print('---- p-value analysis ----')
     print("p-value: ", p_value)
     alpha: float = 0.01  # significance level
     from uutils.stats_uu.p_values_uu.t_test_uu import print_statistically_significant_decision_procedure
@@ -204,6 +254,7 @@ def my_test_using_stds_from_real_expts_():
     # N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
     # print(f'N_estimated {N_estimated=}')
     # print('(if gives numerical error ignore)')
+
 
 # - run it
 

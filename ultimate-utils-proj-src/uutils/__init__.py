@@ -2111,6 +2111,78 @@ def lists_equal(l1: list, l2: list) -> bool:
     return set_comp and multiset_comp  # set_comp is gere in case the compare function doesn't work
 
 
+def get_intersection_overlap(a, b) -> float:
+    """
+    Returns the intersection over union of two bounding boxes.
+    Note, lower and upper bounds intersect exactly, it is considered not an intersection.
+
+    ref:
+        - https://stackoverflow.com/a/2953979/1601580
+    """
+    return max(0, min(a[1], b[1]) - max(a[0], b[0]))
+
+
+def get_intersection_overlap_care_about_exact_match(a, b) -> float:
+    """
+    Return the amount of overlap, in bp
+    between a and b.
+    If >0, the number of bp of overlap
+    If 0,  they are book-ended.
+    If <0, the distance in bp between them
+
+    - positive if intersect
+    - negative if not intersect
+    - zero if exqct match
+
+    ref:
+        - https://stackoverflow.com/a/52388579/1601580
+    """
+    return min(a[1], b[1]) - max(a[0], b[0])
+
+
+# -- tests
+
+def overlap_intersection_test_():
+    """
+    want to test if two intervals intersect/overlap and return true if they do
+    """
+    print('----')
+    print(f'{get_intersection_overlap([10, 25], [20, 38])}')
+    assert get_intersection_overlap([10, 25], [20, 38]) == 5
+    print(f'{get_intersection_overlap([20, 38], [10, 25])}')
+    assert get_intersection_overlap([20, 38], [10, 25]) == 5
+
+    print(f'{get_intersection_overlap([10, 15], [20, 38])}')
+    assert get_intersection_overlap([10, 15], [20, 38]) == 0
+    print(f'{get_intersection_overlap([20, 38], [10, 15])}')
+    assert get_intersection_overlap([20, 38], [10, 15]) == 0
+
+    print(f'{get_intersection_overlap([10, 15], [15, 38])}')
+    assert get_intersection_overlap([10, 15], [15, 38]) == 0
+    print(f'{get_intersection_overlap([15, 38], [10, 15])}')
+    assert get_intersection_overlap([15, 38], [10, 15]) == 0
+
+    # -
+    print('----')
+    # positive if intersect
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 25], [20, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 25], [20, 38]) == 5
+    print(f'{get_intersection_overlap_care_about_exact_match([20, 38], [10, 25])}')
+    assert get_intersection_overlap_care_about_exact_match([20, 38], [10, 25]) == 5
+
+    # negative if not intersect
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 15], [20, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 15], [20, 38]) == -5
+    print(f'{get_intersection_overlap_care_about_exact_match([20, 38], [10, 15])}')
+    assert get_intersection_overlap_care_about_exact_match([20, 38], [10, 15]) == -5
+
+    # zero if exqct match
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 15], [15, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 15], [15, 38]) == 0
+    print(f'{get_intersection_overlap_care_about_exact_match([15, 38], [10, 15])}')
+    assert get_intersection_overlap_care_about_exact_match([15, 38], [10, 15]) == 0
+
+
 def draw_test():
     # import pylab
     # import matplotlib.my_pyplot as plt
@@ -2207,6 +2279,8 @@ def _map_args_fields_from_string_to_usable_value_test():
     pprint_args(args)
 
 
+# --
+
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
@@ -2215,4 +2289,5 @@ if __name__ == '__main__':
     # xor_test()
     # merge_args_test()
     # _map_args_fields_from_string_to_usable_value_test()
+    overlap_intersection_test_()
     print('Done!\a')

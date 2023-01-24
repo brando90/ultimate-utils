@@ -2725,6 +2725,7 @@ def get_normal_data(B: int, Din: int, loc: float = 0.0, scale: float = 1.0) -> t
 
 # --
 
+
 # -- tests
 
 def ned_test():
@@ -3051,5 +3052,5 @@ if __name__ == '__main__':
     # anatome_test_are_random_vs_pretrain_resnets_different()
     # verbose_exec_test()
     # feature_extractor_hook_test()
-    _resume_from_checkpoint_meta_learning_for_resnets_rfs_test()
+    # _resume_from_checkpoint_meta_learning_for_resnets_rfs_test()
     print('Done\a')

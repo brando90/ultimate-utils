@@ -1,11 +1,16 @@
 # Statistical Tests (Hypothesis Testing)
 
+A statistical significance test, like a Chi square test, is attempting to answer a very specific problem: 
+"how likely is it that a difference I observe in a random sample is just an artifact of sampling error 
+(the error that arises when we try to make generalizations about a population using only a random sample 
+of that population)?"
+
 ## Small Sample Size
 
 ### Summary
 
 What is a small sample size? When power is not too high (e.g. 0.9999) and p-value/CIs are not to small, 
-usually n<500 or 300
+usually n<500 or 300.
 
 Summary what to do for small sample size Hypothesis Testing:
     - p-value: stat test (e.g. t-test) with p-value & significance level
@@ -40,4 +45,5 @@ See `my_test_using_stds_from_real_expts_()` function in `effect_size.py`.
 
 ref:
     - Fantastic reference: https://stats.stackexchange.com/questions/35470/significance-test-for-large-sample-sizes/602978#602978
+    - my answer: https://stats.stackexchange.com/a/603027/28986
 

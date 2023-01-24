@@ -233,6 +233,33 @@ def prob_of_truth_being_inside_when_using_ci_as_std():
     print('Integration bewteen {} and {} --> '.format(x1, x2), res)
 
 
+# -- Decision Procedures
+
+def get_top_and_bottom_values_after_adjusting_with_cis(pair0: tuple[float, float],
+                                                       pair1: tuple[float, float],
+                                                       ) -> tuple[float, float]:
+    """
+    Returns the top and bottom values of the means after figuring out which one is the larger & smaller means
+    and then adding the CI and subtracting the CI appropriatley.
+
+    bottom = larger - lower CI
+    top = smaller + upper CI
+    """
+    larger: float
+    smaller: float
+    if pair0[0] > pair1[0]:
+        larger = pair0
+        smaller = pair1
+    else:
+        larger = pair1
+        smaller = pair0
+    assert larger[0] > smaller[0], f'Err: {larger=}, {smaller=}'
+    # - check intersection
+    larger_adjusted: float = larger[0] - larger[1]
+    smaller_adjusted: float = smaller[0] + smaller[1]
+    return larger_adjusted, smaller_adjusted
+
+
 def confidence_intervals_intersect(pair0: tuple[float, float], pair1: tuple[float, float]) -> bool:
     """
     Tells you if the confidence intervals intersect. The first value in the tuple is the expected value and the second
@@ -252,21 +279,44 @@ def confidence_intervals_intersect(pair0: tuple[float, float], pair1: tuple[floa
     :param pair1:
     :return:
     """
-    larger: float
-    smaller: float
-    if pair0[0] > pair1[0]:
-        larger = pair0
-        smaller = pair1
-    else:
-        larger = pair1
-        smaller = pair0
-    assert larger[0] > smaller[0], f'Err: {larger=}, {smaller=}'
-    # - check intersection
-    larger_adjusted: float = larger[0] - larger[1]
-    smaller_adjusted: float = smaller[0] + smaller[1]
+    larger_adjusted, smaller_adjusted = get_top_and_bottom_values_after_adjusting_with_cis(pair0, pair1)
     # - they intersect if the larger became smaller and the smaller became larger
     intersect: bool = larger_adjusted < smaller_adjusted
     return intersect
+
+
+def decision_based_on_acceptable_difference_cis(pair0: tuple[float, float],
+                                                pair1: tuple[float, float],
+                                                acceptable_difference: float = 0.0,
+                                                ) -> bool:
+    """
+    Check if CIs overlap/intersect by checking if the intervals intersect.
+    True if difference is large (H1) [so intervals didn't intersect] and
+    False if difference is small (H0) [so intervals did intersect]
+
+    Decision:
+       - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] intersect then the difference is not statistically significant
+         - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] don't intersect then the difference is statistically significant
+    """
+    eps: float = acceptable_difference
+    # - construct invervals
+    interval0: tuple[float, float] = (pair0[0] - pair0[1] - eps, pair0[0] + pair0[1] + eps)
+    interval1: tuple[float, float] = (pair1[0] - pair1[1] - eps, pair1[0] + pair1[1] + eps)
+    # - do intervals intersect/overlap? if yes no diff (H0) else no intersection significant diff (H1)
+    from uutils import get_intersection_overlap_care_about_exact_match
+    if get_intersection_overlap_care_about_exact_match(interval0, interval1) >= 0:
+        # positive intersection or exact match (0) ==> overlap/intersection ==> no diff (H0)
+        print(f'H0 (Accept null hypothesis, confidence interals did overlap/intersect) '
+              f'{interval0=}, {interval1=}'
+              f'{eps=}')
+        return True  # if True H1 else False H0
+    else:
+        # negative intersection ==> no overlap/intersection ==> significant diff (H1)
+        print(f'H1 (Reject null hypothesis, confidence interals did NOT overlap/intersect) '
+              f'{interval0=}, {interval1=}'
+              f'{eps=}')
+        return False  # if True H1 else False H0
+
 
 # - tests
 
@@ -421,7 +471,6 @@ def statistically_significant_test():
     assert not confidence_intervals_intersect(pair2, pair1)
     print(f'{(pair1, pair2)=}')
     print(f'{confidence_intervals_intersect(pair1, pair2)=}')
-
 
     pair1 = (93, 3)
     pair2 = (89, 2)
