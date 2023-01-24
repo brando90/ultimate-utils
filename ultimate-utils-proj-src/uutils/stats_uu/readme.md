@@ -4,6 +4,9 @@
 
 ### Summary
 
+What is a small sample size? When power is not too high (e.g. 0.9999) and p-value/CIs are not to small, 
+usually n<500 or 300
+
 Summary what to do for small sample size Hypothesis Testing:
     - p-value: stat test (e.g. t-test) with p-value & significance level
     - effect size: report the effect size (e.g. Cohen's d)
@@ -11,10 +14,12 @@ Summary what to do for small sample size Hypothesis Testing:
     - Power/sample size: making an estimate of your std (or preliminary data), get Power of your test with a given sample size or compute 
     the sample size you need to achieve good power. 
 
+
 ref:
     - also fantastic reference: https://stats.stackexchange.com/a/602978/28986 
 
 ## Large Sample Size
+Same as previous comment but n>500 good rule of thumb.
 
 Summary what to do for large sample size Hypothesis Testing:
     - CI: CI's and use the epsilon valid in your applicaiton
