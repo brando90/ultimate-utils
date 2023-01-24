@@ -9,7 +9,8 @@ usually n<500 or 300
 
 Summary what to do for small sample size Hypothesis Testing:
     - p-value: stat test (e.g. t-test) with p-value & significance level
-    - effect size: report the effect size (e.g. Cohen's d)
+    - effect size: report the effect size (e.g. Cohen's d), see if it falls in the common ~0.2 (small), 0.5 (medium), 0.8 (large)  
+    & compare it to `eps/pooled_std(group1, group2)`
     - CI: CI's, do they intersect given the epsilon that matters for your application?
     - Power/sample size: making an estimate of your std (or preliminary data), get Power of your test with a given sample size or compute 
     the sample size you need to achieve good power. 
@@ -27,6 +28,10 @@ Summary what to do for large sample size Hypothesis Testing:
     & compare it to `eps/pooled_std(group1, group2)`
     - LRT: todo
     - eps != 0 p-value: todo
+
+## Hands on example
+
+See `my_test_using_stds_from_real_expts_()` function in `effect_size.py`.
 
 ### Todo later (for large sample size)
 
