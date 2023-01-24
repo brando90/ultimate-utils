@@ -232,6 +232,7 @@ def my_test_using_stds_from_real_expts_():
     print_statistically_significant_decision_procedure(p_value, alpha)
 
     # Print Power P_d (probability of detection, rejecting null if null is false)
+    print('---- Power analysis P_d (probability of detection, rejecting null if null is false) ----')
     from uutils.stats_uu.power import _compute_power_ttest
     power: float = _compute_power_ttest(cohen_d, N, alpha)
     # from uutils.stats_uu.power import compute_power_posthoc_t_test
