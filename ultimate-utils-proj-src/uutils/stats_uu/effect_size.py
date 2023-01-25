@@ -67,9 +67,9 @@ print('Cohens d: %.3f' % d)
     # calculate the size of samples
     n1, n2 = len(d1), len(d2)
     # calculate the variance of the samples
-    s1, s2 = var(d1, ddof=1), var(d2, ddof=1)
+    v1, v2 = var(d1, ddof=1), var(d2, ddof=1)
     # calculate the pooled standard deviation
-    s = sqrt(((n1 - 1) * s1 + (n2 - 1) * s2) / (n1 + n2 - 2))
+    s = sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2))
     # calculate the means of the samples
     u1, u2 = mean(d1), mean(d2)
     # calculate the effect size
@@ -125,7 +125,8 @@ def get_standardized_acceptable_difference(eps: float, group1: iter, group2: ite
 def print_interpretation_of_cohends_d_decision_procedure(d: float):
     """ Print interpretation of Cohen's d decision procedure. """
     print(
-        f'Decision: (is there a minimal difference between the means of two groups or a minimal relationship between two variables?)')
+        f'Decision: (is there a minimal difference between the means of two groups or a minimal relationship between two variables?)'
+        f'(please note the sign of {d=})')
     d: float = abs(d)
     if d < 0.35:
         print(f"Small Effect Size: d~0.20, {d < 0.35=}, {d=}")
@@ -200,6 +201,7 @@ def my_test_using_stds_from_real_expts_():
     print("Cohen's d:", cohen_d)
     print("_cohen_d:", _cohen_d_val)
 
+
     # Compare with acceptable difference/epsilon
     acceptable_difference1: float = 0.01  # 1% difference/epsilon
     acceptable_difference2: float = 0.02  # 2% difference/epsilon
@@ -228,8 +230,8 @@ def my_test_using_stds_from_real_expts_():
     print('---- p-value analysis ----')
     print("p-value: ", p_value)
     alpha: float = 0.01  # significance level
-    from uutils.stats_uu.p_values_uu.t_test_uu import print_statistically_significant_decision_procedure
-    print_statistically_significant_decision_procedure(p_value, alpha)
+    from uutils.stats_uu.p_values_uu.t_test_uu import decision_procedure_based_on_statistically_significance
+    decision_procedure_based_on_statistically_significance(p_value, alpha)
 
     # Print Power P_d (probability of detection, rejecting null if null is false)
     print('---- Power analysis P_d (probability of detection, rejecting null if null is false) ----')
@@ -257,6 +259,63 @@ def my_test_using_stds_from_real_expts_():
     # print(f'N_estimated {N_estimated=}')
     # print('(if gives numerical error ignore)')
 
+def effect_size_depedence_on_N_test_():
+    """
+    This tests if effect size cohen's d depedence on N.
+
+    Anser:
+        - yes it does but not in the way it affects p-values & CIs. Since it measures a distance between two means --
+        it gets better as N -> infinity and it's noisier for small N.
+
+    Answer from SO:
+    Estimate of Cohen's d: when we estimate Cohen's d from a sample then there will be some influence on the
+    distribution. For increasing sample size the estimates will be more precise, but the expectation value of the
+    estimate will not differ as a function of the sample size.
+
+    ref:
+        - https://stats.stackexchange.com/questions/550026/why-in-simple-terms-is-cohens-d-not-affected-by-sample-size-but-a-t-test-is?rq=1#:~:text=Cohen's%20d%20is%20the%20effect,influenced%20by%20the%20sample%20size.
+    """
+    import numpy as np
+
+    # Example data
+    std_m = 0.061377
+    std_u = 0.085221
+    N = 100
+    N_m = N
+    N_u = N
+    mu_m = 0.855
+    mu_u = 0.893
+    group1 = np.random.normal(mu_m, std_m, N_m)
+    group2 = np.random.normal(mu_u, std_u, N_u)
+    print(f'{std_m=}')
+    print(f'{std_u=}')
+    print(f'{N_m=}')
+    print(f'{N_u=}')
+    print(f'{mu_m=}')
+    print(f'{mu_u=}')
+
+    # -
+    ns: list[int] = [2, 10, 15, 30, 50, 75, 100, 150, 300, 500, 1000, 5_000, 10_000]
+    effect_sizes: list[float] = []
+    for n in ns:
+        group1 = np.random.normal(mu_m, std_m, N_m)
+        group2 = np.random.normal(mu_u, std_u, N_u)
+        # - effect size
+        cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
+        _cohen_d_val: float = _cohen_d(group1, group2)
+        print("Cohen's d:", cohen_d)
+        print("_cohen_d:", _cohen_d_val)
+        # - append
+        effect_sizes.append(cohen_d)
+    # - plot it
+    from uutils.plot import plot
+    import matplotlib.pyplot as plt
+    plot(ns, effect_sizes, title='Effect size dependence on N', xlabel='N', ylabel='Cohen\'s d')
+    plt.axhline(y=0.2, color='r', linestyle='-', label='0.2 (small)')
+    plt.axhline(y=0.5, color='r', linestyle='-', label='0.5 (medium)')
+    plt.axhline(y=0.8, color='r', linestyle='-', label='0.8 (large)')
+    plt.legend()
+    plt.show()
 
 # - run it
 
@@ -266,6 +325,7 @@ if __name__ == '__main__':
     start = time.time()
     # - run it
     my_test_using_stds_from_real_expts_()
+    # effect_size_depedence_on_N_test_()
     # - Done
     from uutils import report_times
 

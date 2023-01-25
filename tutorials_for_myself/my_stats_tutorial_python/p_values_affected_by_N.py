@@ -68,3 +68,9 @@ H1
 
 it was already tiny e-5 and it only decreased to -12 then 0.0 exactly. So the p-value is unaffected by N up to errors.
 """
+# %%
+"""
+make plot p-value vs N.
+"""
+from uutils.stats_uu.p_values_uu.t_test_uu import show_n_does_or_doesnt_affect_p_value_test_
+show_n_does_or_doesnt_affect_p_value_test_()

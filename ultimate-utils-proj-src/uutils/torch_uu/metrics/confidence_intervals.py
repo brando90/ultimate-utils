@@ -274,10 +274,7 @@ def confidence_intervals_intersect(pair0: tuple[float, float], pair1: tuple[floa
     Examples:
         - to detect "equivalence" then the CI's intersect (and num tasks is high, since it's trivial for this to be
         true with N~small e.g. 1)
-        - to detect statistically significant difference, then the CI's don't intersect (and num tasks is high)
-    :param pair0:
-    :param pair1:
-    :return:
+        - to detect practically significant difference, then the CI's don't intersect (and num tasks is high)
     """
     larger_adjusted, smaller_adjusted = get_top_and_bottom_values_after_adjusting_with_cis(pair0, pair1)
     # - they intersect if the larger became smaller and the smaller became larger
@@ -295,8 +292,8 @@ def decision_based_on_acceptable_difference_cis(pair0: tuple[float, float],
     False if difference is small (H0) [so intervals did intersect]
 
     Decision:
-       - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] intersect then the difference is not statistically significant
-         - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] don't intersect then the difference is statistically significant
+       - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] intersect then the difference is not practically significant
+         - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] don't intersect then the difference is practically significant
     """
     eps: float = acceptable_difference
     # - construct invervals
@@ -457,7 +454,7 @@ def moments_test():
     print(f'{ci_95_mom=}')
 
 
-def statistically_significant_test():
+def practically_significant_test():
     """
     For high div expts we need:
         - there is a difference btw the two accuracies
@@ -487,5 +484,5 @@ if __name__ == '__main__':
     # print_tps()
     # ci_test_float()
     # moments_test()
-    statistically_significant_test()
+    practically_significant_test()
     print('Done, success! \a')

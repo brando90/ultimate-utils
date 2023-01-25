@@ -3,7 +3,7 @@ from scipy.stats import stats
 import matplotlib.pyplot as plt
 
 
-def print_statistically_significant_decision_procedure(p_value: float, alpha: float = 0.05):
+def decision_procedure_based_on_statistically_significance(p_value: float, alpha: float = 0.05):
     """
     Statistically significant means we can reject the null hypothesis (& accept our own e.g. means are different)
     so its statistically significant if the observation or more extreme under H0 is very unlikely i.e. p < 0.05.
@@ -11,7 +11,7 @@ def print_statistically_significant_decision_procedure(p_value: float, alpha: fl
     :arg p_value: p-value, probability that you observe the current your sample mean or more extreme under H0.
     :arg alpha: significance level.
     """
-    print(f'Decision: (Statistically significant?)')
+    print(f'Decision: (Ptatistically significant?)')
     if p_value <= alpha:
         print(f'H1 (Reject H0, means are statistically different) {p_value=}, {alpha=}, {p_value < alpha=}')
     else:

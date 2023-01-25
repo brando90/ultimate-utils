@@ -39,24 +39,6 @@ ref:
 import numpy as np
 
 
-# def _compute_power_posthoc_ttest(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
-#     """
-#     Compute power after a study has been done.
-#
-#     - Given N, std -> Power
-#         - tails
-#         - alpha (significance level)
-#         - effect size d (difference between means, e.g. Cohen's d)
-#         - Power (probability of detecting a difference, 1 - beta)
-#     """
-#     # power = norm.sf(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
-#     # compute power with scipy
-#     from scipy.stats import norm
-#     power = norm.ttest_power(effect_size, nobs=n, alpha=alpha, alternative=alternative)
-#     # power = norm.ttest_power(effect_size * np.sqrt(sample_size) - norm.ppf(1 - alpha))
-#     return power
-
-
 def _compute_power_ttest(effect_size: float, n: int, alpha: float, alternative: str = 'two-sided') -> float:
     """
     Compute power for a t-test from effect size, sample size, alpha, and type of alternative hypothesis.
