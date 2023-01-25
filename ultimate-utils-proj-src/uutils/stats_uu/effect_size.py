@@ -298,8 +298,9 @@ def effect_size_depedence_on_N_test_():
     ns: list[int] = [2, 10, 15, 30, 50, 75, 100, 150, 300, 500, 1000, 5_000, 10_000]
     effect_sizes: list[float] = []
     for n in ns:
-        group1 = np.random.normal(mu_m, std_m, N_m)
-        group2 = np.random.normal(mu_u, std_u, N_u)
+        # - flipped groups so everything is positive
+        group2 = np.random.normal(mu_m, std_m, N_m)
+        group1 = np.random.normal(mu_u, std_u, N_u)
         # - effect size
         cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
         _cohen_d_val: float = _cohen_d(group1, group2)
@@ -312,8 +313,8 @@ def effect_size_depedence_on_N_test_():
     import matplotlib.pyplot as plt
     plot(ns, effect_sizes, title='Effect size dependence on N', xlabel='N', ylabel='Cohen\'s d')
     plt.axhline(y=0.2, color='r', linestyle='-', label='0.2 (small)')
-    plt.axhline(y=0.5, color='r', linestyle='-', label='0.5 (medium)')
-    plt.axhline(y=0.8, color='r', linestyle='-', label='0.8 (large)')
+    plt.axhline(y=0.5, color='b', linestyle='-', label='0.5 (medium)')
+    plt.axhline(y=0.8, color='g', linestyle='-', label='0.8 (large)')
     plt.legend()
     plt.show()
 
@@ -324,8 +325,8 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run it
-    my_test_using_stds_from_real_expts_()
-    # effect_size_depedence_on_N_test_()
+    # my_test_using_stds_from_real_expts_()
+    effect_size_depedence_on_N_test_()
     # - Done
     from uutils import report_times
 

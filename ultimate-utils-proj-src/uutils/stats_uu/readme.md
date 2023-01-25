@@ -34,6 +34,10 @@ Summary what to do for large sample size Hypothesis Testing:
     - LRT: todo
     - eps != 0 p-value: todo
 
+Real conclusion:
+    - will look at all numbers but will only use the effect size with common ~0.2 (small), 0.5 (medium), 0.8 (large) to
+    make a decision. Looking at `eps/pooled_std(group1, group2)` is worth observing too but won't use for decisions.
+
 ## Hands on example
 
 See `my_test_using_stds_from_real_expts_()` function in `effect_size.py`.
