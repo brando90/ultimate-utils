@@ -291,11 +291,18 @@ def decision_based_on_acceptable_difference_cis(pair0: tuple[float, float],
     True if difference is large (H1) [so intervals didn't intersect] and
     False if difference is small (H0) [so intervals did intersect]
 
+    Note:
+
     Decision:
+       - eps = acceptable_difference/2
        - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] intersect then the difference is not practically significant
-         - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] don't intersect then the difference is practically significant
+       - if [mu0 - ci0 - eps, mu0 + ci0 +eps] and [mu1 - ci1 - eps, mu1 + ci1 + eps] don't intersect then the difference is practically significant
+    Detail:
+        - the eps/2 is because some epsilon is added to BOTH sides. If CIs = 0, then what would CVPR decide? Whatever
+        they do we need to do. If CIs = 0 then |m1 - m2| = acceptable_difference ==> accept H1 (paper). Therefore,
+        if we add/subtract eps/2 to both sides, then we don't accept more than we should.
     """
-    eps: float = acceptable_difference
+    eps: float = acceptable_difference/2.0
     # - construct invervals
     interval0: tuple[float, float] = (pair0[0] - pair0[1] - eps, pair0[0] + pair0[1] + eps)
     interval1: tuple[float, float] = (pair1[0] - pair1[1] - eps, pair1[0] + pair1[1] + eps)
@@ -305,13 +312,18 @@ def decision_based_on_acceptable_difference_cis(pair0: tuple[float, float],
         # positive intersection or exact match (0) ==> overlap/intersection ==> no diff (H0)
         print(f'H0 (Accept null hypothesis, confidence interals did overlap/intersect) '
               f'{interval0=}, {interval1=}, '
-              f'{eps=}')
+              f'{eps=}, {acceptable_difference=}')
+        print(f'Printing means for consistency but is no "statistical" difference: {pair0[0]=}, {pair1[0]=}')
         return True  # if True H1 else False H0
     else:
         # negative intersection ==> no overlap/intersection ==> significant diff (H1)
         print(f'H1 (Reject null hypothesis, confidence interals did NOT overlap/intersect) '
               f'{interval0=}, {interval1=}, '
-              f'{eps=}')
+              f'{eps=}, {acceptable_difference=}')
+        if pair0[0] > pair1[0]:
+            print(f'first group has larger mean: {pair0[0]} > {pair1[0]}')
+        else:
+            print(f'second group has larger mean: {pair1[0]} > {pair0[0]}')
         return False  # if True H1 else False H0
 
 
