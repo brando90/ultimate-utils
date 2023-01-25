@@ -398,7 +398,7 @@ def check_training_fo_maml():
 def check_training_meta_train_fixed_iterations(track_higher_grads: bool = True):
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
     from uutils.torch_uu.training.meta_training import meta_train_fixed_iterations
-    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
     from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
     from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
 
@@ -411,7 +411,7 @@ def check_training_meta_train_fixed_iterations(track_higher_grads: bool = True):
     args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
     scheduler_hps = {}
     args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
-    args.dataloaders: dict = get_meta_learning_dataloader(args)
+    args.dataloaders: dict = get_meta_learning_dataloaders(args)
     print(f'{args.dataloaders=}')
     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
     print()
@@ -421,7 +421,7 @@ def check_training_meta_train_fixed_iterations(track_higher_grads: bool = True):
 def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_defaul_args_for_5cnn
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_learner_from_args
-    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
     from pathlib import Path
     from uutils.argparse_uu.meta_learning import parse_args_meta_learning
     from uutils.argparse_uu.common import setup_args_for_experiment
@@ -438,7 +438,7 @@ def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     model = get_learner_from_args(args)  # random 5cnn
     agent = MAMLMetaLearner(args, base_model=model)
 
-    args.dataloaders: dict = get_meta_learning_dataloader(args)
+    args.dataloaders: dict = get_meta_learning_dataloaders(args)
     print(f'{args.dataloaders=}')
     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
     for batch in args.dataloaders['train']:

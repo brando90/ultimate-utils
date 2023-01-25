@@ -34,6 +34,7 @@ def get_standard_pytorch_dataset_from_l2l_taskdatasets(tasksets: BenchmarkTaskse
     :param split:
     :return:
     """
+    # todo, I don't actually know if this works for indexable data sets
     # trying to do something like: args.tasksets.train
     taskset: TaskDataset = getattr(tasksets, split)
     # trying to do: type(args.tasksets.train.dataset.dataset)

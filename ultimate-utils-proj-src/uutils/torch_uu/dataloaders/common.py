@@ -185,6 +185,7 @@ def get_data_set_size_from_dataloader(dataloader: DataLoader) -> int:
     """
     Note:
         - this is a hacky way to get the size of a dataset from a dataloader
+        - todo: fix for mds and indexable data loaders
     """
     return len(dataloader.dataset)
 
@@ -258,6 +259,7 @@ def get_dataset_size(args: Namespace) -> dict[str, int]:
         split_2_size = get_data_set_sizes_from_tasksets(tasksets)
     return split_2_size
 
+
 # - get num classes
 
 def get_num_classes_l2l_list_meta_dataset(dataset_list: list, verbose: bool = False) -> dict:
@@ -279,32 +281,3 @@ def get_num_classes_l2l_list_meta_dataset(dataset_list: list, verbose: bool = Fa
         print(f'Number of classes:')
         pprint(results)
     return results
-
-
-# - visualization help
-
-# - tests
-
-# def omni_locals_lambda_bug_fixer():
-#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
-#     root: str = '~/data/l2l_data/'
-#     data_augmentation: str = 'hdb1'
-#     # - test if data sets can be created into pytorch dataloader
-#     _, _, dataset_list = get_mi_and_omniglot_list_data_set_splits(root, data_augmentation)
-#     mi, omni = dataset_list
-#     from learn2learn.vision.datasets import FullOmniglot
-#     omni2: FullOmniglot = omni.dataset.dataset
-#     assert isinstance(omni2, FullOmniglot), f'Err: {type(omni2)=}'
-#     _loader, loader = get_serial_or_distributed_dataloaders(omni, omni, num_workers=1)
-#     next(iter(loader))
-#     next(iter(_loader))
-#
-#
-# if __name__ == '__main__':
-#     import time
-#     from uutils import report_times
-#     start = time.time()
-#     # - run experiment
-#     omni_locals_lambda_bug_fixer()
-#     # - Done
-#     print(f"\nSuccess Done!: {report_times(start)}\a")

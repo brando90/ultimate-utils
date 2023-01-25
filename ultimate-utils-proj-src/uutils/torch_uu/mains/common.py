@@ -267,19 +267,19 @@ def meta_learning_type(args: Namespace) -> bool:
     return args.ckpt['args_dict']['agent']
 
 
-def _get_agent(args: Namespace, agent_hps: dict = {}):
+def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
     """
-
     Note:
         - some of these functions might assume you've already loaded .model correct in args.
     """
-    if args.agent_opt == 'MAMLMetaLearnerL2L_default':
+    if args.agent_opt == 'MAMLMetaLearnerL2L':
         from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
         agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
-    elif args.agent_opt == 'MAMLMetaLearner_default':
+    elif args.agent_opt == 'MAMLMetaLearner':
         from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
         agent = MAMLMetaLearner(args, args.model, **agent_hps)
     else:
         raise ValueError(f'Invalid meta-learning type, got {meta_learning_type(args)}')
     args.agent = agent
-    return args.agent
+    args.meta_learner = agent
+    return agent
