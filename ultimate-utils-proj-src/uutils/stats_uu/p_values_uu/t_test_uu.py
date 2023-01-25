@@ -11,7 +11,7 @@ def decision_procedure_based_on_statistically_significance(p_value: float, alpha
     :arg p_value: p-value, probability that you observe the current your sample mean or more extreme under H0.
     :arg alpha: significance level.
     """
-    print(f'Decision: (Ptatistically significant?)')
+    print(f'Decision: (Statistically significant?)')
     if p_value <= alpha:
         print(f'H1 (Reject H0, means are statistically different) {p_value=}, {alpha=}, {p_value < alpha=}')
     else:

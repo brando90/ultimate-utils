@@ -304,13 +304,13 @@ def decision_based_on_acceptable_difference_cis(pair0: tuple[float, float],
     if get_intersection_overlap_care_about_exact_match(interval0, interval1) >= 0:
         # positive intersection or exact match (0) ==> overlap/intersection ==> no diff (H0)
         print(f'H0 (Accept null hypothesis, confidence interals did overlap/intersect) '
-              f'{interval0=}, {interval1=}'
+              f'{interval0=}, {interval1=}, '
               f'{eps=}')
         return True  # if True H1 else False H0
     else:
         # negative intersection ==> no overlap/intersection ==> significant diff (H1)
         print(f'H1 (Reject null hypothesis, confidence interals did NOT overlap/intersect) '
-              f'{interval0=}, {interval1=}'
+              f'{interval0=}, {interval1=}, '
               f'{eps=}')
         return False  # if True H1 else False H0
 

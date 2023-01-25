@@ -162,6 +162,118 @@ def decision_based_on_effect_size_and_standardized_acceptable_difference(
     return effect_size >= standardized_acceptable_difference  # True if H1 else False H0
 
 
+# - full stat test with effect size as emphasis
+
+def stat_test_with_effect_size_as_emphasis(group1: iter,
+                                           group2: iter,
+                                           # hardcoded suggestion based on CVPR papers/Yu-Xiong Wang
+                                           acceptable_difference1: float = 0.01,  # difference/epsilon
+                                           acceptable_difference2: float = 0.02,  # difference/epsilon
+                                           alpha: float = 0.01,  # significance level, default assume large sample size
+                                           estimate_number_of_samples: bool = False,
+                                           print_groups_data: bool = False,
+                                           same_N: bool = True,
+                                           ):
+    print(f"----- doing stats analyssis with effect size as emphasis {stat_test_with_effect_size_as_emphasis=} -----")
+    import numpy as np
+    # - print groups data
+    if print_groups_data:
+        print(f'{group1=}')
+        print(f'{group2=}')
+    # - estimate mean
+    mean1, mean2 = np.mean(group1), np.mean(group2)
+    print(f'{mean1=}')
+    print(f'{mean2=}')
+    # - estimate std
+    std1, std2 = np.std(group1), np.std(group2)
+    print(f'{std1=}')
+    print(f'{std2=}')
+    # - estimate variance
+    var1, var2 = np.var(group1), np.var(group2)
+    print(f'{var1=}')
+    print(f'{var2=}')
+    # - print number of sample
+    n1, n2 = len(group1), len(group2)
+    print(f'{n1=}')
+    print(f'{n2=}')
+
+    # Compute Cohen's d
+    print('---- effect size analysis ----')
+    cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
+    _cohen_d_val: float = _cohen_d(group1, group2)
+    print(f'{cohen_d=}')
+    print(f'{_cohen_d_val=}')
+
+    # Compare with acceptable difference/epsilon
+    standardized_acceptable_difference1: float = get_standardized_acceptable_difference(acceptable_difference1, group1,
+                                                                                        group2)
+    standardized_acceptable_difference2: float = get_standardized_acceptable_difference(acceptable_difference2, group1,
+                                                                                        group2)
+    print(f'{acceptable_difference1=}')
+    print(f'{acceptable_difference2=}')
+    print(f'{standardized_acceptable_difference1=}')
+    print(f'{standardized_acceptable_difference2=}')
+    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference1)
+    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference2)
+    print_interpretation_of_cohends_d_decision_procedure(cohen_d)
+
+    # CIs/Confidence Intervals
+    print('---- CIs/Confidence Intervals ----')
+    from uutils.stats_uu.ci_uu import mean_confidence_interval, decision_based_on_acceptable_difference_cis
+    m1, ci1 = mean_confidence_interval(group1)
+    m2, ci2 = mean_confidence_interval(group2)
+    print(f'{m1=}')
+    print(f'{m2=}')
+    print(f'{ci1=}')
+    print(f'{ci2=}')
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), 0.0)
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference1)
+    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference2)
+
+    # Perform t-test
+    from scipy.stats import ttest_ind
+    t_stat, p_value = ttest_ind(group1, group2)
+    print('---- p-value analysis ----')
+    print(f'{t_stat=}')
+    print(f'{p_value=}')
+    print(f"{alpha=}")
+    from uutils.stats_uu.p_values_uu.t_test_uu import decision_procedure_based_on_statistically_significance
+    decision_procedure_based_on_statistically_significance(p_value, alpha)
+
+    # Print Power P_d (probability of detection, rejecting null if null is false)
+    print('---- Power analysis P_d (probability of detection, rejecting null if null is false) ----')
+    from uutils.stats_uu.power import _compute_power_ttest
+    if same_N:
+        N: int = n1
+        assert n1 == n2
+        assert N == n1
+    else:
+        raise NotImplementedError
+    power: float = _compute_power_ttest(cohen_d, N, alpha)
+    # from uutils.stats_uu.power import compute_power_posthoc_t_test
+    # power2: float = compute_power_posthoc_t_test(cohen_d, N, alpha)
+    from uutils.stats_uu.power import _compute_power_ttest
+    power2: float = _compute_power_ttest(cohen_d, N, alpha)
+    from uutils.stats_uu.power import _compute_power_ttest2
+    # power3: float = _compute_power_ttest2(cohen_d, N, alpha)
+    print(f'{power=}')
+    print(f'{power2=}')
+    # print(f'{power3=}')
+
+    from uutils.stats_uu.power import print_interpretation_of_power
+    print_interpretation_of_power(power)
+
+    # - guess number of samples
+    if estimate_number_of_samples:
+        print()
+        print('---- estimated number samples needed to get power ----')
+        print(f'true N used: \n{N=}')
+        from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
+        N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
+        print(f'N_estimated: \n{N_estimated=}')
+        print('(if gives numerical error ignore)')
+
+
 # - tests
 
 def my_test_using_stds_from_real_expts_():
@@ -188,76 +300,15 @@ def my_test_using_stds_from_real_expts_():
     print(f'{N_u=}')
     print(f'{mu_m=}')
     print(f'{mu_u=}')
+    # - other stats params
+    acceptable_difference1: float = 0.01  # difference/epsilon
+    acceptable_difference2: float = 0.02  # difference/epsilon
+    alpha: float = 0.01  # significance level, default assume large sample size
 
-    # Perform t-test
-    from scipy.stats import ttest_ind
-    t_stat, p_value = ttest_ind(group1, group2)
+    # - do stat test with emphasis on effect size
+    stat_test_with_effect_size_as_emphasis(group1, group2, acceptable_difference1, acceptable_difference2, alpha,
+                                           print_groups_data=True)
 
-    # Compute Cohen's d
-    print('---- effect size analysis ----')
-    cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
-    _cohen_d_val: float = _cohen_d(group1, group2)
-
-    print("Cohen's d:", cohen_d)
-    print("_cohen_d:", _cohen_d_val)
-
-
-    # Compare with acceptable difference/epsilon
-    acceptable_difference1: float = 0.01  # 1% difference/epsilon
-    acceptable_difference2: float = 0.02  # 2% difference/epsilon
-    standardized_acceptable_difference1: float = get_standardized_acceptable_difference(acceptable_difference1, group1,
-                                                                                        group2)
-    standardized_acceptable_difference2: float = get_standardized_acceptable_difference(acceptable_difference2, group1,
-                                                                                        group2)
-    # print(f'{acceptable_difference1=}')
-    # print(f'{acceptable_difference2=}')
-    print(f'{standardized_acceptable_difference1=}')
-    print(f'{standardized_acceptable_difference2=}')
-    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference1)
-    decision_based_on_effect_size_and_standardized_acceptable_difference(cohen_d, standardized_acceptable_difference2)
-    print_interpretation_of_cohends_d_decision_procedure(cohen_d)
-
-    # CIs/Confidence Intervals
-    print('---- CIs/Confidence Intervals ----')
-    from uutils.stats_uu.ci_uu import mean_confidence_interval, decision_based_on_acceptable_difference_cis
-    m1, ci1 = mean_confidence_interval(group1)
-    m2, ci2 = mean_confidence_interval(group2)
-    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), 0.0)
-    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference1)
-    decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference2)
-
-    # Print p-value
-    print('---- p-value analysis ----')
-    print("p-value: ", p_value)
-    alpha: float = 0.01  # significance level
-    from uutils.stats_uu.p_values_uu.t_test_uu import decision_procedure_based_on_statistically_significance
-    decision_procedure_based_on_statistically_significance(p_value, alpha)
-
-    # Print Power P_d (probability of detection, rejecting null if null is false)
-    print('---- Power analysis P_d (probability of detection, rejecting null if null is false) ----')
-    from uutils.stats_uu.power import _compute_power_ttest
-    power: float = _compute_power_ttest(cohen_d, N, alpha)
-    # from uutils.stats_uu.power import compute_power_posthoc_t_test
-    # power2: float = compute_power_posthoc_t_test(cohen_d, N, alpha)
-    from uutils.stats_uu.power import _compute_power_ttest
-    power2: float = _compute_power_ttest(cohen_d, N, alpha)
-    from uutils.stats_uu.power import _compute_power_ttest2
-    # power3: float = _compute_power_ttest2(cohen_d, N, alpha)
-    print(f'{power=}')
-    print(f'{power2=}')
-    # print(f'{power3=}')
-
-    from uutils.stats_uu.power import print_interpretation_of_power
-    print_interpretation_of_power(power)
-
-    # - guess number of samples
-    # print()
-    # print('---- estimated number samples needed to get power ----')
-    # print(f'true N used {N=}')
-    # from uutils.stats_uu.power import get_estimated_number_of_samples_needed_to_reach_certain_power
-    # N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
-    # print(f'N_estimated {N_estimated=}')
-    # print('(if gives numerical error ignore)')
 
 def effect_size_depedence_on_N_test_():
     """
@@ -318,6 +369,7 @@ def effect_size_depedence_on_N_test_():
     plt.legend()
     plt.show()
 
+
 # - run it
 
 if __name__ == '__main__':
@@ -325,8 +377,8 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run it
-    # my_test_using_stds_from_real_expts_()
-    effect_size_depedence_on_N_test_()
+    my_test_using_stds_from_real_expts_()
+    # effect_size_depedence_on_N_test_()
     # - Done
     from uutils import report_times
 
