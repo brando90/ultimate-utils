@@ -296,7 +296,8 @@ def my_test_using_stds_from_real_expts_():
     # Example data
     std_m = 0.061377
     std_u = 0.085221
-    N = 100
+    # N = 100
+    N = 500
     N_m = N
     N_u = N
     mu_m = 0.855
