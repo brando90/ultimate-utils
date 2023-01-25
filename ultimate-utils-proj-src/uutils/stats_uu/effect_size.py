@@ -173,7 +173,7 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
                                            estimate_number_of_samples: bool = False,
                                            print_groups_data: bool = False,
                                            same_N: bool = True,
-                                           alternative: str = 'all_three',
+                                           alternative: str = 'two-sided',
                                            equal_var: bool = False,
                                            ):
     print(f"----- doing stats analyssis with effect size as emphasis {stat_test_with_effect_size_as_emphasis=} -----")
