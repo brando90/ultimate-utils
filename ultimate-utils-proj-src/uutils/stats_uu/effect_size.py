@@ -173,6 +173,8 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
                                            estimate_number_of_samples: bool = False,
                                            print_groups_data: bool = False,
                                            same_N: bool = True,
+                                           alternative: str = 'all_three',
+                                           equal_var: bool = False,
                                            ):
     print(f"----- doing stats analyssis with effect size as emphasis {stat_test_with_effect_size_as_emphasis=} -----")
     import numpy as np
@@ -198,7 +200,7 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
     print(f'{n2=}')
 
     # Compute Cohen's d
-    print('---- effect size analysis ----')
+    print('---- Effect size analysis ----')
     cohen_d, pooled_std = compute_effect_size_t_test_cohens_d(group1, group2)
     _cohen_d_val: float = _cohen_d(group1, group2)
     print(f'{cohen_d=}')
@@ -230,16 +232,6 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
     decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference1)
     decision_based_on_acceptable_difference_cis((m1, ci1), (m2, ci2), acceptable_difference2)
 
-    # Perform t-test
-    from scipy.stats import ttest_ind
-    t_stat, p_value = ttest_ind(group1, group2)
-    print('---- p-value analysis ----')
-    print(f'{t_stat=}')
-    print(f'{p_value=}')
-    print(f"{alpha=}")
-    from uutils.stats_uu.p_values_uu.t_test_uu import decision_procedure_based_on_statistically_significance
-    decision_procedure_based_on_statistically_significance(p_value, alpha)
-
     # Print Power P_d (probability of detection, rejecting null if null is false)
     print('---- Power analysis P_d (probability of detection, rejecting null if null is false) ----')
     from uutils.stats_uu.power import _compute_power_ttest
@@ -259,9 +251,26 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
     print(f'{power=}')
     print(f'{power2=}')
     # print(f'{power3=}')
-
     from uutils.stats_uu.power import print_interpretation_of_power
     print_interpretation_of_power(power)
+
+    # Perform t-test
+    print('---- p-value analysis ----')
+    alternatives = ['two-sided', 'less', 'greater']
+    if alternative == 'all_three':
+        pass
+    else:
+        alternatives = [alternative]
+        assert alternative in alternatives, f"alternative must be one of {alternatives=} but got {alternative=}"
+    from scipy.stats import ttest_ind
+    for alternative in alternatives:
+        print(f'-- {alternative=}')
+        t_stat, p_value = ttest_ind(group1, group2, alternative=alternative, equal_var=equal_var)
+        print(f'{t_stat=}')
+        print(f'{p_value=}')
+        print(f"{alpha=}")
+        from uutils.stats_uu.p_values_uu.t_test_uu import decision_procedure_based_on_statistically_significance
+        decision_procedure_based_on_statistically_significance(p_value, alpha)
 
     # - guess number of samples
     if estimate_number_of_samples:
