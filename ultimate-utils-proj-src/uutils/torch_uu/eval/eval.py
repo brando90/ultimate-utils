@@ -12,6 +12,7 @@ from torch import Tensor, tensor
 
 from uutils.torch_uu.agents.common import Agent
 
+# -- get loss & acc
 
 def eval_sl(args: Namespace,
             model: Agent,
@@ -20,7 +21,7 @@ def eval_sl(args: Namespace,
             training: bool = False,
             ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
-    Evaluate the current model on the eval set (val set strongly recommended).
+    Evaluate the current model on the eval set (val set recommended).
 
     note:
         - note we have "get_eval" function cuz the api for data loaders for meta-learning is different from the SL one.
@@ -31,9 +32,9 @@ def eval_sl(args: Namespace,
         - Note, we don't need to loop through the data loader, we can get confidence intervals for the mean error
         from 1 batch - since we are estimating the mean loss from the eval set.
     """
+    # todo: maybe some day, just get the losses, accs then take the mean & ci here.
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))
-        # batch: Any = next(iter(dataloaders['test']))
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
     else:
         # hack for l2l
@@ -48,65 +49,30 @@ def meta_eval(args: Namespace,
               model: Agent,
               dataloaders,
               split: str = 'val',
-              # training: bool = True,
-              training: bool = False,
+              training: bool = True,  # True to avoid different tasks: https://stats.stackexchange.com/a/551153/28986
               ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
-
     note:
         - note we have "get_eval" function cuz the api for data loaders for meta-learning is different from the SL one.
         Despite the Agent having the same api as the MetaLearner object.
         - assumption: your agent has the .forward interface needed
     """
-    if training == False:
-        print(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
-        logging.warning(f'You sure {training=}? Recall you always want batch stats in BN layer in MetaL so put True.')
-    # - hack for l2l using other maml for 5CNN1024
-    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
-    if isinstance(dataloaders[split], TorchMetaDLforL2L):
-        # dl needs to be in "torchmeta format"
-        batch: any = next(iter(dataloaders[split]))
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
-        # val_loss, val_loss_ci, val_acc, val_acc_ci = model(batch, training)
-        return val_loss, val_loss_ci, val_acc, val_acc_ci
+    # - get loss & acc
+    losses, accs = get_meta_eval_lists_accs_losses(args, model, dataloaders, split, training)
+    from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
+    loss, loss_ci = mean_confidence_interval(meta_losses)
+    acc, acc_ci = mean_confidence_interval(meta_accs)
+    return loss, loss_ci, acc, acc_ci
 
-    # - l2l
-    if hasattr(args, 'tasksets'):
-        # hack for l2l
-        from learn2learn.data import TaskDataset
-        split: str = 'validation' if split == 'val' else split
-        task_dataset: TaskDataset = getattr(args.tasksets, split)
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
-        return val_loss, val_loss_ci, val_acc, val_acc_ci
 
-    # - rfs meta-loader
-    from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
-    if isinstance(dataloaders['val'].dataset, MetaImageNet):
-        eval_loader = dataloaders[split]
-        if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
-            return tensor(-1), tensor(-1), tensor(-1), tensor(-1)
-        batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
-        return val_loss, val_loss_ci, val_acc, val_acc_ci
-
-    # - else normal data loader (so torchmeta, or normal pytorch data loaders)
-    if isinstance(dataloaders, dict):
-        batch: Any = next(iter(dataloaders[split]))
-        # print(batch['train'][0].size())
-        # batch: Any = next(iter(dataloaders['test']))
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
-        return val_loss, val_loss_ci, val_acc, val_acc_ci
-    else:
-        raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
-                         f'dict or something else (perhaps train, val, test loader type objects).')
-
+# -- get accs & losses
 
 def get_meta_eval_lists_accs_losses(args: Namespace,
                                     model: Agent,
                                     dataloaders,
                                     split: str = 'val',
-                                    # training: bool = True,
-                                    training: bool = False,
+                                    training: bool = True,
+                                    # True to avoid different tasks: https://stats.stackexchange.com/a/551153/28986
                                     ) -> type[list[float], list[float]]:
     """
     Get list of accuracies and losses for all task in a batch from the dataloader.
@@ -157,7 +123,7 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
     return meta_losses, meta_accs
 
 
-# --
+# -- some extra rfs code
 
 def get_meta_batch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, Tensor]:
     """
@@ -196,36 +162,3 @@ def get_meta_batch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, 
     assert len(spt_ys.size()) == 2, f'Error, should be [B, n*k] but got {len(spt_ys.size())=}'
     assert len(qry_ys.size()) == 2, f'Error, should be [B, n*k] but got {len(qry_ys.size())=}'
     return spt_xs, spt_ys, qry_xs, qry_ys
-
-# # - evaluation code
-#
-# def meta_eval(args: Namespace,
-#               training: bool = True,
-#               val_iterations: int = 0,
-#               save_val_ckpt: bool = True,
-#               split: str = 'val',
-#               ) -> tuple:
-#     """
-#     Evaluates the meta-learner on the given meta-set.
-#
-#     ref for BN/eval:
-#         - tldr: Use `mdl.train()` since that uses batch statistics (but inference will not be deterministic anymore).
-#         You probably won't want to use `mdl.eval()` in meta-learning.
-#         - https://stackoverflow.com/questions/69845469/when-should-one-call-eval-and-train-when-doing-maml-with-the-pytorch-highe/69858252#69858252
-#         - https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-#         - https://github.com/tristandeleu/pytorch-maml/issues/19
-#     """
-#     # - need to re-implement if you want to go through the entire data-set to compute an epoch (no more is ever needed)
-#     assert val_iterations == 0, f'Val iterations has to be zero but got {val_iterations}, if you want more precision increase (meta) batch size.'
-#     args.meta_learner.train() if training else args.meta_learner.eval()
-#     for batch_idx, batch in enumerate(args.dataloaders[split]):
-#         eval_loss, eval_acc, eval_loss_std, eval_acc_std = args.meta_learner.forward_eval(batch, training=training)
-#
-#         # store eval info
-#         if batch_idx >= val_iterations:
-#             break
-#
-#     if float(eval_loss) < float(args.best_val_loss) and save_val_ckpt:
-#         args.best_val_loss = float(eval_loss)
-#         save_for_meta_learning(args, ckpt_filename='ckpt_best_val.pt')
-#     return eval_loss, eval_acc, eval_loss_std, eval_acc_std

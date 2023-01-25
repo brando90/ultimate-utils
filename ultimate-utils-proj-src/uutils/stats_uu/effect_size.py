@@ -122,44 +122,58 @@ def get_standardized_acceptable_difference(eps: float, group1: iter, group2: ite
 
 # - decicion procedures
 
-def print_interpretation_of_cohends_d_decision_procedure(d: float):
-    """ Print interpretation of Cohen's d decision procedure. """
+def print_interpretation_of_cohends_d_decision_procedure(d: float,
+                                                         absolue_value: bool = True,
+                                                         ):
+    """
+    Print interpretation of Cohen's d decision procedure. By default this tries to look for a difference and therefore
+    use the absolute value of the effect size. If you care about the sign of the effect size, then set `absolue_value` to False.
+    """
     print(
         f'Decision: (is there a minimal difference between the means of two groups or a minimal relationship between two variables?)'
         f'(please note the sign of {d=})')
-    d: float = abs(d)
-    if d < 0.35:
-        print(f"Small Effect Size: d~0.20, {d < 0.35=}, {d=}")
-    elif 0.35 <= d < 0.65:
-        print(f"Medium Effect Size: d~0.50, {0.35 <= d < 0.65=}, {d=}")
-    elif d >= 0.65:
-        print(f"Large Effect Size: d~0.80, {d >= 0.65=}, {d=}")
+    d_abs: float = abs(d) if absolue_value else d
+    if d_abs < 0.35:
+        print(f"Small Effect Size: d~0.20, {d < 0.35=}, {d=}, {abs(d)=}")
+    elif 0.35 <= d_abs < 0.65:
+        print(f"Medium Effect Size: d~0.50, {0.35 <= d < 0.65=}, {d=}, {abs(d)=}")
+    elif d_abs >= 0.65:
+        print(f"Large Effect Size: d~0.80, {d >= 0.65=}, {d=}, {abs(d)=}")
     else:
-        raise ValueError(f"Unexpected value for d: {d}")
+        raise ValueError(f"Unexpected value for d: {d}, {abs(d)=}")
 
 
 def decision_based_on_effect_size_and_standardized_acceptable_difference(
         effect_size: float,
-        standardized_acceptable_difference: float) -> bool:
+        standardized_acceptable_difference: float,
+        absolute_value: bool = True,
+) -> bool:
     """
     Function that accepts or rejects null hypothesis based on effect size and accepted without using confidence intervals.
     i.e. just compares the if the effect size is larger than the standardized acceptable difference.
     Logic/Justification: if people accept papers/knowledge based on the (standardized) acceptable difference then we
     can point out our difference is within that range and therefore we can "accept" our hypothesis (reject the null).
+    By defualt tries to detect a difference and therefore uses the absolute value of the effect size.
+    If you care about the sign of the effect size, then set `absolue_value` to False.
 
     Similar to the CIs test & CI tests are recommended to be also done
 
     Note:
         - eps - 1% or 2% based on ywx's suggestion (common acceptance for new method is SOTA in CVPR like papers).
     """
-    effect_size: float = abs(effect_size)
-    if effect_size >= standardized_acceptable_difference:
+    print(
+        f'Decision: (is there a minimal difference between the means of two groups or a minimal relationship between two variables?)'
+        f'(please note the sign of {effect_size=})')
+    effect_size_abs: float = abs(effect_size) if absolute_value else effect_size
+    if effect_size_abs >= standardized_acceptable_difference:
         print(f"H1 (Reject the null hypothesis, Effect size is larger than the standardized acceptable difference): "
-              f"{effect_size >= standardized_acceptable_difference=}")
+              f"{effect_size >= standardized_acceptable_difference=}, "
+              f"{effect_size=}, {effect_size_abs=},{standardized_acceptable_difference=}")
     else:
         print(f"H0 (Accept the null hypothesis, Effect size is smaller than the standardized acceptable difference): "
-              f"{effect_size < standardized_acceptable_difference=}")
-    return effect_size >= standardized_acceptable_difference  # True if H1 else False H0
+              f"{effect_size < standardized_acceptable_difference=}, "
+              f"{effect_size=}, {effect_size_abs=}, {standardized_acceptable_difference=}")
+    return effect_size_abs >= standardized_acceptable_difference  # True if H1 else False H0
 
 
 # - full stat test with effect size as emphasis
@@ -294,22 +308,22 @@ def my_test_using_stds_from_real_expts_():
     import numpy as np
 
     # Example data
-    std_m = 0.061377
     std_u = 0.085221
+    std_m = 0.061377
     # N = 100
     N = 500
-    N_m = N
     N_u = N
-    mu_m = 0.855
+    N_m = N
     mu_u = 0.893
-    group1 = np.random.normal(mu_m, std_m, N_m)
-    group2 = np.random.normal(mu_u, std_u, N_u)
-    print(f'{std_m=}')
+    mu_m = 0.855
+    group1 = np.random.normal(mu_u, std_u, N_u)
+    group2 = np.random.normal(mu_m, std_m, N_m)
     print(f'{std_u=}')
-    print(f'{N_m=}')
+    print(f'{std_m=}')
     print(f'{N_u=}')
-    print(f'{mu_m=}')
+    print(f'{N_m=}')
     print(f'{mu_u=}')
+    print(f'{mu_m=}')
     # - other stats params
     acceptable_difference1: float = 0.01  # difference/epsilon
     acceptable_difference2: float = 0.02  # difference/epsilon

@@ -49,9 +49,7 @@ def log_train_val_stats(args: Namespace,
                         step_name: str,
                         train_loss: float,
                         train_acc: float,
-
-                        training: bool = False,  # default for SL
-
+                        training: bool = False,  # false for SL see meta: https://stats.stackexchange.com/a/551153/28986
                         save_val_ckpt: bool = True,
                         ):
     _log_train_val_stats(args=args,
