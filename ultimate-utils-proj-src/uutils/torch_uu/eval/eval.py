@@ -60,8 +60,8 @@ def meta_eval(args: Namespace,
     # - get loss & acc
     losses, accs = get_meta_eval_lists_accs_losses(args, model, dataloaders, split, training)
     from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
-    loss, loss_ci = mean_confidence_interval(meta_losses)
-    acc, acc_ci = mean_confidence_interval(meta_accs)
+    loss, loss_ci = mean_confidence_interval(losses)
+    acc, acc_ci = mean_confidence_interval(accs)
     return loss, loss_ci, acc, acc_ci
 
 
@@ -92,7 +92,6 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
         batch: any = next(iter(dataloaders[split]))
         meta_losses, meta_accs = model.get_lists_accs_losses(batch, training)
         return meta_losses, meta_accs
-
     # - l2l
     if hasattr(args, 'tasksets'):
         # hack for l2l
@@ -101,7 +100,6 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
         task_dataset: TaskDataset = getattr(args.tasksets, split)
         meta_losses, meta_accs = model.get_lists_accs_losses(task_dataset, training)
         return meta_losses, meta_accs
-
     # - rfs meta-loader
     from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
     if isinstance(dataloaders['val'].dataset, MetaImageNet):
@@ -111,7 +109,6 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
         batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
         meta_losses, meta_accs = model.get_lists_accs_losses(batch, training)
         return meta_losses, meta_accs
-
     # - else normal data loader (so torchmeta, or normal pytorch data loaders)
     if isinstance(dataloaders, dict):
         batch: Any = next(iter(dataloaders[split]))

@@ -73,7 +73,10 @@ class FitFinalLayer(nn.Module):
         meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training, is_norm)
         return meta_loss, meta_loss_std, meta_acc, meta_acc_std
 
-    def get_list_accs_losses(self, batch, training, is_norm):
+    def get_lists_accs_losses(self, batch,
+                              training: bool = True,
+                              is_norm: bool = False,
+                              ):
         """
         Get the list of accuracies and losses for each task in the meta-batch
         """
