@@ -80,7 +80,7 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--batch_size_eval', type=int, default=128)
     parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
-    parser.add_argument('--data_path', type=str, default=Path('~/data/mnist/').expanduser(),
+    parser.add_argument('--data_path', type=str, default=Path('~/data/mds/records/').expanduser(), #Path('~/data/mnist/').expanduser()
                         help='path to data set splits. The code will assume everything is saved in'
                              'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
                              'setup method and log_root.')
@@ -137,8 +137,72 @@ def parse_args_standard_sl() -> Namespace:
     # - 5CNN args
     parser.add_argument('--filter_size', type=int, default=-1, help="Filter size for 5CNN.")
 
+    #========MDS args 1/25=========#
+    parser.add_argument('--image_size', type=int, default=84,
+                        help='Images will be resized to this value')
+    # mscoco and traffic sign are val only
+    parser.add_argument('--sources', nargs="+",
+                        default=['ilsvrc_2012', 'aircraft', 'cu_birds', 'dtd', 'fungi', 'omniglot',
+                                 'quickdraw', 'vgg_flower', 'traffic_sign'],
+                        help='List of datasets to use')
+
+    parser.add_argument('--train_transforms', nargs="+", default=['random_resized_crop', 'random_flip'],
+                        help='Transforms applied to training data', )
+
+    parser.add_argument('--test_transforms', nargs="+", default=['resize', 'center_crop'],
+                        help='Transforms applied to test data', )
+
+    parser.add_argument('--shuffle', type=bool, default=True,
+                        help='Whether or not to shuffle data')
+
+    # Episode configuration
+    # WARNING! this min_examples_in_class should match args.k_shots + args.k_eval in MAML for a fair comparison
+    parser.add_argument('--min_examples_in_class', type=int, default=20)
+
+    # supervised learning doesnt need ways/shots
+    parser.add_argument('--num_ways', type=int, default=None)
+    parser.add_argument('--num_support', type=int, default=None)
+    parser.add_argument('--num_query', type=int, default=None)
+
+    parser.add_argument('--min_ways', type=int, default=2,
+                        help='Minimum # of ways per task')  # doesn't matter since we fixed 5-way setting (so trivially >2 ways)
+
+    parser.add_argument('--max_ways_upper_bound', type=int, default=1000000000000,
+                        help='Maximum # of ways per task')
+
+    parser.add_argument('--max_num_query', type=int, default=1000000000000,
+                        help='Maximum # of query samples')
+
+    parser.add_argument('--max_support_set_size', type=int, default=1000000000000,
+                        help='Maximum # of support samples')
+
+    parser.add_argument('--max_support_size_contrib_per_class', type=int, default=1000000000000,
+                        help='Maximum # of support samples per class')
+
+    parser.add_argument('--min_log_weight', type=float, default=-0.69314718055994529,
+                        help='Do not touch, used to randomly sample support set')
+
+    parser.add_argument('--max_log_weight', type=float, default=0.69314718055994529,
+                        help='Do not touch, used to randomly sample support set')
+
+    # Hierarchy options
+    parser.add_argument('--ignore_bilevel_ontology', type=bool, default=False,
+                        help='Whether or not to use superclass for BiLevel datasets (e.g Omniglot)')
+
+    parser.add_argument('--ignore_dag_ontology', type=bool, default=False,
+                        help='Whether to ignore ImageNet DAG ontology when sampling \
+                                          classes from it. This has no effect if ImageNet is not  \
+                                          part of the benchmark.')
+
+    parser.add_argument('--ignore_hierarchy_probability', type=float, default=0.,
+                        help='if using a hierarchy, this flag makes the sampler \
+                                          ignore the hierarchy for this proportion of episodes \
+                                          and instead sample categories uniformly.')
+    #======end MDS args 1/25=======#
+
     # - parse arguments
     args: Namespace = parser.parse_args()
+
     args.criterion = args.loss
     assert args.criterion is args.loss
     # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
