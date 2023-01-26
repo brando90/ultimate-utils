@@ -152,6 +152,10 @@ def parse_args_meta_learning() -> Namespace:
                                                                                  "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
     parser.add_argument('--log_to_tb', action='store_true', help='store to weights and biases')
 
+    # - stat analysis
+    parser.add_argument('--stats_analysis_option', type=str,
+                        default='stats_analysis_with_emphasis_on_effect_sizeand_and_full_performance_comp')
+
     # - wandb
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
     parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
@@ -177,13 +181,14 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--filter_size', type=int, default=-1, help="Filter size for 5CNN.")
 
     # - task2vec args
-    parser.add_argument('--classifier_opts', type=dict, default=None, help="The classifier options to fit the final layer"
-                                                                          "when computing the embeding of a task using"
-                                                                          "task2vec. Note that the FIM is currently "
-                                                                          "being run to completion (so no break points"
-                                                                          "to exit sooner out of FIM. This flag allows"
-                                                                          "to potentially exit sooner form fitting the"
-                                                                          "final layer.")
+    parser.add_argument('--classifier_opts', type=dict, default=None,
+                        help="The classifier options to fit the final layer"
+                             "when computing the embeding of a task using"
+                             "task2vec. Note that the FIM is currently "
+                             "being run to completion (so no break points"
+                             "to exit sooner out of FIM. This flag allows"
+                             "to potentially exit sooner form fitting the"
+                             "final layer.")
 
     # ========MDS args 1/25=========#
     parser.add_argument('--image_size', type=int, default=84,
@@ -244,12 +249,12 @@ def parse_args_meta_learning() -> Namespace:
     # - parse arguments
     args = parser.parse_args()
 
-    #==set number of ways and shots in MDS to ones we specify above===#
+    # ==set number of ways and shots in MDS to ones we specify above===#
     args.num_ways = args.n_cls
     args.num_support = args.k_shots
     args.num_query = args.k_eval
     args.min_examples_in_class = args.k_shots + args.k_eval  # should be 5+15=20 in our setting.
-    #====================#
+    # ====================#
 
     args.criterion = args.loss
     assert args.criterion is args.loss

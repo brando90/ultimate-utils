@@ -33,7 +33,8 @@ class FitFinalLayer(nn.Module):
                  args,
                  base_model,
                  target_type='classification',
-                 classifier='LR'):
+                 classifier='LR',
+                 ):
         super().__init__()
         self.args = args
         self.base_model = base_model

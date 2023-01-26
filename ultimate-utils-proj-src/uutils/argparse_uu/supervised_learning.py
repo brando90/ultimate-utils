@@ -38,10 +38,10 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--num_its', type=int, default=-1)
     # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
     parser.add_argument('--train_convergence_patience', type=int, default=10, help='How long to wait for converge of'
-                                                                                  'training. Note this code should'
-                                                                                  'be saving the validation ckpt'
-                                                                                  'so you are automatically doing '
-                                                                                  'early stopping already.')
+                                                                                   'training. Note this code should'
+                                                                                   'be saving the validation ckpt'
+                                                                                   'so you are automatically doing '
+                                                                                   'early stopping already.')
 
     # model & loss function options
     parser.add_argument('--model_option',
@@ -80,7 +80,8 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--batch_size_eval', type=int, default=128)
     parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
-    parser.add_argument('--data_path', type=str, default=Path('~/data/mds/records/').expanduser(), #Path('~/data/mnist/').expanduser()
+    parser.add_argument('--data_path', type=str, default=Path('~/data/mds/records/').expanduser(),
+                        # Path('~/data/mnist/').expanduser()
                         help='path to data set splits. The code will assume everything is saved in'
                              'the uutils standard place in ~/data/, ~/data/logs, etc. see the setup args'
                              'setup method and log_root.')
@@ -120,6 +121,10 @@ def parse_args_standard_sl() -> Namespace:
                                                                                  "https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning")
     parser.add_argument('--log_to_tb', action='store_true', help='store to weights and biases', default=False)
 
+    # - stat analysis
+    parser.add_argument('--stats_analysis_option', type=str,
+                        default='stats_analysis_with_emphasis_on_effect_size_and_and_full_performance_comp')
+
     # - wandb
     parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases', default=False)
     parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
@@ -137,7 +142,7 @@ def parse_args_standard_sl() -> Namespace:
     # - 5CNN args
     parser.add_argument('--filter_size', type=int, default=-1, help="Filter size for 5CNN.")
 
-    #========MDS args 1/25=========#
+    # ========MDS args 1/25=========#
     parser.add_argument('--image_size', type=int, default=84,
                         help='Images will be resized to this value')
     # mscoco and traffic sign are val only
@@ -198,7 +203,7 @@ def parse_args_standard_sl() -> Namespace:
                         help='if using a hierarchy, this flag makes the sampler \
                                           ignore the hierarchy for this proportion of episodes \
                                           and instead sample categories uniformly.')
-    #======end MDS args 1/25=======#
+    # ======end MDS args 1/25=======#
 
     # - parse arguments
     args: Namespace = parser.parse_args()
