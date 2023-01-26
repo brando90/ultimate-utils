@@ -295,6 +295,7 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
         N_estimated: float = get_estimated_number_of_samples_needed_to_reach_certain_power(cohen_d, alpha, power)
         print(f'N_estimated: \n{N_estimated=}')
         print('(if gives numerical error ignore)')
+    return cohen_d, standardized_acceptable_difference1, standardized_acceptable_difference2
 
 
 # - tests
