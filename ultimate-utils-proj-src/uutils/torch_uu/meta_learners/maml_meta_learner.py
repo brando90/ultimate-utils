@@ -238,14 +238,16 @@ class MAMLMetaLearnerL2L(nn.Module):
     ):
         super().__init__()
         self.args = args  # args for experiment
-        self.base_model = base_model
-        args.nb_inner_train_steps = deepcopy(args.nb_inner_train_steps)
         assert args is self.args
+        self.base_model = base_model
         assert base_model is args.model
+        self.inner_lr = deepcopy(args.inner_lr)
+        self.nb_inner_train_steps = deepcopy(args.nb_inner_train_steps)
+        self.first_order = deepcopy(args.first_order)
         allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None  # ternary op for backwards comp.
-        self.maml = learn2learn.algorithms.MAML(args.model,
-                                                lr=args.inner_lr,
-                                                first_order=args.first_order,
+        self.maml = learn2learn.algorithms.MAML(self.base_model,
+                                                lr=self.inner_lr,
+                                                first_order=self.first_order,
                                                 allow_unused=allow_unused
                                                 )
         # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)

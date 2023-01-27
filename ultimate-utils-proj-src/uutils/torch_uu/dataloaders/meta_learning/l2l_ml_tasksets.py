@@ -107,7 +107,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             # root=args.data_path, #No need for datafile
             # data_augmentation=args.data_augmentation, #TODO: currently not implemented! Do we need to implement?
         )
-    elif args.data_option == 'hdb1':
+    elif args.data_option == 'hdb1' or args.data_option == 'hdb1_mio':
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
