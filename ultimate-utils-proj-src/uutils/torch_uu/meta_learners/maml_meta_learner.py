@@ -29,6 +29,8 @@ from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidenc
 
 from pdb import set_trace as st
 
+from copy import deepcopy
+
 
 class MAMLMetaLearner(nn.Module):
     def __init__(
@@ -42,10 +44,12 @@ class MAMLMetaLearner(nn.Module):
         super().__init__()
         self.args = args  # args for experiment
         self.base_model = base_model
-        # assert base_model is args.model
+        self.inner_lr = deepcopy(self.args.inner_lr)
+        self.nb_inner_train_steps = deepcopy(self.args.nb_inner_train_steps)
+
+        self.target_type = target_type
 
         self.inner_debug = inner_debug
-        self.target_type = target_type
 
     @property
     def lr_inner(self) -> float:
@@ -57,10 +61,9 @@ class MAMLMetaLearner(nn.Module):
     @lr_inner.setter
     def lr_inner(self, new_val: float):
         if hasattr(self.args, 'inner_lr'):
-            self.args.inner_lr = new_val
+            self.inner_lr = new_val
         else:
             self.args.lr_inner = new_val
-        # self.args.inner_lr = new_val
 
     @property
     def fo(self) -> bool:
@@ -233,7 +236,7 @@ def get_lists_accs_losses_l2l(meta_learner,
             task_data=task_data,
             learner=learner,
             loss=args.loss,
-            adaptation_steps=args.nb_inner_train_steps,
+            adaptation_steps=meta_learner.nb_inner_train_steps,
             shots=args.k_shots,
             ways=args.n_classes,
             device=args.device,
@@ -260,6 +263,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         super().__init__()
         self.args = args  # args for experiment
         self.base_model = base_model
+        args.nb_inner_train_steps = deepcopy(args.nb_inner_train_steps)
         assert args is self.args
         assert base_model is args.model
         allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None  # ternary op for backwards comp.
