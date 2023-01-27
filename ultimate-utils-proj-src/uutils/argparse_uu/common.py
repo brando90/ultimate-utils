@@ -11,17 +11,26 @@ from datetime import datetime
 
 from uutils.logging_uu.wandb_logging.common import setup_wandb
 
+from pdb import set_trace as st
+
 
 def create_default_log_root(args: Namespace):
     """
     Create the default place where we save things to.
     """
+    # - make sure prefix $HOME/data/logs/ is in args.log_root Path
+    print(f'{args.log_root=}')
+    assert 'jobid' not in str(args.log_root), f"jobid should not be in log_root but it is in it {args.log_root=}"
     args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.log_root: Path = args.log_root.expanduser()
+    assert isinstance(args.log_root, Path), f'Error, it is not of type Path: {args.log_root=}'
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}_pid_{args.PID}'
+    # wandb_str helps to identify which wandb runs are more likely to be important (since they used wandb)
+    wandb_str: str = f'_wandb_{args.log_to_wandb}' if hasattr(args, 'log_to_wandb') else 'code_without_wandb'
+    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}_pid_{args.PID}{wandb_str}'
     args.log_root.mkdir(parents=True, exist_ok=True)
+    print(f'{args.log_root=}')
 
 
 def setup_args_for_experiment(args: Namespace,
@@ -150,28 +159,6 @@ def setup_args_for_experiment(args: Namespace,
     if torch.cuda.is_available():
         args.nccl = torch.cuda.nccl.version()
 
-    # - get log_root
-    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-    create_default_log_root(args)
-    # create tb in log_root
-    if use_tb:
-        from torch.utils.tensorboard import SummaryWriter
-        args.tb_dir = args.log_root / 'tb'
-        args.tb_dir.mkdir(parents=True, exist_ok=True)
-        args.tb = SummaryWriter(log_dir=args.tb_dir)
-
-    # - setup expanded path to checkpoint
-    if hasattr(args, 'path_to_checkpoint'):
-        # str -> Path(path_to_checkpoint).expand()
-        if args.path_to_checkpoint is not None:
-            if isinstance(args.path_to_checkpoint, str):
-                args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
-            elif isinstance(args.path_to_checkpoint, Path):
-                args.path_to_checkpoint.expanduser()
-            else:
-                raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
-                                 f'with value: {args.path_to_checkpoint=}')
-
     # - get device name if possible
     try:
         args.gpu_name = torch.cuda.get_device_name(0)
@@ -219,6 +206,28 @@ def setup_args_for_experiment(args: Namespace,
         from uutils import stanford_reauth
         stanford_reauth()
         print(f'finished calling stanford reauth inside python')
+
+    # - get log_root
+    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+    create_default_log_root(args)
+    # create tb in log_root
+    if use_tb:
+        from torch.utils.tensorboard import SummaryWriter
+        args.tb_dir = args.log_root / 'tb'
+        args.tb_dir.mkdir(parents=True, exist_ok=True)
+        args.tb = SummaryWriter(log_dir=args.tb_dir)
+
+    # - setup expanded path to checkpoint
+    if hasattr(args, 'path_to_checkpoint'):
+        # str -> Path(path_to_checkpoint).expand()
+        if args.path_to_checkpoint is not None:
+            if isinstance(args.path_to_checkpoint, str):
+                args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
+            elif isinstance(args.path_to_checkpoint, Path):
+                args.path_to_checkpoint.expanduser()
+            else:
+                raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
+                                 f'with value: {args.path_to_checkpoint=}')
 
     # - return
     uutils.print_args(args)

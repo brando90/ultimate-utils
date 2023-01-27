@@ -79,6 +79,7 @@ setup(
         'wandb',
         'matplotlib',
         # 'statsmodels'
+        'statsmodels==0.12.2'
         # - later check why we are not installing it...
         # 'seaborn'
         # 'nltk'
