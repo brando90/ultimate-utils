@@ -478,7 +478,8 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
-def get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x, qry_y,
+def get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner,
+                                                                    spt_x, spt_y, qry_x, qry_y,
                                                                     training: bool = True,
                                                                     # always true to avoid .eval()
                                                                     call_backward: bool = False,
@@ -514,7 +515,7 @@ def get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner
                                                                         copy_initial_weights=meta_learner.args.copy_initial_weights,
                                                                         track_higher_grads=meta_learner.args.track_higher_grads,
                                                                         fo=meta_learner.fo,
-                                                                        nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
+                                                                        nb_inner_train_steps=meta_learner.nb_inner_train_steps,
                                                                         criterion=meta_learner.args.criterion)
 
         # Evaluate on query set for current task

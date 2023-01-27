@@ -44,39 +44,13 @@ class MAMLMetaLearner(nn.Module):
         super().__init__()
         self.args = args  # args for experiment
         self.base_model = base_model
-        self.inner_lr = deepcopy(self.args.inner_lr)
         self.nb_inner_train_steps = deepcopy(self.args.nb_inner_train_steps)
+        self.inner_lr = deepcopy(self.args.inner_lr)
+        self.fo = deepcopy(self.args.fo)
 
         self.target_type = target_type
 
         self.inner_debug = inner_debug
-
-    @property
-    def lr_inner(self) -> float:
-        if hasattr(self.args, 'inner_lr'):
-            return self.args.inner_lr
-        else:
-            return self.args.lr_inner
-
-    @lr_inner.setter
-    def lr_inner(self, new_val: float):
-        if hasattr(self.args, 'inner_lr'):
-            self.inner_lr = new_val
-        else:
-            self.args.lr_inner = new_val
-
-    @property
-    def fo(self) -> bool:
-        """
-        Return the fo param of args.
-
-        Note: track_higher_order_grads is weird and should always be true for now. Details: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
-        """
-        return self.args.fo
-
-    # @property
-    # def mdl(self) -> torch.nn.Module:
-    #     return uutils.torch.get_model(self.mdl_)
 
     def forward(self, batch, training: bool = True, call_backward: bool = False):
         """
