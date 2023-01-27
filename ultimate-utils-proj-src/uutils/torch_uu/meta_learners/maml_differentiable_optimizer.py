@@ -496,7 +496,7 @@ def get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner
         test that code that is later use to compare models using ultimate-anatome.
     """
     # - get inner opt
-    inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.lr_inner)
+    inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.inner_lr)
 
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()

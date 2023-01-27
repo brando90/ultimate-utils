@@ -290,7 +290,7 @@ def main(args):
     args.scheduler = None
     if args.meta_learner_name == 'maml_fixed_inner_lr':
         args.grad_clip_rate = None
-        args.meta_learner = MAMLMetaLearner(args, args.base_model, fo=args.fo, lr_inner=args.inner_lr)
+        args.meta_learner = MAMLMetaLearner(args, args.base_model, fo=args.fo, inner_lr=args.inner_lr)
         args.outer_opt = optim.Adam(args.meta_learner.parameters(), args.outer_lr)
         # args.outer_opt = Adafactor(args.meta_learner.parameters(), scale_parameter=True, relative_step=True, warmup_init=True, lr=None)
         # args.scheduler = AdafactorSchedule(args.outer_opt)

@@ -333,7 +333,7 @@ def get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn() -> Namespace:
     args = get_defaul_args_for_5cnn(args)
     args.data_option = 'torchmeta_miniimagenet'
     args.data_path = Path('~/data/torchmeta_data/').expanduser()
-    args.lr_inner = 0.1
+    args.inner_lr = 0.1
     args.nb_inner_train_steps = 5
     args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
     # args.track_higher_grads = True  # not FO maml
@@ -410,7 +410,7 @@ def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     args = get_defaul_args_for_5cnn(args)
     args.data_option = 'torchmeta_miniimagenet'
     args.data_path = Path('~/data/torchmeta_data/').expanduser()
-    args.lr_inner = 0.1
+    args.inner_lr = 0.1
     args.nb_inner_train_steps = 5
     args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
     args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
