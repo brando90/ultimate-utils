@@ -46,6 +46,8 @@ class MAMLMetaLearner(nn.Module):
         self.base_model = base_model
         self.nb_inner_train_steps = deepcopy(self.args.nb_inner_train_steps)
         self.inner_lr = deepcopy(self.args.inner_lr)
+        if not hasattr(args, 'fo'):
+            self.args.fo = True
         self.fo = deepcopy(self.args.fo)
 
         self.target_type = target_type
