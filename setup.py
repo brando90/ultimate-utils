@@ -78,7 +78,7 @@ setup(
         'plotly',
         'wandb',
         'matplotlib',
-        'statsmodels'
+        # 'statsmodels'
         # - later check why we are not installing it...
         # 'seaborn'
         # 'nltk'
