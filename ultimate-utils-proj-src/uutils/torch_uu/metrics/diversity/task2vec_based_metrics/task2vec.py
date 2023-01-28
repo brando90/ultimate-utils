@@ -22,12 +22,13 @@ import numpy as np
 from tqdm.auto import tqdm
 import logging
 # import variational
-import diversity_src.diversity.task2vec_based_metrics.variational as variational
+#import diversity_src.diversity.task2vec_based_metrics.variational as variational
+import uutils.torch_uu.metrics.diversity.task2vec_based_metrics.variational as variational
 from torch.utils.data import DataLoader, Dataset
 from torch.optim.optimizer import Optimizer
 # from utils import AverageMeter, get_error, get_device
-from diversity_src.diversity.task2vec_based_metrics.utils import AverageMeter, get_error, get_device
-
+#from diversity_src.diversity.task2vec_based_metrics.utils import AverageMeter, get_error, get_device
+from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.utils import AverageMeter, get_error, get_device
 
 class Embedding:
     """

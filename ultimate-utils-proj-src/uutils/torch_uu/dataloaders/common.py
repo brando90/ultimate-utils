@@ -250,9 +250,15 @@ def get_data_set_sizes_from_tasksets(tasksets: dict[str, Any]) -> dict[str, int]
 
 def get_dataset_size(args: Namespace) -> dict[str, int]:
     split_2_size: dict[str, int] = None
+
+    # - special case for meta-dataset dataloaders
+    if (args.data_option == 'mds'):
+        from diversity_src.dataloaders.metadataset_batch_loader import mds_split_2_size
+        return mds_split_2_size(args)
+
     try:
         dataloaders = args.dataloaders
-        split_2_size = get_data_set_size_from_dataloader(dataloaders)
+        split_2_size = get_data_set_sizes_from_dataloader(dataloaders)
     except Exception as e:
         # print(f'{e=}')
         tasksets = args.tasksets

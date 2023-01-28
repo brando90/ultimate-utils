@@ -2,8 +2,8 @@ from argparse import Namespace
 from torch.nn import Module
 from typing import Optional
 
-from diversity_src.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
-
+#from diversity_src.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
+from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
 
 def get_probe_network(args: Namespace,
 
@@ -17,7 +17,9 @@ def get_probe_network(args: Namespace,
     :param model_option:
     :return:
     """
-    from diversity_src.diversity.task2vec_based_metrics.models import get_model
+    #from diversity_src.diversity.task2vec_based_metrics.models import get_model
+    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.models import get_model
+
     # print(f'{get_model=}')
     model_option: str = args.model_option if model_option is None else model_option
     if model_option == 'None':
