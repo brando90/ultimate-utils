@@ -37,7 +37,7 @@ def compute_pwcca(acts1, acts2, epsilon=0.):
 	 Original cca coefficient mean and weighted mean
 
     """
-    sresults = cca_core.get_cca_similarity(acts1, acts2, epsilon=epsilon, 
+    sresults = cca_core.get_cca_similarity(acts1, acts2, epsilon=epsilon,
 					   compute_dirns=False, compute_coefs=True, verbose=False)
     if np.sum(sresults["x_idxs"]) <= np.sum(sresults["y_idxs"]):
         dirns = np.dot(sresults["coef_x"],
