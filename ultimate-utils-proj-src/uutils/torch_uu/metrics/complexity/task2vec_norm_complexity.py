@@ -17,3 +17,53 @@ more difficult:
 Also some type of cross-benchmark comparison complexity(?)
 '''
 
+from numpy.linalg import norm
+import numpy as np
+
+# - returns list of all task complexities.
+def get_task_complexities(embeddings, p=1):
+    all_complexities = []
+
+    for embedding in embeddings:
+        embedding_hessian = np.array(embedding.hessian)
+        embedding_norm = norm(embedding_hessian, ord=1)
+
+        all_complexities += [embedding_norm]
+
+    return all_complexities
+
+# - returns average  and ci of task complexities
+def avg_norm_complexity(all_complexities):
+    from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
+    mu, ci = mean_confidence_interval(all_complexities, confidence=0.95)
+    return (mu, ci)
+
+# - returns total complexity of all tasks in benchmark.
+def total_norm_complexity(all_complexities):
+    return np.sum(all_complexities)
+
+
+'''
+def avg_norm_complexity(embeddings, p=1):
+    #print("embeddings: ", embeddings)
+    avg_complexity = 0
+    all_complexities = []
+
+    for embedding in embeddings:
+        embedding_hessian = np.array(embedding.hessian)
+        embedding_norm = norm(embedding_hessian, ord = 1)
+
+        avg_complexity += embedding_norm
+        all_complexities += [embedding_norm]
+    avg_complexity /= len(embeddings)
+
+    return avg_complexity, all_complexities
+
+
+
+def total_norm_complexity(embeddings, p=1):
+    avg_complexity, all_complexities = avg_norm_complexity(embeddings, p)
+    total_complexity = avg_complexity * len(embeddings)
+
+    return total_complexity, all_complexities
+'''
