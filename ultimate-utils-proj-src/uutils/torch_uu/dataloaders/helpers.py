@@ -39,6 +39,7 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 
 
 def get_sl_dataloader(args: Namespace) -> dict:
+    args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')

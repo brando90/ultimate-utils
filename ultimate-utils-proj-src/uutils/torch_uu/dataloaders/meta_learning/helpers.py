@@ -1,10 +1,18 @@
+"""
+Mosty likely Torchmeta.
+"""
 from argparse import Namespace
 from pathlib import Path
 
 from torch import nn
 
 
-def get_meta_learning_dataloaders(args: Namespace) -> dict:
+def get_meta_learning_dataloaders(args: Namespace) -> dict:  # TorchMeta
+    """
+
+    Most likely Torchmeta
+    """
+    args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     # Get Meta-Sets for few shot learning
     # if isinstance(args.data_path, Path):
     if args.data_option == 'Path':

@@ -36,6 +36,7 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
+    args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
     # - get benchmark tasksets loader
     print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING you didnt set data augmentation flag in args' )
