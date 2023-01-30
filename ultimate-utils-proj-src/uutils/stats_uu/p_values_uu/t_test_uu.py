@@ -20,7 +20,7 @@ def decision_procedure_based_on_statistically_significance(p_value: float, alpha
 
 # -
 
-def show_n_does_or_doesnt_affect_p_value_test_():
+def show_n_does_or_doesnt_affect_p_value_for_t_test_test_():
     """
     plot p-value vs n. Does n affect p-value?
     """
@@ -48,6 +48,11 @@ def show_n_does_or_doesnt_affect_p_value_test_():
 
 
 if __name__ == '__main__':
-    print('Starting...')
-    # show_n_does_or_doesnt_affect_p_value_test_()
-    print(f'Done!\a\n')
+    import time
+    from uutils import report_timesd
+
+    start = time.time()
+    # - run experiment
+    main()
+    # - Done
+    print(f"\nSuccess Done!: {report_times(start)}\a")

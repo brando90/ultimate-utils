@@ -1,3 +1,8 @@
+"""
+
+ref:
+    - Linear Regression in R: https://machinelearningmastery.com/linear-regression-in-r/
+"""
 # -
 
 def example_test_percentages_of_y_explained_by_x_synthetic_variable():
