@@ -30,6 +30,9 @@ A1: todo, since anova uses y = categorical, but delta is numerical/real valued, 
 
 Q2: does Anova have p-value -> 0 as n->inf issues like the t-test?
 A2: todo, but I think yes. Solution is likely to use eps & effect size based on anova.
+
+Q3: small anova tutorial, idk if it's the right tool if our delta is numeric and anova usually uses y is categorical. Id also want to detect if one specific variables is significant wrt others. Or how significant xi is in predicting y.
+A3: todo
 """
 
 
