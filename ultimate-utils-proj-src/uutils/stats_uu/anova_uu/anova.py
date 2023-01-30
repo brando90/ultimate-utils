@@ -10,6 +10,7 @@ refs:
         - 3 Feature Selection For Machine Learning in Python: https://machinelearningmastery.com/feature-selection-machine-learning-python/
         - 4 SK's link, tests as linear: https://lindeloev.github.io/tests-as-linear/#6_three_or_more_means
     - other nice links:
+        - wikipedia: https://en.wikipedia.org/wiki/Analysis_of_variance
         - Contrast Anova with Linear Regression, so read this eventually: https://machinelearningmastery.com/linear-regression-in-r/
         - 17 Statistical Hypothesis Tests in Python (Cheat Sheet): https://machinelearningmastery.com/statistical-hypothesis-tests-in-python-cheat-sheet/
         - Statistics books for machine learning: https://machinelearningmastery.com/statistics-books-for-machine-learning/

@@ -119,9 +119,12 @@ def _log_train_val_stats(args: Namespace,
             if step >= 20 * ckpt_freq:  # saving ckpt is expensive and at the beginning val will keep decreasing, so this hack so that a lot of training has happening, alternative we could do train loss < 0.2
                 save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
-        # - log ckpt
+        # - log ckpt, note: ckpt_grew = getattr(args, 'ckpt_freq', args.log_freq)
         if step % ckpt_freq == 0:
             save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
+        if hasattr(args, 'smart_logging'):
+            # e.g. logging more often after train acc is high e.g. 0.9 & save ckpt with all losses in name ckpt filename
+            smart_logging(args, step, step_name, train_loss, train_acc, val_loss, val_acc, ckpt_freq)
 
         # - save args
         uutils.save_args(args, args_filename='args.json')
@@ -152,3 +155,93 @@ def log_zeroth_step(args: Namespace, model: Agent):
     train_loss, train_acc = model(batch, training=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, 0, step_name, train_loss, train_acc)
+
+
+def smart_logging(args,
+                  step, step_name,
+                  train_loss, train_acc,
+                  val_loss, val_acc,
+                  ckpt_freq,  # note: ckpt_grew = getattr(args, 'ckpt_freq', args.log_freq)
+                  ) -> None:
+    """
+    Do some sort of smarter logging. e.g. log more often after train acc is high e.g. 0.9 & save ckpt with all losses in name ckpt filename.
+
+    Note:
+        - see if statement for currently implemented options
+    """
+    if hasattr(args, 'smart_logging'):  # extra safety for backwards compatability with old args
+        smart_logging_type: str = args.smart_logging['smart_logging_type']
+        if smart_logging_type == 'log_more_often_after_threshold_is_reached':
+            log_more_often_after_threshold_is_reached(args, step, step_name, train_loss, train_acc, val_loss, val_acc,
+                                                      ckpt_freq)
+        else:
+            raise NotImplementedError(f'{smart_logging_type=}')
+    else:
+        # likely, args are set to old code or this flag is not set, so do nothing
+        pass
+    return
+
+
+def log_more_often_after_threshold_is_reached(args,
+                                              step, step_name,
+                                              train_loss, train_acc,
+                                              val_loss, val_acc,
+                                              ckpt_freq,  # note: ckpt_grew = getattr(args, 'ckpt_freq', args.log_freq)
+                                              ) -> None:
+    """
+    Logs more often after a threshold has been reached for a metric e.g. train_acc >= 0.9, then it will log more
+    frequently e.g. 10 times more often (500 => 50).
+
+    note:
+        - "\\" floor division operator, e.g. 5 // 2 = 2
+    """
+    # - get args for logging more often after threshold is reached
+    metric_to_use: str = args.smart_logging['metric_to_use']  # e.g. train_loss or train_acc
+    threshold: float = args.smart_logging['threshold']  # e.g 0.1 or 0.9
+    log_speed_up: int = args.smart_logging['log_speed_up']  # e.g. 2 or 5  or 10 or 50 or 100
+    log_freq: int = ckpt_freq // log_speed_up  # e.g. my usual value 500 then divde it by log_speed_up e.g. 10
+    # - do smart logging according to logging more often after threshold is reached
+    args.log_more_often_on = False if not hasattr(args, 'log_more_often_on') else args.log_more_often_on
+    if metric_to_use == 'train_loss':
+        if train_loss <= threshold or args.log_more_often_on:
+            # this is more complicated than I wished but I think we should record more often since loss/accs for meta-learning have high variance
+            args.log_more_often_on = True  # approx train_loss <= threshold + going forward leave it on
+            if step % log_freq == 0:
+                ckpt_filename: str = get_more_often_ckpting_filename(args, step, step_name, train_loss, train_acc,
+                                                                     val_loss, val_acc)
+                save_for_supervised_learning(args, ckpt_filename=ckpt_filename)
+    elif metric_to_use == 'train_acc':
+        if train_acc >= threshold or args.log_more_often_on:
+            # this is more complicated than I wished but I think we should record more often since loss/accs for meta-learning have high variance
+            args.log_more_often_on = True  # approx train_acc >= threshold + going forward leave it on
+            if step % log_freq == 0:
+                ckpt_filename: str = get_more_often_ckpting_filename(args, step, step_name, train_loss, train_acc,
+                                                                     val_loss, val_acc)
+                save_for_supervised_learning(args, ckpt_filename=ckpt_filename)
+    elif metric_to_use == 'val_loss':
+        if val_loss <= threshold or args.log_more_often_on:
+            # this is more complicated than I wished but I think we should record more often since loss/accs for meta-learning have high variance
+            args.log_more_often_on = True
+            if step % log_freq == 0:
+                ckpt_filename: str = get_more_often_ckpting_filename(args, step, step_name, train_loss, train_acc,
+                                                                     val_loss, val_acc)
+                save_for_supervised_learning(args, ckpt_filename=ckpt_filename)
+    elif metric_to_use == 'val_acc':
+        if val_acc >= threshold or args.log_more_often_on:
+            # this is more complicated than I wished but I think we should record more often since loss/accs for meta-learning have high variance
+            args.log_more_often_on = True
+            if step % log_freq == 0:
+                ckpt_filename: str = get_more_often_ckpting_filename(args, step, step_name, train_loss, train_acc,
+                                                                     val_loss, val_acc)
+                save_for_supervised_learning(args, ckpt_filename=ckpt_filename)
+    else:
+        raise NotImplementedError(f'{metric_to_use=}')
+
+
+def get_more_often_ckpting_filename(args,
+                                    step, step_name,
+                                    train_loss, train_acc,
+                                    val_loss, val_acc,
+                                    ) -> str:
+    ckpt_filename: str = f'ckpt_{step_name}_{step}_train_loss_{train_loss:.3f}_train_acc_{train_acc:.3f}_val_loss_{val_loss:.3f}_val_acc_{val_acc:.3f}.pt'
+    return ckpt_filename
