@@ -33,6 +33,13 @@ A2: todo, but I think yes. Solution is likely to use eps & effect size based on 
 
 Q3: small anova tutorial, idk if it's the right tool if our delta is numeric and anova usually uses y is categorical. Id also want to detect if one specific variables is significant wrt others. Or how significant xi is in predicting y.
 A3: todo
+
+---
+Hypothesis of how it my be of use for my case (dvs numeric, xs have groups/"categories"):
+- Y = f(x1, ..., xn)
+- mu_i = E[yi = f(x1, ..., xi = xi, ..., xn)] i.e. we use treatment xi and do multiple measurments of Y
+- then we do anova test
+- Q: what do we do the other groups? How do we keep them constant or make them zero? what if they aren't constant or zero? Can we still do the anova test?
 """
 
 
