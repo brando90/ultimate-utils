@@ -142,6 +142,7 @@ def _log_train_val_stats(args: Namespace,
 
         # - log to wandb
         if log_to_wandb:
+            print_dist(msg=f'{args.log_to_wandb=} (if True then it should be using wanbd)', rank=args.rank, flush=True)
             log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
 
         # - log to tensorboard
@@ -199,7 +200,7 @@ def log_more_often_after_threshold_is_reached(args,
     metric_to_use: str = args.smart_logging['metric_to_use']  # e.g. train_loss or train_acc
     threshold: float = args.smart_logging['threshold']  # e.g 0.1 or 0.9
     log_speed_up: int = args.smart_logging['log_speed_up']  # e.g. 2 or 5  or 10 or 50 or 100
-    log_freq: int = ckpt_freq // log_speed_up  # e.g. my usual value 500 then divde it by log_speed_up e.g. 10
+    log_freq: int = max(ckpt_freq // log_speed_up, 1)  # e.g. my usual value 500 then divde it by log_speed_up e.g. 10
     # - do smart logging according to logging more often after threshold is reached
     args.log_more_often_on = False if not hasattr(args, 'log_more_often_on') else args.log_more_often_on
     if metric_to_use == 'train_loss':

@@ -39,14 +39,14 @@ def setup_wandb(args: Namespace):
         #     args.dir_wandb: Path = args.log_root.expanduser()
         #     dir_wandb = args.dir_wandb
         # - initialize wandb
-        print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
-        print(f'{dir_wandb=}')
-        print(f'{sys.stdout=}')
-        print(f'{os.path.realpath(sys.stdout.name)=}')
-        print(f'{sys.stderr=}')
-        print(f'{os.path.realpath(sys.stderr.name)=}')
-        print(f'{sys.stdin=}')
-        print(f'{os.path.realpath(sys.stdin.name)=}')
+        # print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
+        # print(f'{dir_wandb=}')
+        # print(f'{sys.stdout=}')
+        # print(f'{os.path.realpath(sys.stdout.name)=}')
+        # print(f'{sys.stderr=}')
+        # print(f'{os.path.realpath(sys.stderr.name)=}')
+        # print(f'{sys.stdin=}')
+        # print(f'{os.path.realpath(sys.stdin.name)=}')
         wandb.init(
             dir=dir_wandb,
             project=args.wandb_project,
@@ -56,15 +56,21 @@ def setup_wandb(args: Namespace):
             group=args.experiment_name
         )
         # - print local run (to be deleted later https://github.com/wandb/wandb/issues/4409)
-        try:
-            args.wandb_run = wandb.run.dir
-            print(f'{wandb.run.dir=}')
-        except Exception as e:
-            args.wandb_run = 'no wandb run path'
-            print(f'{args.wandb_run=}')
+        print_wanbd_run_info(args)
         # - save args in wandb
         wandb.config.update(args)
 
+def print_wanbd_run_info(args: Namespace):
+    try:
+        args.wandb_run = wandb.run.dir
+        args.wanbd_run_url = wandb.run.get_url()
+        print(f'{wandb.run.dir=}')
+        print(f'{args.wanbd_url=}')
+    except Exception as e:
+        args.wandb_run = 'no wandb run path'
+        args.wanbd_run_url = 'no wandb run url'
+        print(f'{wandb.run.dir=}')
+        print(f'{args.wanbd_run_url=}')
 
 def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
     """
@@ -139,7 +145,8 @@ def log_2_wanbd(it: int,
                 train_loss: float, train_acc: float,
                 val_loss: float, val_acc: float,
                 step_metric,
-                mdl_watch_log_freq: int = -1):
+                mdl_watch_log_freq: int = -1,
+                ):
     """
 
     Ref:
@@ -159,3 +166,10 @@ def log_2_wanbd(it: int,
                     'val loss': val_loss,
                     'val acc': val_acc},
               commit=True)
+    # - print to make explicit in console/terminal it's using wandb
+    # note usually this is cllaed with a args.rank check outside, so using print vs print_dist should be fine
+    try:
+        print(f'{wandb.run.dir=}')
+        print(f'{wandb.run.get_url()=}')
+    except Exception as e:
+        print(f'No wandb? error: {e=}')
