@@ -141,8 +141,9 @@ def _log_train_val_stats(args: Namespace,
             args.logger.save_current_plots_and_stats()
 
         # - log to wandb
+        print_dist(msg=f'{log_to_wandb=} (if True then it should displaying wanbd info & using it)', rank=args.rank,
+                   flush=True)
         if log_to_wandb:
-            print_dist(msg=f'{args.log_to_wandb=} (if True then it should be using wanbd)', rank=args.rank, flush=True)
             log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
 
         # - log to tensorboard

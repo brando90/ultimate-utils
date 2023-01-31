@@ -167,9 +167,9 @@ def log_2_wanbd(it: int,
                     'val acc': val_acc},
               commit=True)
     # - print to make explicit in console/terminal it's using wandb
-    # note usually this is cllaed with a args.rank check outside, so using print vs print_dist should be fine
+    # note usually this func is callaed with a args.rank check outside, so using print vs print_dist should be fine
     try:
-        print(f'{wandb.run.dir=}')
+        # print(f'{wandb.run.dir=}')
         print(f'{wandb.run.get_url()=}')
     except Exception as e:
         print(f'No wandb? error: {e=}')
