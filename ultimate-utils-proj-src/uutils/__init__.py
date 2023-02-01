@@ -637,37 +637,51 @@ ValueError: Seed must be between 0 and 2**32 - 1
 """
 
 
-def get_truly_random_seed_through_os():
+def get_truly_random_seed_through_os(rand_size: int = 4) -> int:
     """
     Usually the best random sample you could get in any programming language is generated through the operating system. 
     In Python, you can use the os module.
 
     source: https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch/57416967#57416967
     """
-    RAND_SIZE = 4
     random_data = os.urandom(
-        RAND_SIZE
+        rand_size
     )  # Return a string of size random bytes suitable for cryptographic use.
-    random_seed = int.from_bytes(random_data, byteorder="big")
-    return random_seed
+    random_seed: int = int.from_bytes(random_data, byteorder="big")
+    return int(random_seed)
 
 
-def seed_everything(seed: int = 42):
+def get_different_pseudo_random_seed_every_time_using_time() -> int:
+    """ Get a different pseudo random seed every time using time."""
+    import random
+    import time
+
+    # random.seed(int(time.time()))
+    seed: int = int(time.time())
+    return seed
+
+
+def seed_everything(seed: int,
+                    seed_torch: bool = True,
+                    ):
     """
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     """
     import random
-    import os
     import numpy as np
-    import torch
+    import os
 
     random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    # #torch.use_deterministic_algorithms(True) # do not uncomment
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    if seed_torch:
+        import torch
+        torch.manual_seed(seed)
+        # makes convs deterministic: https://stackoverflow.com/a/66647424/1601580, torch.backends.cudnn.deterministic=True only applies to CUDA convolution operations, and nothing else. Therefore, no, it will not guarantee that your training process is deterministic
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # #torch.use_deterministic_algorithms(True) # do not uncomment
+        # fully_deterministic: bool = uutils.torch_uu.make_code_deterministic(args.seed)
 
 
 def get_hostname_mit():

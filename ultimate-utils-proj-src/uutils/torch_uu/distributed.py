@@ -3,6 +3,7 @@ For code used in distributed training.
 """
 
 import time
+import uutils
 from argparse import Namespace
 from pathlib import Path
 from typing import Tuple, Union, Callable, Any, Optional
@@ -83,21 +84,26 @@ def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, c
             args.device = torch.device('cuda:' + str(device_id))
         print(args.rank, ':', args.device)
 
-    # - set seed
-    import random
-    import numpy as np
-
+    # -- set seed, so all processes in distributed training will act differently my modifying seed using their ags.rank
+    # - note, this assumes either the seed is passed from args.seed and thus the user or the setup code has set the seed
+    # if seed is not set in this function (seed is None or -1) then get the one from the args (note it might still not be set by the user), else if set then use the one passed in.
     seed: int = args.seed if seed is None else seed
-    # rank: int = torch.distributed.get_rank()
-    seed += args.rank
-    random.seed(seed)
-    np.random.seed(seed)
-    if cuda and torch.cuda.device_count():
-        torch.manual_seed(seed)
-        # sebas code doesn't have this so I am leaving it out.
-        # if is_running_parallel(args.rank):
-        #     if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
-        #         torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
+    # rank: int = torch.distributed.get_rank()  # this is what sebas does but we should've already have a rank
+    seed += args.rank  # create see from rank so that process acts different and all of em don't just do the same thing
+    # once a seed for each rank has been decided, set it
+    uutils.seed_everything(seed)
+
+    # - set seed
+    # import random
+    # import numpy as np
+    # random.seed(seed)
+    # np.random.seed(seed)
+    # if cuda and torch.cuda.device_count():
+    #     torch.manual_seed(seed)
+    #     # sebas code doesn't have this so I am leaving it out.
+    #     # if is_running_parallel(args.rank):
+    #     #     if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
+    #     #         torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
 
 
 # torch.cuda.manual_seed(seed)

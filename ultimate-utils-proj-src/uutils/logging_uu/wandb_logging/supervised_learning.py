@@ -181,7 +181,7 @@ def smart_logging_ckpt(args,
         - see if statement for currently implemented options
     """
     if hasattr(args, 'smart_logging_ckpt'):  # extra safety for backwards compatability with old args
-        smart_logging_type: str = args.smart_logging['smart_logging_type']
+        smart_logging_type: str = args.smart_logging_ckpt['smart_logging_type']
         if smart_logging_type == 'log_more_often_after_threshold_is_reached':
             log_more_often_after_threshold_is_reached(args, step, step_name, train_loss, train_acc, val_loss, val_acc,
                                                       ckpt_freq)
@@ -259,7 +259,6 @@ def log_more_often_after_convg_reached(args,
     """
     # - get args for logging more often after convergence is reached
     metric_to_use: str = args.smart_logging_ckpt['metric_to_use']  # e.g. train_loss or train_acc
-    threshold: float = args.smart_logging_ckpt['threshold']  # e.g 0.1 or 0.9
     log_speed_up: int = args.smart_logging_ckpt['log_speed_up']  # e.g. 2 or 5  or 10 or 50 or 100
     log_freq: int = max(ckpt_freq // log_speed_up, 1)  # e.g. my usual value 500 then divde it by log_speed_up e.g. 10
     # - do smart logging according to logging more often after convergence is reached

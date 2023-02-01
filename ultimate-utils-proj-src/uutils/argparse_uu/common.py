@@ -135,14 +135,22 @@ def setup_args_for_experiment(args: Namespace,
     args.rank = -1  # should be written by each worker with their rank, if not we are running serially
     args.master_port = find_free_port()
 
-    # - determinism
-    print(f'{args.seed=}')
+    # - determinism?
+    print(f'Original seed from args: {args.seed=}')
     if hasattr(args, 'always_use_deterministic_algorithms'):
+        # this does set the seed but it also does much more e.g. tries to make convs etc deterministic if possible.
         if args.always_use_deterministic_algorithms:
-            uutils.torch_uu.make_code_deterministic(args.seed)
-        logging.warning(f'Seed being ignored, seed value: {args.seed=}')
-    if args.seed != -1:
+            fully_deterministic: bool = uutils.torch_uu.make_code_deterministic(args.seed)
+        # todo fix, warn only if code is not fully deterministic
+        if not fully_deterministic:
+            logging.warning(f'Seed possibly being ignored, seed value: {args.seed=}')
+    # - seed only if the user chose a seed, else set a truly different seed. Reason we decided this 1. if we set the seed & make sure it's always different we can always have the code act differently 2. by always acting randomly AND choosing a seed and saving it in args it makes our code (hopefully fully reproducible, but this details about torch might not make it but at least we are trying really hard to be reproducible)
+    if args.seed != -1:  # if seed set (-1 is not set), args.seed != -1 means seed not set
         uutils.seed_everything(args.seed)
+    else:
+        # if seed not seed then set a truly random seed, this should be different even if python is re-ran given it uses the OS
+        args.seed = uutils.get_truly_random_seed_through_os(rand_size=3)
+    print(f'Seed after code tries to setup args: {args.seed=}')
 
     # - get device name
     # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

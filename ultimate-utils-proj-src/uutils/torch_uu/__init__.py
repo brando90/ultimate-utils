@@ -142,16 +142,15 @@ def gpu_name_otherwise_cpu(print_to_stdout: bool = False):
 def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool = True):
     """
 
-    Note: use_deterministic_algorithms makes all algorithms deterministic while torch_uu.backends.cudnn.deterministic=True
-    makes convs only determinsitic. There is also a way to choose algorithms based on hardware performance, to
-    avoid that use torch_uu.backends.cudnn.benchmark = False (note the agorithm chosen even if determinsitic might be
-    random itself so the other two flags are useful).
-
-    todo -
+    Note:
+        - always_use_deterministic_algorithms: not all algorithms are deterministic. If one doesn't have determinstic
+        algorithm for a given operation, it will throw an error.
+    todo - (idk if this CAN be fixed by me, easily)
      - fix this:
       RuntimeError: Deterministic behavior was enabled with either `torch_uu.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
      - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
      - read the RNN LSTM part
+
     ref:
         - https://pytorch.org/docs/stable/notes/randomness.html
         - https://stackoverflow.com/questions/66130547/what-does-the-difference-between-torch-backends-cudnn-deterministic-true-and
@@ -162,19 +161,17 @@ def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool
     import torch
     import os
 
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    # - make pytorch determinsitc
-    # makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
-    torch.manual_seed(seed)
+    # - make pytorch determinsitc, makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
     if always_use_deterministic_algorithms:
         torch.use_deterministic_algorithms(True)
-    # makes convs deterministic
-    torch.backends.cudnn.deterministic = True
-    # doesn't allow benchmarking to select fastest algorithms for specific ops
-    torch.backends.cudnn.benchmark = False
+        # try:
+        #     torch.set_deterministic(True)
+        #     return True
+        # except Exception as e:
+        #     logging.warning(f'could not set torch to deterministic, {e=}')
+        #     return False
     # - make python determinsitic
-    np.random.seed(seed)
-    random.seed(seed)
+    seed_everything(seed)
 
 
 def index(tensor: Tensor, value, ith_match: int = 0) -> Union[int, Tensor]:
