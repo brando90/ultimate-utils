@@ -139,6 +139,7 @@ def setup_args_for_experiment(args: Namespace,
     print(f'Original seed from args: {args.seed=}')
     if hasattr(args, 'always_use_deterministic_algorithms'):
         # this does set the seed but it also does much more e.g. tries to make convs etc deterministic if possible.
+        fully_deterministic: bool = False
         if args.always_use_deterministic_algorithms:
             fully_deterministic: bool = uutils.torch_uu.make_code_deterministic(args.seed)
         # todo fix, warn only if code is not fully deterministic
