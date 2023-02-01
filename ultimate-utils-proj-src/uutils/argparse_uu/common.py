@@ -131,9 +131,10 @@ def setup_args_for_experiment(args: Namespace,
     if hasattr(args, 'no_validation'):
         args.validation = not args.no_validation
 
-    # - distributed params
+    # - default "empty" distributed params, for now each dist main sets up their own dist rank e.g. ddp, l2l, etc in their main
     args.rank = -1  # should be written by each worker with their rank, if not we are running serially
     args.master_port = find_free_port()
+    # note, currently the true distributed args are set up in the main train file/func todo: perhaps move here? might have to make cases, one for ddp, pytorch mp, one serial, one l2l...worth it?
 
     # - determinism?
     print(f'Original seed from args: {args.seed=}')
@@ -192,15 +193,29 @@ def setup_args_for_experiment(args: Namespace,
     # - best val loss
     args.best_val_loss: float = float('inf')
 
-    # - wandb
+    # -- wandb.  note, nice safety property of my logging when it does log to wandb it always checks rank.
     if hasattr(args, 'log_to_wandb'):
         if not hasattr(args, 'dist_option'):  # backwards compatibility, if no dist_option just setup wandb as "normal"
+            # read above 2 comments and one bellow
             setup_wandb(args)
-        elif args.dist_option != 'l2l_dist':
-            #  in this case wandb has to be setup in the train code, since it's not being ran with ddp, instead the
-            # script itself is distributed and pytorch manages it (i.e. pytorch torch.distributed.run manages the
-            # mp.spawn or spwaning processes somehow.
-            pass
+        else:  # hasattr(args, 'dist_option')
+            # todo this might be set up cleaner if we setup args in this function and not in main train
+            # if custom dist_option needed then we might need more careful starting & setting up wandb e.g. if multiple python processes are used
+            if args.dist_option != 'l2l_dist':
+                # todo this might be set up cleaner if we setup args in this function and not in main train
+                # in this case wandb has to be setup in the train code, since it's not being ran with ddp, instead the
+                # script itself is distributed and pytorch manages it i.e. pytorch torch.distributed.run manages the
+                # mp.spawn or spwaning processes somehow.
+                pass
+            elif args.dist_option == 'l2l_dist':
+                # todo this might be set up cleaner if we setup args in this function and not in main train
+                # setup of wandb is done in main train after args.rank is set up properly,
+                pass
+        # # - set up wandb
+        # # thought this was justified to ignore above since the main (singe) python process sets up wandb once and then the spawned processes always check their rank before logging to wandb
+        # # BUT, due to multiple python process thing in the != l2l_dist it might mean this setsup wandb multiple times, so main or train code needs to check rank to avoid this
+        # ### WARNING, don't use in this func, see l2l_dist case, setup_wandb(args)  # already checks args.log_to_wandb inside of it
+
     # - for debugging
     # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
 

@@ -336,12 +336,17 @@ def init_process_group_l2l(args, local_rank, world_size, init_method=None, backe
         # torch.distributed.barrier()  # causes this warning: https://github.com/pytorch/pytorch/issues/60752
 
 
-def cleanup(rank):
+def cleanup(rank: int,
+            clean_up_wand: bool = False,
+            ):
     """ Destroy a given process group, and deinitialize the distributed package """
     # only destroy the process distributed group if the code is not running serially
     if is_running_parallel(rank):
         torch.distributed.barrier()
         dist.destroy_process_group()
+    if clean_up_wand:
+        # cleanup_wandb(args, delete_wandb_dir=True)
+        cleanup_wandb(args, delete_wandb_dir=False)
 
 
 def get_batch(batch: Tuple[Tensor, Tensor], rank) -> Tuple[Tensor, Tensor]:
