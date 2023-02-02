@@ -21,6 +21,7 @@ def log_zeroth_step(args: Namespace, meta_learner: Agent):
     if hasattr(args, 'tasksets'):
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = args.tasksets.train
+        print(task_dataset)
         train_loss, train_loss_std, train_acc, train_acc_std = meta_learner(task_dataset)
     else:
         batch = next(iter(args.dataloaders['train']))  # this might advance the dataloader one step

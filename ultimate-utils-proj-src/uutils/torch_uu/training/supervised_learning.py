@@ -87,6 +87,8 @@ def train_agent_iterations(args: Namespace,
                            dataloaders: dict,
                            opt: Optimizer,
                            scheduler: _LRScheduler,
+                           halt_loss: str = 'train',
+                           target_loss = None
                            ) -> tuple[Tensor, Tensor]:
     """
     Trains models wrt to number of iterations given. Should halt once the number of iterations desired is reached. 
@@ -97,18 +99,32 @@ def train_agent_iterations(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    if halt_loss == 'train':
+        args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    else:
+        args.convg_meter = ConvergenceMeter(name='val loss', convergence_patience=args.train_convergence_patience, target_lowest = target_loss)
     log_zeroth_step(args, model)
     halt: bool = False
     # -- continually try to train accross the an entire epoch but stop once the number of iterations desired is reached
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
+            # import time
+            # t_bto = time.time()
+            batch = (batch[0].to(args.device), batch[1].to(args.device))
             opt.zero_grad()
+            # t_bm = time.time()
             train_loss, train_acc = model(batch, training=True)
+            # t_am = time.time()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
+            # t_lb = time.time()
             gradient_clip(args, opt)
             opt.step()  # the right update is done since all procs have the right synced grads
+            # t_opt = time.time()
+            # print("t_bto - t_bm=", t_bm - t_bto)
+            # print("t_am-t_bm", t_am-t_bm)
+            # print("t_lb-t_am", t_lb-t_am)
+            # print("t_opt - t_lb", t_opt-t_lb)
 
             # - scheduler
             if (args.it % args.log_scheduler_freq == 0) or args.debug:
@@ -122,10 +138,15 @@ def train_agent_iterations(args: Namespace,
 
             # - log full stats
             # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
-            if args.epoch_num % args.log_freq == 0 or halt or args.debug:
+            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+            if i % args.log_freq == 0 or halt or args.debug:
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
                 log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
-                args.convg_meter.update(train_loss)
+                # print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+                if halt_loss == 'train':
+                    args.convg_meter.update(train_loss)
+                else:
+                    args.convg_meter.update(val_loss)
 
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
@@ -154,27 +175,29 @@ def train_agent_epochs(args: Namespace,
     #log_zeroth_step(args, model)
     halt: bool = False
 
-    # ----added - 0th iter---#
-    args.epochs_num = 0
-    avg_loss = AverageMeter('train loss')
-    avg_acc = AverageMeter('train accuracy')
-    for i, batch in enumerate(dataloaders['train']):
-        #opt.zero_grad()
-        train_loss, train_acc = model(batch, training=True)
-        #train_loss.backward()  # each process synchronizes its gradients in the backward pass
-        #gradient_clip(args, opt)
-        #opt.step()  # the right update is done since all procs have the right synced grads
+    # # ----added - 0th iter---#
+    # args.epochs_num = 0
+    # avg_loss = AverageMeter('train loss')
+    # avg_acc = AverageMeter('train accuracy')
+    # for i, batch in enumerate(dataloaders['train']):
+    #     # print("batch.device = ", batch.device)
+    #     #opt.zero_grad()
+    #     train_loss, train_acc = model(batch, training=True)
+    #     #train_loss.backward()  # each process synchronizes its gradients in the backward pass
+    #     #gradient_clip(args, opt)
+    #     #opt.step()  # the right update is done since all procs have the right synced grads
 
-        # - meter updates
-        avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
-        if args.debug:
-            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+    #     # - meter updates
+    #     avg_loss.update(train_loss.item(), B), avg_acc.update(train_acc, B)
+    #     if args.debug:
+    #         print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
 
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-    log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
-    args.epochs_num = 1
+    # log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
+    args.epochs_num = 0
     # --------#
     while not halt:
+        print("training starting........")
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
@@ -184,6 +207,7 @@ def train_agent_epochs(args: Namespace,
             train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
             gradient_clip(args, opt)
+            print("taking opt step now..")
             opt.step()  # the right update is done since all procs have the right synced grads
 
             # - meter updates

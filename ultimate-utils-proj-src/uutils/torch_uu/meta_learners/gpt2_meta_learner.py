@@ -187,7 +187,6 @@ def forward(meta_learner,
     for task in range(meta_batch_size):
         # print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
-        print(task_dataset)
         task_data: list = task_dataset.sample()  # data, labels
 
         # -- Inner Loop Adaptation
@@ -215,7 +214,7 @@ def forward(meta_learner,
     return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
-class MAMLMetaLearnerL2L(nn.Module):
+class GPTMetaLearnerL2L(nn.Module):
     def __init__(
             self,
             args,

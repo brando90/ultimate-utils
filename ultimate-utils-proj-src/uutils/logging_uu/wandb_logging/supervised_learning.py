@@ -151,6 +151,7 @@ def _log_train_val_stats(args: Namespace,
 
 def log_zeroth_step(args: Namespace, model: Agent):
     batch: Any = next(iter(args.dataloaders['train']))
+    batch = (batch[0].to(args.device), batch[1].to(args.device))
     train_loss, train_acc = model(batch, training=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, 0, step_name, train_loss, train_acc)

@@ -207,6 +207,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         args.it += 1
 
         # - log full stats
+        print_dist(msg=f'[{args.it=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
         # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
         if args.it % args.log_freq == 0 or halt or args.debug:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'

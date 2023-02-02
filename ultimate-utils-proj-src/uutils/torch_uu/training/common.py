@@ -145,7 +145,7 @@ class ConvergenceMeter:
     Early Stopping.
     """
 
-    def __init__(self, name: str, convergence_patience: int = 5, current_lowest: float = float('inf')):
+    def __init__(self, name: str, convergence_patience: int = 5, current_lowest: float = float('inf'), target_lowest = None):
         """
 
         :param name:
@@ -156,6 +156,7 @@ class ConvergenceMeter:
         self.current_lowest = current_lowest
         self.counts_above_current_lowest = 0
         self.convergence_patience = convergence_patience
+        self.target_lowest = target_lowest
         self.reset(current_lowest)
 
     def reset(self, new_lowest: float):
@@ -185,7 +186,10 @@ class ConvergenceMeter:
         enough times, then you have converged.
         """
         # - halt if you've been above the current lowest enough times.
-        return self.convergence_patience <= self.counts_above_current_lowest
+        if self.target_lowest is None:
+            return self.convergence_patience <= self.counts_above_current_lowest
+        else:
+            return self.current_lowest <= self.target_lowest
 
     def __str__(self):
         """

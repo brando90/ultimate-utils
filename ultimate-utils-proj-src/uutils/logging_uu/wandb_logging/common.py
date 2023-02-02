@@ -9,6 +9,7 @@ import wandb
 
 
 def setup_wandb(args: Namespace):
+    print("setup called")
     if args.log_to_wandb:
         # os.environ['WANDB_MODE'] = 'offline'
         import wandb
@@ -41,12 +42,12 @@ def setup_wandb(args: Namespace):
         # - initialize wandb
         print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
         print(f'{dir_wandb=}')
-        print(f'{sys.stdout=}')
-        print(f'{os.path.realpath(sys.stdout.name)=}')
-        print(f'{sys.stderr=}')
-        print(f'{os.path.realpath(sys.stderr.name)=}')
-        print(f'{sys.stdin=}')
-        print(f'{os.path.realpath(sys.stdin.name)=}')
+        # print(f'{sys.stdout=}')
+        # print(f'{os.path.realpath(sys.stdout.name)=}')
+        # print(f'{sys.stderr=}')
+        # print(f'{os.path.realpath(sys.stderr.name)=}')
+        # print(f'{sys.stdin=}')
+        # print(f'{os.path.realpath(sys.stdin.name)=}')
         wandb.init(
             dir=dir_wandb,
             project=args.wandb_project,
@@ -55,6 +56,7 @@ def setup_wandb(args: Namespace):
             name=run_name,
             group=args.experiment_name
         )
+        print("init called")
         # - print local run (to be deleted later https://github.com/wandb/wandb/issues/4409)
         try:
             args.wandb_run = wandb.run.dir

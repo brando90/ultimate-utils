@@ -10,6 +10,7 @@ from argparse import Namespace
 
 import torch
 from torch import nn, Tensor
+from torch.nn import functional as F
 
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.distributed import process_batch_ddp, process_batch_ddp_union_rfs
@@ -88,13 +89,64 @@ class GPT2SLAgent(Agent):
         self.model = model
 
     def forward(self, batch, training = True):
-        print(batch)
-        if training:
-            loss, acc = self.model(batch[0], batch[1])
-        else:
-            loss, acc = self.model(batch[0])
+        # print(batch)
+        # for name, param in self.model.named_parameters():
+        #     print(name, ":", param.data, "req_grad:", param.requires_grad)
+        #     print("grad:", param.grad)
+        # exit()
+        self.model.train() if training else self.model.eval()
+        # import time
+        # t_bl = time.time()
+        logits = self.model(batch[0])
+        # t_al = time.time()
+        # print("t_logits - t_blogits=", t_al - t_bl)
+        # targets = batch[1].to(logits.device)
+        # t3 = time.time()
+        # print("t3 - t_logits=", t3 - t_al)
+        loss = F.cross_entropy(logits.view(-1, logits.size(-1)), batch[1].view(-1), ignore_index=-1)
+        # t4 = time.time()
+        # print("t4 - t3=", t4-t3)
+        preds = torch.argmax(logits, dim = 2)
+        # t5 = time.time()
+        # print("t5-t4=",t5-t4)
+        acc = torch.sum((preds == batch[1]))/(batch[1].shape[0]*batch[1].shape[1])
+        # t6 = time.time()
+        # print("t6-t5=", t6-t5)
+        assert loss.size() == torch.Size([])
+        assert acc.size() == torch.Size([])
+        # if training:
+        #     loss, acc = self.model(batch[0], batch[1])
+        # else:
+        #     loss, acc = self.model(batch[0])
 
         return loss, acc
+
+    def eval_forward(self, batch, training = False):
+        B, W = batch[1].shape
+        with torch.no_grad():
+            self.model.train() if training else self.model.eval()
+            logits = self.model(batch[0])
+            targets = batch[1].to(logits.device)
+            # print("logits.size=", logits.size())
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1, reduction = 'none')
+            # print("loss.size=", loss.size())
+            preds = torch.argmax(logits, dim = 2)
+            # print("preds.size=", preds.size())
+            acc = torch.sum((preds == targets), dim = 1)/targets.shape[1]
+            # print("acc.size=", acc.size())
+
+            assert loss.size() == torch.Size([B*W])
+            assert acc.size() == torch.Size([B])
+
+            self.model.train()
+            # - stats
+            eval_loss_mean, eval_loss_ci = torch_compute_confidence_interval(loss)
+            eval_acc_mean, eval_acc_ci = torch_compute_confidence_interval(acc)
+        return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci
+
+
+
+
 
 
 

@@ -115,7 +115,11 @@ class GPT(nn.Module):
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd),
         ))
+        # torch.nn.init.normal_(self.transformer)
+        # for k, v in self.transformer.items():
+        #     torch.nn.init.normal_(v)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        # torch.nn.init.normal_(self.lm_head.weight, 0, 10)
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
         # This behavior is deprecated and will be an error in future versions"
@@ -126,35 +130,49 @@ class GPT(nn.Module):
         n_params = sum(p.numel() for p in self.parameters())
         print("number of parameters: %.2fM" % (n_params/1e6,))
 
-    def forward(self, idx, targets=None):
+    # def forward(self, idx, targets=None):
+    def forward(self, idx):
         device = idx.device
         b, t = idx.size()
         assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
 
         # forward the GPT model itself
+        # print("idx:", idx, "\n targets:", targets)
+
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
+        # print("tok_emb max and argmax:", torch.max(tok_emb, dim = 2))
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)
+        # print("x here:", x)
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
+        # print("x here 2:", x)
 
-        if targets is not None:
-            # if we are given some desired targets also calculate the loss
-            logits = self.lm_head(x)
-            print(logits.size())
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-            preds = torch.argmax(logits, dim = 2)
-            print(preds)
-            acc = torch.sum((preds == targets)).item()/targets.shape[0]
-        else:
-            # inference-time mini-optimization: only forward the lm_head on the very last position
-            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
-            loss = None
-            acc = None
+        # if using for inference, forward the lm_head on the very last position
+        # logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+        logits = self.lm_head(x)
 
-        return loss, acc
+        return logits
+
+        # if targets is not None:
+        #     # if we are given some desired targets also calculate the loss
+        #     logits = self.lm_head(x)
+        #     # print(logits)
+        #     # print(logits.size())
+        #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
+        #     preds = torch.argmax(logits, dim = 2)
+        #     # print(preds.size())
+        #     # print("preds:", preds)
+        #     acc = torch.sum((preds == targets)).item()/(targets.shape[0]*targets.shape[1])
+        # else:
+        #     # inference-time mini-optimization: only forward the lm_head on the very last position
+        #     logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+        #     loss = None
+        #     acc = None
+
+        # return loss, acc
 
     def crop_block_size(self, block_size):
         # model surgery to decrease the block size if necessary
@@ -300,12 +318,13 @@ class GPT(nn.Module):
 
 
 
-def get_gpt2_with_hps(hps_dict = None):
-    if hps_dict is None:
-        config = GPTConfig()
-    else:
-        config = GPTConfig(hps_dict)
-    # print(config)
+def get_gpt2_with_hps(block_size: int = 1024, vocab_size: int = 50257, n_layer: int = 12, n_head: int = 12,
+    n_embd: int = 768, dropout: float = 0.1):
+    # if hps_dict is None:
+    #     config = GPTConfig()
+    # else:
+    config = GPTConfig(block_size, vocab_size, n_layer, n_head, n_embd, dropout)
+    # print("GPT parameters:", config)
     return GPT(config), asdict(config)
 
 

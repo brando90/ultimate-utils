@@ -142,6 +142,9 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'webtext':
+        from uutils.torch_uu.dataloaders.webtext import get_l2l_tasksets_for_webtext
+        args.tasksets = get_l2l_tasksets_for_webtext(args)
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
