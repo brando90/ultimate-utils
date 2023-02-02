@@ -1,7 +1,7 @@
 """
 
 Note:
-    - the move_to_dpp moves things .to(device)
+- the move_to_dpp moves things .to(device)
 """
 import re
 from argparse import Namespace
@@ -159,7 +159,7 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     if model_option == "None":
         # pass
         args.model, args.model_hps = None, None
-    elif model_option == '5CNN_opt_as_model_for_few_shot_sl':
+    elif model_option == '5CNN_opt_as_model_for_few_shot_sl' or model_option == '5CNN_opt_as_model_for_few_shot':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
     elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs' or model_option == 'resnet24_rfs' or \
             re.match(r'resnet[0-9]+_rfs', model_option):  # resnet12_rfs for backward compat
@@ -205,6 +205,7 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:
+        args.rank = args.rank if hasattr(args, 'rank') else -1
         args.model = move_model_to_dist_device_or_serial_device(args.rank, args, args.model)
 
     # - get optimizer
@@ -283,3 +284,96 @@ def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
     args.agent = agent
     args.meta_learner = agent
     return agent
+
+
+# -- examples, tests, unit tests, tutorials, etc
+
+def args_5cnn_mdl_size_estimates():
+    from pathlib import Path
+    # - model
+    args: Namespace = Namespace()
+    # assert args.filter_size != -1, f'Err: {args.filter_size=}'
+    # print(f'--->{args.filter_size=}')
+    args.n_cls = 64 + 1100  # mio
+    # args.n_cls = 1262  # micod
+    args.n_cls = 5  # 5-way
+    args.filter_size = 1
+    args.model_option = '5CNN_opt_as_model_for_few_shot'
+    args.model_hps = dict(image_size=84, bn_eps=1e-3, bn_momentum=0.95, n_classes=args.n_cls,
+                          filter_size=args.filter_size, levels=None, spp=False, in_channels=3)
+    # - opt
+    args.opt_option = 'Adam_rfs_cifarfs'
+    # args.batch_size = 256
+    args.lr = 1e-3
+    args.opt_hps: dict = dict(lr=args.lr)
+    # - scheduler
+    args.scheduler_option = 'None'
+
+    # # - data
+    # args.data_option = 'hdb1_mio_usl'
+    # args.data_path = Path('~/data/l2l_data/').expanduser()
+    args.data_option = 'hdb4_micod'
+    args.n_classes = args.n_cls
+    args.data_augmentation = 'hdb4_micod'
+    return args
+
+
+def print_model_size():
+    """
+    When do we match the resnet12rfs 1.4M params? how many filters do we need for the 5CNN?
+    """
+    from uutils.torch_uu import count_number_of_parameters
+    # - get data loader
+    # -- print num filters vs num params
+    # num_filters: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
+    num_filters: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+    num_params: list[int] = []
+    d: dict = {}
+    for num_filter in num_filters:
+        print(f'-- {num_filter=}')
+        # - get args
+        args: Namespace = args_5cnn_mdl_size_estimates()
+        args.model_hps['filter_size'] = num_filter
+        # - get fake data
+        B = 4
+        x = torch.rand(B, 3, 84, 84)
+        # - get model
+        get_and_create_model_opt_scheduler_for_run(args)
+        args.number_of_trainable_parameters = count_number_of_parameters(args.model)
+        print(f'{args.number_of_trainable_parameters=}')
+        args.model(x)
+        # - print number of parameters
+        print(f'{args.model.cls.out_features=}')
+        print(f'{args.filter_size=}') if hasattr(args, 'filter_size') else None
+        # - append
+        num_params.append(args.number_of_trainable_parameters)
+        d[num_filter] = args.number_of_trainable_parameters
+    print(f'{num_filters=}')
+    print(f'{num_params=}')
+    print(f'{d=}')
+    # - make a table from the dict using pandas, key is num filters, value is num params and name them
+    import pandas as pd
+    df = pd.DataFrame({'Num Filters': list(d.keys()), 'Num Params': list(d.values())})
+    print(df)
+    # - plot number of filters vs number of params title nums params vs num filters x labl num filters y label num params, using uutils
+    import matplotlib.pyplot as plt
+    from uutils.plot import plot
+    plot(num_filters, num_params, title='Number of Parameters vs Number of Filters', xlabel='Number of Filters',
+         ylabel='Number of Parameters', marker='o', color='b')
+    plt.axhline(y=1.4e6, color='r', linestyle='-', label='ResNet12RFS (num params)')
+    plt.legend()
+    plt.show()
+
+
+# -- run main
+
+if __name__ == "__main__":
+    import time
+    from uutils import report_times
+
+    start = time.time()
+    # - run experiment
+    # main()
+    print_model_size()
+    # - Done
+    print(f"\nSuccess Done!: {report_times(start)}\a")

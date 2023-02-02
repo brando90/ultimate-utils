@@ -440,6 +440,7 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
             model = DistributedDataParallel(model,
                                             find_unused_parameters=True)  # I think removing the devices ids should be fine...
     else:  # running serially
+        args.device = args.device if hasattr(args, 'device') else uutils.torch_uu.get_device()
         model = model.to(args.device)
     return model
 

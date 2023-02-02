@@ -154,6 +154,8 @@ def _log_train_val_stats(args: Namespace,
 
 def log_zeroth_step(args: Namespace, model: Agent):
     batch: Any = next(iter(args.dataloaders['train']))
+    print_batch_debhg(batch)
+    # st()
     train_loss, train_acc = model(batch, training=True)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, 0, step_name, train_loss, train_acc)
@@ -307,3 +309,12 @@ def get_more_often_ckpting_filename(args,
                                     ) -> str:
     ckpt_filename: str = f'ckpt_{step_name}_{step}_train_loss_{train_loss:.3f}_train_acc_{train_acc:.3f}_val_loss_{val_loss:.3f}_val_acc_{val_acc:.3f}.pt'
     return ckpt_filename
+
+
+# - misc
+
+def print_batch_debhg(batch: Any):
+    if len(batch) == 2:
+        if hasattr(batch[0], 'shape'):
+            print(f'{batch[0].shape=}')
+    return

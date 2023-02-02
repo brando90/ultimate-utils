@@ -46,6 +46,16 @@ def show_n_does_or_doesnt_affect_p_value_for_t_test_test_():
     plt.axhline(y=0.05, color='r', linestyle='-')
     plt.show()
 
+    # import pandas as pd
+    # df = pd.DataFrame({'Num Filters': list(d.keys()), 'Num Params': list(d.values())})
+    # print(df)
+    # # - plot number of filters vs number of params title nums params vs num filters x labl num filters y label num params, using uutils
+    # import matplotlib.pyplot as plt
+    # from uutils.plot import plot
+    # plot(num_filters, num_params, title='Number of Parameters vs Number of Filters', xlabel='Number of Filters',
+    #      ylabel='Number of Parameters', marker='o', color='b')
+    # plt.axhline(y=1.4e6, color='r', linestyle='-', label='ResNet12RFS (num params)')
+
 
 if __name__ == '__main__':
     import time
