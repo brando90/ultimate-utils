@@ -187,7 +187,7 @@ def smart_logging_ckpt(args,
         if smart_logging_type == 'log_more_often_after_threshold_is_reached':
             log_more_often_after_threshold_is_reached(args, step, step_name, train_loss, train_acc, val_loss, val_acc,
                                                       ckpt_freq)
-        if smart_logging_type == 'log_more_often_after_convg_reached':
+        elif smart_logging_type == 'log_more_often_after_convg_reached':
             log_more_often_after_convg_reached(args, step, step_name, train_loss, train_acc, val_loss, val_acc,
                                                ckpt_freq)
         else:
