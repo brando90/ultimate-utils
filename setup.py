@@ -92,6 +92,8 @@ setup(
         'torchvision>=0.10.1',
         'torchaudio>=0.9.1',
         # 'torchtext',  # often gives issues so don't use it by default
+
+        'fairseq',
     ]
 )
 

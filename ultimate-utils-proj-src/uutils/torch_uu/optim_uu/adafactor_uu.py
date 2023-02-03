@@ -194,6 +194,9 @@ def get_default_adafactor_opt_fairseq_and_hps_dict(mdl: nn.Module,
                                                    ) -> tuple[Optimizer, dict]:
     """
     Get the optimizer and scheduler objects for the current model and the hyperparameters (hps) that created it.
+
+    note:
+        - set when "AdafactorDefaultFair" is on.
     """
     # - hps
     opt_hps: dict = dict(
