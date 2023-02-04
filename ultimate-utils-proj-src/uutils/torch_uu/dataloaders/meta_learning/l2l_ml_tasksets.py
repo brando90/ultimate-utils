@@ -155,6 +155,17 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
     )
+    elif args.data_option == 'hdb5_vggair':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.hdb5_vggair import hdb5_vggair_l2l_tasksets
+        args.tasksets: BenchmarkTasksets = hdb5_vggair_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
     else:
         raise ValueError(f'Invalid data option, got: {args.data_option}')
     return args.tasksets
