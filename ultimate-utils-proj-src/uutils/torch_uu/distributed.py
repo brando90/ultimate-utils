@@ -338,6 +338,7 @@ def init_process_group_l2l(args, local_rank, world_size, init_method=None, backe
 
 def cleanup(rank: int,
             clean_up_wand: bool = False,
+            args: Optional[Namespace] = None,
             ):
     """ Destroy a given process group, and deinitialize the distributed package """
     # only destroy the process distributed group if the code is not running serially
@@ -346,6 +347,7 @@ def cleanup(rank: int,
         dist.destroy_process_group()
     if clean_up_wand:
         # cleanup_wandb(args, delete_wandb_dir=True)
+        from uutils.logging_uu.wandb_logging.common import cleanup_wandb
         cleanup_wandb(args, delete_wandb_dir=False)
 
 

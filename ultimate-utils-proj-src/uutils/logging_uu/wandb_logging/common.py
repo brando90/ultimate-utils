@@ -59,18 +59,23 @@ def setup_wandb(args: Namespace):
         print_wanbd_run_info(args)
         # - save args in wandb
         wandb.config.update(args)
+        # - save wandb run url in args
+        print(f'{try_printing_wandb_url(args.log_to_wandb)=}')
+        args.wandb_run_url: str = try_printing_wandb_url(args.log_to_wandb)
+
 
 def print_wanbd_run_info(args: Namespace):
     try:
         args.wandb_run = wandb.run.dir
-        args.wanbd_run_url = wandb.run.get_url()
+        args.wandb_run_url = wandb.run.get_url()
         print(f'{wandb.run.dir=}')
         print(f'{args.wanbd_url=}')
     except Exception as e:
-        args.wandb_run = 'no wandb run path'
-        args.wanbd_run_url = 'no wandb run url'
+        args.wandb_run = 'no wandb run path (yet?)'
+        args.wandb_run_url = 'no wandb run url (yet?)'
         print(f'{wandb.run.dir=}')
-        print(f'{args.wanbd_run_url=}')
+        print(f'{args.wandb_run_url=}')
+
 
 def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
     """
@@ -87,6 +92,7 @@ def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
                 if hasattr(args, 'rank'):
                     remove_current_wandb_run_dir(call_wandb_finish=True)
                     # remove_wandb_root_dir(args) if delete_wandb_dir else None
+                print(f'{try_printing_wandb_url(args.log_to_wandb)=}')
             else:
                 remove_current_wandb_run_dir(call_wandb_finish=True)
                 # remove_wandb_root_dir(args) if delete_wandb_dir else None
@@ -171,10 +177,16 @@ def log_2_wanbd(it: int,
     try_printing_wandb_url(log_to_wandb=True)
 
 
-def try_printing_wandb_url(log_to_wandb: bool = False):
+def try_printing_wandb_url(log_to_wandb: bool = False) -> str:
+    """
+    Try to print the wandb url and return it as a string if it succeeds.
+    If it fails, return the error message as a string.
+    """
     if log_to_wandb:
         try:
             # print(f'{wandb.run.dir=}')
             print(f'{wandb.run.get_url()=}')
+            return str(wandb.run.get_url())
         except Exception as e:
             print(f'No wandb? error: {e=}')
+            return str(e)
