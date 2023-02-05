@@ -68,6 +68,11 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 34 + 64 + 1100, f'hdb4 expects more classes but got {args.model.cls.out_features=},' \
                                                                    f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'hdb5_vggair':
+        from uutils.torch_uu.dataloaders.usl.usl_vggair import hdb5_vggair_usl_all_splits_dataloaders
+        args.dataloaders: dict = hdb5_vggair_usl_all_splits_dataloaders(args)
+        assert args.model.cls.out_features == 34 + 71, f'hdb5 expects more classes but got {args.model.cls.out_features=},' \
+                                                       f'\nfor model {type(args.model)=}'
     elif 'mnist' in data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
@@ -90,6 +95,9 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = get_mds_loader(args)
         # assert args.model.cls.out_features == 3144
         # assert args.model.cls.out_features == 712 + 70 + 140 + 33 + 994 + 883 + 241 + 71
+    elif args.data_option == 'mds2': # Note - this is for alternative MDS loader. I didn't push it since it's very noisy :(
+        from diversity_src.dataloaders.mds_batch_tfloader import get_mds_batch_2
+        args.dataloaders: dict = get_mds_batch_2(args)
     elif 'l2l' in data_path:
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
