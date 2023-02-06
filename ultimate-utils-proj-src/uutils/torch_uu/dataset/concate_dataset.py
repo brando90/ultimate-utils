@@ -37,7 +37,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                  compare_imgs_directly: bool = False,
                  verify_xs_align: bool = False,
                  pickle_usl_relabling: bool = True,
-                 load_usl_relabels_from_file: bool = False,
                  root: Optional[Path] = Path('~/data/l2l_data/'),
                  relabel_filename: str = 'relabeling_data.pt',
                  ):
@@ -48,7 +47,6 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         compare_imgs_directly: adds the additional test that imgs compare at the PIL imgage level.
         """
         self.root = root
-        self.load_usl_relabels = load_usl_relabels_from_file
         self.pickle_usl_relabling = pickle_usl_relabling
         # more essental inits
         self.datasets = datasets
@@ -66,7 +64,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.img2tensor: Callable = torchvision.transforms.ToTensor()
         self.labels = None  # re-labaling not done yet
         # - do the relabeling
-        if load_usl_relabels_from_file:
+        if not self.need_to_relabel(root, relabel_filename):
             # load pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels, since relabling is expensive. I feel my relabling is dumb, but it works and not going back to improve it.
             self.get_relabeling_data_from_file_(root, relabel_filename)
         else:
@@ -253,6 +251,27 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         root: Path = root.expanduser()
         torch.save(relabeled_data, root / relabel_filename)
         print(f'-> Saving relabeling data to file {root / relabel_filename} Success!')
+
+    def need_to_relabel(self, root: Path, relabel_filename: str = 'relabeling_data.pt') -> bool:
+        # - load re-labling from file using torch.load
+        try:
+            root: Path = Path(root).expanduser()
+            relabeled_data: dict = torch.load(root / relabel_filename)
+            # - mutation assignments from ._re_label_all_dataset for consistency in case they are needed later for the correct function of this class
+            self.img2tensor: Callable = torchvision.transforms.ToTensor()
+            # - load relabeled data
+            self.labels = relabeled_data['labels']
+            self.labels_to_indices = relabeled_data['labels_to_indices']
+            self.indices_to_labels = relabeled_data['indices_to_labels']
+            if len(self.labels) == 0:
+                return True
+            if len(self.labels_to_indices.keys()) == 0:
+                return True
+            if len(self.indices_to_labels.keys()) == 0:
+                return True
+            return False
+        except Exception as e:
+            return True
 
 
 def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
