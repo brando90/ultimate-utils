@@ -37,11 +37,11 @@ def hdb4_micod_usl_all_splits_dataloaders(
                                                                                                          data_augmentation,
                                                                                                          device)
     # - print the number of classes in each split
-    print('-- Printing num classes')
-    from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
-    get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
-    get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
-    get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # print('-- Printing num classes')
+    # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     # - concat l2l datasets to get usl single dataset
     relabel_filename: str = 'hdb4_micod_train_relabel_usl.pt'
     train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
@@ -134,8 +134,9 @@ def loop_through_usl_hdb_and_pass_data_through_mdl():
             print(f'{y=}')
 
             y_pred = model(X)
-            loss = criterion(y_pred, y)
-            print(f'{loss=}')
+            print(f'{y_pred.size()=}')
+            # loss = criterion(y_pred, y)
+            # print(f'{loss=}')
             print()
             break
     print('-- end of test --')

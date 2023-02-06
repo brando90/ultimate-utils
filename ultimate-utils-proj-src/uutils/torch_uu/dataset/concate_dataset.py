@@ -10,7 +10,7 @@ import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from uutils import report_times, get_duplicates, expanduser
+from uutils import report_times, get_duplicates, expanduser, pprint_dict
 
 
 # int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
@@ -242,7 +242,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
         # - print number of classes
-        # num_classes_results: dict = relabeled_data['num_classes_results']
+        num_classes_results: dict = relabeled_data['num_classes_results']
+        pprint_dict(num_classes_results)
+        # for split, num_classes in num_classes_results.items():
+        #     print(f'-> {split} num classes: {num_classes=}')
         # - done
         print(f'-> Loading relabeling data from file {root / relabel_filename} Success!')
         return relabeled_data

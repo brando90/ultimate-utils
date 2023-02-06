@@ -20,11 +20,11 @@ def hdb5_vggair_usl_all_splits_dataloaders(
                                                                                                          data_augmentation,
                                                                                                          device)
     # - print the number of classes in each split
-    print('-- Printing num classes')
-    from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
-    get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
-    get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
-    get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # print('-- Printing num classes')
+    # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     # - concat l2l datasets to get usl single dataset
     train_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train)
     valid_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation)
