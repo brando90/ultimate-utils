@@ -9,12 +9,25 @@ from torch.utils.data import Dataset
 from uutils.torch_uu.dataset.concate_dataset import ConcatDatasetMutuallyExclusiveLabels
 
 
+# I know sort of ugly, but idk if it requires me to refactor a lot of code, for now this is good enough (and less confusing than not having it) todo fix later as the function bellow too
+def hdb1_mi_omniglot_usl_all_splits_dataloaders2(
+        args: Namespace,
+        root: str = '~/data/l2l_data/',
+        data_augmentation='hdb1',
+        device=None,
+) -> dict:
+    """ Get the usl data loaders for the hdb1_mio (Meta-L) dataset. """
+    from diversity_src.dataloaders.usl.hdb1_mi_omniglot_usl_dl import hdb1_mi_omniglot_usl_all_splits_dataloaders
+    return hdb1_mi_omniglot_usl_all_splits_dataloaders(args, root, data_augmentation, device)
+
+
 def hdb4_micod_usl_all_splits_dataloaders(
         args: Namespace,
         root: str = '~/data/l2l_data/',
         data_augmentation='hdb4_micod',
         device=None,
 ) -> dict:
+    """ Get the usl data loaders for the hdb4_micod (Meta-L) dataset. """
     print(f'----> {data_augmentation=}')
     print(f'{hdb4_micod_usl_all_splits_dataloaders=}')
     # root = os.path.expanduser(root)

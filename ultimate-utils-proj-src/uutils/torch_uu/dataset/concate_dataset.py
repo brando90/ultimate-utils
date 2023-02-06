@@ -241,6 +241,8 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                                                                                 f'\n {len(self.concat_datasets)=}'
         labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
+        # - print number of classes
+        # num_classes_results: dict = relabeled_data['num_classes_results']
         # - done
         print(f'-> Loading relabeling data from file {root / relabel_filename} Success!')
         return relabeled_data
@@ -249,7 +251,12 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                                      relabeled_data: dict,
                                      root: Union[Path, str],
                                      relabel_filename: str,
+                                     verbose_n_cls_datasets: bool = True,
                                      ) -> None:
+        # - also save num classes per split
+        from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        num_classes_results: dict = get_num_classes_l2l_list_meta_dataset(self.datasets, verbose=verbose_n_cls_datasets)
+        relabeled_data['num_classes_results'] = num_classes_results
         # - save relabeling data to pt file specified by relabel_filename and root using torch.save
         root: Path = expanduser(root)
         torch.save(relabeled_data, root / relabel_filename)
