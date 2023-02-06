@@ -36,8 +36,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
                  target_transform: Optional[Callable] = None,
                  compare_imgs_directly: bool = False,
                  verify_xs_align: bool = False,
-                 picke_usl_relabling: bool = False,
-                 load_usl_relabels: bool = False,
+                 pickle_usl_relabling: bool = True,
+                 load_usl_relabels_from_file: bool = False,
+                 root: Optional[Path] = Path('~/data/l2l_data/'),
+                 relabel_filename: str = 'relabeling_data.pt',
                  ):
         """
         Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
@@ -45,6 +47,10 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
 
         compare_imgs_directly: adds the additional test that imgs compare at the PIL imgage level.
         """
+        self.root = root
+        self.load_usl_relabels = load_usl_relabels_from_file
+        self.pickle_usl_relabling = pickle_usl_relabling
+        # more essental inits
         self.datasets = datasets
         self.transform = transform
         self.target_transform = target_transform
@@ -54,11 +60,19 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.labels_to_indices = defaultdict(list)
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
+        # other
+        self.compare_imgs_directly = compare_imgs_directly
+        self.verify_xs_align = verify_xs_align
+        self.img2tensor: Callable = torchvision.transforms.ToTensor()
+        self.labels = None  # re-labaling not done yet
         # - do the relabeling
-        self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align, picke_usl_relabling)
-        if load_usl_relabels:
-            # just pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels
-            raise NotImplementedError
+        if load_usl_relabels_from_file:
+            # load pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels, since relabling is expensive. I feel my relabling is dumb, but it works and not going back to improve it.
+            self.get_relabeling_data_from_file_(root, relabel_filename)
+        else:
+            self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align, pickle_usl_relabling, root,
+                                       relabel_filename)
+        print(f'Set up of ConcatDatasetMutuallyExclusiveLabels done. {self.__repr__()}, {self.__len__()}, {self}')
 
     def __len__(self):
         return len(self.concat_datasets)
@@ -66,7 +80,9 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     def _re_label_all_dataset(self, datasets: list[Dataset],
                               compare_imgs_directly: bool = False,
                               verify_xs_align: bool = False,
-                              picke_usl_relabling: bool = False,
+                              pickle_usl_relabling: bool = False,
+                              root: Optional[Path] = Path('~/data/l2l_data/'),
+                              relabel_filename: str = 'relabeling_data.pt',
                               ):
         """
         Relabels by treating all labels as unique/different. Thus, even if you have labels of cats on two data sets
@@ -174,10 +190,14 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.labels = range(total_num_labels_so_far)
         labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
-        if picke_usl_relabling:
-            # just pickle in the location of where the data is the array/maps global_idx <-> global_new_labels
-            raise NotImplementedError
         print(f'-> done data preprocessing for relabel... {self._re_label_all_dataset=}, took: {report_times(start)}')
+        # - save all the data to file
+        if pickle_usl_relabling:
+            relabeled_data: dict = dict()
+            relabeled_data['labels'] = labels
+            relabeled_data['labels_to_indices'] = self.labels_to_indices
+            relabeled_data['indices_to_labels'] = self.indices_to_labels
+            self.save_relabeling_data_to_file(relabeled_data, root, relabel_filename)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         """
@@ -204,6 +224,35 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         if self.target_transform is not None:
             y = self.target_transform(y)
         return x, y
+
+    def get_relabeling_data_from_file_(self, root: Path, relabel_filename: str = 'relabeling_data.pt') -> dict:
+        # - load re-labling from file using torch.load
+        root: Path = Path(root).expanduser()
+        relabeled_data: dict = torch.load(root / relabel_filename)
+        # - mutation assignments from ._re_label_all_dataset for consistency in case they are needed later for the correct function of this class
+        self.img2tensor: Callable = torchvision.transforms.ToTensor()
+        # - load relabeled data
+        self.labels = relabeled_data['labels']
+        self.labels_to_indices = relabeled_data['labels_to_indices']
+        self.indices_to_labels = relabeled_data['indices_to_labels']
+        # - asserts
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: ' \
+                                                                                f'\n{len(self.indices_to_labels.keys())=}' \
+                                                                                f'\n {len(self.concat_datasets)=}'
+        labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
+        assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
+        print(f'-> Loading relabeling data from file {root / relabel_filename} Success!')
+        return relabeled_data
+
+    def save_relabeling_data_to_file(self,
+                                     relabeled_data: dict,
+                                     root: Path,
+                                     relabel_filename: str = 'relabeling_data.pt',
+                                     ) -> None:
+        # - save relabeling data to pt file specified by relabel_filename and root using torch.save
+        root: Path = root.expanduser()
+        torch.save(relabeled_data, root / relabel_filename)
+        print(f'-> Saving relabeling data to file {root / relabel_filename} Success!')
 
 
 def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
