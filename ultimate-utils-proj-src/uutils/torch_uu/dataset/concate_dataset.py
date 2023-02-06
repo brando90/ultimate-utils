@@ -243,9 +243,7 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
         # - print number of classes
         num_classes_results: dict = relabeled_data['num_classes_results']
-        pprint_dict(num_classes_results)
-        # for split, num_classes in num_classes_results.items():
-        #     print(f'-> {split} num classes: {num_classes=}')
+        print(f'{num_classes_results=}')
         # - done
         print(f'-> Loading relabeling data from file {root / relabel_filename} Success!')
         return relabeled_data
