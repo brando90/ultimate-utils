@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import os
 from argparse import Namespace
 
+from uutils import expanduser
 from torch.utils.data import Dataset
 
 from uutils.torch_uu.dataset.concate_dataset import ConcatDatasetMutuallyExclusiveLabels
@@ -14,7 +17,8 @@ def hdb4_micod_usl_all_splits_dataloaders(
 ) -> dict:
     print(f'----> {data_augmentation=}')
     print(f'{hdb4_micod_usl_all_splits_dataloaders=}')
-    root = os.path.expanduser(root)
+    # root = os.path.expanduser(root)
+    root: Path = expanduser(root)
     from diversity_src.dataloaders.hdb4_micod_l2l import get_hdb4_micod_list_data_set_splits
     dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb4_micod_list_data_set_splits(root,
                                                                                                          data_augmentation,
@@ -26,9 +30,12 @@ def hdb4_micod_usl_all_splits_dataloaders(
     get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     # - concat l2l datasets to get usl single dataset
-    train_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train)
-    valid_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation)
-    test_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test)
+    relabel_filename: str = 'hdb4_micod_train_relabel_usl.pt'
+    train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+    relabel_filename: str = 'hdb4_micod_val_relabel_usl.pt'
+    valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+    relabel_filename: str = 'hdb4_micod_test_relabel_usl.pt'
+    test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
     assert len(train_dataset.labels) == 64 + 34 + 64 + 1100, f'Err:\n{len(train_dataset.labels)=}'
     # - get data loaders, see the usual data loader you use
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
@@ -93,8 +100,12 @@ def loop_through_usl_hdb_and_pass_data_through_mdl():
     device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
     # model = get_model('resnet18', pretrained=False, num_classes=n_train_cls).to(device)
     # model = get_model('resnet18', pretrained=True, num_classes=n_train_cls).to(device)
-    from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
-    model, _ = get_resnet_rfs_model_mi('resnet12_rfs', num_classes=n_train_cls)
+    # from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
+    # model, _ = get_resnet_rfs_model_mi('resnet12_rfs', num_classes=n_train_cls)
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+    args.model, args.model_hps = get_default_learner_and_hps_dict()
+    # - get model
+    model = args.model
     model.to(device)
     from torch import nn
     criterion = nn.CrossEntropyLoss()
