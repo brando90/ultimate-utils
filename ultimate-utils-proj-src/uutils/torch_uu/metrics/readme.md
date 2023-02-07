@@ -79,3 +79,23 @@
     standardized_norm_complexity = standardized_norm_complexity(embeddings)
     print(f'Standardized Norm Complexity: {standardized_norm_complexity=}')
 ```
+
+## Citations
+
+If you use this implementation consider citing us:
+```
+@article{Miranda2022,
+   author = {Brando Miranda and Patrick Yu and Yu-Xiong Wang and Sanmi Koyejo},
+   doi = {10.48550/arxiv.2208.01545},
+   month = {8},
+   title = {The Curse of Low Task Diversity: On the Failure of Transfer Learning to Outperform MAML and Their Empirical Equivalence},
+   url = {https://arxiv.org/abs/2208.01545v1},
+   year = {2022},
+}
+```
+url: https://arxiv.org/abs/2208.01545.
+
+```
+Coming soon, LLMs.
+```
+url: coming soon. 
