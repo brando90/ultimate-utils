@@ -2,7 +2,6 @@ from argparse import Namespace
 from torch.nn import Module
 from typing import Optional
 
-#from diversity_src.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
 from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
 
 def get_probe_network(args: Namespace,
@@ -17,7 +16,6 @@ def get_probe_network(args: Namespace,
     :param model_option:
     :return:
     """
-    #from diversity_src.diversity.task2vec_based_metrics.models import get_model
     from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.models import get_model
 
     # print(f'{get_model=}')
@@ -56,8 +54,6 @@ def get_probe_network(args: Namespace,
 # tests
 
 def get_model_test():
-    from diversity_src.diversity.task2vec_based_metrics.models import get_model
-
     print(f'{get_model=}')
     probe_network: ProbeNetwork = get_model('resnet18', pretrained=True, num_classes=5)
     print(probe_network)

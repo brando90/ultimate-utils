@@ -67,8 +67,6 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 from torch import nn, Tensor
 from torch.utils.data import Dataset, DataLoader
 
-#import diversity_src.diversity.task2vec_based_metrics.task2vec as task2vec
-#import diversity_src.diversity.task2vec_based_metrics.task_similarity as task_similarity
 import uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec as task2vec
 import uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task_similarity as task_similarity
 
@@ -76,8 +74,6 @@ import uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task_similarity 
 # from models import get_model
 # from task2vec import Embedding, Task2Vec, ProbeNetwork
 
-#from diversity_src.diversity.task2vec_based_metrics.models import get_model
-#from diversity_src.diversity.task2vec_based_metrics.task2vec import Embedding, Task2Vec, ProbeNetwork
 from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.models import get_model
 from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import Embedding, Task2Vec, ProbeNetwork
 

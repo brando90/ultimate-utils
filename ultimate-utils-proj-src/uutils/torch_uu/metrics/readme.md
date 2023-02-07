@@ -76,6 +76,6 @@
     print(f'Total Complexity: {complexity_tot=}')
     complexity_avg, complexity_ci = avg_norm_complexity(all_complexities)
     print(f'Average Complexity: {(complexity_avg, complexity_ci)=}')
-    standardized_norm_complexity = standardized_norm_complexity(all_complexities)
+    standardized_norm_complexity = standardized_norm_complexity(embeddings)
     print(f'Standardized Norm Complexity: {standardized_norm_complexity=}')
 ```

@@ -18,6 +18,7 @@ def create_default_log_root(args: Namespace):
     """
     Create the default place where we save things to.
     """
+    import random
     # - make sure prefix $HOME/data/logs/ is in args.log_root Path
     print(f'{args.log_root=}')
     assert 'jobid' not in str(args.log_root), f"jobid should not be in log_root but it is in it {args.log_root=}"
@@ -28,6 +29,8 @@ def create_default_log_root(args: Namespace):
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
     # wandb_str helps to identify which wandb runs are more likely to be important (since they used wandb)
     wandb_str: str = f'_wandb_{args.log_to_wandb}' if hasattr(args, 'log_to_wandb') else 'code_without_wandb'
+    args.PID = str(os.getpid()) if not hasattr(args, 'PID') else args.PID
+    args.jobid: int = random.randint(0, 50000) if not hasattr(args, 'jobid') else args.jobid
     args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}_pid_{args.PID}{wandb_str}'
     args.log_root.mkdir(parents=True, exist_ok=True)
     print(f'{args.log_root=}')
@@ -136,6 +139,15 @@ def setup_args_for_experiment(args: Namespace,
     args.master_port = find_free_port()
     # note, currently the true distributed args are set up in the main train file/func todo: perhaps move here? might have to make cases, one for ddp, pytorch mp, one serial, one l2l...worth it?
 
+    # - get cluster info (including hostname)
+    load_cluster_jobids_to(args)
+
+    # - save PID
+    args.PID = str(os.getpid())
+    print(f'{args.PID=}')
+    if torch.cuda.is_available():
+        args.nccl = torch.cuda.nccl.version()
+
     # - determinism?
     print(f'Original seed from args: {args.seed=}')
     if hasattr(args, 'always_use_deterministic_algorithms'):
@@ -159,15 +171,6 @@ def setup_args_for_experiment(args: Namespace,
     from uutils.torch_uu.distributed import set_devices
     set_devices(args)  # args.device = rank or .device
     print(f'device: {args.device}')
-
-    # - get cluster info (including hostname)
-    load_cluster_jobids_to(args)
-
-    # - save PID
-    args.PID = str(os.getpid())
-    print(f'{args.PID=}')
-    if torch.cuda.is_available():
-        args.nccl = torch.cuda.nccl.version()
 
     # - get device name if possible
     try:

@@ -515,7 +515,7 @@ def get_standardized_diversity_coffecient_from_embeddings(embeddings: list[task2
 
 def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix: np.ndarray,
                                                                              ddof: int = 1,
-                                                                             ) -> tuple[float, float]:
+                                                                             ) -> float:
     """
     Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
     across benchmarks.

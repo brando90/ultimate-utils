@@ -25,14 +25,11 @@ from uutils.torch_uu.metrics.diversity.task2vec_based_metrics import task2vec, t
 
 # - returns list of all task complexities.
 def get_task_complexities(embeddings: list[task2vec.Embedding], p: int = 1) -> list[float]:
-    all_complexities = []
-
+    all_complexities: list[float] = []
     for embedding in embeddings:
         embedding_hessian = np.array(embedding.hessian)
         embedding_norm = norm(embedding_hessian, ord=p)
-
         all_complexities += [embedding_norm]
-
     return all_complexities
 
 
