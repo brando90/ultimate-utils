@@ -3,6 +3,7 @@
 ## Computing diversity tutorial (using batch & (support, queary) sets)
 
 ```
+    # see test_tutorial in diversity test_tutorial
     # - random data (plug in your pytorch data loader!)
     import torch
     import random
