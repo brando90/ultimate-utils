@@ -3,8 +3,7 @@
 ## Computing diversity tutorial (using batch & (support, queary) sets)
 
 ```
-    # see test_tutorial in diversity test_tutorial
-    # - random data (plug in your pytorch data loader!)
+    # -- get your data!
     import torch
     import random
 
@@ -20,10 +19,11 @@
         def __len__(self):
             return self.num_samples
 
-    args = Namespace()
+    args = Namespace(batch_size=32)
     args.classifier_opts = None
     dataset = RandomDataset(100)  # 100 samples
-    args.dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=0)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    args.dataloaders = {'train': dataloader, 'val': dataloader, 'test': dataloader}
     args.probe_network = nn.Linear(1, 1)
     split = 'train'
 
