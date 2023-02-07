@@ -190,6 +190,10 @@ def setup_args_for_experiment(args: Namespace,
     # - get my logger, its set at the agent level
     args.logger: uuLogger = uutils.logger.Logger(args)
 
+    # - get log_root
+    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
+    create_default_log_root(args)
+
     # - best val loss
     args.best_val_loss: float = float('inf')
 
@@ -231,9 +235,6 @@ def setup_args_for_experiment(args: Namespace,
         stanford_reauth()
         print(f'finished calling stanford reauth inside python')
 
-    # - get log_root
-    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-    create_default_log_root(args)
     # create tb in log_root
     if use_tb:
         from torch.utils.tensorboard import SummaryWriter
