@@ -246,6 +246,7 @@ def plot_distance_matrix_from_distance_matrix(distance_matrix: np.ndarray, label
 def stats_of_distance_matrix(distance_matrix: np.ndarray,
                              remove_diagonal: bool = True,
                              variance_type: str = 'ci_0.95',
+                             ddof: int = 1,
                              ) -> tuple[float, float]:
     if remove_diagonal:
         from uutils.numpy_uu.common import get_diagonal
@@ -255,7 +256,7 @@ def stats_of_distance_matrix(distance_matrix: np.ndarray,
 
     # - compute stats of distance matrix
     if variance_type == 'std':
-        mu, var = flatten.mean(), flatten.std()
+        mu, var = flatten.mean(), flatten.std(ddof)
     elif variance_type == 'ci_0.95':
         from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
         mu, var = mean_confidence_interval(flatten, confidence=0.95)

@@ -53,6 +53,7 @@ from torch import Tensor, nn
 from uutils.torch_uu import tensorify, process_meta_batch
 from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import get_miniimagenet_dataloaders_torchmeta, \
     get_minimum_args_for_torchmeta_mini_imagenet_dataloader
+from uutils.torch_uu.metrics.diversity.task2vec_based_metrics import task2vec, task_similarity
 from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner, \
     get_feature_extractor_conv_layers, get_last_two_layers
 
@@ -126,22 +127,26 @@ def get_list_tasks_tuples(B1: int, B2: int,
     return list_task_index_pairs
 
 
-def get_all_required_distances_for_pairs_of_tasks(f1: nn.Module, f2: nn.Module,
-                                                  X1: Tensor, X2: Tensor,
-                                                  layer_names1: list[str], layer_names2: list[str],
-                                                  metric_comparison_type: str = 'pwcca',
-                                                  iters: int = 1,
-                                                  effective_neuron_type: str = 'filter',
-                                                  downsample_method: Optional[str] = None,
-                                                  downsample_size: Optional[int] = None,
-                                                  subsample_effective_num_data_method: Optional[str] = None,
-                                                  subsample_effective_num_data_param: Optional[int] = None,
-                                                  metric_as_sim_or_dist: str = 'dist',
-                                                  force_cpu: bool = False,
+# not recommended, legacy
+def get_all_required_distances_for_pairs_of_tasks_using_cca_like_metrics(f1: nn.Module, f2: nn.Module,
+                                                                         X1: Tensor, X2: Tensor,
+                                                                         layer_names1: list[str],
+                                                                         layer_names2: list[str],
+                                                                         metric_comparison_type: str = 'pwcca',
+                                                                         iters: int = 1,
+                                                                         effective_neuron_type: str = 'filter',
+                                                                         downsample_method: Optional[str] = None,
+                                                                         downsample_size: Optional[int] = None,
+                                                                         subsample_effective_num_data_method: Optional[
+                                                                             str] = None,
+                                                                         subsample_effective_num_data_param: Optional[
+                                                                             int] = None,
+                                                                         metric_as_sim_or_dist: str = 'dist',
+                                                                         force_cpu: bool = False,
 
-                                                  num_tasks_to_consider: int = 25,
-                                                  consider_diagonal: bool = False
-                                                  ) -> list[OrderedDict[str, float]]:
+                                                                         num_tasks_to_consider: int = 25,
+                                                                         consider_diagonal: bool = False
+                                                                         ) -> list[OrderedDict[str, float]]:
     # ) -> list[OrderedDict[LayerIdentifier, float]]:
     """
     [L] x [B, n*k, C,H,W]^2 -> [L] x [B', n*k, C,H,W] -> [B', L]
@@ -224,22 +229,23 @@ def get_all_required_distances_for_pairs_of_tasks(f1: nn.Module, f2: nn.Module,
     return distances_for_task_pairs
 
 
-def diversity(f1: nn.Module, f2: nn.Module,
-              X1: Tensor, X2: Tensor,
-              layer_names1: list[str], layer_names2: list[str],
-              metric_comparison_type: str = 'pwcca',
-              iters: int = 1,
-              effective_neuron_type: str = 'filter',
-              downsample_method: Optional[str] = None,
-              downsample_size: Optional[int] = None,
-              subsample_effective_num_data_method: Optional[str] = None,
-              subsample_effective_num_data_param: Optional[int] = None,
-              metric_as_sim_or_dist: str = 'dist',
-              force_cpu: bool = False,
+# legacy, not recommended
+def diversity_using_cca_like_metrics(f1: nn.Module, f2: nn.Module,
+                                     X1: Tensor, X2: Tensor,
+                                     layer_names1: list[str], layer_names2: list[str],
+                                     metric_comparison_type: str = 'pwcca',
+                                     iters: int = 1,
+                                     effective_neuron_type: str = 'filter',
+                                     downsample_method: Optional[str] = None,
+                                     downsample_size: Optional[int] = None,
+                                     subsample_effective_num_data_method: Optional[str] = None,
+                                     subsample_effective_num_data_param: Optional[int] = None,
+                                     metric_as_sim_or_dist: str = 'dist',
+                                     force_cpu: bool = False,
 
-              num_tasks_to_consider: int = 25,
-              consider_diagonal: bool = False
-              ) -> tuple[OrderedDict, OrderedDict, list[OrderedDict[str, float]]]:
+                                     num_tasks_to_consider: int = 25,
+                                     consider_diagonal: bool = False
+                                     ) -> tuple[OrderedDict, OrderedDict, list[OrderedDict[str, float]]]:
     # ) -> tuple[OrderedDict, OrderedDict, list[OrderedDict[LayerIdentifier, float]]]:
     """
     Div computes as follows:
@@ -305,8 +311,8 @@ def diversity(f1: nn.Module, f2: nn.Module,
 #     mu, std = distances_for_task_pairs.mean(), distances_for_task_pairs.std()
 #     return mu, std
 
-
-def compute_diversity_fixed_probe_net(args, meta_dataloader):
+# legacy, not recommended
+def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
     """
     Compute diversity: sample one batch of tasks and use a random cross product of different tasks to compute diversity.
 
@@ -337,7 +343,7 @@ def compute_diversity_fixed_probe_net(args, meta_dataloader):
     # assert they are the same model (e.g. compute if the norm is equal, actually, just check they are the same obj before doing deepcopy)
     assert args.metric_as_sim_or_dist == 'dist', f'Diversity is the expected variation/distance of task, ' \
                                                  f'so you need dist but got {args.metric_as_sim_or_dist=}'
-    div_mu, div_ci, distances_for_task_pairs = diversity(
+    div_mu, div_ci, distances_for_task_pairs = diversity_using_cca_like_metrics(
         f1=f1, f2=f2, X1=qry_x, X2=qry_x,
         layer_names1=args.layer_names, layer_names2=args.layer_names,
         num_tasks_to_consider=args.num_tasks_to_consider,
@@ -425,6 +431,78 @@ def size_aware_div_coef_discrete_histogram_based(distances_as_flat_array: np.arr
     return effective_num_tasks, size_aware_div_coef, total_frequency, task2vec_dists_binned, frequencies_binned, num_bars_in_histogram, num_bins
 
 
+# - task2vec diversity
+
+def get_task2vec_diversity_coefficient_from_embeddings(embeddings: list[task2vec.Embedding]) -> tuple[float, float]:
+    """
+    Algorithm sketch:
+        - given a list of B tasks e.g. as batches or (spt,qrt) list
+        - embed each task using task2vec ~ using fisher information matrix by fine tuning a fixed prob net on the task
+        - compute the pairwise cosine distance between each task embedding
+        - div, ci = compute the diversity coefficient for the benchmark & confidence interval (ci)
+        - return div, ci
+
+    # - get your data
+    embeddings: list[task2vec.Embedding] = get_random_data_todo()
+
+    # - compute distance matrix & task2vec based diversity, to demo` task2vec, this code computes pair-wise distance between task embeddings
+    distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
+    print(f'{distance_matrix=}')
+    distances_as_flat_array, _, _ = get_diagonal(distance_matrix, check_if_symmetric=True)
+
+    # - compute div
+    div_tot = float(distances_as_flat_array.sum())
+    print(f'Diversity: {div_tot=}')
+    div, ci = get_task2vec_diversity_coefficient_from_pair_wise_comparison_of_tasks(distance_matrix)
+    print(f'Diversity: {(div, ci)=}')
+    standardized_div: float = get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix)
+    print(f'Standardised Diversity: {standardized_div=}')
+    """
+    distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
+    div, ci = task_similarity.stats_of_distance_matrix(distance_matrix)
+    print(f'Diversity: {(div, ci)=}')
+    return div, ci
+
+
+def get_task2vec_diversity_coefficient_from_pair_wise_comparison_of_tasks(distance_matrix: np.ndarray,
+                                                                          ) -> tuple[float, float]:
+    """
+    See docs for: get_task2vec_diversity_coefficient_from_embeddings (avoid copy paste of comments, only maintain 1 comment)
+    """
+    div, ci = task_similarity.stats_of_distance_matrix(distance_matrix)
+    print(f'Diversity: {(div, ci)=}')
+    return div, ci
+
+
+def get_standardized_diversity_coffecient_from_embeddings(embeddings: list[task2vec.Embedding],
+                                                          ddof: int = 1,
+                                                          ) -> tuple[float, float]:
+    """
+    Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
+    across benchmarks.
+
+    standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
+    """
+    distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
+    div, unbiased_std = task_similarity.stats_of_distance_matrix(distance_matrix, variance_type='std', ddof=ddof)
+    standardized_div: float = div / unbiased_std
+    return standardized_div
+
+
+def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix: np.ndarray,
+                                                                             ddof: int = 1,
+                                                                             ) -> tuple[float, float]:
+    """
+    Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
+    across benchmarks.
+
+    standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
+    """
+    div, unbiased_std = task_similarity.stats_of_distance_matrix(distance_matrix, variance_type='std', ddof=ddof)
+    standardized_div: float = div / unbiased_std
+    return standardized_div
+
+
 # - tests
 
 def compute_div_example1_test():
@@ -462,8 +540,10 @@ def compute_size_aware_div_test_go():
     results = size_aware_div_coef_discrete_histogram_based(distances_as_flat_array=np.random.rand(1000), verbose=True)
     print(f'{results=}')
     distances_as_flat_array = np.random.rand(1000)
-    effective_num_tasks, size_aware_div_coef, total_frequency, task2vec_dists_binned, frequencies_binned, num_bars_in_histogram, num_bins = size_aware_div_coef_discrete_histogram_based(distances_as_flat_array, verbose=True)
-    print(f'{(effective_num_tasks, size_aware_div_coef, total_frequency, task2vec_dists_binned, frequencies_binned, num_bars_in_histogram, num_bins)=}')
+    effective_num_tasks, size_aware_div_coef, total_frequency, task2vec_dists_binned, frequencies_binned, num_bars_in_histogram, num_bins = size_aware_div_coef_discrete_histogram_based(
+        distances_as_flat_array, verbose=True)
+    print(
+        f'{(effective_num_tasks, size_aware_div_coef, total_frequency, task2vec_dists_binned, frequencies_binned, num_bars_in_histogram, num_bins)=}')
     # - plot the histogram
     import matplotlib.pyplot as plt
     plt.show()
