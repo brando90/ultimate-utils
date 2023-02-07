@@ -12,6 +12,7 @@
     distances_as_flat_array, _, _ = get_diagonal(distance_matrix, check_if_symmetric=True)
     
     # - compute div
+        from uutils.torch_uu.metrics.diversity.diversity import get_task2vec_diversity_coefficient_from_pair_wise_comparison_of_tasks, get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks
     div_tot = float(distances_as_flat_array.sum())
     print(f'Diversity: {div_tot=}')
     div, ci = get_task2vec_diversity_coefficient_from_pair_wise_comparison_of_tasks(distance_matrix)
