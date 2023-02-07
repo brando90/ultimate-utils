@@ -1,4 +1,4 @@
-# Computing metrics
+# Computing metrics & Tutorials
 
 ## Computing diversity tutorial (using batch & (support, queary) sets)
 
