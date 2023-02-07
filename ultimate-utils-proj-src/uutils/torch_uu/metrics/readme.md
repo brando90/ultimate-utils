@@ -3,15 +3,15 @@
 ## Computing diversity tutorial (using batch & (support, queary) sets)
 
 ```
-    # - get your data
+    # - use your dat aloader to get task2vec embeddings
     print(f'{args.dataloaders=}')
     embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_dataloader(args,
-                                                                                            args.dataloaders,
-                                                                                            args.probe_network,
-                                                                                            num_tasks_to_consider=args.batch_size,
-                                                                                            split=split,
-                                                                                            classifier_opts=args.classifier_opts,
-                                                                                            )
+                                                                                    args.dataloaders,
+                                                                                    args.probe_network,
+                                                                                    num_tasks_to_consider=args.batch_size,
+                                                                                    split=split,
+                                                                                    classifier_opts=args.classifier_opts,
+                                                                                    )
 
     # - compute distance matrix & task2vec based diversity, to demo` task2vec, this code computes pair-wise distance between task embeddings
     distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
@@ -27,7 +27,6 @@
     standardized_div: float = get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix)
     print(f'Standardised Diversity: {standardized_div=}')
 ```
-todo: make it run on random data. 
 
 ## Computing complexity tutorial (using batch & (support, queary) sets)
 
