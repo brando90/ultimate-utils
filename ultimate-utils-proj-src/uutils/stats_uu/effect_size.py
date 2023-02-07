@@ -190,6 +190,12 @@ def stat_test_with_effect_size_as_emphasis(group1: iter,
                                            alternative: str = 'all_three',
                                            equal_var: bool = False,
                                            ):
+    """
+    Cohen's d (effect size) computes normalized distance between two means accoridng to equation:
+        d = (mu1 - mu2) / pool(std1, std2)
+    thus, group1's mean is done first then the second group's mean is ued to calculate the effect size.
+    In case the sign matter.
+    """
     print(f"----- doing stats analyssis with effect size as emphasis {stat_test_with_effect_size_as_emphasis=} -----")
     import numpy as np
     # - print groups data

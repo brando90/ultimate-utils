@@ -33,13 +33,16 @@ def compute_generalization_gap(train_metrics: list[float],
     # - compute generalization gap
     train_metric: float = np.mean(train_metrics)
     test_metric: float = np.mean(test_metrics)
+    # test_acc - train_acc should < 0, test_loss - train_loss should > 0
     gen_gap: float = test_metric - train_metric
     if metric_name == 'acc':
         # gen gap using acc test acc - train acc should < 0 since test acc should be worse (lower) than train acc for sufficiently large N
-        logging.warning(f'Gen gap using acc should be {gen_gap=}')
+        if gen_gap > 0:
+            logging.warning(f'Gen gap using acc should be negative, but got: {gen_gap=}')
     elif metric_name == 'loss':
         # gen gap using loss test loss - train loss should > 0 since test loss should be worse (higher) than train loss for sufficiently large N
-        logging.warning(f'Gen gap using loss should be {gen_gap=}')
+        if gen_gap < 0:
+            logging.warning(f'Gen gap using loss should be positive: {gen_gap=}')
     return gen_gap
 
 
