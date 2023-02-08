@@ -9,6 +9,7 @@ import wandb
 
 
 def setup_wandb(args: Namespace):
+    args.wandb_run_url = None
     if args.log_to_wandb:
         # os.environ['WANDB_MODE'] = 'offline'
         import wandb

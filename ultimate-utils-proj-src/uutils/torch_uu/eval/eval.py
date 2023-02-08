@@ -12,6 +12,7 @@ from torch import Tensor, tensor
 
 from uutils.torch_uu.agents.common import Agent
 
+
 # -- get loss & acc
 
 def eval_sl(args: Namespace,
@@ -33,16 +34,11 @@ def eval_sl(args: Namespace,
         from 1 batch - since we are estimating the mean loss from the eval set.
     """
     # todo: maybe some day, just get the losses, accs then take the mean & ci here.
-    if isinstance(dataloaders, dict):
-        batch: Any = next(iter(dataloaders[split]))
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training)
-    else:
-        # hack for l2l
-        from learn2learn.data import TaskDataset
-        split: str = 'validation' if split == 'val' else split
-        task_dataset: TaskDataset = getattr(args.tasksets, split)
-        val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
-    return val_loss, val_loss_ci, val_acc, val_acc_ci
+    losses, accs = get_sl_eval_lists_accs_losses(args, model, dataloaders, split, training)
+    from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
+    loss, loss_ci = mean_confidence_interval(losses)
+    acc, acc_ci = mean_confidence_interval(accs)
+    return loss, loss_ci, acc, acc_ci
 
 
 def meta_eval(args: Namespace,
@@ -73,7 +69,7 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
                                     split: str = 'val',
                                     training: bool = True,
                                     # True to avoid different tasks: https://stats.stackexchange.com/a/551153/28986
-                                    ) -> type[list[float], list[float]]:
+                                    ) -> tuple[list[float], list[float]]:
     """
     Get list of accuracies and losses for all task in a batch from the dataloader.
 
@@ -118,6 +114,32 @@ def get_meta_eval_lists_accs_losses(args: Namespace,
                          f'dict or something else (perhaps train, val, test loader type objects).')
     # -- return
     return meta_losses, meta_accs
+
+
+def get_sl_eval_lists_accs_losses(args: Namespace,
+                                  model: Agent,
+                                  dataloaders,
+                                  split: str = 'val',
+                                  training: bool = False,
+                                  as_list_floats: bool = False,
+                                  ) -> tuple[iter, iter]:
+    if isinstance(dataloaders, dict):
+        batch: Any = next(iter(dataloaders[split]))
+        # - return losses/accs as a tensor ~ [B, D1, ...]
+        losses, accs = model.get_lists_accs_losses(batch, training, as_list_floats=as_list_floats)
+        # - assert to display what should be happening
+        # batch_x, batch_y = process_batch_ddp(args, batch)
+        # B: int = batch_x.size(0)
+        # assert loss.size() == torch.Size([B])
+        # assert acc.size() == torch.Size([B])
+    else:
+        # hack for l2l
+        from learn2learn.data import TaskDataset
+        split: str = 'validation' if split == 'val' else split
+        task_dataset: TaskDataset = getattr(args.tasksets, split)
+        # val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
+        raise NotImplementedError  # idk what sl for task2vec means, what data do I get? do I just sample it, then make sure it's a tensor and make sure SL agent does the right thing?
+    return losses, accs
 
 
 # -- some extra rfs code

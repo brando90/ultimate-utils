@@ -39,15 +39,21 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 
 
 def get_sl_dataloader(args: Namespace) -> dict:
+    # - set world size if not existing
+    args.world_size = 1 if not hasattr(args, 'world_size') else args.world_size
+    # - set args.data_option to None if not set, likely we are inferring sl loader from data_path
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
+    # - print data gumentation if it has been set
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
+    # - set data_path for legacy reasons/not crash code
     if hasattr(args, 'data_path'):
         args.data_path.expanduser() if isinstance(args.data_path, Path) else args.data_path
-        data_path: str = str(args.data_path)
+        args.data_path: str = str(args.data_path)
     else:
-        args.data_path = ''
+        args.data_path = None  # trying to access it when not there leads to errors so not there != setting to None
+    # - get sl data loader based on args.data_option
     if args.data_option == 'n_way_gaussians_sl':  # next 3 lines added by Patrick 4/26/22. Everything else shouldn't have changed
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import \
             get_train_valid_test_data_loader_1d_gaussian
@@ -73,20 +79,20 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = hdb5_vggair_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 34 + 71, f'hdb5 expects more classes but got {args.model.cls.out_features=},' \
                                                        f'\nfor model {type(args.model)=}'
-    elif 'mnist' in data_path:
+    elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
         assert args.n_cls == 10
-    elif 'cifar10' in data_path:
+    elif 'cifar10' in args.data_path:
         raise NotImplementedError
-    elif data_path == 'cifar100':
+    elif args.data_path == 'cifar100':
         from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_test_data_loader_helper_for_cifar100
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
         assert args.n_cls == 100
-    elif 'CIFAR-FS' in data_path:
+    elif 'CIFAR-FS' in args.data_path:
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
         args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
-    elif 'miniImageNet_rfs' in data_path:
+    elif 'miniImageNet_rfs' in args.data_path:
         from uutils.torch_uu.dataloaders.miniimagenet_rfs import get_train_valid_test_data_loader_miniimagenet_rfs
         args.dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
     elif args.data_option == 'mds':
@@ -95,15 +101,18 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.dataloaders: dict = get_mds_loader(args)
         # assert args.model.cls.out_features == 3144
         # assert args.model.cls.out_features == 712 + 70 + 140 + 33 + 994 + 883 + 241 + 71
-    elif args.data_option == 'mds2': # Note - this is for alternative MDS loader. I didn't push it since it's very noisy :(
-        from diversity_src.dataloaders.mds_batch_tfloader import get_mds_batch_2
-        args.dataloaders: dict = get_mds_batch_2(args)
-    elif 'l2l' in data_path:
+    elif args.data_option == 'mds2':  # Note - this is for alternative MDS loader. I didn't push it since it's very noisy :(
+        # todo: looks buggy, what is mds2? :/ doesn't mean anything. Commeting out until this is clearer + the import fails
+        # from diversity_src.dataloaders.mds_batch_tfloader import get_mds_batch_2
+        # args.dataloaders: dict = get_mds_batch_2(args)
+        raise NotImplementedError
+    elif 'l2l' in args.data_path:
+        # todo: why aren't there raw l2l -> usl conversions? besides cifar?
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
             args.dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
         else:
-            raise ValueError(f'Invalid data set: got {data_path=} or wrong data option: {args.data_option}')
+            raise ValueError(f'Invalid data set: got {args.data_path=} or wrong data option: {args.data_option}')
     else:
-        raise ValueError(f'Invalid data set: got {data_path=}')
+        raise ValueError(f'Invalid data set: got {args.data_path=}')
     return args.dataloaders

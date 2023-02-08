@@ -69,7 +69,10 @@ class ClassificationSLAgent(Agent):
             eval_acc_mean, eval_acc_ci = torch_compute_confidence_interval(acc)
         return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci
 
-    def get_lists_accs_losses(self, batch: Tensor, training: bool, as_list_floats: bool = False) -> tuple[iter, iter]:
+    def get_lists_accs_losses(self, batch: Tensor,
+                              training: bool,
+                              as_list_floats: bool = False,
+                              ) -> tuple[iter, iter]:
         """
         Note:
             - train doesn't need this but eval does. Also, it could be useful to get lists to do other analysis with them if needed.
