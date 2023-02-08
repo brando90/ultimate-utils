@@ -39,10 +39,13 @@ Example use:
     - X1, X2 = sort them such that the classes are sorted
     - pass them to distance matrix and compute div
 """
+from pathlib import Path
+
 from argparse import Namespace
 from collections import OrderedDict
 import random
 from pprint import pprint
+from torch.utils.data import Dataset
 from typing import Optional
 
 import numpy as np
@@ -54,6 +57,7 @@ from uutils.torch_uu import tensorify, process_meta_batch
 from uutils.torch_uu.dataloaders.meta_learning.torchmeta_ml_dataloaders import get_miniimagenet_dataloaders_torchmeta, \
     get_minimum_args_for_torchmeta_mini_imagenet_dataloader
 from uutils.torch_uu.metrics.diversity.task2vec_based_metrics import task2vec, task_similarity
+from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import ProbeNetwork, Task2Vec
 from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner, \
     get_feature_extractor_conv_layers, get_last_two_layers
 
@@ -61,6 +65,60 @@ from pdb import set_trace as st
 
 
 # get_distances_for_task_pair = dist_data_set_per_layer
+
+class FSLTaskDataSet(Dataset):
+
+    def __init__(self,
+                 spt_x: Tensor,
+                 spt_y: Tensor,
+                 qry_x: Tensor,
+                 qry_y: Tensor,
+
+                 few_shot_split: str = 'qry',
+                 ):
+        """
+        Note:
+            - size of tensors are [M, C, H, W] but remember it comes from a batch of
+            tasks of size [B, M, C, H, W]
+        """
+        self.spt_x, self.spt_y, self.qry_x, self.qry_y = spt_x, spt_y, qry_x, qry_y
+        self.few_shot_split = few_shot_split
+        # - weird hack, since task2vec code get_loader does labels = list(trainset.tensors[1].cpu().numpy())
+        if self.few_shot_split == 'spt':
+            self.tensors = (spt_x, spt_y)
+        elif self.few_shot_split == 'qry':
+            self.tensors = (qry_x, qry_y)
+        else:
+            raise ValueError(f'Error needs to be spt or qrt but got {self.few_shot_split}')
+
+    def __len__(self):
+        # TODO
+        if self.few_shot_split == 'spt':
+            return self.spt_x.size(0)  # not 1 since we gave it a single task
+        elif self.few_shot_split == 'qry':
+            return self.qry_x.size(0)  # not 1 since we gave it a single task
+        else:
+            raise ValueError(f'Error needs to be spt or qrt but got {self.few_shot_split}')
+
+    def __getitem__(self, idx: int):
+        """
+        typical implementation:
+
+        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+        image = read_image(img_path)
+        label = self.img_labels.iloc[idx, 1]
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image, label
+        """
+        if self.few_shot_split == 'spt':
+            return self.spt_x[idx], self.spt_y[idx]
+        elif self.few_shot_split == 'qry':
+            return self.qry_x[idx], self.qry_y[idx]
+        else:
+            raise ValueError(f'Error needs to be spt or qrt but got {self.few_shot_split}')
 
 
 def select_index(B: int, rand: bool = True):
@@ -176,57 +234,58 @@ def get_all_required_distances_for_pairs_of_tasks_using_cca_like_metrics(f1: nn.
     same tasks to each other and that has a distance = 0.0
     :return:
     """
-    from anatome.helper import LayerIdentifier, dist_data_set_per_layer, _dists_per_task_per_layer_to_list, \
-        compute_stats_from_distance_per_batch_of_data_sets_per_layer
-    assert metric_as_sim_or_dist == 'dist'
-    L = len(layer_names1)
-    B1, B2 = X1.size(0), X2.size(0)
-    B_ = num_tasks_to_consider
-    assert B_ <= B1 * B2, f'You can\'t use more tasks than exist in the cross product of tasks, choose' \
-                          f'{num_tasks_to_consider=} such that is less than or equal to {B1*B2=}.'
-    assert L == len(layer_names1) == len(layer_names2)
-
-    # - get indices for pair of tasks
-    indices_task_tuples: list[tuple[int, int]] = get_list_tasks_tuples(B1, B2,
-                                                                       num_tasks_to_consider=num_tasks_to_consider,
-                                                                       rand=True,
-                                                                       consider_diagonal=consider_diagonal
-                                                                       )
-    # [B']
-    assert len(indices_task_tuples) == B_
-
-    # - compute required distance pairs of tasks [B', L]
-    distances_for_task_pairs: list[OrderedDict[LayerIdentifier, float]] = []
-    for b_ in range(B_):
-        idx_task1, idx_task2 = indices_task_tuples[b_]
-        x1, x2 = X1[idx_task1], X2[idx_task2]
-        # x1, x2 = x1.unsqueeze(0), x2.unsqueeze(0)
-        # assert x1.size() == torch.Size([1, M, C, H, W]) or x1.size() == torch.Size([1, M, D_])
-
-        # - get distances (index b_) for task pair per layers [1, L]
-        print(f'{x1.size()=}, is the input to anatome/dist func [B,M,C,H,W]')
-        assert metric_as_sim_or_dist == 'dist'
-        dists_task_pair: OrderedDict[LayerIdentifier, float] = dist_data_set_per_layer(f1, f2, x1, x2,
-                                                                                       layer_names1, layer_names2,
-                                                                                       metric_comparison_type=metric_comparison_type,
-                                                                                       iters=iters,
-                                                                                       effective_neuron_type=effective_neuron_type,
-                                                                                       downsample_method=downsample_method,
-                                                                                       downsample_size=downsample_size,
-                                                                                       subsample_effective_num_data_method=subsample_effective_num_data_method,
-                                                                                       subsample_effective_num_data_param=subsample_effective_num_data_param,
-                                                                                       metric_as_sim_or_dist=metric_as_sim_or_dist,
-                                                                                       force_cpu=force_cpu
-                                                                                       )
-        # st()
-        # [1, L]
-        assert len(dists_task_pair) == len(layer_names1) == len(layer_names2)
-        # [b, L] (+) [1, L] -> [b + 1, L]
-        distances_for_task_pairs.append(dists_task_pair)  # end result size [B', L]
-    # [B', L]
-    assert len(distances_for_task_pairs) == B_
-    assert len(distances_for_task_pairs[0]) == L
-    return distances_for_task_pairs
+    # from anatome.helper import LayerIdentifier, dist_data_set_per_layer, _dists_per_task_per_layer_to_list, \
+    #     compute_stats_from_distance_per_batch_of_data_sets_per_layer
+    # assert metric_as_sim_or_dist == 'dist'
+    # L = len(layer_names1)
+    # B1, B2 = X1.size(0), X2.size(0)
+    # B_ = num_tasks_to_consider
+    # assert B_ <= B1 * B2, f'You can\'t use more tasks than exist in the cross product of tasks, choose' \
+    #                       f'{num_tasks_to_consider=} such that is less than or equal to {B1*B2=}.'
+    # assert L == len(layer_names1) == len(layer_names2)
+    #
+    # # - get indices for pair of tasks
+    # indices_task_tuples: list[tuple[int, int]] = get_list_tasks_tuples(B1, B2,
+    #                                                                    num_tasks_to_consider=num_tasks_to_consider,
+    #                                                                    rand=True,
+    #                                                                    consider_diagonal=consider_diagonal
+    #                                                                    )
+    # # [B']
+    # assert len(indices_task_tuples) == B_
+    #
+    # # - compute required distance pairs of tasks [B', L]
+    # distances_for_task_pairs: list[OrderedDict[LayerIdentifier, float]] = []
+    # for b_ in range(B_):
+    #     idx_task1, idx_task2 = indices_task_tuples[b_]
+    #     x1, x2 = X1[idx_task1], X2[idx_task2]
+    #     # x1, x2 = x1.unsqueeze(0), x2.unsqueeze(0)
+    #     # assert x1.size() == torch.Size([1, M, C, H, W]) or x1.size() == torch.Size([1, M, D_])
+    #
+    #     # - get distances (index b_) for task pair per layers [1, L]
+    #     print(f'{x1.size()=}, is the input to anatome/dist func [B,M,C,H,W]')
+    #     assert metric_as_sim_or_dist == 'dist'
+    #     dists_task_pair: OrderedDict[LayerIdentifier, float] = dist_data_set_per_layer(f1, f2, x1, x2,
+    #                                                                                    layer_names1, layer_names2,
+    #                                                                                    metric_comparison_type=metric_comparison_type,
+    #                                                                                    iters=iters,
+    #                                                                                    effective_neuron_type=effective_neuron_type,
+    #                                                                                    downsample_method=downsample_method,
+    #                                                                                    downsample_size=downsample_size,
+    #                                                                                    subsample_effective_num_data_method=subsample_effective_num_data_method,
+    #                                                                                    subsample_effective_num_data_param=subsample_effective_num_data_param,
+    #                                                                                    metric_as_sim_or_dist=metric_as_sim_or_dist,
+    #                                                                                    force_cpu=force_cpu
+    #                                                                                    )
+    #     # st()
+    #     # [1, L]
+    #     assert len(dists_task_pair) == len(layer_names1) == len(layer_names2)
+    #     # [b, L] (+) [1, L] -> [b + 1, L]
+    #     distances_for_task_pairs.append(dists_task_pair)  # end result size [B', L]
+    # # [B', L]
+    # assert len(distances_for_task_pairs) == B_
+    # assert len(distances_for_task_pairs[0]) == L
+    # return distances_for_task_pairs
+    raise NotImplementedError
 
 
 # legacy, not recommended
@@ -262,54 +321,48 @@ def diversity_using_cca_like_metrics(f1: nn.Module, f2: nn.Module,
 
     :return: [L]^2, [B', L]
     """
-    from anatome.helper import LayerIdentifier, dist_data_set_per_layer, _dists_per_task_per_layer_to_list, \
-        compute_stats_from_distance_per_batch_of_data_sets_per_layer
-    assert metric_as_sim_or_dist == 'dist'
-    # assert args.args.metric_as_sim_or_dist == 'dist'
-    assert len(layer_names1) >= 2, f'For now the final and one before final layer are the way to compute diversity'
-    L = len(layer_names1)
-    B_ = num_tasks_to_consider
-
-    # - [B', L] compute the distance for each task. So you get B distances (from which to compute div) for each layer [L]
-    print(f'{X1.size()=}, is the input to anatome/dist func [B,M,C,H,W]')
-    distances_for_task_pairs: list[OrderedDict[LayerIdentifier, float]] = get_all_required_distances_for_pairs_of_tasks(
-        f1, f2,
-        X1, X2,
-        layer_names1, layer_names2,
-        metric_comparison_type,
-        iters,
-        effective_neuron_type,
-        downsample_method,
-        downsample_size,
-        subsample_effective_num_data_method,
-        subsample_effective_num_data_param,
-        metric_as_sim_or_dist,
-        force_cpu,
-
-        num_tasks_to_consider,
-        consider_diagonal
-    )
+    # from anatome.helper import LayerIdentifier, dist_data_set_per_layer, _dists_per_task_per_layer_to_list, \
+    #     compute_stats_from_distance_per_batch_of_data_sets_per_layer
+    # assert metric_as_sim_or_dist == 'dist'
+    # # assert args.args.metric_as_sim_or_dist == 'dist'
+    # assert len(layer_names1) >= 2, f'For now the final and one before final layer are the way to compute diversity'
+    # L = len(layer_names1)
+    # B_ = num_tasks_to_consider
+    #
+    # # - [B', L] compute the distance for each task. So you get B distances (from which to compute div) for each layer [L]
+    # print(f'{X1.size()=}, is the input to anatome/dist func [B,M,C,H,W]')
+    # distances_for_task_pairs: list[OrderedDict[LayerIdentifier, float]] = get_all_required_distances_for_pairs_of_tasks(
+    #     f1, f2,
+    #     X1, X2,
+    #     layer_names1, layer_names2,
+    #     metric_comparison_type,
+    #     iters,
+    #     effective_neuron_type,
+    #     downsample_method,
+    #     downsample_size,
+    #     subsample_effective_num_data_method,
+    #     subsample_effective_num_data_param,
+    #     metric_as_sim_or_dist,
+    #     force_cpu,
+    #
+    #     num_tasks_to_consider,
+    #     consider_diagonal
+    # )
+    # # st()
+    # # [L] x [B, n*k, C,H,W]^2 -> [L] x [B', n*k, C,H,W] -> [B', L]
+    # assert len(distances_for_task_pairs) == B_
+    # assert len(distances_for_task_pairs[0]) == L
+    #
+    # # - compute diversity: [B, L] -> [L, 1]^2 (the 2 due to one for div other ci for div)
+    # div_mu, div_ci = compute_stats_from_distance_per_batch_of_data_sets_per_layer(distances_for_task_pairs)
+    # print(f'{div_mu=}')
+    # print(f'{div_ci=}')
     # st()
-    # [L] x [B, n*k, C,H,W]^2 -> [L] x [B', n*k, C,H,W] -> [B', L]
-    assert len(distances_for_task_pairs) == B_
-    assert len(distances_for_task_pairs[0]) == L
+    # assert len(div_mu) == L
+    # assert len(div_ci) == L
+    # return div_mu, div_ci, distances_for_task_pairs
+    raise NotImplementedError
 
-    # - compute diversity: [B, L] -> [L, 1]^2 (the 2 due to one for div other ci for div)
-    div_mu, div_ci = compute_stats_from_distance_per_batch_of_data_sets_per_layer(distances_for_task_pairs)
-    print(f'{div_mu=}')
-    print(f'{div_ci=}')
-    st()
-    assert len(div_mu) == L
-    assert len(div_ci) == L
-    return div_mu, div_ci, distances_for_task_pairs
-
-
-# def compute_diversity_mu_std_for_entire_net_from_all_distances_from_data_sets_tasks(distances_for_task_pairs: Tensor,
-#                                                                                     dist2sim: bool = False):
-#     # if dist2sim:
-#     #     distances_for_task_pairs: Tensor = 1.0 - distances_for_task_pairs
-#     mu, std = distances_for_task_pairs.mean(), distances_for_task_pairs.std()
-#     return mu, std
 
 # legacy, not recommended
 def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
@@ -361,7 +414,7 @@ def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
     return div_mu, div_ci, distances_for_task_pairs
 
 
-# - size aware dif
+# --- size aware div
 """
 how to take into account the data set size in the diversity coefficient?
 
@@ -432,6 +485,104 @@ def size_aware_div_coef_discrete_histogram_based(distances_as_flat_array: np.arr
 
 
 # - task2vec diversity
+
+
+def get_task_embeddings_from_few_shot_l2l_benchmark(tasksets,
+                                                    probe_network: ProbeNetwork,
+                                                    num_tasks_to_consider: int,
+
+                                                    split: str = 'validation',
+                                                    split_task: bool = False,
+                                                    classifier_opts: Optional = None,
+                                                    ) -> list[task2vec.Embedding]:
+    """
+
+    note:
+        - you can't just pass a nn.Module, it has to have the classifier setter & getter due to how task2vec works. My
+        guess is that since it does have to fine tune the final layer before computing FIM, then it requires to have
+        access to the modules considered the final layer.
+        - note that the task2vec code has side effects on your probe network, so you have to have some type of code that
+        "removes" those side effects. Two options is if the function takes in a probe_network directly then it has to
+        create a deep copy when feeding it to Task2Vec. Otherwise another option is to load a new probe nework every
+        time we create a new fsl.
+    """
+    from copy import deepcopy
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    tasksets: BenchmarkTasksets = tasksets
+    # - get the data set of (n-way, k-shot) tasks
+    from learn2learn.data import TaskDataset
+    task_dataset: TaskDataset = getattr(tasksets, split)  # tasksets.train
+
+    # - compute embeddings for tasks
+    embeddings: list[task2vec.Embedding] = []
+    for task_num in range(num_tasks_to_consider):
+        print(f'\n--> {task_num=}\n')
+        # - Samples all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
+        task_data: list = task_dataset.sample()  # data, labels
+        if split_task:
+            # - split to spt & qry sets
+            raise ValueError('Not implemented to split task data set using sqt & qry ala l2l.')
+            # split_task_spt_qrt_points(task_data, device, shots, ways)
+        else:
+            # - use all the data in the task
+            data, labels = task_data
+            fsl_task_dataset: Dataset = FSLTaskDataSet(spt_x=None, spt_y=None, qry_x=data, qry_y=labels)
+            print(f'{len(fsl_task_dataset)=}')
+            data: Tensor = data
+            # embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network)).embed(fsl_task_dataset)
+            embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network), classifier_opts=classifier_opts).embed(
+                fsl_task_dataset)
+            print(f'{embedding.hessian.shape=}')
+        embeddings.append(embedding)
+    return embeddings
+
+
+def get_task_embeddings_from_few_shot_dataloader(args: Namespace,
+                                                 dataloaders: dict,
+                                                 probe_network: ProbeNetwork,
+                                                 num_tasks_to_consider: int,
+                                                 split: str = 'validation',
+                                                 classifier_opts: Optional = None,
+                                                 ) -> list[task2vec.Embedding]:
+    """
+    Returns list of task2vec embeddings using the normal pytorch dataloader interface.
+    Should work for torchmeta data sets & meta-data set (MDS).
+
+    Algorithm:
+    - sample the 4 tuples of T tasks
+    - loop through each task & use it as data to produce the task2vec
+    """
+    import torch
+    from copy import deepcopy
+    # - get the data set of (n-way, k-shot) tasks
+    # loader = args.dataloader[split]
+    loader = dataloaders[split]
+
+    # -
+    from uutils.torch_uu import process_meta_batch
+    batch = next(iter(loader))  # batch [B, n*k, C, H, W] or B*[n_b*k_b, C, H, W]
+    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+
+    # - compute embeddings for tasks
+    embeddings: list[task2vec.Embedding] = []
+    for t in range(num_tasks_to_consider):
+        print(f'\n--> task_num={t}\n')
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+
+        # concatenate the support and query sets to get the full task's data and labels
+        data = torch.cat((spt_x_t, qry_x_t), 0)
+        labels = torch.cat((spt_y_t, qry_y_t), 0)
+
+        # print(data.shape, labels.shape)
+        fsl_task_dataset: Dataset = FSLTaskDataSet(spt_x=None, spt_y=None, qry_x=data, qry_y=labels)
+
+        print(f'{len(fsl_task_dataset)=}')
+        embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network), classifier_opts=classifier_opts).embed(
+            fsl_task_dataset)
+        print(f'{embedding.hessian.shape=}')
+        embeddings.append(embedding)
+    return embeddings
+
 
 def get_task2vec_diversity_coefficient_from_embeddings(embeddings: list[task2vec.Embedding]) -> tuple[float, float]:
     """
@@ -536,23 +687,24 @@ def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(dis
 # - tests
 
 def compute_div_example1_test():
-    """
-    - sample one batch of tasks and use a random cross product of different tasks to compute diversity.
-    """
-    mdl: nn.Module = get_default_learner()
-    # layer_names: list[str] = get_feature_extractor_conv_layers(include_cls=True)
-    layer_names: list[str] = get_last_two_layers(layer_type='conv', include_cls=True)
-    args: Namespace = get_minimum_args_for_torchmeta_mini_imagenet_dataloader()
-    dataloaders: dict = get_miniimagenet_dataloaders_torchmeta(args)
-    for batch_idx, batch_tasks in enumerate(dataloaders['train']):
-        spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch_tasks)
-        # - compute diversity
-        div_final, div_feature_extractor, div_final_std, div_feature_extractor_std, distances_for_task_pairs = diversity(
-            f1=mdl, f2=mdl, X1=qry_x, X2=qry_x, layer_names1=layer_names, layer_names2=layer_names,
-            num_tasks_to_consider=2)
-        pprint(distances_for_task_pairs)
-        print(f'{div_final, div_feature_extractor, div_final_std, div_feature_extractor_std=}')
-        break
+    # """
+    # - sample one batch of tasks and use a random cross product of different tasks to compute diversity.
+    # """
+    # mdl: nn.Module = get_default_learner()
+    # # layer_names: list[str] = get_feature_extractor_conv_layers(include_cls=True)
+    # layer_names: list[str] = get_last_two_layers(layer_type='conv', include_cls=True)
+    # args: Namespace = get_minimum_args_for_torchmeta_mini_imagenet_dataloader()
+    # dataloaders: dict = get_miniimagenet_dataloaders_torchmeta(args)
+    # for batch_idx, batch_tasks in enumerate(dataloaders['train']):
+    #     spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch_tasks)
+    #     # - compute diversity
+    #     div_final, div_feature_extractor, div_final_std, div_feature_extractor_std, distances_for_task_pairs = diversity(
+    #         f1=mdl, f2=mdl, X1=qry_x, X2=qry_x, layer_names1=layer_names, layer_names2=layer_names,
+    #         num_tasks_to_consider=2)
+    #     pprint(distances_for_task_pairs)
+    #     print(f'{div_final, div_feature_extractor, div_final_std, div_feature_extractor_std=}')
+    #     break
+    raise NotImplementedError
 
 
 def compute_div_example2_test():
@@ -605,8 +757,6 @@ def test_tutorial():
     args.probe_network = nn.Linear(1, 1)
     split = 'train'
 
-    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.diversity_task2vec.diversity_for_few_shot_learning_benchmark import \
-        get_task_embeddings_from_few_shot_dataloader
     embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_dataloader(args,
                                                                                         args.dataloaders,
                                                                                         args.probe_network,
@@ -633,6 +783,102 @@ def test_tutorial():
     standardized_div: float = get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix)
     print(f'Standardised Diversity: {standardized_div=}')
 
+
+def plot_distance_matrix_and_div_for_MI_test():
+    """
+    - sample one batch of tasks and use a random cross product of different tasks to compute diversity.
+    """
+    import uutils
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    from uutils.argparse_uu.meta_learning import parse_args_meta_learning
+    from uutils.argparse_uu.meta_learning import fix_for_backwards_compatibility
+
+    # - get args for test
+    args: Namespace = parse_args_meta_learning()
+    args.batch_size = 2
+    args.data_option = 'mini-imagenet'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
+    args.data_path = Path('/l2l_data/').expanduser()
+    args.data_augmentation = 'lee2019'
+    args = fix_for_backwards_compatibility(args)  # TODO fix me
+    uutils.print_args(args)
+
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    args.tasksets: BenchmarkTasksets = get_l2l_tasksets(args)
+
+    # - create probe_network
+    # from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+    # model, _ = get_default_learner_and_hps_dict()  # 5cnn
+    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.models import get_model
+    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import ProbeNetwork
+    probe_network: ProbeNetwork = get_model('resnet18', pretrained=True, num_classes=5)
+
+    # - compute task embeddings according to task2vec
+    print(f'number of tasks to consider: {args.batch_size=}')
+    embeddings: list[Tensor] = get_task_embeddings_from_few_shot_l2l_benchmark(args.tasksets,
+                                                                               probe_network,
+                                                                               num_tasks_to_consider=args.batch_size)
+    print(f'\n {len(embeddings)=}')
+
+    # - compute distance matrix & task2vec based diversity
+    distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
+    print(f'{distance_matrix=}')
+    from uutils.numpy_uu.common import get_diagonal
+    distances_as_flat_array, _, _ = get_diagonal(distance_matrix, check_if_symmetric=True)
+
+    div_tot = float(distances_as_flat_array.sum())
+    print(f'Diversity: {div_tot=}')
+    div, ci = get_task2vec_diversity_coefficient_from_pair_wise_comparison_of_tasks(distance_matrix)
+    print(f'Diversity: {(div, ci)=}')
+    standardized_div: float = get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix)
+    print(f'Standardised Diversity: {standardized_div=}')
+
+
+def compute_mi_vs_omni_cosine_distance():
+    """
+    Let's estimate why the div is so low, is the distance btw omniglot and MI not high?
+    I expect:
+        stl10 vs letters = 0.6
+        cifar100 vs mnist = 0.5
+    """
+    from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
+
+    import torch
+    device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
+    from uutils import expanduser
+    root: Path = expanduser('/l2l_data/')
+    dataset_list_train, dataset_list_validation, dataset_list_test = get_mi_and_omniglot_list_data_set_splits(root,
+                                                                                                              device=device)
+    print('---- Computing task2vec embeddings ----')
+    datasets = dataset_list_train
+    dataset_names = [dataset.name for dataset in datasets]
+    print(f'{datasets=}')
+    print(f'{dataset_names=}')
+    embeddings = []
+    for dataset_name, dataset in zip(dataset_names, datasets):
+        print(f"-- {dataset=}")
+        print(f"-- {dataset_name=}")
+        # assert isinstance(dataset, Dataset), f'{type(dataset)=}'
+        num_classes = len(dataset.labels)
+        # num_classes = int(max(dataset.targets) + 1)
+        print(f'{num_classes=}')
+        from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.models import get_model
+        probe_network = get_model('resnet18', pretrained=True, num_classes=num_classes).to(device)
+        print(f'{probe_network=}')
+        # embeddings.append(Task2Vec(probe_network, max_samples=1000, skip_layers=6).embed(dataset)).to(device)
+        # embeddings.append(Task2Vec(probe_network, max_samples=100, skip_layers=6).embed(dataset))
+        from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.task2vec import Task2Vec
+        from copy import deepcopy
+        embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network)).embed(dataset).to(device)
+        embeddings.append(embedding)
+        print()
+
+    print(f'{embeddings=}')
+    distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
+    print(f'{distance_matrix=}')
+    task_similarity.plot_distance_matrix(embeddings, dataset_names)
+
+
+# -- run test, examples, mains, etc.
 
 if __name__ == '__main__':
     import time

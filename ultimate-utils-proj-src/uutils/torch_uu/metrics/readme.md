@@ -1,9 +1,11 @@
 # Computing metrics & Tutorials
 
-## Computing diversity tutorial (using batch & (support, queary) sets)
+## Computing diversity tutorial
 
-```
-    # -- get your data!
+### Compute diversity using normal pytorch dataloader
+
+```python
+    # -- lets create som dummy data set
     import torch
     import random
 
@@ -19,16 +21,22 @@
         def __len__(self):
             return self.num_samples
 
+    # - create minimal an args object needed for code to work
+    from argparse import Namespace
     args = Namespace(batch_size=32)
     args.classifier_opts = None
     dataset = RandomDataset(100)  # 100 samples
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
-    args.dataloaders = {'train': dataloader, 'val': dataloader, 'test': dataloader}
+    from torch import nn
     args.probe_network = nn.Linear(1, 1)
     split = 'train'
+    
+    # - get your pytorch data loader
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    args.dataloaders = {'train': dataloader, 'val': dataloader, 'test': dataloader}
 
-    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics.diversity_task2vec.diversity_for_few_shot_learning_benchmark import \
-        get_task_embeddings_from_few_shot_dataloader
+    # - get task embeddings from normal pytorch data loader
+    from uutils.torch_uu.metrics.diversity.diversity import get_task_embeddings_from_few_shot_dataloader
+    from uutils.torch_uu.metrics.diversity.task2vec_based_metrics import task2vec, task_similarity
     embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_dataloader(args,
                                                                                         args.dataloaders,
                                                                                         args.probe_network,
@@ -36,6 +44,7 @@
                                                                                         split=split,
                                                                                         classifier_opts=args.classifier_opts,
                                                                                         )
+)
 
     # - compute distance matrix & task2vec based diversity, to demo` task2vec, this code computes pair-wise distance between task embeddings
     distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
@@ -58,7 +67,7 @@
 
 ## Computing complexity tutorial (using batch & (support, queary) sets)
 
-```
+```python
     # - get your data
     embeddings: list[task2vec.Embedding] = get_random_data_todo()
 
@@ -93,9 +102,29 @@ If you use this implementation consider citing us:
    year = {2022},
 }
 ```
-url: https://arxiv.org/abs/2208.01545.
+arxiv url: https://arxiv.org/abs/2208.01545.
 
+If you use our implementations for diversities for Large Language Models (LLMs) or Foundation Models (FMs) 
+consider citing us:
 ```
-Coming soon, LLMs.
+# todo: change low div to div citation for now, change to LLMs later.
+
+@article{Miranda2022,
+   author = {Brando Miranda and Patrick Yu and Yu-Xiong Wang and Sanmi Koyejo},
+   doi = {10.48550/arxiv.2208.01545},
+   month = {8},
+   title = {The Curse of Low Task Diversity: On the Failure of Transfer Learning to Outperform MAML and Their Empirical Equivalence},
+   url = {https://arxiv.org/abs/2208.01545v1},
+   year = {2022},
 ```
-url: coming soon. 
+arxiv url: coming soon.
+
+If you use our task2vec diversities or complexities consider citing the authors of task2vec:
+```
+@report{AchilleUCLA,
+   author = {Alessandro Achille UCLA and Michael Lam AWS and Rahul Tewari AWS and Avinash Ravichandran AWS and Subhransu Maji UMass and Stefano Soatto UCLA and Pietro Perona Caltech},
+   note = {task2vec<br/>d_sym(F_a, F_b) = d_cos(F_a/(F_a+F_b), F_b/(F_a+F_b))<br/><br/>task_embedding = diagonal of the FIM for the filters of size [F_total, 1] total filters for a network.<br/><br/>F_a = diagonal of the fisher information computed on the prob net.<br/>Division is element-wise},
+   title = {TASK2VEC: Task Embedding for Meta-Learning Charless Fowlkes UCI and AWS},
+   year = {2019},
+}
+```
