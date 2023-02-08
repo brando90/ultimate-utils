@@ -256,7 +256,7 @@ def stats_of_distance_matrix(distance_matrix: np.ndarray,
 
     # - compute stats of distance matrix
     if variance_type == 'std':
-        mu, var = flatten.mean(), flatten.std(ddof)
+        mu, var = flatten.mean(), flatten.std(ddof=ddof)
     elif variance_type == 'ci_0.95':
         from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
         mu, var = mean_confidence_interval(flatten, confidence=0.95)

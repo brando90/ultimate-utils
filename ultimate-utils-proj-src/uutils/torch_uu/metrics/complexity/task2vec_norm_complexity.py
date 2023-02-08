@@ -58,6 +58,9 @@ def standardized_norm_complexity(embeddings: list[task2vec.Embedding], p: int = 
         - For example, if the variance is to be estimated from a random sample of N independent scores, then the degrees
          of freedom is equal to the number of independent scores (N) minus the number of parameters estimated as
          intermediate steps (one, namely, the sample mean) and is therefore equal to N − 1.
+
+    ref:
+        - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
     all_complexities: list[float] = get_task_complexities(embeddings, p)
     avg_complexity, ci = avg_norm_complexity(all_complexities)

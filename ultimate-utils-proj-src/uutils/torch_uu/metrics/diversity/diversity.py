@@ -506,6 +506,9 @@ def get_standardized_diversity_coffecient_from_embeddings(embeddings: list[task2
     across benchmarks.
 
     standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
+
+    ref:
+        - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
     distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
     div, unbiased_std = task_similarity.stats_of_distance_matrix(distance_matrix, variance_type='std', ddof=ddof)
@@ -521,6 +524,9 @@ def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(dis
     across benchmarks.
 
     standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
+
+    ref:
+        - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
     div, unbiased_std = task_similarity.stats_of_distance_matrix(distance_matrix, variance_type='std', ddof=ddof)
     standardized_div: float = div / unbiased_std
