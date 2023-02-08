@@ -117,34 +117,21 @@ def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     :param batch:
     :return:
     """
-    x, y = batch
-    if type(x) == torch.Tensor:
-        # x = x.to(args.gpu)
-        x = x.to(args.device)
-    if type(y) == torch.Tensor:
-        # y = y.to(args.gpu)
-        y = y.to(args.device)
-    return x, y
-
-
-def process_batch_ddp_union_rfs(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
-    """
-    Make sure args has the gpu for each worker.
-
-    :param args:
-    :param batch:
-    :return:
-    """
+    # weird == 3 due to rfs I think, see: ref: https://github.com/WangYueFt/rfs/
     if len(batch) == 3:
         x, y, _ = batch
     elif len(batch) == 2:
         x, y = batch
     else:
         # img, target, item, sample_idx = batch
-        x, y, item, sample_idx = batch
+        # x, y, item, sample_idx = batch
         raise NotImplementedError
-    x = x.to(args.device)
-    y = y.to(args.device)
+    if type(x) == torch.Tensor:
+        # x = x.to(args.gpu)
+        x = x.to(args.device)
+    if type(y) == torch.Tensor:
+        # y = y.to(args.gpu)
+        y = y.to(args.device)
     return x, y
 
 
