@@ -15,7 +15,7 @@ import numpy as np
 
 def compute_generalization_gap(train_metrics: list[float],
                                test_metrics: list,
-                               metric_name: Optional[str] = None,
+                               metric_name: str,
                                ) -> float:
     """
     Compute the generalization gap between the training and test metrics. This is the difference between the
