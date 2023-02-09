@@ -33,6 +33,7 @@ def print_acc_loss_from_training_curve(path: Union[str, Path],
                                        splits: list[str] = ['train', 'val'],
                                        # test missing cuz we don't eval on test during training, no cheating!
                                        idx: int = -1,  # last value
+                                       clear_accidental_ckpt_str_in_path: str = '/ckpt.pt'
                                        ) -> dict:
     """ print acc and loss from training curve ckpt.
 
@@ -46,6 +47,10 @@ def print_acc_loss_from_training_curve(path: Union[str, Path],
     path: Path = uutils.expanduser(path)
     if learning_stats_fname != 'experiment_stats.json':
         path = path / learning_stats_fname
+    # - clear accidental ckpt str in path, remove it, then following code adds the right name to experiment json file
+    if clear_accidental_ckpt_str_in_path in str(path):
+        path: str = str(path).replace(clear_accidental_ckpt_str_in_path, '')
+        path: Path = uutils.expanduser(path)
     # if end of string is not json, then user forgot to put the path to experiment run, so put your best guess based on how uutils works by default
     if not str(path).endswith('.json'):
         path = path / learning_stats_fname
@@ -384,6 +389,8 @@ def save_current_plots_and_stats(
 
 def test_print_acc_loss_from_training_curve():
     path = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663'
+    print_acc_loss_from_training_curve(path)
+    path = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663/ckpt.pt/experiment_stats.json'
     print_acc_loss_from_training_curve(path)
 
 
