@@ -72,6 +72,7 @@ class ClassificationSLAgent(Agent):
     def get_lists_accs_losses(self, batch: Tensor,
                               training: bool,
                               as_list_floats: bool = False,
+                              as_numpy_data: bool = False,  # careful, if NOT set you might get GPU memory issues
                               ) -> tuple[iter, iter]:
         """
         Note:
@@ -98,14 +99,13 @@ class ClassificationSLAgent(Agent):
             # todo: not sure if needed, but in the past keeping everything as tensors creates GPU memory issues since it never forget the computation graph
             #   might be fine due to torch.no_grad() but not sure. Perhaps assert they are of type list[float]?
             raise NotImplementedError
+        if as_numpy_data:
+            loss = loss.detach().cpu().numpy()
+            acc = acc.detach().cpu().numpy()
 
         # - return loss to normal
         self.loss.reduction = original_reduction
         self.model.train()
-
-        # -- return
-        assert loss.size() == torch.Size([B])
-        assert acc.size() == torch.Size([B])
         return loss, acc
 
 

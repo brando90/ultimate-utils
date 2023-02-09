@@ -656,8 +656,6 @@ def get_standardized_diversity_coffecient_from_embeddings(embeddings: list[task2
     Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
     across benchmarks.
 
-    standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
-
     ref:
         - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
@@ -673,8 +671,6 @@ def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(dis
     """
     Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
     across benchmarks.
-
-    standardized_mean_metric: float = mean_metric(list_metrics) / unbiased_std_metric(list_metrics)
 
     ref:
         - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
@@ -814,9 +810,9 @@ def plot_distance_matrix_and_div_for_MI_test():
 
     # - compute task embeddings according to task2vec
     print(f'number of tasks to consider: {args.batch_size=}')
-    embeddings: list[Tensor] = get_task_embeddings_from_few_shot_l2l_benchmark(args.tasksets,
-                                                                               probe_network,
-                                                                               num_tasks_to_consider=args.batch_size)
+    embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_l2l_benchmark(args.tasksets,
+                                                                                           probe_network,
+                                                                                           num_tasks_to_consider=args.batch_size)
     print(f'\n {len(embeddings)=}')
 
     # - compute distance matrix & task2vec based diversity

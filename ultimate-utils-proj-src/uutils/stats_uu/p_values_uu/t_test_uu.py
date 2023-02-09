@@ -33,7 +33,7 @@ def show_n_does_or_doesnt_affect_p_value_for_t_test_test_():
     for n in ns:
         x = np.random.normal(mu_x, std_x, n)
         y = np.random.normal(mu_y, std_y, n)
-        t, p = stats.ttest_ind(x, y, equal_var=True)
+        t, p = stats.ttest_ind(x, y, equal_var=False)
         print(f'{p=} (Probability that this sample mean or more extreme is observerd, also type I error)')
         p_values.append(p)
         from uutils.stats_uu.p_values_uu.common import print_statisticall_significant
@@ -56,13 +56,46 @@ def show_n_does_or_doesnt_affect_p_value_for_t_test_test_():
     #      ylabel='Number of Parameters', marker='o', color='b')
     # plt.axhline(y=1.4e6, color='r', linestyle='-', label='ResNet12RFS (num params)')
 
+def comparbale_metrics_for_different_means():
+    import numpy as np
+    mu_x, mu_y = 0.1, 0.23
+    std_x, std_y = 0.018, 0.02
+    # mu_x, mu_y = 0.5, 170_000_000_000
+    # std_x, std_y = 5, 10_000_000_000
+    # ns: list[int] = [2, 10, 30, 100, 500, 1000, 5000, 10_000, 50_000, 100_000]
+    # ns: list[int] = [2, 10, 15, 30, 50, 75, 100, 150, 300]
+    # p_values: list[float] = []
+    # for n in ns:
+    n = 30
+    x = np.random.normal(mu_x, std_x, n)
+    # y = np.random.normal(mu_y, std_y, n)
+    # y = x
+    # print(f'{x=}')
+    # print(f'{y=}')
+    # print(f'{x.mean()=}')
+    # print(f'{y.mean()=}')
+    # print(f'{x.std()=}')
+    # print(f'{y.std()=}')
+    # t, p = stats.ttest_ind(x, y, equal_var=False)
+    # print(f'{t=}')
+
+    import numpy as np
+    from scipy.stats import zscore
+
+    # data = np.array([1, 2, 3, 4, 5])
+    data = x
+    z = zscore(data)
+    print(f'{z=}')
+    print(f'{z.mean()=}')
+    print(f'{z.std()=}')
+
 
 if __name__ == '__main__':
     import time
-    from uutils import report_timesd
 
     start = time.time()
     # - run experiment
-    main()
+    # main()
+    comparbale_metrics_for_different_means()
     # - Done
-    print(f"\nSuccess Done!: {report_times(start)}\a")
+    print(f'Done in {time.time() - start:.2f} seconds')
