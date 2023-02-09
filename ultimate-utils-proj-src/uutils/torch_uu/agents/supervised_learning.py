@@ -13,7 +13,7 @@ from torch import nn, Tensor
 
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.distributed import process_batch_ddp
-from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidence_interval
+from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
 from uutils.torch_uu.metrics.metrics import accuracy
 
 from pdb import set_trace as st
@@ -65,8 +65,8 @@ class ClassificationSLAgent(Agent):
             assert acc.size() == torch.Size([B])
 
             # - stats, compute this in context manager to avoid memory issues (perhaps not needed but safer)
-            eval_loss_mean, eval_loss_ci = torch_compute_confidence_interval(loss)
-            eval_acc_mean, eval_acc_ci = torch_compute_confidence_interval(acc)
+            eval_loss_mean, eval_loss_ci = mean_confidence_interval(loss)
+            eval_acc_mean, eval_acc_ci = mean_confidence_interval(acc)
         return eval_loss_mean, eval_loss_ci, eval_acc_mean, eval_acc_ci
 
     def get_lists_accs_losses(self, batch: Tensor,

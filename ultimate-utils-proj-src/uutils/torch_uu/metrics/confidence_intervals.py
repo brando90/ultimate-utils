@@ -115,7 +115,7 @@ def nth_central_moment_and_its_confidence_interval(data: np.ndarray,
     return mom, ci
 
 
-def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, np.ndarray]:
+def mean_confidence_interval(data: iter, confidence: float = 0.95) -> tuple[float, np.ndarray]:
     """
     Returns (tuple of) the mean and confidence interval for given data.
     Data is a np.arrayable iterable.
@@ -135,6 +135,12 @@ def mean_confidence_interval(data, confidence: float = 0.95) -> tuple[float, np.
     """
     import scipy.stats
     import numpy as np
+
+    # - move tensor to cpu and numpy if not already there
+    if isinstance(data, torch.Tensor):
+        # chatgpt says last bit might not be needed but seems popular so left it
+        data = data.detach()
+        data: np.ndarray = data.cpu().numpy() if data.is_cuda else data.numpy()
 
     a: np.ndarray = 1.0 * np.array(data)
     n: int = len(a)

@@ -33,10 +33,10 @@ def get_and_create_model_opt_scheduler_first_time(args: Namespace) -> tuple[nn.M
     model_option: str = args.model_option
     model_hps = args.model_hps if hasattr(args, 'model_hps') else {}
 
-    opt_option = args.opt_option
+    opt_option = args.opt_option if hasattr(args, 'opt_option') else 'AdafactorDefaultFair'
     opt_hps = args.opt_hps if hasattr(args, 'opt_hps') else {}
 
-    scheduler_option = args.scheduler_option
+    scheduler_option = args.scheduler_option if hasattr(args, 'scheduler_option') else 'None'
     scheduler_hps = args.scheduler_hps if hasattr(args, 'scheduler_hps') else {}
 
     _get_and_create_model_opt_scheduler(args,
@@ -215,6 +215,8 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         args.opt, args.opt_hps = None, None
     elif opt_option == 'AdafactorDefaultFair':
         args.opt, args.opt_hps = get_default_adafactor_opt_fairseq_and_hps_dict(args.model, **opt_hps)
+    # elif opt_option == 'AdafactorHuggingFace':
+    #     args.opt, args.opt_hps = get_default_adafactor_opt_fairseq_and_hps_dict(args.model, **opt_hps)
     elif opt_option == 'Adam_rfs_cifarfs':
         from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_rfs_cifarfs
         args.opt, args.opt_hps = get_opt_adam_rfs_cifarfs(args.model, **opt_hps)
