@@ -14,7 +14,7 @@ import numpy as np
 
 
 def compute_generalization_gap(train_metrics: list[float],
-                               test_metrics: list,
+                               test_metrics: list[float],
                                metric_name: str,
                                ) -> float:
     """
@@ -38,11 +38,13 @@ def compute_generalization_gap(train_metrics: list[float],
     if metric_name == 'acc':
         # gen gap using acc test acc - train acc should < 0 since test acc should be worse (lower) than train acc for sufficiently large N
         if gen_gap > 0:
-            logging.warning(f'Gen gap using acc should be negative, but got: {gen_gap=}')
+            logging.warning(f'Gen gap using acc should be negative, but got: '
+                            f'{(test_metric - train_metric)=}, {gen_gap=}, {test_metric=}, {train_metric=}')
     elif metric_name == 'loss':
         # gen gap using loss test loss - train loss should > 0 since test loss should be worse (higher) than train loss for sufficiently large N
         if gen_gap < 0:
-            logging.warning(f'Gen gap using loss should be positive: {gen_gap=}')
+            logging.warning(f'Gen gap using loss should be positive: '
+                            f'{(test_metric - train_metric)=}, {gen_gap=}, {test_metric=}, {train_metric=}')
     return gen_gap
 
 

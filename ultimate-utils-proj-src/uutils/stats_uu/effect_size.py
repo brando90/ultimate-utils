@@ -30,7 +30,7 @@ todo: later
     Odds Ratio. Measures the odds of an outcome occurring from one treatment compared to another.
     Relative Risk Ratio. Measures the probabilities of an outcome occurring from one treatment compared to another.
 """
-
+import numpy as np
 
 # function to calculate Cohen's d for independent samples
 def _cohen_d(d1, d2):
@@ -360,13 +360,25 @@ def effect_size_depedence_on_N_test_():
     import numpy as np
 
     # Example data
-    std_m = 0.061377
-    std_u = 0.085221
-    N = 100
-    N_m = N
-    N_u = N
-    mu_m = 0.855
-    mu_u = 0.893
+    # std_m = 0.061377
+    # std_u = 0.085221
+    # N = 100
+    # N_m = N
+    # N_u = N
+    # mu_m = 0.855
+    # mu_u = 0.893
+    mean1 = 0.6067733333333333
+    mean2 = 0.5913866805434227
+    std1 = 0.18362954785231173
+    std2 = 0.20309283858948451
+    var1 = 0.03371981084444444
+    var2 = 0.04124670108633441
+    mu_m = mean1
+    mu_u = mean2
+    std_m = std1
+    std_u = std2
+    N_m = 10_000
+    N_u = 10_000
     group1 = np.random.normal(mu_m, std_m, N_m)
     group2 = np.random.normal(mu_u, std_u, N_u)
     print(f'{std_m=}')
@@ -400,6 +412,37 @@ def effect_size_depedence_on_N_test_():
     plt.legend()
     plt.show()
 
+def synthetic_hdb4_micod_filter_8_5cnn():
+    mean1 = 0.6067733333333333
+    mean2 = 0.5913866805434227
+    std1 = 0.18362954785231173
+    std2 = 0.20309283858948451
+    var1 = 0.03371981084444444
+    var2 = 0.04124670108633441
+
+    mean1 = 0.6067733333333333
+    mean2 = 0.6070133486688137
+    std1 = 0.18362954785231173
+    std2 = 0.20927189642654587
+    var1 = 0.03371981084444444
+    var2 = 0.04379472663396294
+
+    mu_m = mean1
+    mu_u = mean2
+    std_m = std1
+    std_u = std2
+    N_m = 1_000_000_000
+    N_u = 1_000_000_000
+    group1 = np.random.normal(mu_m, std_m, N_m)
+    group2 = np.random.normal(mu_u, std_u, N_u)
+    print(f'{std_m=}')
+    print(f'{std_u=}')
+    print(f'{N_m=}')
+    print(f'{N_u=}')
+    print(f'{mu_m=}')
+    print(f'{mu_u=}')
+    stat_test_with_effect_size_as_emphasis(group1, group2, print_groups_data=True)
+
 
 # - run it
 
@@ -408,9 +451,10 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run it
-    my_test_using_stds_from_real_expts_()
+    # my_test_using_stds_from_real_expts_()
     # effect_size_depedence_on_N_test_()
+    synthetic_hdb4_micod_filter_8_5cnn()
     # - Done
     from uutils import report_times
 
-    print(f"\nSuccess Done!: {report_times(start)}\a")
+    print(f"\nSuccess Done!: {report_times(start)}\a\a\a\n")

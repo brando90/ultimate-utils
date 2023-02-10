@@ -2832,7 +2832,7 @@ with torch.no_grad():
 #         args.base_model = "check the meta_learner field in the checkpoint not in the args field"  # so that we don't save the child model so many times since it's part of the meta-learner
 #         # note this obj has the last episode/outer_i we ran
 #         torch.save({'args': args, 'meta_learner': meta_learner}, ckpt_path_plus_path)
-#     acc_mean, acc_std, loss_mean, loss_std = meta_eval(args, meta_learner, meta_val_set)
+#     acc_mean, acc_std, loss_mean, loss_std = do_eval(args, meta_learner, meta_val_set)
 #     if acc_mean > args.best_acc:
 #         args.best_acc, args.loss_of_best = acc_mean, loss_mean
 #         args.logger.loginfo(
@@ -6353,7 +6353,7 @@ with open('data.txt', 'w') as outfile:
 # #         args.base_model = "check the meta_learner field in the checkpoint not in the args field"  # so that we don't save the child model so many times since it's part of the meta-learner
 # #         # note this obj has the last episode/outer_i we ran
 # #         torch.save({'args': args, 'meta_learner': meta_learner}, ckpt_path_plus_path)
-# #     acc_mean, acc_std, loss_mean, loss_std = meta_eval(args, meta_learner, meta_val_set)
+# #     acc_mean, acc_std, loss_mean, loss_std = do_eval(args, meta_learner, meta_val_set)
 # #     if acc_mean > args.best_acc:
 # #         args.best_acc, args.loss_of_best = acc_mean, loss_mean
 # #         args.logger.loginfo(

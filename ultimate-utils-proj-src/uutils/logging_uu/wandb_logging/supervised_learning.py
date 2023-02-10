@@ -10,7 +10,7 @@ from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
-from uutils.torch_uu.eval.eval import eval_sl
+from uutils.torch_uu.eval.eval import do_eval
 
 from pdb import set_trace as st
 
@@ -105,7 +105,7 @@ def _log_train_val_stats(args: Namespace,
             print(f'---- printing logging info for {step=}')
 
         # - compute val stats for logging & determining if to ckpt val model
-        val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
+        val_loss, val_loss_ci, val_acc, val_acc_ci = do_eval(args, args.agent, args.dataloaders, training=training)
 
         # - print
         args.logger.log('\n')
