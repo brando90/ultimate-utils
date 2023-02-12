@@ -56,6 +56,48 @@ class GPTIterableDataset(IterableDataset):
             yield x, y
 
 
+class GPT_MetaDataset(l2l.data.MetaDataset):
+    def __init__(self, tokenized_dataset, block_size, vocab_size, split = 'train'):
+        """
+        Get Dataset for L2L on tokenized OpenWebText
+        tokenized_dataset: np.memmap object
+        """
+        self.ids = tokenized_dataset
+        self.dataset_len = tokenized_dataset.size
+        self.labels = list(range(vocab_size))
+
+        if split == 'train':
+            self.split_start = 0
+            self.split_end = int(self.dataset_len*0.999)
+        else:
+            self.split_start = int(self.dataset_len*0.999)
+            self.split_end = self.dataset_len
+
+        self.split_len = self.split_end - self.split_start
+        self.block_size = block_size
+
+        print("l2l size:", self.split_len - self.block_size)
+
+        ## indexing on the dataset: for each starting index i, we have self.block_size tasks
+        ## given starting index i and ending index j, the task index is: (i*self.block_size) + j - i
+
+    def __getitem__(self, idx):
+        # start_idx = idx//self.block_size
+        # num_tokens = (idx % self.block_size) + 1
+        # return the next block_size ids as input
+        x = torch.from_numpy((self.ids[idx + self.split_start : idx + self.split_start + self.block_size]).astype(np.int64))
+        # return the next indices as output
+        y = torch.from_numpy((self.ids[idx + self.split_start + self.block_size:idx + self.split_start + self.block_size + 1]).astype(np.int64))
+        return x, y
+
+    def __len__(self):
+        # # for each starting index, can give an input with between 1 and self.block_size number of tokens
+        # return (self.split_len - self.block_size)*self.block_size
+
+        # for now, assume all examples are of length block_size
+        return self.split_len - self.block_size
+
+
 class GPT_L2L_Dataset(Dataset):
     def __init__(self, tokenized_dataset, block_size, vocab_size, split = 'train'):
         """
@@ -104,6 +146,7 @@ def _get_l2l_tasksets_for_webtext(block_size, vocab_size):
     benchmark_tasksets_file = pkl_dir+'openwebtext_benchmarktasksets.pkl'
     if os.path.exists(benchmark_tasksets_file):
         with open(benchmark_tasksets_file, 'rb') as f:
+            print("loading...")
             return pickle.load(f)
 
     else:

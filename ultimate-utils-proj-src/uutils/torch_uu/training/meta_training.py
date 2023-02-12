@@ -16,6 +16,7 @@ from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_st
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt, get_trainer_progress_bar, \
     ConvergenceMeter
+from uutils.torch_uu.distributed import print_dist, is_lead_worker
 
 from pdb import set_trace as st
 
@@ -142,6 +143,67 @@ def meta_train_fixed_iterations(args: Namespace,
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
                 break
+
+
+def meta_train_gpt2(args: Namespace, meta_learner, dataloaders: dict, outer_opt, scheduler, training: bool = True):
+    print('Starting training!')
+    meta_batch_size: int = args.batch_size // args.world_size
+    # meta_batch_size: int = max(args.batch_size // args.world_size, 1)
+    # assert args.batch_size >= args.world_size, f'If batch size is smaller training might be slightly wrong when in distributed.'
+
+    # print(args.batch_size, meta_batch_size, "args and Meta BatchSize")
+    # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+    args.bar = uutils.get_good_progressbar(max_value=args.num_its)
+    meta_learner.train() if training else meta_learner.eval()
+    halt: bool = False
+
+    # ----added - 0th iter---#
+    log_zeroth_step(args, meta_learner)
+    for i, batch in enumerate(dataloaders['train']):
+        batch = (batch[0].to(args.device), batch[1].to(args.device))
+        outer_opt.zero_grad()
+
+        # - forward pass. Since the data fetching is different for l2l we do it this way
+        train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(batch, call_backward=True)
+        assert outer_opt.param_groups[0]['params'][0].grad is not None
+        # print_inside_halt(args, halt, 4)  # todo: remove? temporary for debugging
+
+        # - Grad clip  (optional)
+        gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
+        # print_inside_halt(args, halt, 5)  # todo: remove? temporary for debugging
+
+        # - Opt Step - Average the accumulated gradients and optimize
+        from uutils.torch_uu.distributed import is_running_parallel
+        # print_inside_halt(args, halt, 6)  # todo: remove? temporary for debugging
+        if is_running_parallel(args.rank):
+            for p in meta_learner.parameters():
+                if p.grad is not None:
+                    p.grad.data.mul_(1.0 / meta_batch_size)
+        # print_inside_halt(args, halt, 7)  # todo: remove? temporary for debugging
+        outer_opt.step()  # averages gradients across all workers
+        # print_inside_halt(args, halt, 8)  # todo: remove? temporary for debugging
+
+        # - Scheduler
+        if (args.it % args.log_scheduler_freq == 0) or args.debug:
+            scheduler_step(args, scheduler)
+
+        # - Convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+        halt: bool = check_halt(args)
+
+        # - go to next it & before that check if we should halt
+        args.it += 1
+
+        # - log full stats
+        print_dist(msg=f'[{args.it=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+        # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+        if args.it % args.log_freq == 0 or halt or args.debug:
+            step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+            log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
+            # args.convg_meter.update(train_loss)
+
+        # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
+        if halt:
+            break
 
 
 def meta_train_iterations_ala_l2l(args: Namespace,

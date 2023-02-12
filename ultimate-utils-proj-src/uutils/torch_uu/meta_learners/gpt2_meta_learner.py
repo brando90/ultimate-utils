@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 from learn2learn.data import TaskDataset
 from torch import Tensor
+from torch.nn import functional as F
 # from torch.multiprocessing import Pool
 # from torch.optim.optimizer import required
 # from torch.optim import Optimizer as Optimizer
@@ -27,191 +28,7 @@ from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidenc
 
 from pdb import set_trace as st
 
-
-class MAMLMetaLearner(nn.Module):
-    def __init__(
-            self,
-            args,
-            base_model,
-
-            inner_debug=False,
-            target_type='classification'
-    ):
-        super().__init__()
-        self.args = args  # args for experiment
-        self.base_model = base_model
-        # assert base_model is args.model
-
-        self.inner_debug = inner_debug
-        self.target_type = target_type
-
-    @property
-    def lr_inner(self) -> float:
-        if hasattr(self.args, 'inner_lr'):
-            return self.args.inner_lr
-        else:
-            return self.args.lr_inner
-
-    @lr_inner.setter
-    def lr_inner(self, new_val: float):
-        if hasattr(self.args, 'inner_lr'):
-            self.args.inner_lr = new_val
-        else:
-            self.args.lr_inner = new_val
-        # self.args.inner_lr = new_val
-
-    @property
-    def fo(self) -> bool:
-        """
-        Return the fo param of args.
-
-        Note: track_higher_order_grads is weird and should always be true for now. Details: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
-        """
-        return self.args.fo
-
-    # @property
-    # def mdl(self) -> torch.nn.Module:
-    #     return uutils.torch.get_model(self.mdl_)
-
-    def forward(self, batch, training: bool = True, call_backward: bool = False):
-        """
-        Does L(A(theta,S), Q) = sum^N_{t=1} L(A(theta,S_t),Q_t) where A(theta,S) is the inner-adaptation loop.
-        It also accumulates the gradient (for memory efficiency) for the outer-optimizer to later use
-
-        Decision for BN/eval:
-            - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
-        """
-        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
-        from uutils.torch_uu.meta_learners.maml_differentiable_optimizer import \
-            meta_learner_forward_adapt_batch_of_tasks
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = meta_learner_forward_adapt_batch_of_tasks(self, spt_x, spt_y,
-                                                                                                   qry_x, qry_y,
-                                                                                                   training,
-                                                                                                   call_backward)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
-
-    def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = self.forward(batch, training, call_backward)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
-
-    def eval(self):
-        """
-        Note: decision is to do .train() for all meta-train
-        ref: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
-        """
-        logging.warning('Calling MAML.eval(). You sure you want to do that?')
-        raise ValueError(
-            f'Why are you calling eval during meta-learning? Read: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du')
-        self.base_model.eval()
-
-    def parameters(self):
-        return self.base_model.parameters()
-
-    def regression(self):
-        self.target_type = 'regression'
-        self.args.target_type = 'regression'
-
-    def classification(self):
-        self.target_type = 'classification'
-        self.args.target_type = 'classification'
-
-    def cuda(self):
-        self.base_model.cuda()
-
-
 # - l2l
-
-def fast_adapt(args: Namespace,
-               task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
-    """"""
-    # [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
-    data, labels = task_data
-    data, labels = data.to(device), labels.to(device)
-
-    # Separate data into adaptation/evalutation sets
-    # [n*(k+k_eval), C, H, W] -> [n*k, C, H, W] and [n*k_eval, C, H, W]
-    (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
-        data=data,
-        labels=labels,
-        shots=shots,  # shots to separate to two data sets of size shots and k_eval
-    )
-    # checks coordinate 0 of size() [n*(k + k_eval), C, H, W]
-    assert support_data.size(0) == shots * ways, f' Expected {shots * ways} but got {support_data.size(0)}'
-    # checks [n*k] since these are the labels
-    assert support_labels.size() == torch.Size([shots * ways])
-
-    # Adapt the model
-    for step in range(adaptation_steps):
-        # - note the loss is usually in the final layer for my models
-        adaptation_error = loss(learner(support_data), support_labels)
-        learner.adapt(adaptation_error)
-
-    # Evaluate the adapted model
-    predictions: Tensor = learner(query_data)
-    evaluation_error: Tensor = loss(predictions, query_labels)
-
-    # get accuracy
-    if args.agent.target_type == 'classification':
-        evaluation_accuracy: Tensor = learn2learn.utils.accuracy(predictions, query_labels)
-    else:
-        from uutils.torch_uu import r2_score_from_torch
-        evaluation_accuracy = r2_score_from_torch(query_labels, predictions)
-        raise NotImplementedError
-    return evaluation_error, evaluation_accuracy
-
-
-def forward(meta_learner,
-            args: Namespace,
-            task_dataset: TaskDataset,  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
-            meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
-
-            training: bool = True,  # always true to avoid .eval()
-            call_backward: bool = False,  # not needed during testing/inference
-            ):
-    """
-    Returns the acc & loss on the meta-batch from the task in task_dataset.
-
-    Note:
-    - training true ensures .eval() is never called (due to BN, we always want batch stats)
-    - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option
-    to call it or not.
-    """
-    assert args is meta_learner.args
-    assert args.meta_learner is meta_learner
-    assert args.agent is meta_learner
-
-    # - adapt
-    meta_learner.base_model.train() if training else meta_learner.base_model.eval()
-    meta_losses, meta_accs = [], []
-    # print('--start forward')
-    for task in range(meta_batch_size):
-        # print(f'{task=}')
-        # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
-        task_data: list = task_dataset.sample()  # data, labels
-
-        # -- Inner Loop Adaptation
-        learner = meta_learner.maml.clone()
-        loss, acc = fast_adapt(
-            args=args,
-            task_data=task_data,
-            learner=learner,
-            loss=args.loss,
-            adaptation_steps=args.nb_inner_train_steps,
-            shots=args.k_shots,
-            ways=args.n_classes,
-            device=args.device,
-        )
-        if call_backward:
-            loss.backward()
-        # collect losses & accs
-        meta_losses.append(loss.item())
-        meta_accs.append(acc.item())
-    assert len(meta_losses) == meta_batch_size
-    assert len(meta_accs) == meta_batch_size
-    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
-    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
-    # print('-- done forward --')
-    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
 class GPTMetaLearnerL2L(nn.Module):
@@ -219,8 +36,6 @@ class GPTMetaLearnerL2L(nn.Module):
             self,
             args,
             base_model,
-
-            target_type='classification',
             min_batch_size=1,
     ):
         super().__init__()
@@ -237,11 +52,9 @@ class GPTMetaLearnerL2L(nn.Module):
         # maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False)
         # opt = torch.optim.Adam(maml.parameters(), meta_lr)
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
-
-        self.target_type = target_type
         self.min_batch_size = min_batch_size
 
-    def forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+    def forward(self, batch, training: bool = True, call_backward: bool = False):
         """
         Does a forward pass ala l2l.
 
@@ -249,27 +62,99 @@ class GPTMetaLearnerL2L(nn.Module):
             - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
-                                                                 args=self.args,
-                                                                 task_dataset=task_dataset,  # eg args.tasksets.train
-                                                                 training=training,  # always true to avoid .eval()
-                                                                 meta_batch_size=meta_batch_size,
+        return self._forward(args=self.args, batch = batch, meta_batch_size=meta_batch_size, training=training,  # always true to avoid .eval()
+            call_backward=call_backward,  # False for val/test
+            )
 
-                                                                 call_backward=call_backward,  # False for val/test
-                                                                 )
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
-    def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+    def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
-                                                                 args=self.args,
-                                                                 task_dataset=task_dataset,  # eg args.tasksets.train
-                                                                 training=training,  # always true to avoid .eval()
-                                                                 meta_batch_size=meta_batch_size,
+        return self._forward(args=self.args, batch = batch, meta_batch_size=meta_batch_size, training=training,  # always true to avoid .eval()
+            call_backward=call_backward,  # False for val/test
+            )
 
-                                                                 call_backward=call_backward,  # False for val/test
-                                                                 )
+
+    def _forward(self, args: Namespace,
+            batch,
+            meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
+            training: bool = True,  # always true to avoid .eval()
+            call_backward: bool = False,  # not needed during testing/inference
+            ):
+
+        batch = (batch[0].to(args.device), batch[1].to(args.device))
+        self.base_model.train() if training else self.base_model.eval()
+        meta_losses, meta_accs = [], []
+        # print('--start forward')
+        for task in range(meta_batch_size):
+
+            # -- Inner Loop Adaptation
+            learner = self.maml.clone()
+            loss, acc = self.fast_adapt(
+                args=args,
+                batch=batch,
+                learner=learner,
+                adaptation_steps=args.nb_inner_train_steps,
+                device=args.device,
+            )
+            if call_backward:
+                loss.backward()
+            # collect losses & accs
+            meta_losses.append(loss.item())
+            meta_accs.append(acc.item())
+        assert len(meta_losses) == meta_batch_size
+        assert len(meta_accs) == meta_batch_size
+        meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
+        meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+
         return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+
+    def fast_adapt(self, args: Namespace,
+               batch, learner, adaptation_steps, device) -> tuple[Tensor, Tensor]:
+        """"""
+
+        # Adapt the model
+        for step in range(adaptation_steps):
+            # - note the loss is usually in the final layer for my models
+            adaptation_error, _ = self.loss_for_half(learner(batch[0]), batch[1], first_half = True)
+            learner.adapt(adaptation_error)
+
+        # Evaluate the adapted model
+        eval_logits = learner(batch[0])
+        evaluation_error, evaluation_accuracy = self.loss_for_half(eval_logits, batch[1], first_half = False)
+        
+        return evaluation_error, evaluation_accuracy
+
+    def loss_for_half(self, logits, target, first_half, reduction = 'mean'):
+        """
+        Evaluates loss on either the first half or the second half of the batch
+        """
+        mid_point = self.base_model.config.block_size//2
+        # print("logits.size:", logits.size())
+        # print("target.size:", target.size())
+        if first_half:
+            cut_logits = logits[:, :mid_point, :]
+            cut_target = target[:, :mid_point]
+        else:
+            cut_logits = logits[:, mid_point:, :]
+            cut_target = target[:, mid_point:]
+
+        # print("cut_logits.size:", cut_logits.size())
+        # print("cut_target.size:", cut_target.size())
+
+        # TODO: reshape can make it slower
+        loss = F.cross_entropy(cut_logits.reshape(-1, cut_logits.size(-1)), cut_target.reshape(-1), ignore_index=-1, reduction = reduction)
+
+        preds = torch.argmax(cut_logits, dim = 2)
+        # print("preds.size:", preds.size())
+
+        if reduction == 'none':
+            # retain information for the batch to compute confidence intervals
+            acc = torch.sum((preds == cut_target), dim = 1)/cut_target.shape[1]
+        else:
+            acc = torch.sum((preds == cut_target))/(cut_target.shape[0]*cut_target.shape[1])
+
+        return loss, acc
 
     def eval(self):
         """
