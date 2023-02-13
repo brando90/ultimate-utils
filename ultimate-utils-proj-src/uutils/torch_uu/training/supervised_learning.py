@@ -25,6 +25,7 @@ from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip, \
     ConvergenceMeter
+import time
 
 
 def train_agent_fit_single_batch(args: Namespace,
@@ -109,26 +110,45 @@ def train_agent_iterations(args: Namespace,
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
+            ####### clumsy workaround to get lr
+            # 1) linear warmup for warmup_iters steps
+            if args.it < args.scheduler_hps['warmup_iters']:
+                lr =  args.lr * args.it / args.scheduler_hps['warmup_iters']
+            # 2) if iter > lr_decay_iters, return min learning rate
+            elif args.it > args.scheduler_hps['lr_decay_iters']:
+                lr =  args.scheduler_hps['min_lr']
+            # 3) in between, use cosine decay down to min learning rate
+            else:
+                decay_ratio = (args.it - args.scheduler_hps['warmup_iters']) / (args.scheduler_hps['lr_decay_iters'] - args.scheduler_hps['warmup_iters'])
+                assert 0 <= decay_ratio <= 1
+                coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff ranges 0..1
+                lr =  args.scheduler_hps['min_lr'] + coeff * (args.lr - args.scheduler_hps['min_lr'])
+
+            for param_group in opt.param_groups:
+                param_group['lr'] = lr
+
             # import time
-            # t_bto = time.time()
+            t_bto = time.time()
             batch = (batch[0].to(args.device), batch[1].to(args.device))
+            # opt.zero_grad(set_to_none=True)
             opt.zero_grad()
-            # t_bm = time.time()
+            t_bm = time.time()
             train_loss, train_acc = model(batch, training=True)
-            # t_am = time.time()
+            t_am = time.time()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
-            # t_lb = time.time()
+            t_lb = time.time()
             gradient_clip(args, opt)
             opt.step()  # the right update is done since all procs have the right synced grads
-            # t_opt = time.time()
-            # print("t_bto - t_bm=", t_bm - t_bto)
-            # print("t_am-t_bm", t_am-t_bm)
-            # print("t_lb-t_am", t_lb-t_am)
-            # print("t_opt - t_lb", t_opt-t_lb)
+            t_opt = time.time()
+            print("t_bto - t_bm=", t_bm - t_bto)
+            print("t_am-t_bm", t_am-t_bm)
+            print("t_lb-t_am", t_lb-t_am)
+            print("t_opt - t_lb", t_opt-t_lb)
 
             # - scheduler
-            if (args.it % args.log_scheduler_freq == 0) or args.debug:
-                scheduler_step(args, scheduler)
+            # if (args.it % args.log_scheduler_freq == 0) or args.debug:
+            #     scheduler_step(args, scheduler)
+
 
             # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
             halt: bool = check_halt(args)

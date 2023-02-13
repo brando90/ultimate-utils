@@ -228,6 +228,8 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif opt_option == 'Sgd_rfs':
         from uutils.torch_uu.optim_uu.sgd_uu import get_opt_sgd_rfs
         args.opt, args.opt_hps = get_opt_sgd_rfs(args.model, **opt_hps)
+    elif opt_option == 'adamw_gpt':
+        args.opt = args.model.module.configure_optimizers(**opt_hps)
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 

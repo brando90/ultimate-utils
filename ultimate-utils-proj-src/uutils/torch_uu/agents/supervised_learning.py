@@ -112,8 +112,8 @@ class GPT2SLAgent(Agent):
         acc = torch.sum((preds == batch[1]))/(batch[1].shape[0]*batch[1].shape[1])
         # t6 = time.time()
         # print("t6-t5=", t6-t5)
-        assert loss.size() == torch.Size([])
-        assert acc.size() == torch.Size([])
+        # assert loss.size() == torch.Size([])
+        # assert acc.size() == torch.Size([])
         # if training:
         #     loss, acc = self.model(batch[0], batch[1])
         # else:

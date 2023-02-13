@@ -287,6 +287,8 @@ class GPT(nn.Module):
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
         optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas)
+
+        # print("returning from custom opt")
         return optimizer
 
     @torch.no_grad()
