@@ -26,9 +26,12 @@ def hdb5_vggair_usl_all_splits_dataloaders(
     # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
     # - concat l2l datasets to get usl single dataset
-    train_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train)
-    valid_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation)
-    test_dataset: Dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test)
+    relabel_filename: str = 'hdb5_vggair_train_relabel_usl.pt'
+    train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+    relabel_filename: str = 'hdb5_vggair_val_relabel_usl.pt'
+    valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+    relabel_filename: str = 'hdb5_vggair_test_relabel_usl.pt'
+    test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
     assert len(train_dataset.labels) == 34 + 71, f'Err:\n{len(train_dataset.labels)=}'
     # - get data loaders, see the usual data loader you use
     from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
