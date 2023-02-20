@@ -178,7 +178,7 @@ mats.shape
 result = pmap(jnp.dot)(mats, mats)
 print(result.shape)
 
-timeit -n 5 -r 5 pmap(jnp.dot)(mats, mats).block_until_ready()
+# timeit -n 5 -r 5 pmap(jnp.dot)(mats, mats).block_until_ready()
 
 from functools import partial
 from jax import lax
