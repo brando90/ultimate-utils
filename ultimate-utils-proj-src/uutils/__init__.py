@@ -1419,6 +1419,24 @@ def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     return args
 
 
+def check_dict1_is_in_dict2(dict1: dict,
+                            dict2: dict,
+                            verbose: bool = False,
+                            ) -> bool:
+    """
+    Check if dict1 is in dict2. i.e. dict1 <= dict2.
+    """
+    for k, v in dict1.items():
+        if k not in dict2:
+            print(f'--> {k=} is not in dict2 with value {dict1[k]=}')
+            return False
+        if v != dict2[k]:
+            print(f'--> {k=} is in dict2 but with different value \n{dict1[k]=} \n{dict2[k]=}')
+            return False
+        if verbose:
+            print(f"--> {k=} is in both dicts, look: \n{dict1[k]=} \n{dict2[k]=} \n")
+    return True
+
 def is_pos_def(x: np.ndarray) -> bool:
     """
     ref:
