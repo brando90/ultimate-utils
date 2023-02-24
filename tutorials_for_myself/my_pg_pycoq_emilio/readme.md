@@ -19,9 +19,11 @@ opam install -y coq-serapi
 opam install -y pythonlib
 
 # --- Create conda env
-conda create -n iit_synthesis python=3.9
-conda activate iit_synthesis
-#pip install -e ~/ultimate-utils
+#conda create -n iit_synthesis python=3.9
+#conda activate iit_synthesis
+conda create -n pycoq-ejgallego python=3.9
+conda activate pycoq-ejgallego
+pip install -e ~/ultimate-utils
 
 # - Clone pycoq-emilio repo cuz he says so (this shouldn't be something a python user needs to do)
 cd ~
