@@ -19,6 +19,8 @@ import urllib.request
 
 from pathlib import Path
 
+from uutils import report_times, expanduser
+
 
 def process_batch_sl(args, batch):
     batch_x, batch_y = batch
@@ -109,13 +111,16 @@ def get_real_path_to_torchmeta_miniimagenet(dummy_datapath: Path) -> Path:
         containing the dataset but instead wants the path to the folder containing the data set instead of the direct
         path to the data set.
     """
+    dummy_datapath: Path = expanduser(dummy_datapath)
     if dummy_datapath == 'miniimagenet':
         # - this is the location torchmeta expects to be pointed to
         data_path: Path = Path('//').expanduser()
-    else:
+    elif '/data/miniimagenet' in str(dummy_datapath):
         # splits by folder removes the word miniimagenet and gives the real path to torchmeta's miniimagenet
         # -- ~/data/miniimagenet/ -> ~/data/
         data_path: Path = Path('/'.join(str(dummy_datapath.expanduser()).split('/')[:-1]))
+    else:
+        data_path: Path = expanduser('~/data/')
     return data_path
 
 
@@ -168,6 +173,7 @@ def get_miniimagenet_dataloaders_torchmeta(args: Namespace) -> dict:
         args.meta_batch_size_train = 4
     if not hasattr(args, 'meta_batch_size_eval'):
         args.meta_batch_size_eval = 2
+    args.num_workers = 4 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     meta_train_dataloader = BatchMetaDataLoader(datasets['train'],
                                                 batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
@@ -400,6 +406,7 @@ def get_cifarfs_dataloaders_torchmeta(args: Namespace) -> dict:
     datasets = get_cifarfs_datasets_torchmeta(args)
 
     # - get dataloaders
+    args.num_workers = 4 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     meta_train_dataloader = BatchMetaDataLoader(datasets['train'],
                                                 batch_size=args.meta_batch_size_train,
                                                 num_workers=args.num_workers)
@@ -417,6 +424,7 @@ def get_cifarfs_dataloaders_torchmeta(args: Namespace) -> dict:
 # -- Sinusoid
 
 def get_torchmeta_sinusoid_dataloaders(args):
+    args.num_workers = 4 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     dataset = sinusoid(shots=args.k_eval, test_shots=args.k_eval)
     train_dataloader = BatchMetaDataLoader(dataset, batch_size=args.meta_batch_size_train,
                                            num_workers=args.num_workers)
@@ -433,6 +441,7 @@ def get_torchmeta_sinusoid_dataloaders(args):
 
 def get_torchmeta_rand_fnn_dataloaders(args):
     # get data
+    from uutils.torch_uu.data_uu.synthetic.rand_fnn import RandFNN
     dataset_train = RandFNN(args.data_path, 'train')
     dataset_val = RandFNN(args.data_path, 'val')
     dataset_test = RandFNN(args.data_path, 'test')
@@ -448,6 +457,7 @@ def get_torchmeta_rand_fnn_dataloaders(args):
                                  num_test_per_class=args.k_eval,
                                  shuffle=True)
     # get meta-dataloader
+    args.num_workers = 4 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     train_dataloader = BatchMetaDataLoader(metaset_train,
                                            batch_size=args.meta_batch_size_train,
                                            num_workers=args.num_workers)
@@ -484,6 +494,7 @@ def get_dataloaders(args, rank, world_size, merge, dataset):
         train_sampler, val_sampler, test_sampler = None, None, None
         # args.num_workers = args.num_workers if hasattr(args, 'num_workers') else 4
         args.num_workers = 4
+        args.num_workers = 4 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     else:
         # get dist samplers
         assert (args.batch_size >= world_size)
@@ -493,6 +504,7 @@ def get_dataloaders(args, rank, world_size, merge, dataset):
         test_sampler = DistributedSampler(test_dataset, num_replicas=world_size, rank=rank)
         # todo - figure out what is the best for ddp. But my guess is that 0 is fine as hardcoded value & only overwrite if args.num_wokers has a none -1 or none else use my hardcoded default
         args.num_workers = 0
+        args.num_workers = 0 if args.num_workers == -1 or args.num_workers is None else args.num_workers
     # get dist dataloaders
     train_dataloader = DataLoader(train_dataset,
                                   batch_size=args.batch_size,
@@ -585,8 +597,6 @@ def mini_imagenet_loop():
 
 
 if __name__ == '__main__':
-    from uutils import report_times
-
     start = time.time()
     mini_imagenet_loop()
     print(f'Time passed: {report_times(start)}')

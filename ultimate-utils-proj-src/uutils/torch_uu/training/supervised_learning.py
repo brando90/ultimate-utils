@@ -191,3 +191,27 @@ def train_agent_epochs(args: Namespace,
     return avg_loss.item(), avg_acc.item()
 
 
+# -- run __main__
+
+def training_test_():
+    # - usl
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.supervised_learning import get_args_mi_usl_default
+    from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
+    args: Namespace = get_args_mi_usl_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = ClassificationSLAgent(args, args.model)
+    from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
+    args.dataloaders = get_sl_dataloader(args)
+    train_loss, train_acc = train_agent_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    print(f'{train_loss, train_acc=}')
+
+
+# - run __main__
+
+if __name__ == '__main__':
+    import time
+
+    start = time.time()
+    training_test_()
+    print(f'Done in {time.time() - start} seconds.')

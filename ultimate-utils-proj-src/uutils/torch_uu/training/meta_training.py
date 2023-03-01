@@ -11,8 +11,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 import uutils
-from uutils.logging_uu.wandb_logging.meta_learning import log_zeroth_step
-from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
+from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt, get_trainer_progress_bar, \
     ConvergenceMeter
@@ -108,7 +107,7 @@ def meta_train_fixed_iterations(args: Namespace,
         for batch_idx, batch in enumerate(dataloaders['train']):
             outer_opt.zero_grad()
             assert outer_opt is args.opt
-            train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(batch, call_backward=True)
+            train_loss, train_acc  = meta_learner(batch, call_backward=True)
             # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
             assert outer_opt.param_groups[0]['params'][0].grad is not None
             gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖
@@ -134,6 +133,7 @@ def meta_train_fixed_iterations(args: Namespace,
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
                 break
+    return train_loss, train_acc
 
 
 def meta_train_iterations_ala_l2l(args: Namespace,
@@ -164,7 +164,7 @@ def meta_train_iterations_ala_l2l(args: Namespace,
 
         # - forward pass. Since the data fetching is different for l2l we do it this way
         task_dataset: TaskDataset = args.dataloaders.train
-        train_loss, train_loss_ci, train_acc, train_acc_ci = meta_learner(task_dataset, call_backward=True)
+        train_loss, train_acc = meta_learner(task_dataset, call_backward=True)
         # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
         assert outer_opt.param_groups[0]['params'][0].grad is not None
 
@@ -199,3 +199,38 @@ def meta_train_iterations_ala_l2l(args: Namespace,
         # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
         if halt:
             break
+    return train_loss, train_acc
+
+# - tests tutorials
+
+def training_test_():
+    # - torchmeta
+    from uutils.argparse_uu.meta_learning import get_args_mi_torchmeta_default
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
+    args: Namespace = get_args_mi_torchmeta_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearner(args, args.model)
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    args.dataloaders = get_meta_learning_dataloaders(args)
+    train_loss, train_acc = meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    print(f'{train_loss, train_acc=}')
+    # - l2l
+    from uutils.argparse_uu.meta_learning import get_args_mi_l2l_default
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    args: Namespace = get_args_mi_l2l_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearnerL2L(args, args.model)
+    args.dataloaders = get_l2l_tasksets(args)
+    train_loss, train_acc = meta_train_iterations_ala_l2l(args, args.agent, args.opt, args.scheduler)
+    print(f'{train_loss, train_acc=}')
+
+# - run __main__
+
+if __name__ == '__main__':
+    import time
+    start = time.time()
+    training_test_()
+    print(f'Done in {time.time() - start} seconds.')

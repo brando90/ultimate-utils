@@ -326,7 +326,27 @@ def get_more_often_ckpting_filename(args,
 
 def log_zero_test_():
     # - usl
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.supervised_learning import get_args_mi_usl_default
+    from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
+    args: Namespace = get_args_mi_usl_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = ClassificationSLAgent(args, args.model)
+    from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
+    args.dataloaders = get_sl_dataloader(args)
+    train_loss, train_acc = log_zeroth_step(args, args.agent)
+    print(f'{train_loss, train_acc=}')
     # - torchmeta
+    from uutils.argparse_uu.meta_learning import get_args_mi_torchmeta_default
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
+    args: Namespace = get_args_mi_torchmeta_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearner(args, args.model)
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    args.dataloaders = get_meta_learning_dataloaders(args)
+    train_loss, train_acc = log_zeroth_step(args, args.agent)
+    print(f'{train_loss, train_acc=}')
     # - l2l
     from uutils.argparse_uu.meta_learning import get_args_mi_l2l_default
     from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets

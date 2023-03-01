@@ -39,10 +39,41 @@ def do_eval(args: Namespace,
 
 def eval_test_():
     # - usl
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.supervised_learning import get_args_mi_usl_default
+    from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
+    args: Namespace = get_args_mi_usl_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = ClassificationSLAgent(args, args.model)
+    from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
+    args.dataloaders = get_sl_dataloader(args)
+    loss, loss_ci, acc, acc_ci = do_eval(args, args.agent, args.dataloaders)
+    print(f'{loss, loss_ci, acc, acc_ci=}')
     # - torchmeta
+    from uutils.argparse_uu.meta_learning import get_args_mi_torchmeta_default
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
+    args: Namespace = get_args_mi_torchmeta_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearner(args, args.model)
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    args.dataloaders = get_meta_learning_dataloaders(args)
+    loss, loss_ci, acc, acc_ci = do_eval(args, args.agent, args.dataloaders)
+    print(f'{loss, loss_ci, acc, acc_ci=}')
     # - l2l
-    pass
+    from uutils.argparse_uu.meta_learning import get_args_mi_l2l_default
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    args: Namespace = get_args_mi_l2l_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearnerL2L(args, args.model)
+    args.dataloaders = get_l2l_tasksets(args)
+    loss, loss_ci, acc, acc_ci = do_eval(args, args.agent, args.dataloaders)
+    print(f'{loss, loss_ci, acc, acc_ci=}')
 
 
-def train_test_():
-    pass
+# - run main
+
+if __name__ == '__main__':
+    eval_test_()

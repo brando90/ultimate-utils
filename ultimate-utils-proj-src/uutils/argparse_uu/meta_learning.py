@@ -266,6 +266,94 @@ def parse_args_meta_learning() -> Namespace:
     load_cluster_jobids_to(args)
     return args
 
+# -- some default args
+
+def get_args_mi_torchmeta_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
+    """
+    Some default args to show case how code works + for unit tests too.
+    """
+    import os
+    from pathlib import Path
+    import torch
+    # - args
+    args: Namespace = parse_args_meta_learning() if args is None else args
+    # - model
+    # # args.model_option = 'resnet18_rfs'  # note this corresponds to block=(1 + 1 + 2 + 2) * 3 + 1 = 18 + 1 layers (sometimes they count the final layer and sometimes they don't)
+    # args.n_cls = 5
+    # # bellow seems true for all models, they do use avg pool at the global pool/last pooling layer
+    # args.model_hps = dict(avg_pool=True, drop_rate=0.1, dropblock_size=5,
+    #                       num_classes=args.n_cls)  # dropbock_size=5 is rfs default for MI, 2 for CIFAR, will assume 5 for mds since it works on imagenet
+    args.n_cls = 5
+    args.model_option = '5CNN_opt_as_model_for_few_shot'
+    args.filter_size = 4
+    args.model_hps = dict(image_size=84, bn_eps=1e-3, bn_momentum=0.95, n_classes=args.n_cls,
+                          filter_size=args.filter_size, levels=None, spp=False, in_channels=3)
+
+    # - data
+    args.data_option = 'torchmeta_miniimagenet'
+    args.data_path = '~/data/torchmeta_data'
+
+    # - training mode
+    args.training_mode = 'iterations'
+
+    # note: 75_000 used by MAML mds https://github.com/google-research/meta-dataset/blob/main/meta_dataset/learn/gin/setups/trainer_config.gin#L1
+    # args.num_its = 75_000  # 7_500 in 2 days
+    args.num_its = 6
+
+    # - debug flag
+    args.debug = False
+    # args.debug = True
+
+    # - opt
+    # args.opt_option = 'AdafactorDefaultFair'
+    # args.opt_hps: dict = dict()
+    args.opt_option = 'Adam_rfs_cifarfs'
+    args.lr = 1e-3  # match MAML++
+    args.opt_hps: dict = dict(lr=args.lr)
+
+    # - scheduler
+    # args.scheduler_option = 'AdafactorSchedule'
+    # args.scheduler_option = 'None'
+    args.scheduler_option = 'Adam_cosine_scheduler_rfs_cifarfs'
+    args.log_scheduler_freq = 1
+    args.T_max = args.num_its // args.log_scheduler_freq  # intended 800K/2k
+    args.eta_min = 1e-5  # match MAML++
+    args.scheduler_hps: dict = dict(T_max=args.T_max, eta_min=args.eta_min)
+    print(f'{args.T_max=}')
+
+    # -- Meta-Learner
+    # - maml
+    args.meta_learner_name = 'maml_fixed_inner_lr'
+    args.inner_lr = 1e-1
+    args.nb_inner_train_steps = 5
+    args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
+    args.track_higher_grads = True  # I know this is confusing but look at this ref: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
+    args.fo = True  # This is needed.
+
+    # - outer trainer params
+    args.batch_size = 3  # decreased it to 4 even though it gives more noise but updates quicker + nano gpt seems to do that for speed up https://github.com/karpathy/nanoGPT/issues/58
+    args.batch_size_eval = 2
+
+    # - logging params
+    args.log_freq = args.num_its // 4  # logs 4 times
+    # args.smart_logging_ckpt = dict(smart_logging_type='log_more_often_after_threshold_is_reached',
+    #                                metric_to_use='train_acc', threshold=0.9, log_speed_up=10)
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    args.experiment_name = f'{args.manual_loads_name} {args.model_option} {args.data_option} {os.path.basename(__file__)}'
+    args.run_name = f'{args.manual_loads_name} {args.data_option} {args.model_option} {args.opt_option} {args.lr} {args.scheduler_option}: {args.jobid=} {args.manual_loads_name}'
+    # args.log_to_wandb = True  # set false for the this default dummy args
+    # args.log_to_wandb = False  # set false for the this default dummy args
+    args.log_to_wandb = False if log_to_wandb is None else log_to_wandb
+
+    # - fix for backwards compatibility
+    args = fix_for_backwards_compatibility(args)
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args: Namespace = setup_args_for_experiment(args)
+    return args
+
 
 def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None) -> Namespace:
     """
@@ -293,7 +381,7 @@ def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Opti
     args.training_mode = 'iterations'
 
     # note: 60K iterations for original maml 5CNN with adam
-    args.num_its = 10
+    args.num_its = 6
     # args.num_its = 900_000  # resnet12rfs conv with 300K, lets to 3 times to be safe
 
     # - debug flag
@@ -301,14 +389,16 @@ def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Opti
     args.debug = False
 
     # - opt
+    # args.opt_option = 'AdafactorDefaultFair'
     args.opt_option = 'Adam_rfs_cifarfs'
     args.lr = 1e-3  # match MAML++
     args.opt_hps: dict = dict(lr=args.lr)
 
     # - scheduler
+    # args.scheduler_option = 'AdafactorSchedule'
     # args.scheduler_option = 'None'
     args.scheduler_option = 'Adam_cosine_scheduler_rfs_cifarfs'
-    args.log_scheduler_freq = 2_000
+    args.log_scheduler_freq = 1
     args.T_max = args.num_its // args.log_scheduler_freq  # intended 800K/2k
     args.eta_min = 1e-5  # match MAML++
     args.scheduler_hps: dict = dict(T_max=args.T_max, eta_min=args.eta_min)
@@ -319,10 +409,11 @@ def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Opti
     args.meta_learner_name = 'maml_fixed_inner_lr'
     args.inner_lr = 1e-1  # same as fast_lr in l2l
     args.nb_inner_train_steps = 5
-    args.first_order = True
+    # args.first_order = True  # need to create new args that uses first order maml, leaving as is for reproducibility
+    args.first_order = False  # seems I did higher order maml by accident, leaving it to not be confusing
 
     # - outer trainer params
-    args.batch_size = 4
+    args.batch_size = 3  # decreased it to 4 even though it gives more noise but updates quicker + nano gpt seems to do that for speed up https://github.com/karpathy/nanoGPT/issues/58
     args.batch_size_eval = 2
 
     # - dist args

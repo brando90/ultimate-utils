@@ -285,3 +285,74 @@ def make_args_from_supervised_learning_checkpoint_from_args_json_file(args: Name
     # args.log_root: Path = Path('~/data/logs/')
     # return args
     raise NotImplementedError
+
+# - some default args
+
+def get_args_mi_usl_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
+    import os
+    # -
+    args: Namespace = parse_args_standard_sl() if args is None else args
+    # - model
+    args.n_cls = 64
+    # args.n_cls = 64 + 1100  # mio
+    # args.n_cls = 1262  # micod
+    # args.n_cls = 5  # 5-way
+    args.n_classes = args.n_cls
+    args.model_option = '5CNN_opt_as_model_for_few_shot'
+    args.filter_size = 4
+    args.model_hps = dict(image_size=84, bn_eps=1e-3, bn_momentum=0.95, n_classes=args.n_cls,
+                          filter_size=args.filter_size, levels=None, spp=False, in_channels=3)
+
+    # - data
+    # args.data_option = 'hdb4_micod'
+    # args.n_classes = args.n_cls
+    # args.data_augmentation = 'hdb4_micod'
+    args.data_path = Path('~/data/miniImageNet_rfs/miniImageNet').expanduser()
+    args.data_option = str(args.data_path)
+
+
+    # - training mode
+    args.training_mode = 'iterations'
+    # args.num_its = 100_000  # mds 50_000: https://gitA,aahub.com/google-research/meta-dataset/blob/d6574b42c0f501225f682d651c631aef24ad0916/meta_dataset/learn/gin/best/pretrain_imagenet_resnet.gin#L20
+    # args.num_its = 2_000_000  # hdb4 resnetrfs about 2.5 more than above
+    args.num_its = 6
+
+    # - debug flag
+    # args.debug = True
+    args.debug = False
+
+    # - opt
+    # args.opt_option = 'AdafactorDefaultFair'
+    args.opt_option = 'Adam_rfs_cifarfs'
+    args.batch_size = 256
+    args.lr = 1e-3
+    args.opt_hps: dict = dict(lr=args.lr)
+
+    # - scheduler
+    # args.scheduler_option = 'AdafactorSchedule'
+    # args.scheduler_option = 'None'
+    args.scheduler_option = 'Adam_cosine_scheduler_rfs_cifarfs'
+    args.log_scheduler_freq = 1
+    args.T_max = args.num_its // args.log_scheduler_freq  # intended 800K/2k
+    args.eta_min = 1e-5  # match MAML++
+    args.scheduler_hps: dict = dict(T_max=args.T_max, eta_min=args.eta_min)
+    print(f'{args.T_max=}')
+
+    # - logging params
+    args.log_freq = args.num_its // 4  # logs 4 times
+    # args.smart_logging_ckpt = dict(smart_logging_type='log_more_often_after_threshold_is_reached',
+    #                                metric_to_use='train_acc', threshold=0.9, log_speed_up=10)
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    args.experiment_name = f'{args.manual_loads_name} {args.model_option} {args.data_option} {args.filter_size} {os.path.basename(__file__)}'
+    args.run_name = f'{args.manual_loads_name} {args.model_option} {args.opt_option} {args.lr} {args.scheduler_option} {args.filter_size}: {args.jobid=}'
+    # args.log_to_wandb = True  # set false for the this default dummy args
+    # args.log_to_wandb = False  # set false for the this default dummy args
+    args.log_to_wandb = False if log_to_wandb is None else log_to_wandb
+
+    # -- Setup up remaining stuff for experiment
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args: Namespace = setup_args_for_experiment(args)
+    return args
