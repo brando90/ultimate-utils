@@ -14,6 +14,8 @@ from uutils.torch_uu.eval.eval import do_eval
 
 from pdb import set_trace as st
 
+from uutils.torch_uu.training.common import get_data
+
 
 def log_train_val_stats_simple(args: Namespace,
                                it: int, train_loss: float, train_acc: float, bar: ProgressBar,
@@ -152,13 +154,22 @@ def _log_train_val_stats(args: Namespace,
             log_2_tb_supervisedlearning(args.tb, args, step, val_loss, val_acc, 'val')
 
 
-def log_zeroth_step(args: Namespace, model: Agent):
-    batch: Any = next(iter(args.dataloaders['train']))
-    print_batch_debhg(batch)
-    # st()
-    train_loss, train_acc = model(batch, training=True)
+def log_zeroth_step(args: Namespace, model: Agent, split: str = 'train', training: bool = True) -> tuple:
+    """
+    Do the zeroth step before model has been changed during training.
+
+    Note:
+    - this is another way to get the loss & acc:
+        data: Any = get_data(dataloaders, split)
+        losses, accs = model.get_lists_accs_losses(data, training)
+        loss = torch.stack(losses).mean()
+        acc = torch.stack(accs).mean()
+    """
+    batch: Any = get_data(args.dataloaders, split=split)
+    train_loss, train_acc = model(batch, training=training)
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, 0, step_name, train_loss, train_acc)
+    return train_loss, train_acc
 
 
 def smart_logging_ckpt(args,
@@ -311,10 +322,31 @@ def get_more_often_ckpting_filename(args,
     return ckpt_filename
 
 
-# - misc
+# - tests, tutorials, examples
 
-def print_batch_debhg(batch: Any):
-    if len(batch) == 2:
-        if hasattr(batch[0], 'shape'):
-            print(f'{batch[0].shape=}')
-    return
+def log_zero_test_():
+    # - usl
+    # - torchmeta
+    # - l2l
+    from uutils.argparse_uu.meta_learning import get_args_mi_l2l_default
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    args: Namespace = get_args_mi_l2l_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = MAMLMetaLearnerL2L(args, args.model)
+    args.dataloaders = get_l2l_tasksets(args)
+    train_loss, train_acc = log_zeroth_step(args, args.agent)
+    print(f'{train_loss, train_acc=}')
+
+# - run __main__
+
+if __name__ == "__main__":
+    import time
+    from uutils import report_times
+
+    start = time.time()
+    # - run experiment
+    log_zero_test_()
+    # - Done
+    print(f"\nSuccess Done!: {report_times(start)}\a")

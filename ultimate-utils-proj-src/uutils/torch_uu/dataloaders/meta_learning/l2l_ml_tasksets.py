@@ -25,7 +25,6 @@ import torch
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 
 
-
 def get_all_l2l_official_benchmarks_supported() -> list:
     """
     dict_keys(['omniglot', 'mini-imagenet', 'tiered-imagenet', 'fc100', 'cifarfs'])
@@ -39,9 +38,10 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
     # - get benchmark tasksets loader
-    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING you didnt set data augmentation flag in args' )
-    if args.data_option == 'cifarfs':
-        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print(
+        'WARNING you didnt set data augmentation flag in args')
+    if args.data_option == 'cifarfs_default_l2l':
+        loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -56,7 +56,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
-        args.tasksets: BenchmarkTasksets = get_tasksets(
+        loaders: BenchmarkTasksets = get_tasksets(
             args.data_option.split('_')[0],  # returns cifarfs or fc100 string
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -66,9 +66,9 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'mini-imagenet' or args.data_option == 'tiered-imagenet':
-        assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
+        # assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
-        args.tasksets: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+        loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
@@ -79,7 +79,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         )
     elif args.data_option == 'n_way_gaussians':
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import get_tasksets
-        args.tasksets: BenchmarkTasksets = get_tasksets(
+        loaders: BenchmarkTasksets = get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,  # k shots for meta-train, k eval for meta-validaton/eval
             train_ways=args.n_cls,
@@ -94,7 +94,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         )
     elif args.data_option == 'n_way_gaussians_nd':
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_nd_tasksets import get_tasksets
-        args.tasksets: BenchmarkTasksets = get_tasksets(
+        loaders: BenchmarkTasksets = get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,  # k shots for meta-train, k eval for meta-validaton/eval
             train_ways=args.n_cls,
@@ -112,7 +112,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import hdb1_mi_omniglot_tasksets
-        args.tasksets: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(
+        loaders: BenchmarkTasksets = hdb1_mi_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -124,7 +124,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb2_cifarfs_omniglot_l2l import hdb2_cifarfs_omniglot_tasksets
-        args.tasksets: BenchmarkTasksets = hdb2_cifarfs_omniglot_tasksets(
+        loaders: BenchmarkTasksets = hdb2_cifarfs_omniglot_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -136,7 +136,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataloaders.meta_learning.delaunay_l2l import get_delaunay_tasksets
-        args.tasksets: BenchmarkTasksets = get_delaunay_tasksets(
+        loaders: BenchmarkTasksets = get_delaunay_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -147,18 +147,18 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     elif args.data_option == 'hdb4_micod':
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb4_micod_l2l import hdb4_micod_l2l_tasksets
-        args.tasksets: BenchmarkTasksets = hdb4_micod_l2l_tasksets(
+        loaders: BenchmarkTasksets = hdb4_micod_l2l_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
             test_ways=args.n_cls,
             root=args.data_path,
             data_augmentation=args.data_augmentation,
-    )
+        )
     elif args.data_option == 'hdb5_vggair':
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb5_vggair import hdb5_vggair_l2l_tasksets
-        args.tasksets: BenchmarkTasksets = hdb5_vggair_l2l_tasksets(
+        loaders: BenchmarkTasksets = hdb5_vggair_l2l_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -167,8 +167,25 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     else:
-        raise ValueError(f'Invalid data option, got: {args.data_option}')
-    return args.tasksets
+        """
+        BenchmarkTasksets = namedtuple('BenchmarkTasksets', ('train', 'validation', 'test'))
+        _TASKSETS = {
+            'omniglot': omniglot_tasksets,
+            'mini-imagenet': mini_imagenet_tasksets,
+            'tiered-imagenet': tiered_imagenet_tasksets,
+            'fc100': fc100_tasksets,
+            'cifarfs': cifarfs_tasksets,
+        }
+        """
+        loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+        )
+    return loaders
 
 
 # - tests

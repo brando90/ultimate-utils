@@ -197,6 +197,10 @@ def setup_args_for_experiment(args: Namespace,
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     create_default_log_root(args)
 
+    # - get bar
+    from uutils.torch_uu.training.common import get_trainer_progress_bar
+    args.bar = get_trainer_progress_bar(args)
+
     # - best val loss
     args.best_val_loss: float = float('inf')
 

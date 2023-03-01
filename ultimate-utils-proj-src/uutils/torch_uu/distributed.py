@@ -24,6 +24,12 @@ import os
 from pdb import set_trace as st
 
 
+def get_default_world_size() -> int:
+    """ Get the number of GPUs available to the current process, otherwise return 1 (e.g in cpu case). """
+    world_size: int = torch.cuda.device_count() if torch.cuda.is_available() else 1
+    return world_size
+
+
 def set_gpu_id_if_available_simple(args):
     """
     Main idea is args.gpu = rank for simple case except in debug/serially running.

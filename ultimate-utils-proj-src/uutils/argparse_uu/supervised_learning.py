@@ -23,7 +23,7 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
     # - training options
-    parser.add_argument('--training_mode', type=str, default='epochs_train_convergence',
+    parser.add_argument('--training_mode', type=str, default='iterations',
                         help='valid/possible values: '
                              'fit_single_batch'
                              'iterations'

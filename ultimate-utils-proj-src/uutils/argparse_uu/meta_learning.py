@@ -1,12 +1,13 @@
 from argparse import Namespace
 from pathlib import Path
+from typing import Optional
 
 from torch import nn
 
 from uutils import load_cluster_jobids_to
 
 
-def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
+def fix_for_backwards_compatibility(args: Namespace, gpu_idx: int = 0) -> Namespace:
     args.meta_batch_size_train = args.batch_size
     args.meta_batch_size_eval = args.batch_size_eval
 
@@ -21,6 +22,9 @@ def fix_for_backwards_compatibility(args: Namespace) -> Namespace:
 
     if not hasattr(args, 'rank'):
         args.rank = -1
+    if not hasattr(args, 'device'):
+        from uutils.torch_uu import get_device
+        args.device = get_device(gpu_idx)
     return args
 
 
@@ -51,7 +55,7 @@ def parse_args_meta_learning() -> Namespace:
     parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
 
     # - training options
-    parser.add_argument('--training_mode', type=str, default='epochs_train_convergence',
+    parser.add_argument('--training_mode', type=str, default='iterations',
                         help='valid/possible values: '
                              'fit_single_batch'
                              'iterations'
@@ -260,4 +264,96 @@ def parse_args_meta_learning() -> Namespace:
     assert args.criterion is args.loss
     # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
     load_cluster_jobids_to(args)
+    return args
+
+
+def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None) -> Namespace:
+    """
+    Some default args to show case how code works + for unit tests too.
+    """
+    import os
+    from pathlib import Path
+    import torch
+    # - args
+    args: Namespace = parse_args_meta_learning() if args is None else args
+    # - model
+    args.n_cls = 5
+    args.model_option = '5CNN_opt_as_model_for_few_shot'
+    # args.model_hps = dict(avg_pool=True, drop_rate=0.1, dropblock_size=5, num_classes=args.n_cls)
+    args.filter_size = 4
+    args.model_hps = dict(image_size=84, bn_eps=1e-3, bn_momentum=0.95, n_classes=args.n_cls,
+                          filter_size=args.filter_size, levels=None, spp=False, in_channels=3)
+
+    # - data
+    args.data_option = 'mini-imagenet'
+    args.data_path = Path('~/data/l2l_data/').expanduser()
+    args.data_augmentation = None  # uses default of l2l, l2l ignores this flag but here for clarity in other datasets
+
+    # - training mode
+    args.training_mode = 'iterations'
+
+    # note: 60K iterations for original maml 5CNN with adam
+    args.num_its = 10
+    # args.num_its = 900_000  # resnet12rfs conv with 300K, lets to 3 times to be safe
+
+    # - debug flag
+    # args.debug = True
+    args.debug = False
+
+    # - opt
+    args.opt_option = 'Adam_rfs_cifarfs'
+    args.lr = 1e-3  # match MAML++
+    args.opt_hps: dict = dict(lr=args.lr)
+
+    # - scheduler
+    # args.scheduler_option = 'None'
+    args.scheduler_option = 'Adam_cosine_scheduler_rfs_cifarfs'
+    args.log_scheduler_freq = 2_000
+    args.T_max = args.num_its // args.log_scheduler_freq  # intended 800K/2k
+    args.eta_min = 1e-5  # match MAML++
+    args.scheduler_hps: dict = dict(T_max=args.T_max, eta_min=args.eta_min)
+    print(f'{args.T_max=}')
+
+    # -- Meta-Learner
+    # - maml
+    args.meta_learner_name = 'maml_fixed_inner_lr'
+    args.inner_lr = 1e-1  # same as fast_lr in l2l
+    args.nb_inner_train_steps = 5
+    args.first_order = True
+
+    # - outer trainer params
+    args.batch_size = 4
+    args.batch_size_eval = 2
+
+    # - dist args
+    from uutils.torch_uu.distributed import get_default_world_size
+    args.world_size = get_default_world_size()
+    # args.world_size = torch.cuda.device_count()
+    # args.world_size = 8
+    args.parallel = args.world_size > 1
+    # args.seed = 42  # I think this might be important due to how tasksets works.
+    args.dist_option = 'l2l_dist'  # avoid moving to ddp when using l2l
+    # args.init_method = 'tcp://localhost:10001'  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+    # args.init_method = f'tcp://127.0.0.1:{find_free_port()}'  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+    args.init_method = None  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+
+    # - logging params
+    args.log_freq = args.num_its // 4  # logs 4 times
+    # args.smart_logging_ckpt = dict(smart_logging_type='log_more_often_after_threshold_is_reached',
+    #                                metric_to_use='train_acc', threshold=0.9, log_speed_up=10)
+
+    # -- wandb args
+    # args.wandb_project = 'playground'  # needed to log to wandb properly
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    args.experiment_name = f'{args.manual_loads_name} {args.model_option} {args.data_option} {args.filter_size} {os.path.basename(__file__)}'
+    args.run_name = f'{args.manual_loads_name} {args.model_option} {args.opt_option} {args.lr} {args.scheduler_option} {args.filter_size}: {args.jobid=}'
+    # args.log_to_wandb = True  # set false for the this default dummy args
+    # args.log_to_wandb = False  # set false for the this default dummy args
+    args.log_to_wandb = False if log_to_wandb is None else log_to_wandb
+
+    # - fix for backwards compatibility
+    args = fix_for_backwards_compatibility(args)
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args: Namespace = setup_args_for_experiment(args)
     return args

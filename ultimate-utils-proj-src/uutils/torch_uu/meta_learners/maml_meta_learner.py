@@ -1,11 +1,9 @@
 import logging
 from argparse import Namespace
-from typing import Callable
+from typing import Callable, Any
 
-import learn2learn
 import torch
 import torch.nn as nn
-from learn2learn.data import TaskDataset
 from torch import Tensor
 # from torch.multiprocessing import Pool
 # from torch.optim.optimizer import required
@@ -69,7 +67,7 @@ class MAMLMetaLearner(nn.Module):
                                                                                                    qry_x, qry_y,
                                                                                                    training,
                                                                                                    call_backward)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+        return meta_loss, meta_acc
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
         """
@@ -77,8 +75,8 @@ class MAMLMetaLearner(nn.Module):
         This one looks redundant and it is, but it's here for consistency with the SL agents.
         The eval forward is different in SL agents.
         """
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = self.forward(batch, training, call_backward)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+        loss, loss_ci, acc, acc_ci = eval_forward(self, batch, training=training, call_backward=call_backward)
+        return loss, loss_ci, acc, acc_ci
 
     def get_lists_accs_losses(self, batch, training: bool = True, call_backward: bool = False):
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
@@ -119,6 +117,7 @@ class MAMLMetaLearner(nn.Module):
 def fast_adapt(args: Namespace,
                task_data, learner, loss, adaptation_steps, shots, ways, device) -> tuple[Tensor, Tensor]:
     """"""
+    import learn2learn
     # [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
     data, labels = task_data
     data, labels = data.to(device), labels.to(device)
@@ -157,7 +156,7 @@ def fast_adapt(args: Namespace,
 
 def forward(meta_learner,
             args: Namespace,
-            task_dataset: TaskDataset,  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+            task_dataset,  # from learn2learn.data import TaskDataset,
             meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
 
             training: bool = True,  # always true to avoid .eval()
@@ -168,6 +167,8 @@ def forward(meta_learner,
 
     Note: see get_lists_accs_losses_l2l(...).
     """
+    from learn2learn.data import TaskDataset
+    task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
     # - adapt
     meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner, args, task_dataset, meta_batch_size, training,
                                                        call_backward)
@@ -179,7 +180,7 @@ def forward(meta_learner,
 
 def get_lists_accs_losses_l2l(meta_learner,
                               args: Namespace,
-                              task_dataset: TaskDataset,
+                              task_dataset,  # from learn2learn.data import TaskDataset,
                               # args.tasksets.train, args.tasksets.validation or args.tasksets.test
                               meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
 
@@ -194,8 +195,9 @@ def get_lists_accs_losses_l2l(meta_learner,
         - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option to call it or not.
     """
     assert args is meta_learner.args
-    assert args.meta_learner is meta_learner
-    assert args.agent is meta_learner
+    # -
+    from learn2learn.data import TaskDataset
+    task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
 
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
@@ -236,6 +238,7 @@ class MAMLMetaLearnerL2L(nn.Module):
             target_type='classification',
             min_batch_size=1,
     ):
+        import learn2learn
         super().__init__()
         self.args = args  # args for experiment
         assert args is self.args
@@ -257,13 +260,17 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.target_type = target_type
         self.min_batch_size = min_batch_size
 
-    def forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+    def forward(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
         Does a forward pass ala l2l.
 
         Decision for BN/eval:
             - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
+        # -
+        from learn2learn.data import TaskDataset
+        task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+        # -
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
                                                                  args=self.args,
@@ -273,22 +280,27 @@ class MAMLMetaLearnerL2L(nn.Module):
 
                                                                  call_backward=call_backward,  # False for val/test
                                                                  )
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+        return meta_loss, meta_acc
 
-    def eval_forward(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+    def eval_forward(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
         Does a forward pass ala l2l. It's the same as forward just so that all Agents have the same interface.
         This one looks redundant and it is, but it's here for consistency with the SL agents.
         The eval forward is different in SL agents.
         """
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = self.forward(task_dataset=task_dataset, training=training,
-                                                                      call_backward=call_backward)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+        from learn2learn.data import TaskDataset
+        task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+        loss, loss_ci, acc, acc_ci = eval_forward(self, task_dataset, training=training, call_backward=call_backward)
+        return loss, loss_ci, acc, acc_ci
 
-    def get_lists_accs_losses(self, task_dataset: TaskDataset, training: bool = True, call_backward: bool = False):
+    def get_lists_accs_losses(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
         Returns the acc & loss on the meta-batch from the task in task_dataset.
         """
+        # -
+        from learn2learn.data import TaskDataset
+        task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+        # -
         meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         # note bellow code is already in forward, but we need to call it here to get the lists explicitly (no redundant code! ;) )
         meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner=self,
@@ -325,6 +337,24 @@ class MAMLMetaLearnerL2L(nn.Module):
     def cuda(self):
         self.base_model.cuda()
 
+
+# -- eval code
+
+def eval_forward(model: nn.Module, data: Any, training: bool = False, call_backward: bool = False):
+    """
+    Note:
+        - training = True makes sense for meta-learning (or if you want norms to use batch statistics, but it might
+        change your running statistics).
+    """
+    from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
+    assert call_backward == False, 'call_backward should be False for eval_forward'
+    losses, accs = model.get_lists_accs_losses(data, training, call_backward=call_backward)
+    loss, loss_ci = mean_confidence_interval(losses)
+    acc, acc_ci = mean_confidence_interval(accs)
+    return loss, loss_ci, acc, acc_ci
+
+
+# --
 
 def get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn() -> Namespace:
     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_defaul_args_for_5cnn
