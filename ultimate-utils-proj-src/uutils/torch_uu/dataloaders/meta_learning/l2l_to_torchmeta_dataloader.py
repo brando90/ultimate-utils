@@ -24,23 +24,23 @@ from learn2learn.data import TaskDataset
 def get_standard_pytorch_dataset_from_l2l_taskdatasets(tasksets: BenchmarkTasksets, split: str) -> Dataset:
     """
     Trying to do:
-        type(args.tasksets.train.dataset.dataset)
+        type(args.dataloaders.train.dataset.dataset)
         <class 'learn2learn.vision.datasets.cifarfs.CIFARFS'>
 
     Example call:
-        dataset: Dataset = get_standard_pytorch_dataset_from_l2l_taskdatasets(args.tasksets)
+        dataset: Dataset = get_standard_pytorch_dataset_from_l2l_taskdatasets(args.dataloaders)
 
     :param tasksets:
     :param split:
     :return:
     """
     # todo, I don't actually know if this works for indexable data sets
-    # trying to do something like: args.tasksets.train
+    # trying to do something like: args.dataloaders.train
     taskset: TaskDataset = getattr(tasksets, split)
-    # trying to do: type(args.tasksets.train.dataset.dataset)
+    # trying to do: type(args.dataloaders.train.dataset.dataset)
     dataset: MetaDataset = taskset.dataset
     dataset: Dataset = dataset.dataset
-    # assert isinstance(args.tasksets.train.dataset.dataset, Dataset)
+    # assert isinstance(args.dataloaders.train.dataset.dataset, Dataset)
     # asser isinstance(tasksets.train.dataset.dataset, Dataset)
     assert isinstance(dataset, Dataset), f'Expect dataset to be of type Dataset but got {type(dataset)=}.'
     return dataset
@@ -50,11 +50,11 @@ def get_l2l_torchmeta_dataloaders(args: Namespace) -> dict:
     """
     Returns a batch of tasks, the way that torchmeta would.
     """
-    args.tasksets: BenchmarkTasksets = get_l2l_tasksets(args)
+    dataloaders: BenchmarkTasksets = get_l2l_tasksets(args)
 
-    meta_trainloader = TorchMetaDLforL2L(args, split='train')
-    meta_valloader = TorchMetaDLforL2L(args, split='val')
-    meta_testloader = TorchMetaDLforL2L(args, split='test')
+    meta_trainloader = TorchMetaDLforL2L(args, 'train', dataloaders)
+    meta_valloader = TorchMetaDLforL2L(args, 'val', dataloaders)
+    meta_testloader = TorchMetaDLforL2L(args, 'test', dataloaders)
 
     args.dataloaders: dict = {'train': meta_trainloader, 'val': meta_valloader, 'test': meta_testloader}
     return args.dataloaders
@@ -67,11 +67,12 @@ class TorchMetaDLforL2L:
     Not intended or tested to work with ddp. For that extension see this: https://github.com/learnables/learn2learn/issues/263
     """
 
-    def __init__(self, args, split: str):
+    def __init__(self, args, split: str, dataloaders: BenchmarkTasksets):
         self.args = args
         assert split in ['train', 'val', 'test']
         self.split = split
         self.batch_size = None
+        self.dataloaders = dataloaders
 
     def __iter__(self):
         # initialization code for iterator usually goes here, I don't think we need any
@@ -91,7 +92,7 @@ class TorchMetaDLforL2L:
         depending on your task.
 
         note:
-            - task_dataset: TaskDataset = getattr(args.tasksets, split)
+            - task_dataset: TaskDataset = getattr(args.dataloaders, split)
             - recall a task is a "mini (spt) classification data set" e.g. with n classes and k shots (and it's qry set too)
             - torchmeta example: https://tristandeleu.github.io/pytorch-meta/
         """
@@ -101,7 +102,7 @@ class TorchMetaDLforL2L:
         # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_batch_size: int = self.batch_size
 
-        task_dataset: TaskDataset = getattr(self.args.tasksets, self.split)
+        task_dataset: TaskDataset = getattr(self.dataloaders, self.split)
 
         spt_x, spt_y, qry_x, qry_y = [], [], [], []
         for task in range(meta_batch_size):
@@ -139,30 +140,6 @@ class TorchMetaDLforL2L:
 
 # - tests
 
-# def args_5cnn_cifarfs(args: Namespace) -> Namespace:
-#     """
-#     """
-#     from uutils.torch_uu.models.resnet_rfs import get_recommended_batch_size_cifarfs_resnet12rfs_body, \
-#         get_feature_extractor_conv_layers
-#     # - model
-#     args.model_option = '4CNN_l2l_cifarfs'
-#
-#     # - data
-#     args.data_option = 'cifarfs_rfs'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
-#     args.data_path = Path('~/data/l2l_data/').expanduser()
-#     args.data_augmentation = 'rfs2020'
-#     args.augment_train = True
-#
-#     args.batch_size = 5
-#     args.batch_size_eval = args.batch_size
-#
-#     # - fix for backwards compatibility
-#     args = fix_for_backwards_compatibility(args)
-#     # - setup paths to ckpts for data analysis
-#     args = setup_args_path_for_ckpt_data_analysis(args, 'ckpt.pt')
-#     # - fill in the missing things and make sure things make sense for run
-#     args = uutils.setup_args_for_experiment(args)
-#     return args
 
 def l2l_example(meta_batch_size: int = 4, num_iterations: int = 5):
     from uutils.torch_uu import process_meta_batch

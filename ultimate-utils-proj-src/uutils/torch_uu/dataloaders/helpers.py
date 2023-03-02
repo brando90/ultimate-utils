@@ -53,52 +53,53 @@ def get_sl_dataloader(args: Namespace) -> dict:
         args.data_path: str = str(args.data_path)
     else:
         args.data_path = None  # trying to access it when not there leads to errors so not there != setting to None
-    # - get sl data loader based on args.data_option
+
+    # -- Get sl data loader based on args.data_option
     if args.data_option == 'n_way_gaussians_sl':  # next 3 lines added by Patrick 4/26/22. Everything else shouldn't have changed
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_1d_tasksets import \
             get_train_valid_test_data_loader_1d_gaussian
-        args.dataloaders: dict = get_train_valid_test_data_loader_1d_gaussian(args)
+        dataloaders: dict = get_train_valid_test_data_loader_1d_gaussian(args)
         print("Got n_way_gaussians_sl as dataset")
     elif args.data_option == 'n_way_gaussians_sl_nd':
         from uutils.torch_uu.dataloaders.meta_learning.gaussian_nd_tasksets import \
             get_train_valid_test_data_loader_nd_gaussian
-        args.dataloaders: dict = get_train_valid_test_data_loader_nd_gaussian(args)
+        dataloaders: dict = get_train_valid_test_data_loader_nd_gaussian(args)
         print("Got n_way_gaussians_sl_nd as dataset")
     elif args.data_option == 'hdb1_mio_usl' or args.data_option == 'hdb1':
         from diversity_src.dataloaders.usl.hdb1_mi_omniglot_usl_dl import hdb1_mi_omniglot_usl_all_splits_dataloaders
-        args.dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 1100, f'hdb1 expects more classes but got {args.model.cls.out_features=},' \
                                                          f'\nfor model {type(args.model)=}'  # hdb1
     elif args.data_option == 'hdb4_micod':
         from uutils.torch_uu.dataloaders.usl.usl_dataloaders import hdb4_micod_usl_all_splits_dataloaders
-        args.dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 64 + 34 + 64 + 1100, f'hdb4 expects more classes but got {args.model.cls.out_features=},' \
                                                                    f'\nfor model {type(args.model)=}'
     elif args.data_option == 'hdb5_vggair':
         from uutils.torch_uu.dataloaders.usl.usl_vggair import hdb5_vggair_usl_all_splits_dataloaders
-        args.dataloaders: dict = hdb5_vggair_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb5_vggair_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 34 + 71, f'hdb5 expects more classes but got {args.model.cls.out_features=},' \
                                                        f'\nfor model {type(args.model)=}'
     elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
-        args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
+        dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
         assert args.n_cls == 10
     elif 'cifar10' in args.data_path:
         raise NotImplementedError
     elif args.data_path == 'cifar100':
         from uutils.torch_uu.dataloaders.cifar100 import get_train_valid_test_data_loader_helper_for_cifar100
-        args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
+        dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifar100(args)
         assert args.n_cls == 100
     elif 'CIFAR-FS' in args.data_path:
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_train_valid_test_data_loader_helper_for_cifarfs
-        args.dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
+        dataloaders: dict = get_train_valid_test_data_loader_helper_for_cifarfs(args)
     elif 'miniImageNet_rfs' in args.data_path:
         from uutils.torch_uu.dataloaders.miniimagenet_rfs import get_train_valid_test_data_loader_miniimagenet_rfs
-        args.dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
+        dataloaders: dict = get_train_valid_test_data_loader_miniimagenet_rfs(args)
     elif args.data_option == 'mds':
         # todo, would be nice to move this code to uutils @patrick so import is from uutils
         from diversity_src.dataloaders.metadataset_batch_loader import get_mds_loader
-        args.dataloaders: dict = get_mds_loader(args)
+        dataloaders: dict = get_mds_loader(args)
         # assert args.model.cls.out_features == 3144
         # assert args.model.cls.out_features == 712 + 70 + 140 + 33 + 994 + 883 + 241 + 71
     elif args.data_option == 'mds2':  # Note - this is for alternative MDS loader. I didn't push it since it's very noisy :(
@@ -110,9 +111,9 @@ def get_sl_dataloader(args: Namespace) -> dict:
         # todo: why aren't there raw l2l -> usl conversions? besides cifar?
         if args.data_option == 'cifarfs_l2l_sl':
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
-            args.dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
+            dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
         else:
             raise ValueError(f'Invalid data set: got {args.data_path=} or wrong data option: {args.data_option}')
     else:
         raise ValueError(f'Invalid data set: got {args.data_path=}')
-    return args.dataloaders
+    return dataloaders

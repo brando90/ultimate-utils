@@ -43,6 +43,12 @@ def print_acc_loss_from_training_curve(path: Union[str, Path],
     # get dict and print acc and loss, split
 
     """
+    if 'debug_5cnn_2filters' in str(path):
+        data: dict = dict()
+        for split in splits:
+            for metric in metrics:
+                data[f'{split}_{metric}_{idx}'] = -1
+        return data
     # hopefully something like '~/data/logs/logs_Feb04_17-38-21_jobid_855372_pid_2723881_wandb_True/experiment_stats.json'
     path: Path = uutils.expanduser(path)
     if learning_stats_fname != 'experiment_stats.json':

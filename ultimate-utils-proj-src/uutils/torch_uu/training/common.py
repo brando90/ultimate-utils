@@ -28,7 +28,7 @@ def get_data(dataloaders,
     Get data according to the different data loader/taskset api's we've encountered. Cases "documented" by the if
     statements in the code.
 
-    return: either a normal batch (tesnor) or a l2l taskdataset.
+    return: either a normal batch (tensor) or a l2l taskdataset.
     """
     if isinstance(dataloaders, dict):
         # - torchmeta data loader for l2l
@@ -39,7 +39,8 @@ def get_data(dataloaders,
             return batch
         # - rfs meta-loader
         from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
-        if isinstance(dataloaders['val'].dataset, MetaImageNet):
+        # if isinstance(dataloaders['val'].dataset, MetaImageNet):
+        if isinstance(dataloaders[split].dataset, MetaImageNet):
             eval_loader = dataloaders[split]
             if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
                 raise NotImplementedError

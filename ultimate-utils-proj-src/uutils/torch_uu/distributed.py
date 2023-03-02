@@ -132,6 +132,9 @@ def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
         # img, target, item, sample_idx = batch
         # x, y, item, sample_idx = batch
         raise NotImplementedError
+    # if isinstance(batch, dict):
+    #     x, y = batch['train'][0], batch['train'][1]
+    #     # x, y = batch['test'][0], batch['test'][1]
     if type(x) == torch.Tensor:
         # x = x.to(args.gpu)
         x = x.to(args.device)
