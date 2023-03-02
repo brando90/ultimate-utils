@@ -308,7 +308,6 @@ class MAMLMetaLearnerL2L(nn.Module):
                                                            task_dataset=task_dataset,  # eg args.tasksets.train
                                                            training=training,  # always true to avoid .eval()
                                                            meta_batch_size=meta_batch_size,
-
                                                            call_backward=call_backward,  # False for val/test
                                                            )
         return meta_losses, meta_accs

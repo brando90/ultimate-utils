@@ -266,6 +266,7 @@ def parse_args_meta_learning() -> Namespace:
     load_cluster_jobids_to(args)
     return args
 
+
 # -- some default args
 
 def get_args_mi_torchmeta_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
@@ -447,4 +448,111 @@ def get_args_mi_l2l_default(args: Optional[Namespace] = None, log_to_wandb: Opti
     args = fix_for_backwards_compatibility(args)
     from uutils.argparse_uu.common import setup_args_for_experiment
     args: Namespace = setup_args_for_experiment(args)
+    return args
+
+
+def get_args_mi_effect_size_analysis_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
+    import os
+    from pathlib import Path
+    import torch
+    # - args
+    args: Namespace = parse_args_meta_learning() if args is None else args
+
+    # - model
+    # args.model_option = '5CNN_opt_as_model_for_few_shot'
+    args.model_option = 'resnet12_rfs'
+    # args.model_option = '4CNN_l2l_cifarfs'
+
+    # - data
+    # args.data_option = 'mini-imagenet'
+    # args.data_path = Path('~/data/l2l_data/').expanduser()
+    # args.data_augmentation = None  # uses default of l2l, l2l ignores this flag but here for clarity in other datasets
+    args.data_option = 'hdb1'
+    args.data_path = Path('~/data/l2l_data/').expanduser()
+    args.data_augmentation = 'hdb1'
+    # args.data_option = 'torchmeta_miniimagenet'  # no name assumes l2l
+    # args.data_path = Path('~/data/torchmeta_data/').expanduser()
+    # # args.data_option = 'rfs_meta_learning_miniimagenet'  # no name assumes l2l
+    # # args.data_path = Path('~/data/miniImageNet_rfs/miniImageNet').expanduser()
+    # args.augment_train = True
+    # args.data_option = 'hdb4_micod'
+    # args.data_path = Path('~/data/l2l_data/').expanduser()
+    # args.data_augmentation = 'hdb4_micod'
+    # args.data_option = 'torchmeta_miniimagenet'  # no name assumes l2l
+    # args.data_path = Path('~/data/torchmeta_data/').expanduser()
+    # args.augment_train = True
+    # args.data_option = 'cifarfs_rfs'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
+    # args.data_path = Path('~/data/l2l_data/').expanduser()
+    # args.data_augmentation = 'rfs2020'
+    # # args.data_option = 'torchmeta_cifarfs'  # no name assumes l2l
+    # # args.data_path = Path('~/data/torchmeta_data/').expanduser()
+    # args.augment_train = True
+
+    # - training mode
+    args.training_mode = 'iterations'  # needed so setup_args doesn't error out (sorry for confusioning line!)
+    args.num_its = 6
+
+    # - debug flag
+    # args.debug = True
+    args.debug = False
+
+    # -- Meta-Learner
+    # - maml
+    args.meta_learner_name = 'maml_fixed_inner_lr'
+    args.inner_lr = 1e-1  # same as fast_lr in l2l
+    args.nb_inner_train_steps = 5
+    args.first_order = True
+
+    args.batch_size = 2  # useful for debugging!
+    # args.batch_size = 5  # useful for debugging!
+    args.batch_size_eval = args.batch_size
+
+    # - expt option
+    # args.stats_analysis_option = 'performance_comparison'
+    # args.stats_analysis_option = 'stats_analysis_with_emphasis_on_effect_size'
+    # args.stats_analysis_option = 'stats_analysis_with_emphasis_on_effect_size_and_full_performance_comp_hist'
+    args.stats_analysis_option = 'stats_analysis_with_emphasis_on_effect_size_hist'
+    args.acceptable_difference1 = 0.01
+    args.acceptable_difference2 = 0.02
+    args.alpha = 0.01  # not important, p-values is not being emphasized due to large sample size/batch size
+
+    # - agent/meta_learner type
+    args.agent_opt = 'MAMLMetaLearner'
+    # args.agent_opt = 'MAMLMetaLearnerL2L_default'  # current code doesn't support this, it's fine I created a l2l -> torchmeta dataloader so we can use the MAML meta-learner that works for pytorch dataloaders
+
+    # - ckpt name
+    # # perhaps later do something else... e.g. run a small usl l2l run with 1 it, use the path saved for that, get paths...to complicated
+    # # 5cnn 4 filters: https://wandb.ai/brando/entire-diversity-spectrum/runs/r8xgfx07?workspace=user-brando
+    # args.path_2_init_sl = '~/data/logs/logs_Feb02_14-00-31_jobid_43228_pid_2821217_wandb_True'  # ampere3
+    #
+    # # 5cnn 4 filters: https://wandb.ai/brando/entire-diversity-spectrum/runs/sgoiu5tx/overview?workspace=user-brando
+    # args.path_2_init_maml = '~/data/logs/logs_Feb02_14-00-49_jobid_991923_pid_2822438_wandb_True'  # ampere3
+
+    # https://wandb.ai/brando/entire-diversity-spectrum/runs/3psfe5hn/overview?workspace=user-brando
+    args.path_2_init_sl = '~/data/logs/logs_Nov02_15-43-37_jobid_103052'  # train_acc 0.9996, train_loss 0.001050
+    # https://wandb.ai/brando/entire-diversity-spectrum/runs/1etjuijm/overview?workspace=user-brando
+    args.path_2_init_maml = '~/data/logs/logs_Oct15_18-10-01_jobid_96801'  #
+
+    # # https://wandb.ai/brando/sl_vs_ml_iclr_workshop_paper/runs/2ni2m08h/overview?workspace=user-brando 13860
+    # args.path_2_init_maml = '~/data/logs/logs_Mar24_21-06-59_jobid_13860/'  # 1.0 train acc, 0.56 val  # THIS ONE FOR RESULTS
+    #
+    # # https://wandb.ai/brando/sl_vs_ml_iclr_workshop_paper/runs/1fzto97d?workspace=user-brando
+    # args.path_2_init_sl = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663'  # 0.993 train acc, #THIS ONE FOR RESULTS
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    args.experiment_name = f'{args.manual_loads_name} {args.batch_size} {os.path.basename(__file__)}'
+    args.run_name = f'{args.manual_loads_name} {args.model_option} {args.batch_size} {args.stats_analysis_option}: {args.jobid=} {args.path_2_init_sl} {args.path_2_init_maml}'
+    # args.log_to_wandb = True  # set false for the this default dummy args
+    # args.log_to_wandb = False  # set false for the this default dummy args
+    args.log_to_wandb = False if log_to_wandb is None else log_to_wandb
+
+    # - fix for backwards compatibility
+    args = fix_for_backwards_compatibility(args)
+    # -
+    from diversity_src.data_analysis.common import setup_args_path_for_ckpt_data_analysis
+    args = setup_args_path_for_ckpt_data_analysis(args, 'ckpt.pt')
+    # -
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args = setup_args_for_experiment(args)
     return args
