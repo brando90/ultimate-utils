@@ -521,24 +521,27 @@ def get_args_mi_effect_size_analysis_default(args: Optional[Namespace] = None, l
     # args.agent_opt = 'MAMLMetaLearnerL2L_default'  # current code doesn't support this, it's fine I created a l2l -> torchmeta dataloader so we can use the MAML meta-learner that works for pytorch dataloaders
 
     # - ckpt name
+    args.path_2_init_maml = 'debug_5cnn_2filters'
+    args.path_2_init_sl = 'debug_5cnn_2filters'
+
     # # perhaps later do something else... e.g. run a small usl l2l run with 1 it, use the path saved for that, get paths...to complicated
+    # hdb4
     # # 5cnn 4 filters: https://wandb.ai/brando/entire-diversity-spectrum/runs/r8xgfx07?workspace=user-brando
     # args.path_2_init_sl = '~/data/logs/logs_Feb02_14-00-31_jobid_43228_pid_2821217_wandb_True'  # ampere3
     # # 5cnn 4 filters: https://wandb.ai/brando/entire-diversity-spectrum/runs/sgoiu5tx/overview?workspace=user-brando
     # args.path_2_init_maml = '~/data/logs/logs_Feb02_14-00-49_jobid_991923_pid_2822438_wandb_True'  # ampere3
 
-    # # https://wandb.ai/brando/entire-diversity-spectrum/runs/3psfe5hn/overview?workspace=user-brando
-    # args.path_2_init_sl = '~/data/logs/logs_Nov02_15-43-37_jobid_103052'  # train_acc 0.9996, train_loss 0.001050
-    # # https://wandb.ai/brando/entire-diversity-spectrum/runs/1etjuijm/overview?workspace=user-brando
-    # args.path_2_init_maml = '~/data/logs/logs_Oct15_18-10-01_jobid_96801'  #
+    # hdb1
+    # https://wandb.ai/brando/entire-diversity-spectrum/runs/3psfe5hn/overview?workspace=user-brando
+    args.path_2_init_sl = '~/data/logs/logs_Nov02_15-43-37_jobid_103052'  # train_acc 0.9996, train_loss 0.001050
+    # https://wandb.ai/brando/entire-diversity-spectrum/runs/1etjuijm/overview?workspace=user-brando
+    args.path_2_init_maml = '~/data/logs/logs_Oct15_18-10-01_jobid_96801'  #
 
+    # cifarfs
     # # https://wandb.ai/brando/sl_vs_ml_iclr_workshop_paper/runs/2ni2m08h/overview?workspace=user-brando 13860
     # args.path_2_init_maml = '~/data/logs/logs_Mar24_21-06-59_jobid_13860/'  # 1.0 train acc, 0.56 val  # THIS ONE FOR RESULTS
     # # https://wandb.ai/brando/sl_vs_ml_iclr_workshop_paper/runs/1fzto97d?workspace=user-brando
     # args.path_2_init_sl = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663'  # 0.993 train acc, #THIS ONE FOR RESULTS
-
-    args.path_2_init_maml = 'debug_5cnn_2filters'
-    args.path_2_init_sl = 'debug_5cnn_2filters'
 
     # -- wandb args
     args.wandb_project = 'entire-diversity-spectrum'
