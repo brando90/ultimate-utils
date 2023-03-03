@@ -7,6 +7,7 @@ Note:
     - sequences are represented as row vectors, so K^T the "normal" colum vector
     - todo:
         test in colab gpu, tpu & make tensors bigger
+        attention timeit experiment,surprising that the manual looped one wasnt too slow after jit, wonder if it holds in tpu, gpu with much larger matrices
 
 ref:
     - https://jax.readthedocs.io/en/latest/jax-101/index.html
