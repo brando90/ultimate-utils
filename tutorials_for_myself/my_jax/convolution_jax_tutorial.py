@@ -1,3 +1,8 @@
+"""
+
+ref:
+    - https://jax.readthedocs.io/en/latest/jax-101/index.html
+"""
 # %%
 
 import jax
