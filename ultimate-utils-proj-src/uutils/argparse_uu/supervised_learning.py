@@ -1,12 +1,17 @@
+import logging
 from argparse import Namespace
 from pathlib import Path
 from typing import Optional
 
 import torch
 from torch import nn
+from torch.nn import *
 
-from uutils import load_cluster_jobids_to, merge_args
+# later, doesn't let me do
 
+from uutils import load_cluster_jobids_to, merge_args, expanduser
+
+from pdb import set_trace as st
 
 def parse_args_standard_sl() -> Namespace:
     import argparse
@@ -226,6 +231,11 @@ def make_args_from_supervised_learning_checkpoint(args: Namespace,
         - model, opt, scheduler objs won't be present but will be loaded later.
         - To create a new path to checkpoint the checkpointed model this code overwrites
     """
+    print('----> Recovering args & model from checkpoint')
+    logging.info('-----> Recovering args & model from checkpoint')
+    # -
+    args.path_to_checkpoint: Path = expanduser(args.path_to_checkpoint)
+    print(f'{args.path_to_checkpoint=}')
     ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
     # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=args.device)
     args_dict: dict = ckpt['args_dict']
@@ -237,6 +247,9 @@ def make_args_from_supervised_learning_checkpoint(args: Namespace,
         args: Namespace = merge_args(starting_args=args, updater_args=args_ckpt)
     else:
         args: Namespace = merge_args(starting_args=args_ckpt, updater_args=args)
+    # from torch.nn import CrossEntropyLoss
+    # later, doesn't let me do import all with * locally :(
+    args.loss = eval(args.loss)
 
     # - create a correct path to save the new model that will be checkpointe and not break the previous checkpoint
     from uutils.argparse_uu.common import create_default_log_root

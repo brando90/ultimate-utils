@@ -11,6 +11,7 @@ Note:
 
 ref:
     - https://jax.readthedocs.io/en/latest/jax-101/index.html
+    - jit ref: https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html
 """
 # %%
 # create a jax random matrix of size Tx x d
@@ -68,6 +69,7 @@ att_x: Array = jax.vmap(att)(x, x, x)
 print(f'{jnp.sum(att_x)=}')
 print(f'{jnp.sum(att_batch_manual(x, x, x))=}')
 
+# jit ref: https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html
 att_jit: Callable = jax.jit(jax.vmap(att))
 att_batch_manual_jit: Callable = jax.jit(att_batch_manual)
 

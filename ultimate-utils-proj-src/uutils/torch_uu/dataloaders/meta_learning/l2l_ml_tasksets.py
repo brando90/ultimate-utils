@@ -24,6 +24,8 @@ import learn2learn
 import torch
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 
+from uutils import expanduser
+
 
 def get_all_l2l_official_benchmarks_supported() -> list:
     """
@@ -145,6 +147,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'hdb4_micod':
+        args.data_path = expanduser('/lfs/ampere1/0/brando9/data/l2l_data')
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb4_micod_l2l import hdb4_micod_l2l_tasksets
         loaders: BenchmarkTasksets = hdb4_micod_l2l_tasksets(

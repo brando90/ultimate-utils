@@ -130,6 +130,7 @@ def _log_train_val_stats(args: Namespace,
 
         # - save args
         uutils.save_args(args, args_filename='args.json')
+        # save_args_as_dict_in_pickle_file(args, args_filename='args.pt')
 
         # - update progress bar at the end
         if bar is not None:
@@ -322,6 +323,17 @@ def get_more_often_ckpting_filename(args,
     return ckpt_filename
 
 
+def save_args_as_dict_in_pickle_file(args: Namespace, args_filename: str = 'args.pt') -> dict:
+    """Saves args as dict in pickle file. Returns new dict without keys that might give issues"""
+    import pickle
+    args_dict: dict = vars(args)
+    # del key "agent" "model" "opt" "scheduler"
+    for key in ['agent', 'model', 'opt', 'scheduler', 'meta_learner']:
+        if key in args_dict:
+            del args_dict[key]
+    pickle.dump(args_dict, open(args.log_root / args_filename, 'wb'))
+
+
 # - tests, tutorials, examples
 
 def log_zero_test_():
@@ -358,6 +370,7 @@ def log_zero_test_():
     args.dataloaders = get_l2l_tasksets(args)
     train_loss, train_acc = log_zeroth_step(args, args.agent)
     print(f'{train_loss, train_acc=}')
+
 
 # - run __main__
 
