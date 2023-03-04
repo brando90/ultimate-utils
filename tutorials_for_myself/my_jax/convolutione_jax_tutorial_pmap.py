@@ -22,6 +22,9 @@ Main concept of pmap:
 vectorize ~ parallelize in one tpu/gpu.
 parallelize ~ parallelize in multiple tpu/gpus.
 
+Note:
+    - jax.pmap JIT-compiles the function given to it as part of its operation, so there is no need to additionally jax.jit it.
+
 ref:
     - pmap: https://jax.readthedocs.io/en/latest/jax-101/06-parallelism.html
 """
@@ -97,3 +100,10 @@ print(f'{conv_pmap_val=}')
 
 #%%
 conv_pmap_val: ShardedDeviceArray = jax.pmap(convolve, in_axes=(0, None))(xs, w)
+print(f'{conv_pmap_val=}')
+
+#%%
+# jax.pmap JIT-compiles the function given to it as part of its operation, so there is no need to additionally jax.jit it.
+
+#%%
+# rest of tutorial: https://jax.readthedocs.io/en/latest/jax-101/06-parallelism.html#communication-between-devices

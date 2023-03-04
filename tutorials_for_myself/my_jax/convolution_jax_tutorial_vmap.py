@@ -9,6 +9,7 @@ parallelize ~ parallelize in multiple tpu/gpus.
 
 ref:
     - https://jax.readthedocs.io/en/latest/jax-101/index.html
+    - vectorization: https://jax.readthedocs.io/en/latest/jax-101/03-vectorization.html
 """
 # %%
 
@@ -104,6 +105,11 @@ print(out)
 out: Array = auto_batch_convolve(xs, ws)
 print(out)
 
+%timeit manually_convolve_over_batch_dim(xs, ws)
+%timeit jax.vmap(convolve)(xs, ws)
+
+#%%
+# https://jax.readthedocs.io/en/latest/jax-101/03-vectorization.html#automatic-vectorization
 # # If the batch dimension is not the first, you may use the in_axes and out_axes arguments to specify the location of the batch dimension in inputs and outputs. These may be an integer if the batch axis is the same for all inputs and outputs, or lists, otherwise.
 #
 # auto_batch_convolve_v2 = jax.vmap(convolve, in_axes=1, out_axes=1)
@@ -118,9 +124,15 @@ print(out)
 # batch_convolve_v3 = jax.vmap(convolve, in_axes=[0, None])
 #
 # batch_convolve_v3(xs, w)
-# %
+
+#%%
+# https://jax.readthedocs.io/en/latest/jax-101/03-vectorization.html#combining-transformations
 # jitted_batch_convolve = jax.jit(auto_batch_convolve)
-#
 # jitted_batch_convolve(xs, ws)
-#
-# todo %timeit jit auto vs not jit
+
+%timeit manually_convolve_over_batch_dim(xs, ws)
+%timeit jax.vmap(convolve)(xs, ws)
+jit_vmap_convolve = jax.jit(jax.vmap(convolve))
+%timeit jit_vmap_convolve(xs, ws)
+jit_manual_convolve = jax.jit(manually_convolve_over_batch_dim)
+%timeit jit_manual_convolve(xs, ws)
