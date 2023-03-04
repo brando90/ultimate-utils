@@ -89,3 +89,9 @@ att_batch_manual_jit: Callable = jax.jit(att_batch_manual)
 """
 
 # %%
+"""
+Multi-head attention with JAX (Encoder)
+h_i = head(Wq @ x, Wk @ x, Wv @ x) = head_i(Q, K, V) = softmax(Q_iK_i^T/sqrt(d_k))V_i
+MHAtt(Q, K, V) = Concat(head_1, ..., head_h)W^O
+"""
+

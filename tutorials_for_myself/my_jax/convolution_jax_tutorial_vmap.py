@@ -1,5 +1,12 @@
 """
 
+Main concept of vmap:
+    tldr; jax.vmap(f)(x, w) will apply f by looping through the first dimension of x & w (according to how f works for a
+    single element of x & w, instead of a batch) for one device. More details see pmap.
+
+vectorize ~ parallelize in one tpu/gpu.
+parallelize ~ parallelize in multiple tpu/gpus.
+
 ref:
     - https://jax.readthedocs.io/en/latest/jax-101/index.html
 """
@@ -23,7 +30,7 @@ print(type(w))
 def my_conv_uu(x: DeviceArray, w: DeviceArray) -> DeviceArray:
     # return jnp.convolve(x, w, mode="same")
     assert len(x) >= len(w), "x must be longer than w"
-    # convoluve w with x with a loop
+    # convolve w with x with a loop
     conv = []
     for i in range(len(x) - len(w) + 1):
         conv.append(jnp.dot(x[i:i + len(w)], w))
