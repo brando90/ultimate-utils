@@ -120,32 +120,44 @@ Goals
 """
 
 
-def compute_head_simple(Q: Array, K: Array, V: Array,  # [Tx, Dm]
-                        WQ_i: Array, WK_i: Array, WV_i: Array,  # [Dm, Dk] [Dm, Dv]
-                        ):
+def compute_single_head_simple(Q: Array, K: Array, V: Array,  # [Tx, Dm]
+                               WQ_i: Array, WK_i: Array, WV_i: Array,  # [Dm, Dk] [Dm, Dv]
+                               ) -> Array:
+    """ Compute single head attention head hi = att(Qi, Ki, Vi) = softmax(QiKi^T/sqrt(d_k))Vi. """
+    Ty: int = Q.shape[0]
     Tx: int = K.shape[0]
     # compute each head todo vectorize computing these linear projections
     Q_i: Array = Q @ WQ_i  # [Tx, Dq] x [Dq, Dq'] -> [Tx, Dq']
     K_i: Array = K @ WK_i
     V_i: Array = V @ WV_i
+    #
     assert K_i.shape == [Tx, WV_i.shape[1]], f'Error: {K_i.shape} != {WV_i.shape}'
     head_i: Array = att(Q_i, K_i, V_i)
     assert head_i.shape == [Tx, WV_i.shape[1]]
     return head_i
 
+Tx, Dm = 2, 3
+Dq, Dk, Dv = 4, 4, 24
+key = jax.random.PRNGKey(0)
+x = jax.random.normal(key, (Tx, Dm))
+WQ_i = jax.random.normal(key, (Dm, Dq))
+WK_i = jax.random.normal(key, (Dm, Dk))
+WV_i = jax.random.normal(key, (Dm, Dv))
+compute_single_head_simple(x, x, x, WQ_i, WK_i, WV_i)
 
 def compute_multi_heads_simple(Q: Array, K: Array, V: Array,  # [Tx, Dm]
                                Ws: list[tuple[Array]],  # [WQi, WKi, WVi] i \in [num_heads] # [Dm, Dk] [Dm, Dv]
                                ) -> list[Array]:
     """
+    Gets [h1, ..., hH] where hi = head_i(Q, K, V) = softmax(Q_iK_i^T/sqrt(d_k))V_i as a list.
     Note:
         - eventual goal would be to return an "iter" of heads h_i but had compute the hi's in a vectorized/"parallel: way
     """
     Dv: int = Ws[0][2].shape[1]
     heads: list[Array] = []
     for WQ_i, WK_i, WV_i in Ws:  # todo paralelize/vectorize head hi computation for i \in [num_heads]
-        head_i: Array = compute_head_simple(Q, K, V, WQ_i, WK_i, WV_i)
-        Dv_: int = WV.shape[1]
+        head_i: Array = compute_single_head_simple(Q, K, V, WQ_i, WK_i, WV_i)
+        Dv_: int = WV_i.shape[1]
         assert Dv_ == Dv
         assert head_i.shape == [Tx, Dv]
         heads.append(head_i)
