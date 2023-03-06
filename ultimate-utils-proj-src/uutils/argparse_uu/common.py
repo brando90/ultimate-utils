@@ -167,11 +167,11 @@ def setup_args_for_experiment(args: Namespace,
         args.seed = uutils.get_truly_random_seed_through_os(rand_size=3)
     print(f'Seed after code tries to setup args: {args.seed=}')
 
-    # - get device name
+    # - get device name: Decided to not put it here since for now this function is not ran by each rank, but instead by the main process, so we can't get the device name here, we have to get it in the main train file/func
     # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    from uutils.torch_uu.distributed import set_devices
-    set_devices(args)  # args.device = rank or .device
-    print(f'device: {args.device}')
+    # from uutils.torch_uu.distributed import set_devices
+    # set_devices(args)  # args.device = rank or .device
+    # print(f'device: {args.device}')
 
     # - get device name if possible
     try:

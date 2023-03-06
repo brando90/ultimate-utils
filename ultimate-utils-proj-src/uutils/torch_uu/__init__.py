@@ -360,6 +360,7 @@ def get_device(gpu_idx: Optional[int] = None) -> torch.device:
     """
     Get default gpu torch device or use cpu
     """
+    # gpu_idx: int = 0 if gpu_idx is None else gpu_idx
     device: torch.device = torch.device(f"cuda:{gpu_idx}" if torch.cuda.is_available() else "cpu")
     return device
 
