@@ -31,6 +31,11 @@ Observe! Now that you've defined it like this it should be easy to share the wei
 Let's give an example why not! :) [oh, but we need PosEmbeddings + Transformer Layer Norm to do that!]
 Share Ws, Wo across layers!
 
+Questions:
+  - Q1: if I write loops in a jax fun vs none loop in a jax func, I jit both & use GPU, which one is faster?
+    - Task1: do it yourself! Use your conv code.
+    - Task2: ask jax discord with posted results
+
 ref:
     - https://jax.readthedocs.io/en/latest/jax-101/index.html
     - jit ref: https://jax.readthedocs.io/en/latest/jax-101/02-jitting.html
@@ -75,6 +80,24 @@ def compute_single_head_simple(Q: Array, K: Array, V: Array,  # [Tx, Dm]
     assert head_i.shape == (Tx, WV_i.shape[1]), f'Error: {head_i.shape} != {(Tx, WV_i.shape[1])}'
     return head_i
 
+
+def compute_single_head_vectorized(Q: Array, K: Array, V: Array,  # [Tx, Dm]
+                                   WQ_i: Array, WK_i: Array, WV_i: Array,  # [Dm, Dk] [Dm, Dv]
+                                   ) -> Array:
+    """ Compute single head attention head hi = att(Qi, Ki, Vi) = softmax(QiKi^T/sqrt(d_k))Vi. Vectorized form. """
+    Ty: int = Q.shape[0]
+    Tx: int = K.shape[0]
+    Dv: int = WV_i.shape[1]
+    # compute each head todo vectorize computing these linear projections
+    input: Array = jnp.concatenate([Q, K, V], axis=1)  # [Tx, 3*Dm]
+    # concatenate Q, K, V dim 0
+    WKV: Array = jnp.concatenate([WQ_i, WK_i, WV_i], axis=0)  # [3*Dm, Dv]
+    # do Q @ WQ_i, K @ WK_i, V @ WV_i in vectorized form
+    out: Array = input @ WKV  # [Tx, 3*Dm] x [3*Dm, Dv] -> [Tx, Dv]
+    # split out into Q_i, K_i, V_i
+    Q_i, K_i, V_i = out[:, :Dv], out[:, Dv: 2 * Dv], out[:, 2*Dv: 3 * Dv]
+    head_i: Array = att(Q_i, K_i, V_i)
+    return head_i
 
 def compute_multi_heads_simple(Q: Array, K: Array, V: Array,  # [Tx, Dm]
                                Ws: list[tuple[Array]],  # [WQi, WKi, WVi] i \in [num_heads] # [Dm, Dk] [Dm, Dv]
