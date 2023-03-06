@@ -22,9 +22,9 @@ def fix_for_backwards_compatibility(args: Namespace, gpu_idx: int = 0) -> Namesp
 
     if not hasattr(args, 'rank'):
         args.rank = -1
-    if not hasattr(args, 'device'):
-        from uutils.torch_uu import get_device
-        args.device = get_device(gpu_idx)
+    # if not hasattr(args, 'device'):
+    #     from uutils.torch_uu import get_device
+    #     args.device = get_device(gpu_idx)
     return args
 
 

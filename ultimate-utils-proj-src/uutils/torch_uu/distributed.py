@@ -23,6 +23,8 @@ import os
 
 from pdb import set_trace as st
 
+from uutils.torch_uu import get_device
+
 
 def get_default_world_size() -> int:
     """ Get the number of GPUs available to the current process, otherwise return 1 (e.g in cpu case). """
@@ -48,21 +50,19 @@ def set_devices(args, verbose: bool = False):
     """
     Set device to the gpu id if its distributed pytorch parallel otherwise to the device available.
 
-    :param args:
-    :return:
+    Note:
+        - this code is used in the main() or train() code -- for each rank, even serially -- not in the set_up_args() code.
+        Because to get the right gpu_idx it we need to know the rank.
+        - reason we don't just do args.device = ... is because we have this if statement to check if we are parallel
+        or not and set it according to the rank if using parallel.
     """
     if is_running_serially(args.rank):
-        args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        args.device = get_device()  # serial so no gpu_idx given nor rank given.
     else:
-        args.device = args.rank
-
+        assert args.rank != -1, "Error: running in parallel but rank is -1 (serial)."
+        args.device = get_device(args.rank)
     if verbose:
-        print(f'{args.device=}, {args.rank=}')
-
-    # todo - I'm not sure if the code bellow should be here...
-    if is_running_parallel(args.rank):
-        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
-            torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
+        print(f"{args.device=}")
 
 
 def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, cuda: bool = True) -> torch.device:
@@ -424,6 +424,10 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
     :param force: force is meant to force it into DDP. Meant for debugging.
     :return:
     """
+    # - set device if not set, don't put in setup args because need to running this in it's own python process & rank if it's running parallel
+    if args.device is None:
+        set_devices(args)  # this sets device if parallel or serial correctly
+    # - move model to device
     if is_running_parallel(rank) or force:
         # model.criterion = self.args.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
         # if gpu avail do the standard of creating a model and moving the model to the GPU with id rank
@@ -438,18 +442,28 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
             model = DistributedDataParallel(model,
                                             find_unused_parameters=True)  # I think removing the devices ids should be fine...
     else:  # running serially
-        args.device = args.device if hasattr(args, 'device') else uutils.torch_uu.get_device()
+        # args.device = get_device()  # not needed anymore
         model = model.to(args.device)
     return model
 
 
 def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model: nn.Module, force: bool = False):
-    if not hasattr(args, 'dist_option'):
-        # for backwards compatibility, default try to do ddp or just serial to device
+    """
+    Moves the model to the right device & handles the case when we are using the special l2l_distributed option in
+    args.dist_option. Otherwise, it just behave as expected, move the model to gpu:0 (or cpu) if serial and to the
+    right gpu if running in parallel according to the args.rank.
+
+    Note:
+        - this code is only needed because of l2l distributed. For that set flag args.dist_option = 'l2l_dist'.
+        Otherwise, don't worry about it.
+    """
+    if not hasattr(args, 'dist_option'):  # this flag is not needed unless your running l2l_dist.
+        # just more device according to serial or ddp. Doesn't handle l2l special case
         model = move_model_to_ddp(rank, args, model, force)
     else:
         if args.dist_option == 'ddp':
-            model = move_model_to_ddp(rank, args, model, force)
+            # model = move_model_to_ddp(rank, args, model, force)
+            raise ValueError(f'Error: {args.dist_option=} is not needed anymore.')
         elif args.dist_option == 'l2l_dist':
             # based on https://github.com/learnables/learn2learn/issues/263
             model = model.to(args.device)  # this works for serial and parallel (my guess, just moves to proc's device)

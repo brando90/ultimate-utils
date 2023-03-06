@@ -3,6 +3,7 @@
 Note:
 - the move_to_dpp moves things .to(device)
 """
+import os
 import re
 from argparse import Namespace
 from typing import Optional, Any
@@ -65,13 +66,19 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
     Ref:
         - standard way: https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
 
+    Note:
+        - Note this code assume you've already set the device properly outside of here. If you are using ddp then code
+        outside should've move model to device already (according to parallel using rank each proc or serial using gpu:0).
+
     Horrrible hack comment:
     - I accidentally did .cls = new_cls in SL code
     """
     # - prepare args from ckpt
-    # ckpt: dict = torch.load(args.path_to_checkpoint, map_location=torch.device('cpu'))
     path_to_checkpoint = args.path_to_checkpoint if path_to_checkpoint is None else path_to_checkpoint
+    # we could do a best effort set_device if args.device is None, e.g. call set_device(args), now no, responsibility is in main script runnning for now
+    # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cpu'))
     ckpt: dict = torch.load(path_to_checkpoint, map_location=args.device)
+    # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cuda:0'))
     if load_model:
         model_option = ckpt['model_option']
         model_hps = ckpt['model_hps']
@@ -328,7 +335,8 @@ def print_model_size():
     # - get data loader
     # -- print num filters vs num params
     # num_filters: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
-    num_filters: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+    # num_filters: list[int] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+    num_filters: list[int] = [1, 2, 4, 6, 8, 12, 14, 16, 32, 64, 128, 256, 512, 1024]
     num_params: list[int] = []
     d: dict = {}
     for num_filter in num_filters:

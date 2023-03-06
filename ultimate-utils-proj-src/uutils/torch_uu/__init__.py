@@ -356,16 +356,32 @@ def get_device_from_args2(args):
     return next(args.model.parameters()).device
 
 
-def get_device(gpu_idx: int = 0) -> torch.device:
+def get_device(gpu_idx: Optional[int] = None) -> torch.device:
     """
-    Get default gpu torch device.
-
-    :param gpu_idx:
-    :return:
+    Get default gpu torch device or use cpu
     """
     device: torch.device = torch.device(f"cuda:{gpu_idx}" if torch.cuda.is_available() else "cpu")
-    # device: torch.device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
     return device
+
+
+# def get_device_via_env_variables(deterministic: bool = False, verbose: bool = True) -> torch.device:
+#     device: torch.device = torch.device("cpu")
+#     if torch.cuda.is_available():
+#         if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+#             device: torch.device = torch.device("cuda:0")
+#         else:
+#             gpu_idx: list[str] = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+#             if len(gpu_idx) == 1:
+#                 gpu_idx: str = gpu_idx[0]
+#             else:
+#                 # generate random int from 0 to len(gpu_idx) with import statement
+#                 import random
+#                 idx: int = random.randint(0, len(gpu_idx) - 1) if not deterministic else -1
+#                 gpu_idx: str = gpu_idx[idx]
+#             device: torch.device = torch.device(f"cuda:{gpu_idx}")
+#     if verbose:
+#         print(f'{device=}')
+#     return device
 
 
 def create_detached_deep_copy_old(mdl):
