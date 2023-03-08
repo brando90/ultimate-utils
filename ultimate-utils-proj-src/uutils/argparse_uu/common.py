@@ -86,6 +86,7 @@ def setup_args_for_experiment(args: Namespace,
     from uutils.logger import Logger as uuLogger
 
     # - set the iteration/epoch number to start training from
+    # args.training_mode = 'iterations' if args.training_mode is None else args.training_mode
     if 'iterations' in args.training_mode:
         # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
         args.it = 0 if not hasattr(args, 'it') else args.it

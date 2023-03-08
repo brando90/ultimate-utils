@@ -612,6 +612,20 @@ def create_my_fsl_splits_from_original_delauny_splits():
     create_your_splits(path_to_all_data, path_for_splits)
 
 
+def load_delaunay_dataset_quickly():
+    path2train: str = '~/data/delauny_original_data/DELAUNAY_train'
+    path2val: str = ''
+    path2test: str = '/Users/brandomiranda/data/delauny_original_data/DELAUNAY_test'
+    random_split = True
+    train_dataset, valid_dataset, test_dataset = get_delauny_normal_torch_dataset_splits(path2train, path2val,
+                                                                                         path2test,
+                                                                                         random_split=random_split)
+    # print datasets
+    print(f'{train_dataset=}')
+    print(f'{valid_dataset=}')
+    print(f'{test_dataset=}')
+
+
 if __name__ == "__main__":
     import time
     from uutils import report_times
@@ -620,7 +634,8 @@ if __name__ == "__main__":
     # - run experiment
     # download_delauny_original_data()
     # create_my_fsl_splits_from_original_delauny_splits()
-    loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
+    # loop_raw_pytorch_delauny_dataset_with_my_data_transforms_and_print_min_max_size()
     # loop_my_delauny_based_on_my_disjoint_splits_for_fsl_but_normal_dataloader()
+    load_delaunay_dataset_quickly()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

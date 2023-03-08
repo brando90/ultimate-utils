@@ -76,6 +76,10 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
     # - prepare args from ckpt
     path_to_checkpoint = args.path_to_checkpoint if path_to_checkpoint is None else path_to_checkpoint
     # we could do a best effort set_device if args.device is None, e.g. call set_device(args), now no, responsibility is in main script runnning for now
+    # leaving this here since if proc runs this by itself it will use the right rank anyway
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)
+    print(f'{args.device=}')
     # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cpu'))
     ckpt: dict = torch.load(path_to_checkpoint, map_location=args.device)
     # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cuda:0'))

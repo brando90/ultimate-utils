@@ -356,7 +356,7 @@ def get_device_from_args2(args):
     return next(args.model.parameters()).device
 
 
-def get_device(gpu_idx: Optional[int] = None) -> torch.device:
+def get_device(gpu_idx: Optional[int] = 0) -> torch.device:
     """
     Get default gpu torch device or use cpu
     """
@@ -498,10 +498,12 @@ def lp_norm(mdl: nn.Module, p: int = 2, detach: bool = False) -> Tensor:
     return sum(lp_norms)
 
 
-def norm(f: nn.Module, l: int = 2, detach: bool = False):
+def norm(f: nn.Module, l: int = 2, detach: bool = False, cpu: bool = False) -> Tensor:
     # return sum([w.detach().norm(l) for w in f.parameters()])
-    return lp_norm(f, p=l, detach=detach)
-
+    norm_val: Tensor = lp_norm(f, p=l, detach=detach)
+    # move to cpu
+    norm_val: Tensor = norm_val.cpu() if cpu else norm_val
+    return norm_val
 
 def count_number_of_parameters(model: nn.Module, only_trainable: bool = True) -> int:
     """
