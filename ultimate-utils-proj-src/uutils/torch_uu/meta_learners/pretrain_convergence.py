@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 import torch
 import torch.nn as nn
 
@@ -30,10 +32,10 @@ from pdb import set_trace as st, set_trace
 class FitFinalLayer(nn.Module):
 
     def __init__(self,
-                 args,
-                 base_model,
-                 target_type='classification',
-                 classifier='LR',
+                 args: Namespace,
+                 base_model: nn.Module,
+                 target_type: str = 'classification',
+                 classifier: str = 'LR',
                  ):
         super().__init__()
         self.args = args

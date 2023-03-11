@@ -263,6 +263,10 @@ def setup_args_for_experiment(args: Namespace,
                 raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
                                  f'with value: {args.path_to_checkpoint=}')
 
+    # - save os.environ
+    args.environ = dict(os.environ)
+    args.CUDA_VISIBLE_DEVICES = os.environ.get('CUDA_VISIBLE_DEVICES', None)
+
     # - return
     uutils.print_args(args)
     uutils.save_args(args)

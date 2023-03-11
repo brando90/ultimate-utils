@@ -497,10 +497,12 @@ def timeSince(start):
     return msg, h
 
 
-def report_times(start: float) -> str:
+def report_times(start: float, verbose: bool = False) -> str:
     import time
     duration_secs = time.time() - start
     msg = f"time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}"
+    if verbose:
+        print(msg)
     return msg
 
 

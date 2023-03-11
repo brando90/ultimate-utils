@@ -8,6 +8,7 @@ Note:
 """
 from argparse import Namespace
 
+import numpy as np
 import torch
 from torch import nn, Tensor
 
@@ -96,12 +97,12 @@ class ClassificationSLAgent(Agent):
 
         # -- convert losses & accs to list of floats
         if as_list_floats:
-            # todo: not sure if needed, but in the past keeping everything as tensors creates GPU memory issues since it never forget the computation graph
-            #   might be fine due to torch.no_grad() but not sure. Perhaps assert they are of type list[float]?
-            raise NotImplementedError
+            loss: list[float] = loss.detach().cpu().numpy().tolist()
+            acc: list[float] = acc.detach().cpu().numpy().tolist()
+
         if as_numpy_data:
-            loss = loss.detach().cpu().numpy()
-            acc = acc.detach().cpu().numpy()
+            loss: np.ndarray = loss.detach().cpu().numpy()
+            acc: np.ndarray = acc.detach().cpu().numpy()
 
         # - return loss to normal
         self.loss.reduction = original_reduction

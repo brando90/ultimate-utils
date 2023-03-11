@@ -425,8 +425,10 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
     :return:
     """
     # - set device if not set, don't put in setup args because need to running this in it's own python process & rank if it's running parallel
+    if not hasattr(args, 'device'):
+        set_devices(args)  # this sets device if parallel or serial correctly using rank
     if args.device is None:
-        set_devices(args)  # this sets device if parallel or serial correctly
+        set_devices(args)  # this sets device if parallel or serial correctly using rank
     # - move model to device
     if is_running_parallel(rank) or force:
         # model.criterion = self.args.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
