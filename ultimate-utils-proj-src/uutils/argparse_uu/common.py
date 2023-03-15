@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import os
 import sys
 from argparse import Namespace
@@ -173,8 +175,7 @@ def setup_args_for_experiment(args: Namespace,
     # from uutils.torch_uu.distributed import set_devices
     # set_devices(args)  # args.device = rank or .device
     # print(f'device: {args.device}')
-
-    # - get device name if possible
+    # get device name if possible
     try:
         args.gpu_name = torch.cuda.get_device_name(0)
     except:
@@ -264,7 +265,8 @@ def setup_args_for_experiment(args: Namespace,
                                  f'with value: {args.path_to_checkpoint=}')
 
     # - save os.environ
-    args.environ = dict(os.environ)
+    # make a deep copy of os.environ
+    # args.environ = deepcopy(dict(os.environ))
     args.CUDA_VISIBLE_DEVICES = os.environ.get('CUDA_VISIBLE_DEVICES', None)
 
     # - return

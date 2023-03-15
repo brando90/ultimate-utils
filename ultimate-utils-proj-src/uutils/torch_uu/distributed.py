@@ -48,7 +48,7 @@ def set_gpu_id_if_available_simple(args):
 
 def set_devices(args, verbose: bool = False):
     """
-    Set device to the gpu id if its distributed pytorch parallel otherwise to the device available.
+    Set device to the gpu id, but if its distributed ddp (via rank) otherwise to the device available.
 
     Note:
         - this code is used in the main() or train() code -- for each rank, even serially -- not in the set_up_args() code.
@@ -57,7 +57,7 @@ def set_devices(args, verbose: bool = False):
         or not and set it according to the rank if using parallel.
     """
     if is_running_serially(args.rank):
-        args.device = get_device()  # serial so no gpu_idx given nor rank given.
+        args.device = get_device()  # serial so no gpu_idx given nor rank given, so cpu or cuda:0
     else:
         assert args.rank != -1, "Error: running in parallel but rank is -1 (serial)."
         args.device = get_device(args.rank)
