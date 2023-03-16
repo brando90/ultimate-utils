@@ -1,12 +1,16 @@
+import datasets
 from pathlib import Path
 
 import os
 from argparse import Namespace
+from torch import Tensor
 
 from uutils import expanduser
 from torch.utils.data import Dataset
 
 from uutils.torch_uu.dataset.concate_dataset import ConcatDatasetMutuallyExclusiveLabels
+
+from pdb import set_trace as st
 
 
 # I know sort of ugly, but idk if it requires me to refactor a lot of code, for now this is good enough (and less confusing than not having it) todo fix later as the function bellow too
@@ -82,6 +86,133 @@ def get_len_labels_list_datasets(datasets: list[Dataset], verbose: bool = False)
         print([dataset.labels for dataset in datasets])
         print('--- get_len_labels_list_datasets')
     return sum([len(dataset.labels) for dataset in datasets])
+
+
+# - from normal l2l to usl
+
+def get_pytorch_dataloaders_from_regular_l2l_tasksets(args) -> dict:
+    """ Get the pytorch dataloaders from the l2l tasksets."""
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    # - get l2l tasksets
+    # the k_shots, k_eval aren't needed for usl but the code needs it bellow. Any value is ok because l2l uses them for TaskTransform, which we ignore anyway for usl
+    args.k_shots, args.k_eval = 5, 15  # any value is fine, usl doesn't use it anyway
+    tasksets: BenchmarkTasksets = get_l2l_tasksets(args)
+    train_dataset, valid_dataset, test_dataset = get_dataset_from_l2l_tasksets(tasksets)
+
+    # - some safety defaults
+    # args.batch_size_eval = args.batch_size if not hasattr(args, 'batch_size_eval') else args.batch_size_eval
+    # args.rank = 0 if not hasattr(args, 'rank') else args.rank
+
+    # - get pytorch dataloaders from l2l tasksets
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=train_dataset,
+        val_dataset=valid_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    _, test_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=test_dataset,
+        val_dataset=test_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    # next(iter(train_loader))
+    # st()
+
+    # - get dict of dataloaders
+    dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    return dataloaders
+
+
+def get_dataset_from_l2l_tasksets(tasksets) -> tuple[Dataset, Dataset, Dataset]:
+    """
+    Get the datasets from the l2l tasksets.
+
+    (Pdb) type(tasksets.train)
+    <class 'learn2learn.data.task_dataset.TaskDataset'>
+    (Pdb) type(tasksets.train.dataset)
+    <class 'learn2learn.data.meta_dataset.MetaDataset'>
+    (Pdb) type(tasksets.train.dataset.dataset)
+    <class 'learn2learn.vision.datasets.mini_imagenet.MiniImagenet'>
+    """
+    from learn2learn.vision.benchmarks import BenchmarkTasksets
+    from learn2learn.vision.datasets import MiniImagenet
+    from learn2learn.data import TaskDataset, MetaDataset
+    # - make type explicit of tasksets
+    tasksets: BenchmarkTasksets = tasksets
+
+    # - get the datasets
+    if isinstance(tasksets.train, TaskDataset):
+        # - get the actual data set object (perhaps inside another dataset object e.g. a MetaDataset)
+        # todo: UnionMetaDataset, FilteredMetaDataset, ConcatDataset, ConcatDatasetMutuallyExclusiveLabels
+        if isinstance(tasksets.train.dataset, MetaDataset):
+            train_dataset = tasksets.train.dataset.dataset
+            valid_dataset = tasksets.validation.dataset.dataset
+            test_dataset = tasksets.test.dataset.dataset
+        # elif isinstance(tasksets.train.dataset, FilteredMetaDataset):
+        #     raise NotImplementedError
+        # elif isinstance(tasksets.train.dataset, UnionMetaDataset):
+        #     raise NotImplementedError
+        # elif isinstance(tasksets.train.dataset, ConcatDataset):
+        #     raise NotImplementedError
+        # elif isinstance(tasksets.train.dataset, ConcatDatasetMutuallyExclusiveLabels):
+        #     raise NotImplementedError
+        else:
+            # raise ValueError(f'not implemented for {type(tasksets.train.dataset)}')
+            train_dataset = tasksets.train.dataset
+            valid_dataset = tasksets.validation.dataset
+            test_dataset = tasksets.test.dataset
+        # - fix it if its MI
+        print(f'{type(train_dataset)=}')
+        if isinstance(train_dataset, MiniImagenet):
+            train_dataset = USLDatasetFromL2L(train_dataset)
+            valid_dataset = USLDatasetFromL2L(valid_dataset)
+            test_dataset = USLDatasetFromL2L(test_dataset)
+            print(f'{train_dataset[0][1]=}')
+            assert not isinstance(train_dataset[0][1], float)
+        return train_dataset, valid_dataset, test_dataset
+    else:
+        raise ValueError(f'not implemented for {type(tasksets.train)}')
+
+
+class USLDatasetFromL2L(datasets.Dataset):
+
+    def __init__(self, original_l2l_dataset: datasets.Dataset):
+        self.original_l2l_dataset = original_l2l_dataset
+        self.transform = self.original_l2l_dataset.transform
+        self.original_l2l_dataset.target_transform = label_to_long
+        self.target_transform = self.original_l2l_dataset.target_transform
+
+    def __getitem__(self, index: int) -> tuple:
+        """ overwrite the getitem method for a l2l dataset. """
+        # - get the item
+        img, label = self.original_l2l_dataset[index]
+        # - transform the item only if the transform does exist and its not a tensor already
+        # img, label = self.original_l2l_dataset.x, self.original_l2l_dataset.y
+        if self.transform and not isinstance(img, Tensor):
+            img = self.transform(img)
+        if self.target_transform and not isinstance(label, Tensor):
+            label = self.target_transform(label)
+        return img, label
+
+    def __len__(self) -> int:
+        """ Get the length. """
+        return len(self.original_l2l_dataset)
+
+
+def label_to_long(label: int) -> int:
+    """ Convert the label to long. """
+    # return int(label)
+    # convert label to pytorch long
+    # return torch.tensor(label, dtype=torch.long)
+    import torch
+    return torch.tensor(label, dtype=torch.long)
 
 
 # - tests

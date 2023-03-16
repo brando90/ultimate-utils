@@ -377,10 +377,12 @@ def get_resnet_rfs_model_mi(model_opt: str,
                        'drop_rate': drop_rate,
                        'dropblock_size': dropblock_size,
                        'num_classes': num_classes}
+    # print(f'about to return model {model_opt}')
     model: nn.Module = model_dict[model_opt](avg_pool=avg_pool,
                                              drop_rate=drop_rate,
                                              dropblock_size=dropblock_size,
                                              num_classes=num_classes)
+    # print(f'got model {type(model)=}')
     return model, model_hps
 
 

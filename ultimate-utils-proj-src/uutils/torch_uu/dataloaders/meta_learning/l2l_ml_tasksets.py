@@ -38,22 +38,9 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
-    # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
     # - get benchmark tasksets loader
-    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print(
-        'WARNING you didnt set data augmentation flag in args')
-    if args.data_option == 'cifarfs_default_l2l':
-        loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
-            args.data_option,
-            train_samples=args.k_shots + args.k_eval,
-            train_ways=args.n_cls,
-            test_samples=args.k_shots + args.k_eval,
-            test_ways=args.n_cls,
-            root=args.data_path,
-        )
-        assert False, 'Doesnt use data augmentation, dont use! Its here just to demo how to use l2l.'
-        raise NotImplemented
-    elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
+    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING no data augmentation')
+    if 'cifarfs' in args.data_option or 'fc100' in args.data_option:
         # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
@@ -180,6 +167,10 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             'cifarfs': cifarfs_tasksets,
         }
         """
+        # raise NotImplemented
+        # note fc100, cifarfs, don't have data augmentations, so fail them, instead use other code above
+        assert 'cifarfs' not in str(args.data_option), f'For: cifarfs & fc100 use our code so data_augmentation is on.'
+        assert 'fc100' not in str(args.data_option), f'For: cifarfs & fc100 use our code so data_augmentation is on.'
         loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
@@ -187,6 +178,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             test_samples=args.k_shots + args.k_eval,
             test_ways=args.n_cls,
             root=args.data_path,
+            data_augmentation=args.data_augmentation,
         )
     return loaders
 
