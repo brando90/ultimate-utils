@@ -2,9 +2,11 @@
 ViT code for uutils.
 
 refs:
+    - docs: https://huggingface.co/docs/transformers/model_doc/vit
     - fine-tuning ViT with hf trainer: https://github.com/NielsRogge/Transformers-Tutorials/blob/master/VisionTransformer/Fine_tuning_the_Vision_Transformer_on_CIFAR_10_with_the_%F0%9F%A4%97_Trainer.ipynb
     - looks like a great tutorial for training the model manually: https://colab.research.google.com/drive/1Z1lbR_oTSaeodv9tTm11uEhOjhkUx1L4?usp=sharing#scrollTo=5ql2T5PDUI1D
     - nice forward pass tutorial: https://github.com/NielsRogge/Transformers-Tutorials/blob/master/VisionTransformer/Quick_demo_of_HuggingFace_version_of_Vision_Transformer_inference.ipynb
+
 
 Qs:
 - "ViTModel: This is the base model that is provided by the HuggingFace transformers library and is the core of the vision transformer. Note: this can be used like a regular PyTorch layer." https://blog.roboflow.com/how-to-train-vision-transformer/
@@ -61,7 +63,7 @@ class ViTForImageClassificationUU(nn.Module):
                  num_classes: int,
                  image_size: int,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
                  criterion: Optional[Union[None, Callable]] = None,
-                 # None, USL agent does this not model usually for me e.g nn.Criterion()
+                 # Note: USL agent does criterion not model usually for me e.g nn.Criterion()
                  cls_p_dropout: float = 0.0,
                  pretrained_name: str = None,
                  vitconfig: ViTConfig = None,
@@ -134,12 +136,31 @@ def get_vit_model_and_model_hps(num_classes: int,
     return model, model_hps
 
 
-def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,
-                                           image_size: int = 84,
+def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,  # or 64, etc. for data set's num_cls
+                                           image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                           criterion: Optional[Union[None, Callable]] = None,
                                            ) -> tuple[nn.Module, dict]:
     """get vit for mi, only num_classes = 5 and image size 84 is needed. """
-    model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
+    model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    return model, model_hps
+
+
+def get_vit_get_vit_model_and_model_hps(vitconfig: ViTConfig = None,
+                                        num_classes: int = 5,
+                                        image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                        criterion: Optional[Union[None, Callable]] = None,  # for me agent does it
+                                        cls_p_dropout: float = 0.0,
+                                        pretrained_name: str = None,
+                                        ) -> tuple[nn.Module, dict]:
+    """get vit for mi, only num_classes = 5 and image size 84 is needed. """
+    model_hps: dict = dict(vitconfig=vitconfig,
+                           num_classes=num_classes,
+                           image_size=image_size,
+                           criterion=criterion,
+                           cls_p_dropout=cls_p_dropout,
+                           pretrained_name=pretrained_name)
+    model: nn.Module = ViTForImageClassificationUU(**model_hps)
     return model, model_hps
 
 
@@ -370,6 +391,32 @@ def mi_vit():
     #     for task_num in range(batch_size):
     pass
 
+def vit_forward_pass():
+    # - for determinism
+    import random
+    import numpy as np
+    random.seed(0)
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    # - options for number of tasks/meta-batch size
+    device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
+
+    # - get my vit model
+    vitconfig: ViTConfig = ViTConfig()
+    # model = ViTForImageClassificationUU(num_classes=64 + 1100, image_size=84)
+    model = get_vit_get_vit_model_and_model_hps(vitconfig, num_classes=64 + 1100, image_size=84)
+    criterion = nn.CrossEntropyLoss()
+    # to device
+    model.to(device)
+    criterion.to(device)
+
+    # - forward pass
+    x = torch.rand(5, 3, 84, 84)
+    y = torch.randint(0, 64 + 1100, (5,))
+    logits = model(x)
+    loss = criterion(logits, y)
+    print(f'{loss=}')
 
 # -- Run experiment
 """
@@ -383,8 +430,9 @@ if __name__ == "__main__":
     start = time.time()
     # - run experiment
     # does_feature_extractor_have_params()
-    cifar_vit()
-    hdb1_vit()
+    # cifar_vit()
+    # hdb1_vit()
     # mi_vit()
+    vit_forward_pass()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

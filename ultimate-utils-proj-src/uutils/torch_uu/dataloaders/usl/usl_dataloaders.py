@@ -1,3 +1,9 @@
+"""
+
+ref:
+    - official SL training from l2l: https://github.com/learnables/learn2learn/blob/master/examples/vision/supervised_pretraining.py
+    didn't know about it on time. Alas.
+"""
 import datasets
 from pathlib import Path
 
@@ -208,11 +214,11 @@ class USLDatasetFromL2L(datasets.Dataset):
 
 def label_to_long(label: int) -> int:
     """ Convert the label to long. """
-    # return int(label)
+    return int(label)
     # convert label to pytorch long
     # return torch.tensor(label, dtype=torch.long)
-    import torch
-    return torch.tensor(label, dtype=torch.long)
+    # import torch
+    # return torch.tensor(label, dtype=torch.long)
 
 
 # - tests
