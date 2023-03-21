@@ -184,7 +184,6 @@ def get_lists_accs_losses_l2l(meta_learner,
     for task in range(meta_batch_size):
         # print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
-        print('task_dataset.sample() in get_lists_accs_losses_l2l')
         task_data: list = task_dataset.sample()  # data, labels
 
         # -- Inner Loop Adaptation
@@ -249,6 +248,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         # - type task_dataset (since we don't want to globally import learn2learn here if you're not using it but still needs stuff in this file)
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+
         # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         # meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
         # meta_losses, meta_accs = get_lists_accs_losses_l2l(self, self.args, task_dataset, meta_batch_size, training,
@@ -267,6 +267,8 @@ class MAMLMetaLearnerL2L(nn.Module):
         # - type task_dataset (since we don't want to globally import learn2learn here if you're not using it but still needs stuff in this file)
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+        # assert self.args.batch_size_eval == task_dataset.num_tasks, f"Err: {self.args.batch_size_eva} != {task_dataset.num_tasks}"
+        # assert self.args.batch_size == task_dataset.num_tasks, f"Err: {self.args.batch_size} != {task_dataset.num_tasks}"
         # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         # meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
         # meta_losses, meta_accs = get_lists_accs_losses_l2l(self, self.args, task_dataset, meta_batch_size, training,
@@ -284,6 +286,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         # -
         # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
         meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
+        meta_batch_size: int = max(self.args.batch_size_eval // self.args.world_size, 1)
         # note bellow code is already in forward, but we need to call it here to get the lists explicitly (no redundant code! ;) )
         meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner=self,
                                                            args=self.args,
