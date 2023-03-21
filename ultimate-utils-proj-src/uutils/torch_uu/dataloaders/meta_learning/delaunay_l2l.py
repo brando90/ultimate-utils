@@ -15,7 +15,7 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 from learn2learn.data import MetaDataset
 from torch.utils.data import Dataset
 
-from uutils import expanduser
+from uutils import expanduser, download_and_extract
 from uutils.torch_uu import make_code_deterministic
 from uutils.torch_uu.dataset.delaunay_uu import get_delauny_normal_torch_dataset_splits
 
@@ -172,6 +172,28 @@ class Task_transform_delaunay(Callable):
     def __call__(self, dataset):
         from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
         return get_remaining_transforms_mi(dataset, self.ways, self.samples)
+
+
+def get_delaunay_from_zenodo(root='~/data/l2l_data/delauny_l2l_bm_splits',
+                             url: str = 'https://zenodo.org/record/7756788/files/delauny_l2l_bm_splits.zip',
+                             ):
+    """
+    Download the delaunay dataset from zenodo.
+
+    ref:
+        - https://zenodo.org/record/7756788#.ZBn09-zMJf0
+    """
+    download_and_extract(url=url,
+                         path_used_for_zip=root,
+                         path_used_for_dataset=root,
+                         rm_zip_file_after_extraction=False,
+                         force_rewrite_data_from_url_to_file=True,
+                         clean_old_zip_file=True,
+                         )
+    print(f'Done downloading Delaunay {root=} {url=}')
+    # -- now test if it was downloaded & it works correctly
+    loop_through_delaunay()
+    print('Success! Delaunay data set works and a simple loop over it works! \n\a')
 
 
 # -- Run experiment
