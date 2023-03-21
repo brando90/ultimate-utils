@@ -42,11 +42,13 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING no data augmentation')
     if 'cifarfs' in args.data_option or 'fc100' in args.data_option:
         # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
+        args.data_augmentation = 'rfs2020'
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
         loaders: BenchmarkTasksets = get_tasksets(
-            args.data_option.split('_')[0],  # returns cifarfs or fc100 string
+            # args.data_option.split('_')[0],  # returns cifarfs or fc100 string
+            args.data_option,
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,

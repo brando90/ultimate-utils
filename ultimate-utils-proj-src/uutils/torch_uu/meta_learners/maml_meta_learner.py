@@ -138,7 +138,9 @@ def fast_adapt(args: Namespace,
     for step in range(adaptation_steps):
         # - note the loss is usually in the final layer for my models
         adaptation_error = loss(learner(support_data), support_labels)
+        # st()
         learner.adapt(adaptation_error)
+        # st()
 
     # Evaluate the adapted model
     predictions: Tensor = learner(query_data)
@@ -152,30 +154,6 @@ def fast_adapt(args: Namespace,
         evaluation_accuracy = r2_score_from_torch(query_labels, predictions)
         raise NotImplementedError
     return evaluation_error, evaluation_accuracy
-
-
-def forward(meta_learner,
-            args: Namespace,
-            task_dataset,  # from learn2learn.data import TaskDataset,
-            meta_batch_size: int,  # suggested max(batch_size or eval // args.world_size, 2)
-
-            training: bool = True,  # always true to avoid .eval()
-            call_backward: bool = False,  # not needed during testing/inference
-            ):
-    """
-    Returns the acc & loss on the meta-batch from the task in task_dataset.
-
-    Note: see get_lists_accs_losses_l2l(...).
-    """
-    from learn2learn.data import TaskDataset
-    task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
-    # - adapt
-    meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner, args, task_dataset, meta_batch_size, training,
-                                                       call_backward)
-    # - return
-    meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
-    meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
-    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
 
 
 def get_lists_accs_losses_l2l(meta_learner,
@@ -194,6 +172,7 @@ def get_lists_accs_losses_l2l(meta_learner,
         - training true ensures .eval() is never called (due to BN, we always want batch stats)
         - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option to call it or not.
     """
+    print(f'{task_dataset=}')
     assert args is meta_learner.args
     # -
     from learn2learn.data import TaskDataset
@@ -205,6 +184,7 @@ def get_lists_accs_losses_l2l(meta_learner,
     for task in range(meta_batch_size):
         # print(f'{task=}')
         # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
+        print('task_dataset.sample() in get_lists_accs_losses_l2l')
         task_data: list = task_dataset.sample()  # data, labels
 
         # -- Inner Loop Adaptation
@@ -236,7 +216,6 @@ class MAMLMetaLearnerL2L(nn.Module):
             base_model,
 
             target_type='classification',
-            min_batch_size=1,
     ):
         import learn2learn
         super().__init__()
@@ -247,7 +226,8 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.inner_lr = deepcopy(args.inner_lr)
         self.nb_inner_train_steps = deepcopy(args.nb_inner_train_steps)
         self.first_order = deepcopy(args.first_order)
-        allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None  # ternary op for backwards comp.
+        # learn2learn: Maybe try with allow_nograd=True and/or allow_unused=True ?
+        allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None
         self.maml = learn2learn.algorithms.MAML(self.base_model,
                                                 lr=self.inner_lr,
                                                 first_order=self.first_order,
@@ -258,7 +238,6 @@ class MAMLMetaLearnerL2L(nn.Module):
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
 
         self.target_type = target_type
-        self.min_batch_size = min_batch_size
 
     def forward(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
@@ -267,29 +246,31 @@ class MAMLMetaLearnerL2L(nn.Module):
         Decision for BN/eval:
             - during meta-training always use .train(), see: https://stats.stackexchange.com/a/551153/28986
         """
-        # -
+        # - type task_dataset (since we don't want to globally import learn2learn here if you're not using it but still needs stuff in this file)
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
-        # -
-        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
-        meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = forward(meta_learner=self,
-                                                                 args=self.args,
-                                                                 task_dataset=task_dataset,  # eg args.tasksets.train
-                                                                 training=training,  # always true to avoid .eval()
-                                                                 meta_batch_size=meta_batch_size,
-
-                                                                 call_backward=call_backward,  # False for val/test
-                                                                 )
-        return meta_loss, meta_acc
+        # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
+        # meta_losses, meta_accs = get_lists_accs_losses_l2l(self, self.args, task_dataset, meta_batch_size, training,
+        #                                                    call_backward)
+        meta_losses, meta_accs = self.get_lists_accs_losses(task_dataset, training, call_backward)
+        loss, loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
+        acc, acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
+        return loss, acc
 
     def eval_forward(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
         Does a forward pass ala l2l. It's the same as forward just so that all Agents have the same interface.
-        This one looks redundant and it is, but it's here for consistency with the SL agents.
-        The eval forward is different in SL agents.
+        This one looks redundant and it is, but it's here for consistency with the SL agents, since
+        the eval forward is different in SL agents (e.g. torch.no_grad is used in SL agent but here we don't).
         """
+        # - type task_dataset (since we don't want to globally import learn2learn here if you're not using it but still needs stuff in this file)
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
+        # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
+        # meta_losses, meta_accs = get_lists_accs_losses_l2l(self, self.args, task_dataset, meta_batch_size, training,
+        #                                                    call_backward)
         loss, loss_ci, acc, acc_ci = eval_forward(self, task_dataset, training=training, call_backward=call_backward)
         return loss, loss_ci, acc, acc_ci
 
@@ -301,7 +282,8 @@ class MAMLMetaLearnerL2L(nn.Module):
         from learn2learn.data import TaskDataset
         task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
         # -
-        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        meta_batch_size: int = max(task_dataset.num_tasks // self.args.world_size, 1)
         # note bellow code is already in forward, but we need to call it here to get the lists explicitly (no redundant code! ;) )
         meta_losses, meta_accs = get_lists_accs_losses_l2l(meta_learner=self,
                                                            args=self.args,

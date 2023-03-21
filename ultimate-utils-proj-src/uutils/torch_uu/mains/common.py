@@ -172,13 +172,13 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         args.model, args.model_hps = None, None
     elif model_option == '5CNN_opt_as_model_for_few_shot_sl' or model_option == '5CNN_opt_as_model_for_few_shot':
         args.model, args.model_hps = get_default_learner_and_hps_dict(**model_hps)
+    elif model_option == 'resnet12_rfs_cifarfs_fc100':
+        from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_cifarfs_fc100
+        args.model, args.model_hps = get_resnet_rfs_model_cifarfs_fc100(args.model_option, **model_hps)
     elif model_option == 'resnet12_rfs_mi' or model_option == 'resnet12_rfs' or model_option == 'resnet24_rfs' or \
             re.match(r'resnet[0-9]+_rfs', model_option):  # resnet12_rfs for backward compat
         from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
-    elif model_option == 'resnet12_rfs_cifarfs_fc100':
-        from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_cifarfs_fc100
-        args.model, args.model_hps = get_resnet_rfs_model_cifarfs_fc100(args.model_option, **model_hps)
     elif model_option == '5CNN_l2l_mi':
         import learn2learn
         model_hps: dict = dict(n_classes=args.n_classes)  # ways or n_classes is the hp
@@ -213,6 +213,9 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
     elif model_option == 'vit_mi':
         from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_mi
         args.model, args.model_hps = get_vit_get_vit_model_and_model_hps_mi(**model_hps)
+    elif model_option == 'vit_cifarfs':
+        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_cifarfs
+        args.model, args.model_hps = get_vit_get_vit_model_and_model_hps_cifarfs(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:
@@ -286,14 +289,27 @@ def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
     Note:
         - some of these functions might assume you've already loaded .model correct in args.
     """
-    if args.agent_opt == 'MAMLMetaLearnerL2L':
+    if hasattr(args, 'agent_opt'):
+        if args.agent_opt == 'MAMLMetaLearnerL2L':
+            from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+            agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
+        elif args.agent_opt == 'MAMLMetaLearner':
+            from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
+            agent = MAMLMetaLearner(args, args.model, **agent_hps)
+        else:
+            raise ValueError(f'Invalid meta-learning type, got {meta_learning_type(args)}')
+
+    # - handle mds ViT case
+    if args.data_option == 'mds':
+        # higher doesn't work with ViT, so we need to convert to l2l MAML
         from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
         agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
-    elif args.agent_opt == 'MAMLMetaLearner':
-        from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearner
-        agent = MAMLMetaLearner(args, args.model, **agent_hps)
-    else:
-        raise ValueError(f'Invalid meta-learning type, got {meta_learning_type(args)}')
+
+    # I wish but decided not to do this because we still need the episodic data loader for mds anyway
+    # elif 'l2l' in str(args.data_path):
+    #     from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    #     agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
+
     args.agent = agent
     args.meta_learner = agent
     return agent

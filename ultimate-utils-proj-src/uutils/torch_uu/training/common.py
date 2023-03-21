@@ -10,7 +10,7 @@ ref:
 """
 import logging
 from argparse import Namespace
-from typing import Any
+from typing import Any, Optional
 
 import progressbar
 from progressbar import ProgressBar
@@ -23,6 +23,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 
 def get_data(dataloaders,
              split: str = 'val',
+             agent: Optional = None,
              ) -> Any:
     """
     Get data according to the different data loader/taskset api's we've encountered. Cases "documented" by the if
@@ -31,28 +32,26 @@ def get_data(dataloaders,
     return: either a normal batch (tensor) or a l2l taskdataset.
     """
     if isinstance(dataloaders, dict):
+        batch = None
         # - torchmeta data loader for l2l
         from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
         if isinstance(dataloaders[split], TorchMetaDLforL2L):
             # dl needs to be in "torchmeta format"
-            batch: any = next(iter(dataloaders[split]))
-            return batch
+            batch: Any = next(iter(dataloaders[split]))
         # - rfs meta-loader
         from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
-        # if isinstance(dataloaders['val'].dataset, MetaImageNet):
-        if isinstance(dataloaders[split].dataset, MetaImageNet):
+        if isinstance(dataloaders[split].dataset, MetaImageNet):  # isinstance(dataloaders['val'].dataset, MetaImageNet)
             eval_loader = dataloaders[split]
             if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
                 raise NotImplementedError
             batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
-            return batch
         # - else normal data loader (so torchmeta, or normal pytorch data loaders)
         if isinstance(dataloaders, dict):
             batch: Any = next(iter(dataloaders[split]))
-            return batch
         # - if all attempts failed raise error that dataloader is weird
-        raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
-                         f'dict or something else (perhaps train, val, test loader type objects).')
+        if batch is None:
+            raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
+                             f'dict or something else (perhaps train, val, test loader type objects).')
     else:
         # it is here at the end so that we are not forced to import l2l unless we really are using it, checking earlier forces ppl to install l2l when they might not need it
         from learn2learn.data import TaskDataset
@@ -60,9 +59,20 @@ def get_data(dataloaders,
         if isinstance(dataloaders, BenchmarkTasksets):
             split: str = 'validation' if split == 'val' else split
             task_dataset: TaskDataset = getattr(dataloaders, split)
-            return task_dataset
+            batch = task_dataset
         else:
             raise ValueError(f'Unexpected error, dataloaders is {dataloaders=}.')
+        return batch
+    # - convert episodic batch to TaskDataset: note: we do need the above to get the batch if to do conversion
+    from torch.utils.data import DataLoader
+    loader: DataLoader = dataloaders[split]
+    if hasattr(loader, 'episodic_batch_2_task_dataset'):
+        from learn2learn.data import TaskDataset
+        from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import episodic_batch_2_task_dataset
+        batch: TaskDataset = episodic_batch_2_task_dataset(batch, loader, agent)
+        print(f'{get_data=}')
+        print(f'task_batch_2_task_dataset: {batch=}')
+    return batch
 
 
 # - progress bars

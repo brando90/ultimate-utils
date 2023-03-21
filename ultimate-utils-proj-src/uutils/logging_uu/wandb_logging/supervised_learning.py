@@ -97,24 +97,28 @@ def _log_train_val_stats(args: Namespace,
         from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
         # - print what flags are on
         if step == 0:
-            print(f'---- printing logging info for {step=}')
+            print(f'---- <start> printing logging info for {step=}')
             print(f'{save_val_ckpt=}')
             print(f'{uu_logger_log=}')
             print(f'{log_to_wandb=}')
             print(f'{log_to_tb=}')
             print(f'{sys.stdout=}')
             print(f'{os.path.realpath(sys.stdout.name)=}')
-            print(f'---- printing logging info for {step=}')
+            print(f'---- <end> printing logging info for {step=}')
+            print()
 
         # - compute val stats for logging & determining if to ckpt val model
+        print('1')
         val_loss, val_loss_ci, val_acc, val_acc_ci = do_eval(args, args.agent, args.dataloaders, training=training)
 
         # - print
+        print('2')
         args.logger.log('\n')
         args.logger.log(f"-> {step_name}={step}: {train_loss=}, {train_acc=}")
         args.logger.log(f"-> {step_name}={step}: {val_loss=}, {val_acc=}")
 
         # - get eval stats
+        print('3')
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
             args.best_val_loss = float(val_loss)
             # if train_loss < 0.5: after 0.5, the loss has decreased enough to make this worth it. TODO: put loss value once you know lowest train loss FMs get
@@ -122,6 +126,7 @@ def _log_train_val_stats(args: Namespace,
                 save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
         # - log ckpt, note: ckpt_freq = getattr(args, 'ckpt_freq', args.log_freq)
+        print('4')
         if step % ckpt_freq == 0:
             save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
         if hasattr(args, 'smart_logging_ckpt'):
@@ -129,6 +134,7 @@ def _log_train_val_stats(args: Namespace,
             smart_logging_ckpt(args, step, step_name, train_loss, train_acc, val_loss, val_acc, ckpt_freq)
 
         # - save args
+        print('5')
         uutils.save_args(args, args_filename='args.json')
         # save_args_as_dict_in_pickle_file(args, args_filename='args.pt')
 
@@ -167,7 +173,9 @@ def log_zeroth_step(args: Namespace, model: Agent, split: str = 'train', trainin
         acc = torch.stack(accs).mean()
     """
     batch: Any = get_data(args.dataloaders, split=split)
+    print(f'==> {batch=}')
     train_loss, train_acc = model(batch, training=training)
+    print(f'==> {train_loss=}, {train_acc=}')
     step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
     log_train_val_stats(args, 0, step_name, train_loss, train_acc)
     return train_loss, train_acc

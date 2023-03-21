@@ -43,13 +43,15 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 def get_sl_dataloader(args: Namespace) -> dict:
     # - set world size if not existing
     args.world_size = 1 if not hasattr(args, 'world_size') else args.world_size
+
     # - set args.data_option to None if not set, likely we are inferring sl loader from data_path
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
-    # - print data gumentation if it has been set
+
+    # - print data agumentation if it has been set
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
-    # - set data_path for legacy reasons/not crash code
+    #  set data_path for legacy reasons/not crash code
     if hasattr(args, 'data_path'):
         args.data_path.expanduser() if isinstance(args.data_path, Path) else args.data_path
         args.data_path: str = str(args.data_path)

@@ -9,6 +9,7 @@ from progressbar import ProgressBar
 from torch import Tensor
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
+from torch.utils.data import DataLoader
 
 import uutils
 from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step
@@ -91,7 +92,12 @@ def meta_train_fixed_iterations(args: Namespace,
     Note: if num tasks is small then we have two loops, one while we have not finished all fixed its and the other
     over the dataloader for the tasks.
     """
-    print('Starting training!')
+    # - imports
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        episodic_batch_2_task_dataset
+
+    # - start!
+    print('----> Starting training!')
     print(f'{meta_train_fixed_iterations=}')
 
     # - create progress bar
@@ -102,12 +108,18 @@ def meta_train_fixed_iterations(args: Namespace,
     # - meta-train
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, meta_learner)
+    st()
     # - continually meta-train until halt condition is met (usually convergence or reaching max its)
+    print('--> Starting the episodic meta-training loop. Getting batches ala episodic way (e.g. ala torchmeta way)...')
+    loader: DataLoader = dataloaders['train']
     while not halt:
-        for batch_idx, batch in enumerate(dataloaders['train']):
+        for batch_idx, batch in enumerate(loader):
             outer_opt.zero_grad()
             assert outer_opt is args.opt
-            train_loss, train_acc  = meta_learner(batch, call_backward=True)
+
+            if hasattr(loader, 'episodic_batch_2_task_dataset'):  # mainly for mds
+                batch: TaskDataset = episodic_batch_2_task_dataset(batch, loader, meta_learner)
+            train_loss, train_acc = meta_learner(batch, call_backward=True)
             # train_loss.backward()  # NOTE: backward was already called in meta-learner due to MEM optimization.
             assert outer_opt.param_groups[0]['params'][0].grad is not None
             gradient_clip(args, outer_opt)  # do gradient clipping: * If ‖g‖ ≥ c Then g := c * g/‖g‖

@@ -13,6 +13,7 @@ from uutils import load_cluster_jobids_to, merge_args, expanduser
 
 from pdb import set_trace as st
 
+
 def parse_args_standard_sl() -> Namespace:
     import argparse
 
@@ -85,6 +86,9 @@ def parse_args_standard_sl() -> Namespace:
     parser.add_argument('--batch_size_eval', type=int, default=128)
     parser.add_argument('--split', type=str, default='train', help="possible values: "
                                                                    "'train', val', test'")
+
+    parser.add_argument('--data_option', type=str, default='mds',
+                        help='data option, make sure you set data_path and data_augmentation')
     parser.add_argument('--data_path', type=str, default=Path('~/data/mds/records/').expanduser(),
                         # Path('~/data/mnist/').expanduser()
                         help='path to data set splits. The code will assume everything is saved in'
@@ -299,6 +303,7 @@ def make_args_from_supervised_learning_checkpoint_from_args_json_file(args: Name
     # return args
     raise NotImplementedError
 
+
 # - some default args
 
 def get_args_mi_usl_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
@@ -322,7 +327,6 @@ def get_args_mi_usl_default(args: Optional[Namespace] = None, log_to_wandb: Opti
     # args.data_augmentation = 'hdb4_micod'
     args.data_path = Path('~/data/miniImageNet_rfs/miniImageNet').expanduser()
     args.data_option = str(args.data_path)
-
 
     # - training mode
     args.training_mode = 'iterations'

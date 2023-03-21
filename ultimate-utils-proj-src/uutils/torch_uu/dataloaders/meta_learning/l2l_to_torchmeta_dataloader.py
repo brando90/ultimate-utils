@@ -4,12 +4,14 @@ key idea: sample l2l task_data
 
 """
 from pathlib import Path
+from typing import Optional, Union, Any
 
 import torch
 
 from argparse import Namespace
 
 from learn2learn.data import TaskDataset, MetaDataset
+from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
@@ -19,6 +21,8 @@ from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_ta
 from learn2learn.vision.benchmarks import BenchmarkTasksets
 import learn2learn
 from learn2learn.data import TaskDataset
+
+from pdb import set_trace as st
 
 
 def get_standard_pytorch_dataset_from_l2l_taskdatasets(tasksets: BenchmarkTasksets, split: str) -> Dataset:
@@ -138,8 +142,114 @@ class TorchMetaDLforL2L:
         return batch
 
 
-# - tests
+class EpisodicBatchAsTaskDataset(TaskDataset):
 
+    def __init__(self, batch: Tensor, verbose: bool = True):
+        self.batch = batch
+        self.idx = 0
+        self.verbose = verbose
+        self.num_tasks = self.batch[0].size(0)
+        assert len(batch) == 4, f'Error: Expected 4 tensors in batch because we have 4 [spt_x, spt_y, qry_x, qry_y] ' \
+                                f'but got {len(batch)}.'
+        if self.verbose:
+            print(f'Running {self.__init__=}')
+            self.debug_print()
+
+    def sample(self, idx: Optional[int] = None,
+               ) -> list[Tensor, Tensor]:
+        """
+        Gets a single task from the batch of tasks.
+
+        the l2l forward pass is as dollows:
+            meta_losses, meta_accs = [], []
+            for task in range(meta_batch_size):
+                # print(f'{task=}')
+                # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
+                task_data: list = task_dataset.sample()  # data, labels
+
+                # -- Inner Loop Adaptation
+                learner = meta_learner.maml.clone()
+                loss, acc = fast_adapt(
+                    args=args,
+                    task_data=task_data,
+                    learner=learner,
+                    loss=args.loss,
+                    adaptation_steps=meta_learner.nb_inner_train_steps,
+                    shots=args.k_shots,
+                    ways=args.n_classes,
+                    device=args.device,
+                )
+        therefore, we need to concatenate the tasks in the right dimension and return it. The foward pass then splits it
+        according to the shots and ways on its own.
+        """
+        print(f'\n=========> {self.sample=}')
+        assert len(self) == self.num_tasks, f'Error, expected {len(self)=} got {self.num_tasks=}.'
+        if idx is None:
+            idx = self.idx
+        else:
+            self.idx = idx
+
+        # - want x, y to be of shape: [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
+        spt_x, spt_y, qry_x, qry_y = self.batch
+        print(f'{self.idx=}')
+        print(f'{idx=}')
+        print(f'{self.num_tasks=}')
+        print(f'{len(self)=}')
+        spt_x, spt_y, qry_x, qry_y = spt_x[idx], spt_y[idx], qry_x[idx], qry_y[idx]
+
+        # - concatenate spt_x, qry_x & spt_y, qry_y
+        x = torch.cat([spt_x, qry_x], dim=0)
+        y = torch.cat([spt_y, qry_y], dim=0)
+        task_data: list = [x, y]
+        if self.verbose:
+            print(f'{self.idx=}')
+            print(f'{x.size()=}')
+            print(f'{y.size()=}')
+        self.idx += 1
+        assert len(self) == self.num_tasks, f'Error, expected {len(self)=} got {self.num_tasks=}.'
+        return task_data
+
+    def __len__(self) -> int:
+        """ Returns numbers of tasks. Should be (meta) batch size. """
+        num_tasks: int = self.batch[0].size(0)
+        assert num_tasks == self.num_tasks, f'Error, expected {num_tasks=}, got {self.num_tasks=}.'
+        return num_tasks
+
+    def __repr__(self) -> str:
+        self_str = f'{self.__class__.__name__}({self.idx=}, {self.num_tasks=}, {len(self)=}, {self.batch[0].size(0)=})'
+        return self_str
+
+    def debug_print(self):
+        if self.verbose:
+            print(f'{self=}')
+            print(f'{len(self.batch)=} (should be 4 e.g. [spt_x, spt_y, qry_x, qry_y])')
+            print(f'{self.batch[0].size()=}')  # e.g. for vision it should be [B, n*k, C, H, W]
+            print(f'{self.batch[1].size()=}')  # e.g. for vision it should be [B, n*k]
+            print(f'{self.batch[2].size()=}')  # e.g. for vision it should be [B, n*k, C, H, W]
+            print(f'{self.batch[3].size()=}')  # e.g. for vision it should be [B, n*k]
+            print(f'{self.idx=}')
+            print(f'{self.num_tasks=}')
+            print(f'{len(self)=}')
+
+
+def episodic_batch_2_task_dataset(batch: Tensor,
+                                  loader: DataLoader,
+                                  meta_learner: Optional = None,  # MAMLMetaLearnerL2L
+                                  ) -> Union[TaskDataset, Any]:
+    """ Convert episodic batch -> task dataset, else return batch as is (i.e. do identity). """
+    if hasattr(loader, 'episodic_batch_2_task_dataset'):
+        # - checks
+        assert loader.episodic_batch_2_task_dataset, f'Error: {loader.episodic_batch_2_task_dataset=},' \
+                                                     f' but it should be True.'
+        if meta_learner is not None:
+            from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+            assert isinstance(meta_learner, MAMLMetaLearnerL2L), f'Error: meta_learner is: {type(meta_learner)=}'
+        # - convert episodic batch -> task dataset
+        batch: TaskDataset = EpisodicBatchAsTaskDataset(batch)
+    return batch
+
+
+# - tests
 
 def l2l_example(meta_batch_size: int = 4, num_iterations: int = 5):
     from uutils.torch_uu import process_meta_batch
@@ -163,6 +273,55 @@ def l2l_example(meta_batch_size: int = 4, num_iterations: int = 5):
             break
 
 
+def maml_l2l_test_():
+    # - try forward pass with random data first
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.meta_learning import get_args_vit_mdl_maml_l2l_agent_default
+    args: Namespace = get_args_vit_mdl_maml_l2l_agent_default()
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)
+    get_and_create_model_opt_scheduler_for_run(args)
+    print(f'{type(args.model)=}')
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    args.agent = MAMLMetaLearnerL2L(args, args.model)
+    args.meta_learner = args.agent
+    print(f'{type(args.agent)=}, {type(args.meta_learner)=}')
+    # create a list of four tensors, idx 0,2 of size [25, 3, 84, 84], [75, 3, 84, 84] using torch.randn and te other two idx 1,3 of size [25], [75] of type long
+    # print('--> random data test as episodic batch')
+    # import torch
+    # spt_x = torch.randn(3, 25, 3, 84, 84)
+    # spt_y = torch.randint(low=0, high=5, size=(3, 25,), dtype=torch.long)
+    # qry_x = torch.randn(3, 75, 3, 84, 84)
+    # qry_y = torch.randint(low=0, high=5, size=(3, 75,), dtype=torch.long)
+    # batch: list = [spt_x, spt_y, qry_x, qry_y]
+    # task_data: TaskDataset = EpisodicBatchAsTaskDataset(batch)
+    # train_loss, train_acc = args.meta_learner(task_data, training=True)
+    # print(f'{train_loss, train_acc=}')
+
+    # - torchmeta, maybe we could test with torchmeta mi dataloaders
+    print('--> mini-imagenet test with episodic batch (from torch meta)')
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    args.dataloaders = get_meta_learning_dataloaders(args)
+    batch: Any = next(iter(args.dataloaders['train']))
+    spt_x, spt_y, qry_x, qry_y = batch['train'][0], batch['train'][1], batch['test'][0], batch['test'][1]
+    batch: list = [spt_x, spt_y, qry_x, qry_y]
+    task_data: TaskDataset = EpisodicBatchAsTaskDataset(batch)
+    train_loss, train_acc = args.meta_learner(task_data, training=True)
+    print(f'{train_loss, train_acc=}')
+    # train_loss, train_acc = meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    # print(f'{train_loss, train_acc=}')
+
+
+"""
+python ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/dataloaders/meta_learning/l2l_to_torchmeta_dataloader.py
+"""
+
 if __name__ == '__main__':
-    l2l_example()
-    print('Done!\a')
+    import time
+    from uutils import report_times
+
+    start = time.time()
+    # - run experiment
+    maml_l2l_test_()
+    # - Done
+    print(f"\nSuccess Done!: {report_times(start)}\a")

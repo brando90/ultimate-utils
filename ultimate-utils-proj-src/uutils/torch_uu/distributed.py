@@ -459,6 +459,7 @@ def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model
         - this code is only needed because of l2l distributed. For that set flag args.dist_option = 'l2l_dist'.
         Otherwise, don't worry about it.
     """
+    # set_devices(args)
     if not hasattr(args, 'dist_option'):  # this flag is not needed unless your running l2l_dist.
         # just more device according to serial or ddp. Doesn't handle l2l special case
         model = move_model_to_ddp(rank, args, model, force)

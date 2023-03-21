@@ -133,6 +133,7 @@ def get_vit_model_and_model_hps(num_classes: int,
     """get vit."""
     model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
     return model, model_hps
 
 
@@ -143,6 +144,18 @@ def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,  # or 64, etc. 
     """get vit for mi, only num_classes = 5 and image size 84 is needed. """
     model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
+    return model, model_hps
+
+
+def get_vit_get_vit_model_and_model_hps_cifarfs(num_classes: int = 5,  # or 64, etc. for data set's num_cls
+                                                image_size: int = 32,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                                criterion: Optional[Union[None, Callable]] = None,
+                                                ) -> tuple[nn.Module, dict]:
+    """get vit for mi, only num_classes = 5 and image size 84 is needed. """
+    model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
+    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
     return model, model_hps
 
 
@@ -161,6 +174,7 @@ def get_vit_get_vit_model_and_model_hps(vitconfig: ViTConfig = None,
                            cls_p_dropout=cls_p_dropout,
                            pretrained_name=pretrained_name)
     model: nn.Module = ViTForImageClassificationUU(**model_hps)
+    print('Its recommended to set args.allow_unused = True for ViT models.')
     return model, model_hps
 
 
@@ -391,6 +405,7 @@ def mi_vit():
     #     for task_num in range(batch_size):
     pass
 
+
 def vit_forward_pass():
     # - for determinism
     import random
@@ -418,6 +433,15 @@ def vit_forward_pass():
     loss = criterion(logits, y)
     print(f'{loss=}')
 
+
+def _maml_l2l_test_():
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        maml_l2l_test_
+    print('Starting to test maml l2l with vit...')
+    maml_l2l_test_()
+    print('Done!\a\n')
+
+
 # -- Run experiment
 """
 python ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/models/hf_uu/vit_uu.py
@@ -433,6 +457,7 @@ if __name__ == "__main__":
     # cifar_vit()
     # hdb1_vit()
     # mi_vit()
-    vit_forward_pass()
+    # vit_forward_pass()
+    _maml_l2l_test_()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

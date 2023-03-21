@@ -560,3 +560,93 @@ def get_args_mi_effect_size_analysis_default(args: Optional[Namespace] = None, l
     from uutils.argparse_uu.common import setup_args_for_experiment
     args = setup_args_for_experiment(args)
     return args
+
+
+def get_args_vit_mdl_maml_l2l_agent_default(args: Optional[Namespace] = None, log_to_wandb: Optional[bool] = None):
+    """
+    Some default args to show case how code works + for unit tests too.
+    """
+    import os
+    from pathlib import Path
+    import torch
+    # - args
+    args: Namespace = parse_args_meta_learning() if args is None else args
+    # - model
+    args.allow_unused = True
+    args.model_option = 'vit_mi'
+
+    # - data
+    args.data_option = 'torchmeta_miniimagenet'
+    args.data_path = '~/data/torchmeta_data'
+
+    # - training mode
+    args.training_mode = 'iterations'
+
+    # note: 75_000 used by MAML mds https://github.com/google-research/meta-dataset/blob/main/meta_dataset/learn/gin/setups/trainer_config.gin#L1
+    # args.num_its = 75_000  # 7_500 in 2 days
+    args.num_its = 6
+
+    # - debug flag
+    args.debug = False
+    # args.debug = True
+
+    # - opt
+    args.opt_option = 'AdafactorDefaultFair'
+    args.opt_hps: dict = dict()
+    # args.opt_option = 'Adam_rfs_cifarfs'
+    # args.lr = 1e-3  # match MAML++
+    # args.opt_hps: dict = dict(lr=args.lr)
+
+    # - scheduler
+    args.scheduler_option = 'AdafactorSchedule'
+    # args.scheduler_option = 'None'
+    # args.scheduler_option = 'Adam_cosine_scheduler_rfs_cifarfs'
+    # args.log_scheduler_freq = 1
+    # args.T_max = args.num_its // args.log_scheduler_freq  # intended 800K/2k
+    # args.eta_min = 1e-5  # match MAML++
+    # args.scheduler_hps: dict = dict(T_max=args.T_max, eta_min=args.eta_min)
+    # print(f'{args.T_max=}')
+
+    # -- Meta-Learner
+    # - maml
+    args.meta_learner_name = 'maml_fixed_inner_lr'
+    args.inner_lr = 1e-1
+    args.nb_inner_train_steps = 5
+    args.copy_initial_weights = False  # DONT PUT TRUE. details: set to True only if you do NOT want to train base model's initialization https://stackoverflow.com/questions/60311183/what-does-the-copy-initial-weights-documentation-mean-in-the-higher-library-for
+    args.track_higher_grads = True  # I know this is confusing but look at this ref: https://stackoverflow.com/questions/70961541/what-is-the-official-implementation-of-first-order-maml-using-the-higher-pytorch
+    args.fo = True
+    args.first_order = True
+
+    # - outer trainer params
+    args.batch_size = 3  # decreased it to 4 even though it gives more noise but updates quicker + nano gpt seems to do that for speed up https://github.com/karpathy/nanoGPT/issues/58
+    args.batch_size_eval = 2
+
+    # - logging params
+    args.log_freq = args.num_its // 4  # logs 4 times
+
+    # - dist args
+    from uutils.torch_uu.distributed import get_default_world_size
+    args.world_size = get_default_world_size()
+    # args.world_size = torch.cuda.device_count()
+    # args.world_size = 8
+    args.parallel = args.world_size > 1
+    # args.seed = 42  # I think this might be important due to how tasksets works.
+    # args.init_method = 'tcp://localhost:10001'  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+    # args.init_method = f'tcp://127.0.0.1:{find_free_port()}'  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+    args.init_method = None  # <- this cannot be hardcoded here it HAS to be given as an arg due to how torch.run works
+
+
+    # -- wandb args
+    args.wandb_project = 'entire-diversity-spectrum'
+    # - wandb expt args
+    args.experiment_name = f'{args.manual_loads_name} {args.model_option} {args.data_option} {os.path.basename(__file__)}'
+    args.run_name = f'{args.manual_loads_name} {args.data_option} {args.model_option} {args.opt_option} {args.lr} {args.scheduler_option}: {args.jobid=} {args.manual_loads_name}'
+    # args.log_to_wandb = True  # set false for this default dummy args
+    # args.log_to_wandb = False  # set false for this default dummy args
+    args.log_to_wandb = False if log_to_wandb is None else log_to_wandb
+
+    # - fix for backwards compatibility
+    args = fix_for_backwards_compatibility(args)
+    from uutils.argparse_uu.common import setup_args_for_experiment
+    args: Namespace = setup_args_for_experiment(args)
+    return args
