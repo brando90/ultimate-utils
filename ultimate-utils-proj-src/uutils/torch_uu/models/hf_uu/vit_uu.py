@@ -123,7 +123,8 @@ class ViTForImageClassificationUU(nn.Module):
         Get the feature embedding of the first cls token.
 
         Details:
-        By observing the ViTLayer, the (pooler) ViTPoooler(...) has an activation and a Tanh() layer. From playing around
+        By observing the ViTLayer, the (pooler) ViTPoooler(...) has an activation and a Tanh() layer.
+        From playing around
         with the suggestion from GPT4 & Copilot, I found that the outputs.pooler_output is the one that has a grad_fun
         <TanhBackward>, so it seems that it the right one. Plus, printing
             outputs.pooler_output.sum()
