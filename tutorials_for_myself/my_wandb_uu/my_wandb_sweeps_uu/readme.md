@@ -18,6 +18,7 @@ Run the sweep agent: also accomplished with one line of code, we call wandb.agen
 import wandb
 import pprint
 import math
+import torch
 
 sweep_config: dict = {
  "name": "my-ultimate-sweep",
@@ -66,7 +67,11 @@ def my_train_func():
     wandb.init(project="project-name", entity="entity-name")
     lr = wandb.config.lr
 
-    wandb.log({"lr": lr, "train_loss": lr - 1.0})
+    train_loss: float = 8.0
+    for i in range(5):
+        # get a random update step from the range [0.0, 1.0] using torch
+        update_step: float = lr * torch.rand(1).item()
+        wandb.log({"lr": lr, "train_loss": train_loss - update_step})
 
 # We can wind up a Sweep Controller by calling wandb.sweep with the appropriate sweep_config and project name.
 sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo")
@@ -81,6 +86,7 @@ wandb.agent(sweep_id, function=my_train_func, count=5)
 todo: use the hdb4 maml l2l main with sweeps for lr (and maybe optimizer?)
 
 idea/plan:
+- run a sweep of the above code without anything complicated
 - do `wandb.agent(sweep_id, function=train)`, pass args to train in this wandb.agent. Then make sure you get the right
 hp by doing wandb.config.lr etc. or the ones being tested. Put wandb.config.lr to args dict. In load_args, if sweeps
 put the args.lr = wandb.config.lr. Then train it.
@@ -88,6 +94,7 @@ put the args.lr = wandb.config.lr. Then train it.
 hdb4 maml l2l sweep. Put it in a sweeps folder in div folder (or here for demo). Pass the file path of the sweep config
 in the argparse. Default argparse is none. Create both meta-L & SL argparse flag.
 - Figure out how to use different CUDAs in same server in SNAP.
+- would be nice to compare with rylans
 - (later using more servers in sweep in SNAP)
 
 ## References
