@@ -2,6 +2,8 @@
 
 This Dockerfile installs the correct version of all required packages for running pycoq with conda. The default conda env is 'pycoq'.
 
+The project directory is set to: '/workspaces/pycoq-ejgallego'.
+
 To build the image (expect 20mins+ on M1 Max):
 ```bash
 docker build --platform linux/amd64 -t coq-image .
