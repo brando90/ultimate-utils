@@ -275,8 +275,17 @@ def get_embedding(x: Tensor, model: nn.Module) -> Tensor:
         return out
     # for handling models with self.model.features self.model.cls format
     if hasattr(model, 'model'):
-        out = model.model.features(x)
-        return out
+        if hasattr(model.model, 'features'):
+            out = model.model.features(x)
+            return out
+    # # for hugging face (HF) models
+    # from transformers import PreTrainedModel
+    # if isinstance(model, PreTrainedModel):
+    #     out = model.model(x)
+    #     hidden_states = out.last_hidden_state
+    #     # Get the CLS token's features (position 0)
+    #     cls_features = hidden_states[:, 0]
+    #     return out
     # for handling synthetic base models
     # https://discuss.pytorch.org/t/module-children-vs-module-modules/4551/3
     for name, m in model.named_children():
@@ -331,18 +340,27 @@ def Proto(support, support_ys, query, opt):
 
 # - tests
 
-def setup_and_get_logger(args):
-    args.logging = True
-    args.log_root = Path('//experiments/logs/').expanduser()
-    current_logs_dir = Path(f'logs')
-    args.current_logs_path = args.log_root / current_logs_dir
-    args.current_logs_path.mkdir(parents=True, exist_ok=True)
-    # set up path + log filename
-    my_stdout_filename = Path('my_stdout.log')
-    args.my_stdout_filepath = args.current_logs_path / my_stdout_filename
-    # make logger
-    logger = Logger(args)  # logs to file & console
-    return logger
+def features_vit_pre_train():
+    # - ViT feature extractor
+    from transformers import ViTFeatureExtractor, ViTModel
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.meta_learning import get_args_vit_mdl_maml_l2l_agent_default
+    args: Namespace = get_args_vit_mdl_maml_l2l_agent_default()
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)
+    get_and_create_model_opt_scheduler_for_run(args)
+    print(f'{type(args.model)=}')
+    x = torch.randn(25, 3, 84, 84)
+    features = get_embedding(x, args.model)
+    print(f'{features.shape=}')
+    print()
+
+    # # - real data
+    # from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+    #     forward_pass_with_pretrain_convergence_ffl_meta_learner
+    # forward_pass_with_pretrain_convergence_ffl_meta_learner()
+
+
 
 
 if __name__ == '__main__':
@@ -351,5 +369,6 @@ if __name__ == '__main__':
 
     start = time.time()
     # test_f_rand_is_worse_than_f_avg()
+    features_vit_pre_train()
     seconds = time.time() - start
     print(f'seconds = {seconds}, hours = {seconds / 60} \n\a')

@@ -317,6 +317,27 @@ def maml_l2l_test_():
     # train_loss, train_acc = meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
     # print(f'{train_loss, train_acc=}')
 
+def forward_pass_with_pretrain_convergence_ffl_meta_learner():
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.meta_learning import get_args_vit_mdl_maml_l2l_agent_default
+    args: Namespace = get_args_vit_mdl_maml_l2l_agent_default()
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)
+    get_and_create_model_opt_scheduler_for_run(args)
+    print(f'{type(args.model)=}')
+    from uutils.torch_uu.meta_learners.pretrain_convergence import FitFinalLayer
+    args.agent = FitFinalLayer(args, args.model)
+    args.meta_learner = args.agent
+    print(f'{type(args.agent)=}, {type(args.meta_learner)=}')
+
+    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    args.dataloaders = get_meta_learning_dataloaders(args)
+    batch: Any = next(iter(args.dataloaders['train']))
+    spt_x, spt_y, qry_x, qry_y = batch['train'][0], batch['train'][1], batch['test'][0], batch['test'][1]
+    batch: list = [spt_x, spt_y, qry_x, qry_y]
+    train_loss, train_loss_ci, train_acc, train_acc_ci = args.meta_learner(batch, training=True)
+    print(f'{train_loss, train_loss_ci, train_acc, train_acc_ci=}')
+
 
 """
 python ~/ultimate-utils/ultimate-utils-proj-src/uutils/torch_uu/dataloaders/meta_learning/l2l_to_torchmeta_dataloader.py
@@ -328,6 +349,7 @@ if __name__ == '__main__':
 
     start = time.time()
     # - run experiment
-    maml_l2l_test_()
+    # maml_l2l_test_()
+    forward_pass_with_pretrain_convergence_ffl_meta_learner()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

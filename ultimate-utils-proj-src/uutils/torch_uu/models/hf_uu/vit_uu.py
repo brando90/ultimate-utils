@@ -95,7 +95,7 @@ class ViTForImageClassificationUU(nn.Module):
 
     def forward(self, batch_xs: Tensor, labels: Tensor = None) -> Tensor:
         """
-        Forward pass of vit. I added the "missing" cls (and drouput layer before it) to act on the first cls
+        Forward pass of vit. I added the "missing" cls (and dropout layer before it) to act on the first cls
         token embedding. Remaining token embeddings are ignored/not used.
 
         I think the feature extractor only normalizes the data for you, doesn't seem to even make it into a seq, see:
@@ -117,6 +117,35 @@ class ViTForImageClassificationUU(nn.Module):
             #   loss = self.criterion(logits.view(-1, self.num_classes), labels.view(-1))
             loss = self.criterion(logits, labels)
             return loss, logits
+
+    def get_embedding(self, batch_xs: Tensor) -> Tensor:
+        """
+        Get the feature embedding of the first cls token.
+
+        Details:
+        By observing the ViTLayer, the (pooler) ViTPoooler(...) has an activation and a Tanh() layer. From playing around
+        with the suggestion from GPT4 & Copilot, I found that the outputs.pooler_output is the one that has a grad_fun
+        <TanhBackward>, so it seems that it the right one. Plus, printing
+            outputs.pooler_output.sum()
+            tensor(3.8430, grad_fn=<SumBackward0>)
+        looks more sensible than trying to get the features for the cls position manually:
+            outputs.last_hidden_state[:, 0, :].sum()
+            tensor(-6.4373e-06, grad_fn=<SumBackward0>)
+        which looked weird.
+        """
+        # outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
+        outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
+        feat = outputs.pooler_output
+        # out = model.model(x)
+        # hidden_states = out.last_hidden_state
+        # # Get the CLS token's features (position 0)
+        # cls_features = hidden_states[:, 0]
+        # return out
+        # Obtain the outputs from the base ViT model
+        # outputs = self.model(pixel_values, *args, **kwargs)
+        # pooled_output = outputs.pooler_output
+        # image_representation = outputs.last_hidden_state[:, 0, :]
+        return feat
 
     def _assert_its_random_model(self):
         from uutils.torch_uu import norm

@@ -278,8 +278,28 @@ def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.T
         (spt_x, spt_y), (qry_x, qry_y) = batch["train"], batch["test"]
     elif type(batch) == tuple or type(batch) == list:
         spt_x, spt_y, qry_x, qry_y = batch
-    else:
-        raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
+    else:  # seperate if so that learn2learn is not imported too soon
+        import learn2learn
+        from learn2learn.data import TaskDataset
+        if isinstance(batch, TaskDataset):
+            """
+            parser.add_argument('--k_shots', type=int, default=5, help="")
+            parser.add_argument('--k_eval', type=int, default=15, help="")
+            parser.add_argument('--n_cls', type=int, default=5, help="")  # n_ways
+            """
+            task_data: list = batch.sample()  # data, labels
+            data, labels = task_data
+            # Separate data into adaptation/evalutation sets
+            # [n*(k+k_eval), C, H, W] -> [n*k, C, H, W] and [n*k_eval, C, H, W]
+            (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
+                data=data,
+                labels=labels,
+                shots=args.k_shots,  # shots to separate to two data sets of size shots and k_eval
+            )
+            spt_x, spt_y, qry_x, qry_y = support_data, support_labels, query_data, query_labels
+        # elif isinstance(batch, EpisodicBatchAsTaskDataset):
+        else:
+            raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
     # invariant: we have spt_x, spt_y, qry_x, qry_y after here
     # assert len(spt_x.size()) == 4, f'Expected [B,n*k, C,H,W]}'  cant actually put this due to regression tasks :(
 
@@ -504,6 +524,7 @@ def norm(f: nn.Module, l: int = 2, detach: bool = False, cpu: bool = False) -> T
     # move to cpu
     norm_val: Tensor = norm_val.cpu() if cpu else norm_val
     return norm_val
+
 
 def count_number_of_parameters(model: nn.Module, only_trainable: bool = True) -> int:
     """
