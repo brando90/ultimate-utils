@@ -148,11 +148,11 @@ def remove_current_wandb_run_dir(args: Optional[Namespace] = None, call_wandb_fi
 # delete it
 
 
-def log_2_wanbd(it: int,
+def log_2_wandb(it: int,
                 train_loss: float, train_acc: float,
                 val_loss: float, val_acc: float,
                 step_metric,
-                mdl_watch_log_freq: int = -1,
+                mdl_watch_log_freq: int = 500,
                 ):
     """
 
@@ -164,8 +164,6 @@ def log_2_wanbd(it: int,
         wandb.define_metric("train acc", step_metric=step_metric)
         wandb.define_metric("val loss", step_metric=step_metric)
         wandb.define_metric("val val", step_metric=step_metric)
-        # if wanbd_mdl_watch_log_freq == -1:
-        #     wandb.watch(args.base_model, args.criterion, log="all", log_freq=mdl_watch_log_freq)
     # - log to wandb
     wandb.log(data={step_metric: it,
                     'train loss': train_loss,
@@ -191,3 +189,52 @@ def try_printing_wandb_url(log_to_wandb: bool = False) -> str:
         except Exception as e:
             print(f'No wandb? error: {e=}')
             return str(e)
+
+
+def hook_wandb_watch_model(args: Namespace,
+                           model,  # could be model or agent
+                           mdl_watch_log_freq: int = 500,
+                           log: str = 'all',  # ['gradients', 'parameters', 'all']
+                           ):
+    """
+    Hook wandb.watch to the model.
+
+    ref:
+        - docs for wandb.watch: https://docs.wandb.ai/ref/python/watch
+        - 5 min youtube: https://www.youtube.com/watch?v=k6p-gqxJfP4
+    """
+    # - if model is None do nothing
+    if model is None:
+        return
+    # - for now default to watch model same as logging loss so use args.log_freq, later perhaps customize in argparse as a flag
+    mdl_watch_log_freq: int = args.log_freq if hasattr(args, 'log_freq') else mdl_watch_log_freq
+    # mdl_watch_log_freq: int = args.log_freq if hasattr(args, 'mdl_watch_log_freq') else mdl_watch_log_freq
+    # - get model if it's agent
+    if hasattr(model, 'model'):  # if it's an agent then this is how you get the model
+        model = model.model
+    # - get loss/criterion (for now decided to use loss everyone instead of criterion
+    loss = None
+    if hasattr(args, 'loss'):
+        loss = args.loss
+    # give priority to the one the model has
+    if hasattr(model, 'loss'):
+        loss = model.loss
+    # - watch model
+    log: str = 'all' if log is None else log
+    wandb.watch(model, loss, log=log, log_freq=mdl_watch_log_freq)
+
+
+def watch_activations():
+    """
+    ref:
+        - https://community.wandb.ai/t/how-to-watch-the-activations-of-a-model/4101, https://github.com/wandb/wandb/issues/5218
+    """
+    pass
+
+
+def watch_update_step():
+    """
+    ref:
+        - https://community.wandb.ai/t/how-to-watch-the-activations-of-a-model/4101, https://github.com/wandb/wandb/issues/5218
+    """
+    pass

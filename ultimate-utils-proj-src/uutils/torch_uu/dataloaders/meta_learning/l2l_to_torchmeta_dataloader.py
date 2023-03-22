@@ -144,7 +144,7 @@ class TorchMetaDLforL2L:
 
 class EpisodicBatchAsTaskDataset(TaskDataset):
 
-    def __init__(self, batch: Tensor, verbose: bool = True):
+    def __init__(self, batch: Tensor, verbose: bool = False):
         self.batch = batch
         self.idx = 0
         self.verbose = verbose
@@ -182,8 +182,16 @@ class EpisodicBatchAsTaskDataset(TaskDataset):
         therefore, we need to concatenate the tasks in the right dimension and return it. The foward pass then splits it
         according to the shots and ways on its own.
         """
-        print(f'\n=========> {self.sample=}')
+        # - checks
+        if self.verbose:
+            print(f'{self.sample=}')
+            print(f'{self.idx=}')
+            print(f'{idx=}')
+            print(f'{self.num_tasks=}')
+            print(f'{len(self)=}')
+            self.debug_print()
         assert len(self) == self.num_tasks, f'Error, expected {len(self)=} got {self.num_tasks=}.'
+        # - get idx
         if idx is None:
             idx = self.idx
         else:
@@ -191,16 +199,14 @@ class EpisodicBatchAsTaskDataset(TaskDataset):
 
         # - want x, y to be of shape: [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
         spt_x, spt_y, qry_x, qry_y = self.batch
-        print(f'{self.idx=}')
-        print(f'{idx=}')
-        print(f'{self.num_tasks=}')
-        print(f'{len(self)=}')
         spt_x, spt_y, qry_x, qry_y = spt_x[idx], spt_y[idx], qry_x[idx], qry_y[idx]
 
         # - concatenate spt_x, qry_x & spt_y, qry_y
         x = torch.cat([spt_x, qry_x], dim=0)
         y = torch.cat([spt_y, qry_y], dim=0)
         task_data: list = [x, y]
+
+        # - return
         if self.verbose:
             print(f'{self.idx=}')
             print(f'{x.size()=}')

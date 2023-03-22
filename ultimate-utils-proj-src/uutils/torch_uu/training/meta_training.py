@@ -108,7 +108,6 @@ def meta_train_fixed_iterations(args: Namespace,
     # - meta-train
     args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, meta_learner)
-    st()
     # - continually meta-train until halt condition is met (usually convergence or reaching max its)
     print('--> Starting the episodic meta-training loop. Getting batches ala episodic way (e.g. ala torchmeta way)...')
     loader: DataLoader = dataloaders['train']

@@ -33,15 +33,24 @@ class FitFinalLayer(nn.Module):
 
     def __init__(self,
                  args: Namespace,
-                 base_model: nn.Module,
+                 model: nn.Module,
                  target_type: str = 'classification',
                  classifier: str = 'LR',
                  ):
         super().__init__()
         self.args = args
-        self.base_model = base_model
+        self.model = model
         self.target_type = target_type
         self.classifier = classifier
+
+    @property
+    def base_model(self):
+        return self.model
+
+    # set field as function base_model
+    @base_model.setter
+    def base_model(self, model: nn.Module):
+        self.model = model
 
     def forward(self, batch,
                 training: bool = True,
@@ -90,9 +99,9 @@ class FitFinalLayer(nn.Module):
         for t in range(meta_batch_size):
             spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
 
-            self.base_model.train() if training else self.base_model.eval()
-            spt_embeddings_t = self.get_embedding(spt_x_t, self.base_model).detach()
-            qry_embeddings_t = self.get_embedding(qry_x_t, self.base_model).detach()
+            self.model.train() if training else self.model.eval()
+            spt_embeddings_t = self.get_embedding(spt_x_t, self.model).detach()
+            qry_embeddings_t = self.get_embedding(qry_x_t, self.model).detach()
 
             if is_norm:
                 spt_embeddings_t = normalize(spt_embeddings_t)
@@ -164,8 +173,8 @@ class FitFinalLayer(nn.Module):
             meta_accs.append(qry_acc_t)
         return meta_losses, meta_accs
 
-    def get_embedding(self, x: Tensor, base_model: nn.Module) -> Tensor:
-        return get_embedding(x=x, base_model=base_model)
+    def get_embedding(self, x: Tensor, model: nn.Module) -> Tensor:
+        return get_embedding(x=x, model=model)
 
     def regression(self):
         self.target_type = 'regression'
@@ -174,13 +183,13 @@ class FitFinalLayer(nn.Module):
         self.target_type = 'classification'
 
     def train(self):
-        self.base_model.train()
+        self.model.train()
 
     def eval(self):
-        self.base_model.eval()
+        self.model.eval()
 
 
-def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
+def get_adapted_according_to_ffl(model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
                                  layer_to_replace: str,
                                  training: bool = True,
                                  target_type: str = 'classification',
@@ -189,9 +198,9 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
     Return the adapted model such that the final layer has the LR fined tuned model.
     """
     # spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
-    base_model.train() if training else base_model.eval()
-    spt_embeddings_t = get_embedding(spt_x_t, base_model).detach()
-    qry_embeddings_t = get_embedding(qry_x_t, base_model).detach()
+    model.train() if training else model.eval()
+    spt_embeddings_t = get_embedding(spt_x_t, model).detach()
+    qry_embeddings_t = get_embedding(qry_x_t, model).detach()
     if target_type == 'classification':
         spt_embeddings_t = spt_embeddings_t.view(spt_embeddings_t.size(0), -1).cpu().numpy()
         qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
@@ -214,9 +223,9 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
             query_y_probs_t = clf.predict_proba(qry_embeddings_t)
 
             # - get layer_to_replace e.g. model.cls
-            module: nn.Module = getattr_model(base_model, layer_to_replace)
+            module: nn.Module = getattr_model(model, layer_to_replace)
             assert module is not None, f'Final layer module is None instead of a pytorch module see: {module=}'
-            # assert module is base_model.model.cls
+            # assert module is model.model.cls
 
             # - replace weights into model
             # coef_ndarray of shape (1, n_features) or (n_classes, n_features)
@@ -250,27 +259,27 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
         assert False
     else:
         raise ValueError(f'Not implement: {target_type}')
-    return base_model
+    return model
 
 
-def get_embedding(x: Tensor, base_model: nn.Module) -> Tensor:
+def get_embedding(x: Tensor, model: nn.Module) -> Tensor:
     """ apply f until the last layer, instead return that as the embedding """
     out = x
     # if it has a get embedding later
-    if hasattr(base_model, 'get_embedding'):
-        out = base_model.get_embedding(x)
+    if hasattr(model, 'get_embedding'):
+        out = model.get_embedding(x)
         return out
     # for l2l
-    if hasattr(base_model, 'features'):
-        out = base_model.features(x)
+    if hasattr(model, 'features'):
+        out = model.features(x)
         return out
-    # for handling base_models with self.model.features self.model.cls format
-    if hasattr(base_model, 'model'):
-        out = base_model.model.features(x)
+    # for handling models with self.model.features self.model.cls format
+    if hasattr(model, 'model'):
+        out = model.model.features(x)
         return out
-    # for handling synthetic base base_models
+    # for handling synthetic base models
     # https://discuss.pytorch.org/t/module-children-vs-module-modules/4551/3
-    for name, m in base_model.named_children():
+    for name, m in model.named_children():
         if 'final' in name:
             return out
         if 'l2' in name and 'final' not in name:  # cuz I forgot to write final...sorry!

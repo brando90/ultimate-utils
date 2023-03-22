@@ -23,22 +23,15 @@ def do_eval(args: Namespace,
         - assumption: your agent has the .forward interface needed
     """
     # - get loss & acc
-    # if not hasattr(model, 'eval_forward'):
-    #     from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
-    #     data: Any = get_data(dataloaders, split)
-    #     losses, accs = model.get_lists_accs_losses(data, training)
-    #     loss, loss_ci = mean_confidence_interval(losses)
-    #     acc, acc_ci = mean_confidence_interval(accs)
-    # else:
-    #     data: Any = get_data(dataloaders, split)
-    #     loss, loss_ci, acc, acc_ci = model.eval_forward(data, training)
-    print(f'do_eval: {do_eval=}')
-    from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
-    data: Any = get_data(dataloaders, split)
-    print(f'{data=}')
-    losses, accs = model.get_lists_accs_losses(data, training)
-    loss, loss_ci = mean_confidence_interval(losses)
-    acc, acc_ci = mean_confidence_interval(accs)
+    if not hasattr(model, 'eval_forward'):  # for SL Agents since they tend to use torch.no_grad, maml both behave same.
+        from uutils.torch_uu.metrics.confidence_intervals import mean_confidence_interval
+        data: Any = get_data(dataloaders, split)
+        losses, accs = model.get_lists_accs_losses(data, training)
+        loss, loss_ci = mean_confidence_interval(losses)
+        acc, acc_ci = mean_confidence_interval(accs)
+    else:
+        data: Any = get_data(dataloaders, split)
+        loss, loss_ci, acc, acc_ci = model.eval_forward(data, training)
     return loss, loss_ci, acc, acc_ci
 
 

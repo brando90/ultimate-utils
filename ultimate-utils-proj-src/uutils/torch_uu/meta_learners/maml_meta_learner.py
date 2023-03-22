@@ -33,15 +33,15 @@ from copy import deepcopy
 class MAMLMetaLearner(nn.Module):
     def __init__(
             self,
-            args,
-            base_model,
+            args: Namespace,
+            model: nn.Module,
 
-            inner_debug=False,
-            target_type='classification'
+            inner_debug: bool = False,
+            target_type: str = 'classification'
     ):
         super().__init__()
         self.args = args  # args for experiment
-        self.base_model = base_model
+        self.model = model
         self.nb_inner_train_steps = deepcopy(self.args.nb_inner_train_steps)
         self.inner_lr = deepcopy(self.args.inner_lr)
         if not hasattr(args, 'fo'):
@@ -51,6 +51,17 @@ class MAMLMetaLearner(nn.Module):
         self.target_type = target_type
 
         self.inner_debug = inner_debug
+
+    # for backwards compatibility
+    # field as function base_model return model
+    @property
+    def base_model(self):
+        return self.model
+
+    # set field as function base_model
+    @base_model.setter
+    def base_model(self, model: nn.Module):
+        self.model = model
 
     def forward(self, batch, training: bool = True, call_backward: bool = False):
         """
@@ -95,10 +106,10 @@ class MAMLMetaLearner(nn.Module):
         logging.warning('Calling MAML.eval(). You sure you want to do that?')
         raise ValueError(
             f'Why are you calling eval during meta-learning? Read: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du')
-        self.base_model.eval()
+        self.model.eval()
 
     def parameters(self):
-        return self.base_model.parameters()
+        return self.model.parameters()
 
     def regression(self):
         self.target_type = 'regression'
@@ -109,7 +120,7 @@ class MAMLMetaLearner(nn.Module):
         self.args.target_type = 'classification'
 
     def cuda(self):
-        self.base_model.cuda()
+        self.model.cuda()
 
 
 # - l2l
@@ -172,14 +183,13 @@ def get_lists_accs_losses_l2l(meta_learner,
         - training true ensures .eval() is never called (due to BN, we always want batch stats)
         - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option to call it or not.
     """
-    print(f'{task_dataset=}')
     assert args is meta_learner.args
     # -
     from learn2learn.data import TaskDataset
     task_dataset: TaskDataset = task_dataset  # args.tasksets.train, args.tasksets.validation or args.tasksets.test
 
     # - adapt
-    meta_learner.base_model.train() if training else meta_learner.base_model.eval()
+    meta_learner.model.train() if training else meta_learner.model.eval()
     meta_losses, meta_accs = [], []
     for task in range(meta_batch_size):
         # print(f'{task=}')
@@ -211,23 +221,23 @@ def get_lists_accs_losses_l2l(meta_learner,
 class MAMLMetaLearnerL2L(nn.Module):
     def __init__(
             self,
-            args,
-            base_model,
+            args: Namespace,
+            model: nn.Module,
 
-            target_type='classification',
+            target_type: str = 'classification',
     ):
         import learn2learn
         super().__init__()
         self.args = args  # args for experiment
         assert args is self.args
-        self.base_model = base_model
-        assert base_model is args.model
+        self.model = model
+        assert model is args.model
         self.inner_lr = deepcopy(args.inner_lr)
         self.nb_inner_train_steps = deepcopy(args.nb_inner_train_steps)
         self.first_order = deepcopy(args.first_order)
         # learn2learn: Maybe try with allow_nograd=True and/or allow_unused=True ?
         allow_unused = args.allow_unused if hasattr(args, 'allow_unused') else None
-        self.maml = learn2learn.algorithms.MAML(self.base_model,
+        self.maml = learn2learn.algorithms.MAML(self.model,
                                                 lr=self.inner_lr,
                                                 first_order=self.first_order,
                                                 allow_unused=allow_unused
@@ -237,6 +247,17 @@ class MAMLMetaLearnerL2L(nn.Module):
         # opt = cherry.optim.Distributed(maml.parameters(), opt=opt, sync=1)
 
         self.target_type = target_type
+
+    # for backwards compatibility
+    # field as function base_model return model
+    @property
+    def base_model(self):
+        return self.model
+
+    # set field as function base_model
+    @base_model.setter
+    def base_model(self, model: nn.Module):
+        self.model = model
 
     def forward(self, task_dataset, training: bool = True, call_backward: bool = False):
         """
@@ -304,11 +325,11 @@ class MAMLMetaLearnerL2L(nn.Module):
         ref: https://stats.stackexchange.com/questions/544048/what-does-the-batch-norm-layer-for-maml-model-agnostic-meta-learning-do-for-du
         """
         logging.warning('Calling MAML.eval(). You sure you want to do that?')
-        self.base_model.eval()
+        self.model.eval()
 
     def parameters(self):
-        # return self.base_model.parameters()
-        # todo would be nice to check if self.maml.parameters() and self.base_model.parameters() are the same
+        # return self.model.parameters()
+        # todo would be nice to check if self.maml.parameters() and self.model.parameters() are the same
         return self.maml.parameters()
 
     def regression(self):
@@ -320,7 +341,7 @@ class MAMLMetaLearnerL2L(nn.Module):
         self.args.target_type = 'classification'
 
     def cuda(self):
-        self.base_model.cuda()
+        self.model.cuda()
 
 
 # -- eval code
@@ -363,27 +384,6 @@ def get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn() -> Namespace:
 
 # - tests
 
-# def check_training_loop_fit_one_batch():
-#     from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
-#     from uutils.torch_uu.training.meta_training import meta_train_agent_fit_single_batch
-#     from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloader
-#     from uutils.torch_uu.optim_uu.adam_uu import get_opt_adam_default
-#     from uutils.torch_uu.optim_uu.adam_uu import get_cosine_scheduler_adam_rfs_cifarfs
-#
-#     args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
-#     args.training_mode = 'meta_train_agent_fit_single_batch'
-#     args.model, args.model_hps = get_default_learner_and_hps_dict()
-#     args.agent = MAMLMetaLearner(args, base_model=args.model)
-#     args.meta_learner = args.agent
-#     opt_hps = {}
-#     args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
-#     scheduler_hps = {}
-#     args.scheduler, args.scheduler_hps = get_cosine_scheduler_adam_rfs_cifarfs(args.opt, **scheduler_hps)
-#     args.dataloaders: dict = get_meta_learning_dataloader(args)
-#     print(f'{args.dataloaders=}')
-#     assert args.data_option == 'torchmeta_miniimagenet', f'Err: {args.data_option=}'
-#     meta_train_agent_fit_single_batch(args, args.agent, args.dataloaders, args.opt, args.scheduler)
-
 def check_training_fo_maml():
     print('---- checking fo MAML torchmeta higher')
     track_higher_grads = False
@@ -402,7 +402,7 @@ def check_training_meta_train_fixed_iterations(track_higher_grads: bool = True):
     args = get_minimum_args_to_run_maml_torchmeta_on_mi_5cnn()
     args.track_higher_grads = track_higher_grads
     args.model, args.model_hps = get_default_learner_and_hps_dict()
-    args.agent = MAMLMetaLearner(args, base_model=args.model)
+    args.agent = MAMLMetaLearner(args, args.model)
     args.meta_learner = args.agent
     opt_hps = {}
     args.opt, args.opt_hps = get_opt_adam_default(args.model, **opt_hps)
@@ -433,7 +433,7 @@ def check_torchmeta_4_tuple_works_with_meta_learner_agent():
     args.track_higher_grads = False  # fo? https://github.com/facebookresearch/higher/issues/63
     args: Namespace = setup_args_for_experiment(args)
     model = get_learner_from_args(args)  # random 5cnn
-    agent = MAMLMetaLearner(args, base_model=model)
+    agent = MAMLMetaLearner(args, model)
 
     args.dataloaders: dict = get_meta_learning_dataloaders(args)
     print(f'{args.dataloaders=}')

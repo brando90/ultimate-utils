@@ -6,7 +6,7 @@ from typing import Callable, Any
 from progressbar import ProgressBar
 
 import uutils
-from uutils.logging_uu.wandb_logging.common import log_2_wanbd
+from uutils.logging_uu.wandb_logging.common import log_2_wandb, hook_wandb_watch_model
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
@@ -108,17 +108,14 @@ def _log_train_val_stats(args: Namespace,
             print()
 
         # - compute val stats for logging & determining if to ckpt val model
-        print('1')
         val_loss, val_loss_ci, val_acc, val_acc_ci = do_eval(args, args.agent, args.dataloaders, training=training)
 
         # - print
-        print('2')
         args.logger.log('\n')
         args.logger.log(f"-> {step_name}={step}: {train_loss=}, {train_acc=}")
         args.logger.log(f"-> {step_name}={step}: {val_loss=}, {val_acc=}")
 
         # - get eval stats
-        print('3')
         if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
             args.best_val_loss = float(val_loss)
             # if train_loss < 0.5: after 0.5, the loss has decreased enough to make this worth it. TODO: put loss value once you know lowest train loss FMs get
@@ -126,7 +123,6 @@ def _log_train_val_stats(args: Namespace,
                 save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
         # - log ckpt, note: ckpt_freq = getattr(args, 'ckpt_freq', args.log_freq)
-        print('4')
         if step % ckpt_freq == 0:
             save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
         if hasattr(args, 'smart_logging_ckpt'):
@@ -134,7 +130,6 @@ def _log_train_val_stats(args: Namespace,
             smart_logging_ckpt(args, step, step_name, train_loss, train_acc, val_loss, val_acc, ckpt_freq)
 
         # - save args
-        print('5')
         uutils.save_args(args, args_filename='args.json')
         # save_args_as_dict_in_pickle_file(args, args_filename='args.pt')
 
@@ -153,7 +148,9 @@ def _log_train_val_stats(args: Namespace,
         print_dist(msg=f'{log_to_wandb=} (if True then it should displaying wanbd info & using it)', rank=args.rank,
                    flush=True)
         if log_to_wandb:
-            log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
+            log_2_wandb(step, train_loss, train_acc, val_loss, val_acc, step_name)
+            model = args.agent if hasattr(args, 'agent') else args.model
+            hook_wandb_watch_model(args, model) if step == 0 else None
 
         # - log to tensorboard
         if log_to_tb:

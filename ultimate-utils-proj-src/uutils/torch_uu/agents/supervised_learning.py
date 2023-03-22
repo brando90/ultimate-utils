@@ -31,6 +31,7 @@ class ClassificationSLAgent(Agent):
         self.model = model
         if hasattr(args, 'loss'):
             self.loss = nn.CrossEntropyLoss() if args.loss is not None else args.loss
+            self.criterion = args.loss
 
     def forward(self, batch: Tensor, training: bool = True) -> tuple[Tensor, Tensor]:
         """

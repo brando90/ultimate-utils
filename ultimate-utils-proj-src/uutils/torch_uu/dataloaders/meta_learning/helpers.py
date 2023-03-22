@@ -45,7 +45,9 @@ def get_meta_learning_dataloaders(args: Namespace) -> dict:  # TorchMeta
             # todo, would be nice to move this code to uutils @patrick so import is from uutils
             from diversity_src.dataloaders.metadataset_episodic_loader import get_mds_loaders
             dataloaders: dict = get_mds_loaders(args)
-            [setattr(dataloaders[split], 'episodic_batch_2_task_dataset', True) for split in dataloaders.keys()]
+            for split in dataloaders.keys():
+                dataloaders[split].episodic_batch_2_task_dataset = True
+            # [setattr(dataloaders[split], 'episodic_batch_2_task_dataset', True) for split in dataloaders.keys()]
         elif 'l2l_data' in str(args.data_path):
             # -- Converts a l2l data set as torchmeta data loader. Returns a batch of tasks, the way that torchmeta would.
             # note: this line is mainly intended for data ananlysis! not meant for ddp, see this if you want that but idk if it will work: https://github.com/learnables/learn2learn/issues/263

@@ -70,8 +70,8 @@ def get_data(dataloaders,
         from learn2learn.data import TaskDataset
         from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import episodic_batch_2_task_dataset
         batch: TaskDataset = episodic_batch_2_task_dataset(batch, loader, agent)
-        print(f'{get_data=}')
-        print(f'task_batch_2_task_dataset: {batch=}')
+        # print(f'{get_data=}')
+        # print(f'task_batch_2_task_dataset: {batch=}')
     return batch
 
 
