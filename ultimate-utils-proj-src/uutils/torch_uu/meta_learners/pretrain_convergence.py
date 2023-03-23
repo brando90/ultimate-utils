@@ -59,12 +59,9 @@ class FitFinalLayer(nn.Module):
         """
         training true since we want BN to use batch statistics (and not cheat, etc)
         """
-        spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
-        meta_batch_size = spt_x.size(0)
         # -- Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
         # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
         meta_losses, meta_accs = self.get_lists_accs_losses(batch, training, is_norm)
-        assert (len(meta_losses) == meta_batch_size)
 
         # -- return loss, acc with CIs
         meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
@@ -171,6 +168,7 @@ class FitFinalLayer(nn.Module):
             # collect losses & accs
             meta_losses.append(qry_loss_t.item())
             meta_accs.append(qry_acc_t)
+        assert len(meta_losses) == meta_batch_size, f'Error: {len(meta_losses)=} {meta_batch_size=}'
         return meta_losses, meta_accs
 
     def get_embedding(self, x: Tensor, model: nn.Module) -> Tensor:
@@ -356,6 +354,12 @@ def features_vit_pre_train():
     y = torch.randint(low=0, high=5, size=(x.size(0), x.size(1)), dtype=torch.long)
     meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = agent([x, y, x, y])
     print(f'{meta_loss=}, {meta_loss_ci=}, {meta_acc=}, {meta_acc_ci=}')
+
+    # -
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        forward_pass_with_pretrain_convergence_ffl_meta_learner
+    forward_pass_with_pretrain_convergence_ffl_meta_learner()
+    agent = FitFinalLayer(args, args.model)
 
 
 if __name__ == '__main__':

@@ -71,12 +71,17 @@ class TorchMetaDLforL2L:
     Not intended or tested to work with ddp. For that extension see this: https://github.com/learnables/learn2learn/issues/263
     """
 
-    def __init__(self, args, split: str, dataloaders: BenchmarkTasksets):
+    def __init__(self, args,
+                 split: str,
+                 dataloaders: BenchmarkTasksets,
+                 # batch_format: str = 'torchmeta',
+                 ):
         self.args = args
         assert split in ['train', 'val', 'test']
         self.split = split
         self.batch_size = None
         self.dataloaders = dataloaders
+        # self.batch_format = batch_format
 
     def __iter__(self):
         # initialization code for iterator usually goes here, I don't think we need any
@@ -104,43 +109,60 @@ class TorchMetaDLforL2L:
         shots = self.args.k_shots
         ways = self.args.n_classes
         # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
-        meta_batch_size: int = self.batch_size
+        batch_size: int = self.batch_size
 
         task_dataset: TaskDataset = getattr(self.dataloaders, self.split)
+        # spt_x, spt_y, qry_x, qry_y = task_dataset.sample(meta_batch_size)
+        spt_x, spt_y, qry_x, qry_y = sample_batch_of_tasks(task_dataset, batch_size, shots, ways)
 
-        spt_x, spt_y, qry_x, qry_y = [], [], [], []
-        for task in range(meta_batch_size):
-            # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
-            task_data: list = task_dataset.sample()  # data, labels
-            data, labels = task_data
-            # data, labels = data.to(device), labels.to(device)  # note here do it process_meta_batch, only do when using original l2l training method
-
-            # Separate data into adaptation/evalutation sets
-            # [n*(k+k_eval), C, H, W] -> [n*k, C, H, W] and [n*k_eval, C, H, W]
-            (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
-                data=data,
-                labels=labels,
-                shots=shots,  # shots to separate to two data sets of size shots and k_eval
-            )
-            # checks coordinate 0 of size() [n*(k + k_eval), C, H, W]
-            assert support_data.size(0) == shots * ways, f' Expected {shots * ways} but got {support_data.size(0)}'
-            # checks [n*k] since these are the labels
-            assert support_labels.size() == torch.Size([shots * ways])
-
-            # append task to lists of tasks to ultimately create: [B, n*k, D], [B, n*k], [B, n*k_eval, D], [B, n*k_eval],
-            spt_x.append(support_data)
-            spt_y.append(support_labels)
-            qry_x.append(query_data)
-            qry_y.append(query_labels)
-        #
-        spt_x, spt_y, qry_x, qry_y = tensorify(spt_x), tensorify(spt_y), tensorify(qry_x), tensorify(qry_y)
-        assert spt_x.size(0) == meta_batch_size, f'Error, expected {spt_x.size(0)=} got {meta_batch_size=}.'
-        assert qry_x.size(0) == meta_batch_size, f'Error, expected {spt_x.size(0)=} got {meta_batch_size=}.'
         # should be sizes [B, n*k, C, H, W] or [B,]
         # - Return meta-batch of tasks
+        # if self.batch_format == 'torchmeta':
+        #     batch = {'train': (spt_x, spt_y), 'test': (qry_x, qry_y)}
+        # else:
+        #     batch = spt_x, spt_y, qry_x, qry_y
+        # return batch
         batch = {'train': (spt_x, spt_y), 'test': (qry_x, qry_y)}
         return batch
 
+
+def sample_batch_of_tasks(task_dataset: TaskDataset,
+                          batch_size: int,
+                          shots: int,
+                          ways: int,
+                          ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    spt_x, spt_y, qry_x, qry_y = [], [], [], []
+    for task in range(batch_size):
+        # - Sample all data data for spt & qry sets for current task: thus size [n*(k+k_eval), C, H, W] (or [n(k+k_eval), D])
+        task_data: list = task_dataset.sample()  # data, labels
+        data, labels = task_data
+        # data, labels = data.to(device), labels.to(device)  # note here do it process_meta_batch, only do when using original l2l training method
+
+        # Separate data into adaptation/evalutation sets
+        # [n*(k+k_eval), C, H, W] -> [n*k, C, H, W] and [n*k_eval, C, H, W]
+        (support_data, support_labels), (query_data, query_labels) = learn2learn.data.partition_task(
+            data=data,
+            labels=labels,
+            shots=shots,  # shots to separate to two data sets of size shots and k_eval
+        )
+        # checks coordinate 0 of size() [n*(k + k_eval), C, H, W]
+        assert support_data.size(0) == shots * ways, f' Expected {shots * ways} but got {support_data.size(0)}'
+        # checks [n*k] since these are the labels
+        assert support_labels.size() == torch.Size([shots * ways])
+
+        # append task to lists of tasks to ultimately create: [B, n*k, D], [B, n*k], [B, n*k_eval, D], [B, n*k_eval],
+        spt_x.append(support_data)
+        spt_y.append(support_labels)
+        qry_x.append(query_data)
+        qry_y.append(query_labels)
+    #
+    spt_x, spt_y, qry_x, qry_y = tensorify(spt_x), tensorify(spt_y), tensorify(qry_x), tensorify(qry_y)
+    assert spt_x.size(0) == batch_size, f'Error, expected {spt_x.size(0)=} got {batch_size=}.'
+    assert qry_x.size(0) == batch_size, f'Error, expected {spt_x.size(0)=} got {batch_size=}.'
+    return spt_x, spt_y, qry_x, qry_y
+
+
+# --
 
 class EpisodicBatchAsTaskDataset(TaskDataset):
 
@@ -158,7 +180,7 @@ class EpisodicBatchAsTaskDataset(TaskDataset):
     def sample(self, idx: Optional[int] = None,
                ) -> list[Tensor, Tensor]:
         """
-        Gets a single task from the batch of tasks.
+        Gets a single task from the batch of tasks as [x, y].
 
         the l2l forward pass is as dollows:
             meta_losses, meta_accs = [], []
@@ -317,6 +339,7 @@ def maml_l2l_test_():
     # train_loss, train_acc = meta_train_fixed_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
     # print(f'{train_loss, train_acc=}')
 
+
 def forward_pass_with_pretrain_convergence_ffl_meta_learner():
     from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
     from uutils.argparse_uu.meta_learning import get_args_vit_mdl_maml_l2l_agent_default
@@ -330,13 +353,29 @@ def forward_pass_with_pretrain_convergence_ffl_meta_learner():
     args.meta_learner = args.agent
     print(f'{type(args.agent)=}, {type(args.meta_learner)=}')
 
-    from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
-    args.dataloaders = get_meta_learning_dataloaders(args)
-    batch: Any = next(iter(args.dataloaders['train']))
-    spt_x, spt_y, qry_x, qry_y = batch['train'][0], batch['train'][1], batch['test'][0], batch['test'][1]
-    batch: list = [spt_x, spt_y, qry_x, qry_y]
-    train_loss, train_loss_ci, train_acc, train_acc_ci = args.meta_learner(batch, training=True)
-    print(f'{train_loss, train_loss_ci, train_acc, train_acc_ci=}')
+    # from uutils.torch_uu.dataloaders.meta_learning.helpers import get_meta_learning_dataloaders
+    # args.dataloaders = get_meta_learning_dataloaders(args)
+    # batch: Any = next(iter(args.dataloaders['train']))
+    # spt_x, spt_y, qry_x, qry_y = batch['train'][0], batch['train'][1], batch['test'][0], batch['test'][1]
+    # batch: list = [spt_x, spt_y, qry_x, qry_y]
+    # train_loss, train_loss_ci, train_acc, train_acc_ci = args.meta_learner(batch, training=True)
+    # print(f'{train_loss, train_loss_ci, train_acc, train_acc_ci=}')
+
+    # - use get data
+    from uutils.torch_uu.training.common import get_data
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_ml_tasksets import get_l2l_tasksets
+    args.data_option = 'mini-imagenet'  # no name assumes l2l, make sure you're calling get_l2l_tasksets
+    args.data_path = Path('~/data/l2l_data/').expanduser()
+    args.data_augmentation = 'lee2019'
+    args.dataloaders: BenchmarkTasksets = get_l2l_tasksets(args)
+    training = True
+    agent = FitFinalLayer(args, args.model)
+    for split in ['train', 'val', 'test']:
+        print(f'{split=} (computing accs & losses)')
+        data: Any = get_data(args.dataloaders, split, agent)
+        losses, accs = agent.get_lists_accs_losses(data, training)
+        print(f'{split=} {len(losses)=}, {len(accs)=}')
+    print('Done!\a')
 
 
 """

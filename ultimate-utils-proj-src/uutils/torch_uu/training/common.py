@@ -56,8 +56,13 @@ def get_data(dataloaders,
         # it is here at the end so that we are not forced to import l2l unless we really are using it, checking earlier forces ppl to install l2l when they might not need it
         from learn2learn.data import TaskDataset
         from learn2learn.vision.benchmarks import BenchmarkTasksets
+        from uutils.torch_uu.meta_learners.pretrain_convergence import FitFinalLayer
+        if isinstance(dataloaders, BenchmarkTasksets) and isinstance(agent, FitFinalLayer):
+            from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
+            loaders = TorchMetaDLforL2L(agent.args, split, dataloaders)
+            batch = next(iter(loaders))
+            return batch
         if isinstance(dataloaders, BenchmarkTasksets):
-            split: str = 'validation' if split == 'val' else split
             task_dataset: TaskDataset = getattr(dataloaders, split)
             batch = task_dataset
         else:
