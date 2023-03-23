@@ -81,8 +81,8 @@ def main(
 
     # Create model
     # model = l2l.vision.models.MiniImagenetCNN(ways)
-    from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_mi
-    model, _ = get_vit_get_vit_model_and_model_hps_mi()
+    from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_model_and_model_hps_mi
+    model, _ = get_vit_model_and_model_hps_mi()
     model.to(device)
     maml = l2l.algorithms.MAML(model, lr=fast_lr, first_order=False, allow_unused=True)
     opt = optim.Adam(maml.parameters(), meta_lr)

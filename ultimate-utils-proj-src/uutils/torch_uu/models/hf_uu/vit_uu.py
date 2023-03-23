@@ -67,6 +67,7 @@ class ViTForImageClassificationUU(nn.Module):
                  cls_p_dropout: float = 0.0,
                  pretrained_name: str = None,
                  vitconfig: ViTConfig = None,
+                 use_pooler_output: bool = False,
                  ):
         """
         :param num_classes:
@@ -74,9 +75,9 @@ class ViTForImageClassificationUU(nn.Module):
         """
         super().__init__()
         if vitconfig is not None:
-            raise NotImplementedError
             self.vitconfig = vitconfig
             print(f'You gave a config so everyone other param given is going to be ignored.')
+            raise NotImplementedError
         elif pretrained_name is not None:
             raise NotImplementedError
             # self.vit = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
@@ -92,6 +93,11 @@ class ViTForImageClassificationUU(nn.Module):
         self.dropout = nn.Dropout(cls_p_dropout)
         self.cls = nn.Linear(self.model.config.hidden_size, num_classes)
         self.criterion = None if criterion is None else criterion
+        self.use_pooler_output = use_pooler_output
+        if self.use_pooler_output:
+            import logging
+            logging.warning(f'Using outputs.last_hidden_state[:, 0] instead of outputs.pooler_output, '
+                            f'it is suggested to change {use_pooler_output} to True. But Im not 100% sure.')
 
     def forward(self, batch_xs: Tensor, labels: Tensor = None) -> Tensor:
         """
@@ -105,9 +111,8 @@ class ViTForImageClassificationUU(nn.Module):
             - blog with trainer https://huggingface.co/blog/fine-tune-vit
             - single PIL notebook https://github.com/NielsRogge/Transformers-Tutorials/blob/master/VisionTransformer/Quick_demo_of_HuggingFace_version_of_Vision_Transformer_inference.ipynb
         """
-        outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
-        output: Tensor = self.dropout(outputs.last_hidden_state[:, 0])
-        logits: Tensor = self.cls(output)
+        feat = self.get_embedding(batch_xs)
+        logits: Tensor = self.cls(feat)
         if labels is None:
             assert logits.dtype == torch.float32
             return logits  # this is what my usl agent does ;)
@@ -133,19 +138,21 @@ class ViTForImageClassificationUU(nn.Module):
             outputs.last_hidden_state[:, 0, :].sum()
             tensor(-6.4373e-06, grad_fn=<SumBackward0>)
         which looked weird.
+        But decided to use  outputs.last_hidden_state[:, 0] because that is what my original code is doing. I don't
+        think it's as good as using the pooler output but I don't want to re-run all my experiments + top performance
+        is not the priority for now, what matters most is USL vs MAML. Will leave a warning though.
+
+        ref:
+            - so: https://stackoverflow.com/questions/75818179/what-is-the-correct-way-to-create-a-feature-extractor-for-a-hugging-face-hf-vi
+            - hf: https://discuss.huggingface.co/t/what-is-the-correct-way-to-create-a-feature-extractor-for-a-hugging-face-hf-vit-model/34441
         """
-        # outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
         outputs: BaseModelOutputWithPooling = self.model(pixel_values=batch_xs)
-        feat = outputs.pooler_output
-        # out = model.model(x)
-        # hidden_states = out.last_hidden_state
-        # # Get the CLS token's features (position 0)
-        # cls_features = hidden_states[:, 0]
-        # return out
-        # Obtain the outputs from the base ViT model
-        # outputs = self.model(pixel_values, *args, **kwargs)
-        # pooled_output = outputs.pooler_output
-        # image_representation = outputs.last_hidden_state[:, 0, :]
+        if self.use_pooler_output:
+            # By observing the ViTLayer, the (pooler) ViTPoooler(...) has an activation and a Tanh() layer, this looks best.
+            feat = outputs.pooler_output
+        else:
+            # Get the CLS token's features (position 0)
+            feat = outputs.last_hidden_state[:, 0]
         return feat
 
     def _assert_its_random_model(self):
@@ -157,20 +164,10 @@ class ViTForImageClassificationUU(nn.Module):
                                                      f'{norm(pre_trained_model)}{norm(self)}'
 
 
-def get_vit_model_and_model_hps(num_classes: int,
-                                image_size: int,
-                                ) -> tuple[nn.Module, dict]:
-    """get vit."""
-    model_hps: dict = dict(num_classes=num_classes, image_size=image_size)
-    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
-    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
-    return model, model_hps
-
-
-def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,  # or 64, etc. for data set's num_cls
-                                           image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
-                                           criterion: Optional[Union[None, Callable]] = None,
-                                           ) -> tuple[nn.Module, dict]:
+def get_vit_model_and_model_hps_mi(num_classes: int = 5,  # or 64, etc. for data set's num_cls
+                                   image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                   criterion: Optional[Union[None, Callable]] = None,
+                                   ) -> tuple[nn.Module, dict]:
     """get vit for mi, only num_classes = 5 and image size 84 is needed. """
     model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
     model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
@@ -178,24 +175,24 @@ def get_vit_get_vit_model_and_model_hps_mi(num_classes: int = 5,  # or 64, etc. 
     return model, model_hps
 
 
-def get_vit_get_vit_model_and_model_hps_cifarfs(num_classes: int = 5,  # or 64, etc. for data set's num_cls
-                                                image_size: int = 32,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
-                                                criterion: Optional[Union[None, Callable]] = None,
-                                                ) -> tuple[nn.Module, dict]:
-    """get vit for mi, only num_classes = 5 and image size 84 is needed. """
-    model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
-    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
-    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
-    return model, model_hps
-
-
-def get_vit_get_vit_model_and_model_hps(vitconfig: ViTConfig = None,
-                                        num_classes: int = 5,
-                                        image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
-                                        criterion: Optional[Union[None, Callable]] = None,  # for me agent does it
-                                        cls_p_dropout: float = 0.0,
-                                        pretrained_name: str = None,
+def get_vit_model_and_model_hps_cifarfs(num_classes: int = 5,  # or 64, etc. for data set's num_cls
+                                        image_size: int = 32,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                        criterion: Optional[Union[None, Callable]] = None,
                                         ) -> tuple[nn.Module, dict]:
+    """get vit for mi, only num_classes = 5 and image size 84 is needed. """
+    model_hps: dict = dict(num_classes=num_classes, image_size=image_size, criterion=criterion)
+    model: nn.Module = ViTForImageClassificationUU(num_classes, image_size)
+    print('Its recommended to set args.allow_unused = True for ViT models in training loops etc..')
+    return model, model_hps
+
+
+def get_vit_model_and_model_hps(vitconfig: ViTConfig = None,
+                                num_classes: int = 5,
+                                image_size: int = 84,  # 224 inet, 32 cifar, 84 mi, 28 mnist, omni...
+                                criterion: Optional[Union[None, Callable]] = None,  # for me agent does it
+                                cls_p_dropout: float = 0.0,
+                                pretrained_name: str = None,
+                                ) -> tuple[nn.Module, dict]:
     """get vit for mi, only num_classes = 5 and image size 84 is needed. """
     model_hps: dict = dict(vitconfig=vitconfig,
                            num_classes=num_classes,
@@ -444,24 +441,40 @@ def vit_forward_pass():
     torch.manual_seed(0)
     np.random.seed(0)
 
+    # - create data
+    x = torch.rand(5, 3, 84, 84)
+    y = torch.randint(0, 64 + 1100, (5,))
+
     # - options for number of tasks/meta-batch size
     device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
 
-    # - get my vit model
-    vitconfig: ViTConfig = ViTConfig()
-    # model = ViTForImageClassificationUU(num_classes=64 + 1100, image_size=84)
-    model = get_vit_get_vit_model_and_model_hps(vitconfig, num_classes=64 + 1100, image_size=84)
-    criterion = nn.CrossEntropyLoss()
-    # to device
-    model.to(device)
-    criterion.to(device)
+    # # - get my vit model
+    # vitconfig: ViTConfig = ViTConfig()
+    # model = get_vit_model_and_model_hps(vitconfig, num_classes=64 + 1100, image_size=84)
+    # criterion = nn.CrossEntropyLoss()
+    #
+    # # to device
+    # model.to(device)
+    # criterion.to(device)
+    #
+    # # - forward pass
+    # logits = model(x)
+    # loss = criterion(logits, y)
+    # print(f'{loss=}')
 
-    # - forward pass
-    x = torch.rand(5, 3, 84, 84)
-    y = torch.randint(0, 64 + 1100, (5,))
-    logits = model(x)
-    loss = criterion(logits, y)
-    print(f'{loss=}')
+    # - feature extractor
+    model = ViTForImageClassificationUU(num_classes=64 + 1100, image_size=84)
+    feat = model.get_embedding(x)
+    print(f'{feat.size()=}')
+
+    # - from pre-trained
+    # from transformers import ViTFeatureExtractor, ViTModel
+    # model_name = "google/vit-base-patch16-224"
+    # feature_extractor = ViTFeatureExtractor.from_pretrained(model_name)
+    # model = ViTModel.from_pretrained(model_name)
+    # model = ViTForImageClassificationUU(num_classes=64 + 1100, image_size=84, pretrained_name=pretrained_name)
+    # feat = model.get_embedding(x)
+    # print(f'{feat.size()=}')
 
 
 def _maml_l2l_test_():
@@ -487,7 +500,7 @@ if __name__ == "__main__":
     # cifar_vit()
     # hdb1_vit()
     # mi_vit()
-    # vit_forward_pass()
-    _maml_l2l_test_()
+    vit_forward_pass()
+    # _maml_l2l_test_()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

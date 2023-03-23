@@ -63,7 +63,7 @@ class FitFinalLayer(nn.Module):
         meta_batch_size = spt_x.size(0)
         # -- Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
         # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
-        meta_losses, meta_accs = self.get_list_accs_losses(batch, training, is_norm)
+        meta_losses, meta_accs = self.get_lists_accs_losses(batch, training, is_norm)
         assert (len(meta_losses) == meta_batch_size)
 
         # -- return loss, acc with CIs
@@ -278,14 +278,6 @@ def get_embedding(x: Tensor, model: nn.Module) -> Tensor:
         if hasattr(model.model, 'features'):
             out = model.model.features(x)
             return out
-    # # for hugging face (HF) models
-    # from transformers import PreTrainedModel
-    # if isinstance(model, PreTrainedModel):
-    #     out = model.model(x)
-    #     hidden_states = out.last_hidden_state
-    #     # Get the CLS token's features (position 0)
-    #     cls_features = hidden_states[:, 0]
-    #     return out
     # for handling synthetic base models
     # https://discuss.pytorch.org/t/module-children-vs-module-modules/4551/3
     for name, m in model.named_children():
@@ -355,12 +347,15 @@ def features_vit_pre_train():
     print(f'{features.shape=}')
     print()
 
-    # # - real data
-    # from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
-    #     forward_pass_with_pretrain_convergence_ffl_meta_learner
-    # forward_pass_with_pretrain_convergence_ffl_meta_learner()
-
-
+    # - using my ViT cls class
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        forward_pass_with_pretrain_convergence_ffl_meta_learner
+    forward_pass_with_pretrain_convergence_ffl_meta_learner()
+    agent = FitFinalLayer(args, args.model)
+    x = torch.randn(3, 25, 3, 84, 84)
+    y = torch.randint(low=0, high=5, size=(x.size(0), x.size(1)), dtype=torch.long)
+    meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = agent([x, y, x, y])
+    print(f'{meta_loss=}, {meta_loss_ci=}, {meta_acc=}, {meta_acc_ci=}')
 
 
 if __name__ == '__main__':

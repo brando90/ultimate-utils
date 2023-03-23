@@ -211,11 +211,11 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         assert model_hps['num_classes'] == 64 + 1100
         args.model, args.model_hps = get_resnet_rfs_model_mi(args.model_option, **model_hps)
     elif model_option == 'vit_mi':
-        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_mi
-        args.model, args.model_hps = get_vit_get_vit_model_and_model_hps_mi(**model_hps)
+        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_model_and_model_hps_mi
+        args.model, args.model_hps = get_vit_model_and_model_hps_mi(**model_hps)
     elif model_option == 'vit_cifarfs':
-        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_get_vit_model_and_model_hps_cifarfs
-        args.model, args.model_hps = get_vit_get_vit_model_and_model_hps_cifarfs(**model_hps)
+        from uutils.torch_uu.models.hf_uu.vit_uu import get_vit_model_and_model_hps_cifarfs
+        args.model, args.model_hps = get_vit_model_and_model_hps_cifarfs(**model_hps)
     else:
         raise ValueError(f'Model option given not found: got {model_option=}')
     if model_option is not None:
