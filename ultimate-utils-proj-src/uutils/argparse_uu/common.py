@@ -240,10 +240,12 @@ def setup_args_for_experiment(args: Namespace,
     # - run re-auth if in stanford cluster
     from socket import gethostname
     if 'stanford' in gethostname():
-        print(f'In stanford hostname: {gethostname()=}, about to do stanford reauth in python')
-        from uutils import stanford_reauth
-        stanford_reauth()
-        print(f'finished calling stanford reauth inside python')
+        # bellow commented out because this was used for nohup but we aren't doing nohup anymore
+        # print(f'In stanford hostname: {gethostname()=}, about to do stanford reauth in python')
+        # from uutils import stanford_reauth
+        # stanford_reauth()
+        # print(f'finished calling stanford reauth inside python')
+        pass
 
     # create tb in log_root
     if use_tb:

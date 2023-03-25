@@ -66,7 +66,7 @@ def get_l2l_torchmeta_dataloaders(args: Namespace) -> dict:
 
 class TorchMetaDLforL2L:
     """
-    Returns a batch of tasks, the way that torchmeta would.
+    Returns a batch of tasks, the way that torchmeta would from L2L.
 
     Not intended or tested to work with ddp. For that extension see this: https://github.com/learnables/learn2learn/issues/263
     """

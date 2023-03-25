@@ -26,6 +26,7 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 
 from uutils import expanduser
 
+from pdb import set_trace as st
 
 def get_all_l2l_official_benchmarks_supported() -> list:
     """
@@ -38,8 +39,17 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
+    # - hack cuz data analysis suddenly makes my data option dissapear idk why
+    # if hasattr(args, 'hardcoding_data_option'):
+    #     if args.hardcoding_data_option == 'mini-imagenet':
+    #         print(f'{args.data_option=}')
+    #         args.data_option = 'mini-imagenet'
+    #         args.data_path = Path('~/data/l2l_data/').expanduser()
+    #         args.data_augmentation = 'lee2019'
+    #         print(f'{args.data_option=}')
     # - get benchmark tasksets loader
     print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING no data augmentation')
+    print(f'{args.data_option=}')
     if 'cifarfs' in args.data_option or 'fc100' in args.data_option:
         # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
         args.data_augmentation = 'rfs2020'

@@ -289,6 +289,12 @@ def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
     Note:
         - some of these functions might assume you've already loaded .model correct in args.
     """
+    print(f'{_get_maml_agent=}')
+    # - default agent for now is L2L, might need to do higher one to check if that is the one giving odd results
+    from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
+    agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
+
+    # - get agent via agent_opt flag in args
     if hasattr(args, 'agent_opt'):
         if args.agent_opt == 'MAMLMetaLearnerL2L':
             from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
@@ -300,7 +306,7 @@ def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
             raise ValueError(f'Invalid meta-learning type, got {meta_learning_type(args)}')
 
     # - handle mds ViT case
-    if args.data_option == 'mds':
+    if 'vit' in args.model_option:
         # higher doesn't work with ViT, so we need to convert to l2l MAML
         from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
         agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
@@ -312,6 +318,7 @@ def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
 
     args.agent = agent
     args.meta_learner = agent
+    print(f'{args.agent=}')
     return agent
 
 

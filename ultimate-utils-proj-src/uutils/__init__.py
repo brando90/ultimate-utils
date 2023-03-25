@@ -327,6 +327,7 @@ def stanford_reauth():
     out = run_bash_command(reauth_cmd)
     print('Output of reauth (/afs/cs/software/bin/reauth with password): ')
     print(f'--> {out=}')
+    raise Exception('For now we are not doing reauth within python')
 
 
 def get_nvidia_smi_output() -> str:

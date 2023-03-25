@@ -29,6 +29,12 @@ def get_data(dataloaders,
     Get data according to the different data loader/taskset api's we've encountered. Cases "documented" by the if
     statements in the code.
 
+    Notes:
+        - for now we need the agent because are making the agent compatible with any loader. Therefore, we need to make
+        sure we get the data in the right format for the agent for it to work.
+            - e.g. given a L2L benchmark we can get its data in the torchmeta format so that the (ffl) agent's eval
+            forward works.
+
     return: either a normal batch (tensor) or a l2l taskdataset.
     """
     if isinstance(dataloaders, dict):
@@ -58,11 +64,13 @@ def get_data(dataloaders,
         from learn2learn.vision.benchmarks import BenchmarkTasksets
         from uutils.torch_uu.meta_learners.pretrain_convergence import FitFinalLayer
         if isinstance(dataloaders, BenchmarkTasksets) and isinstance(agent, FitFinalLayer):
+            # - convert l2l taskdataset to episodic batch, then get torchmeta batch, the process_meta_batch makes it into [spt_x, spt_y, qry_x, qry_y]
             from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
-            loaders = TorchMetaDLforL2L(agent.args, split, dataloaders)
-            batch = next(iter(loaders))
+            loaders = TorchMetaDLforL2L(agent.args, split, dataloaders)  # returns torchmeta data from L2L format
+            batch: dict = next(iter(loaders))  # batch = {'train': (spt_x, spt_y), 'test': (qry_x, qry_y)}
             return batch
         if isinstance(dataloaders, BenchmarkTasksets):
+            split: str = 'validation' if split == 'val' else split
             task_dataset: TaskDataset = getattr(dataloaders, split)
             batch = task_dataset
         else:
