@@ -16,8 +16,15 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 # --- Create conda env
 #conda create -n iit_synthesis python=3.9
 #conda activate iit_synthesis
+
+# - on x86 systems
 conda create -n pycoq-ejgallego python=3.9
 conda activate pycoq-ejgallego
+
+# - on arm64 (including M1 Macs) systems
+CONDA_SUBDIR=osx-arm64 conda create -n pycoq-ejgallego-ARM python=3.9
+conda activate pycoq-ejgallego-ARM
+
 #pip install -e ~/ultimate-utils
 
 # - Clone pycoq-emilio repo cuz he says so (this shouldn't be something a python user needs to do)
