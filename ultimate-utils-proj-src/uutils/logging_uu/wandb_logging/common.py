@@ -224,6 +224,15 @@ def hook_wandb_watch_model(args: Namespace,
     wandb.watch(model, loss, log=log, log_freq=mdl_watch_log_freq)
 
 
+def get_sweep_url(entity: str, project: str, sweep_id) -> str:
+    """
+    ref:
+        - hoping for an official answer here:
+            - SO: https://stackoverflow.com/questions/75852199/how-do-i-print-the-wandb-sweep-url-in-python
+            - wandb discuss: https://community.wandb.ai/t/how-do-i-print-the-wandb-sweep-url-in-python/4133
+    """
+    return f"https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}"
+
 def watch_activations():
     """
     ref:

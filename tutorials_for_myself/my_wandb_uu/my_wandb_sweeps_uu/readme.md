@@ -21,8 +21,9 @@ import math
 import torch
 
 sweep_config: dict = {
- "name": "my-ultimate-sweep",
- "metric": 
+    "project": "playground",
+     "name": "my-ultimate-sweep",
+    "metric": 
      {"name": "train_loss", 
       "goal": "minimize" }
     ,
@@ -77,7 +78,7 @@ def my_train_func():
 sweep_id = wandb.sweep(sweep_config, project="pytorch-sweeps-demo")
 # relation to above: wandb sweep config.yaml ?
 
-# run the sweep, The cell below will launch an agent that runs train 5 times, usingly the randomly-generated hyperparameter values returned by the Sweep Controller.
+# run the sweep, The cell below will launch an agent that runs train 5 times, using the randomly-generated hyperparameter values returned by the Sweep Controller.
 wandb.agent(sweep_id, function=my_train_func, count=5)
 ````
 
