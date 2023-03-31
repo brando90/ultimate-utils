@@ -2,7 +2,6 @@
 File with code for computing diveristy:
     dv(B) = E_{tau1, tau2 ~ p(tau1, tau2 | B)}[ d(f1(tau1), f2(tau2) )]
 the expected distance between tasks for a given benchmark B.
-
 Example use:
 1. Compute diveristy for one single few-shot learning benchmark:
     Example 1:
@@ -14,11 +13,9 @@ Example use:
     Using the avg of all the layers in principle should work to but usually results in too high variance to be any use
     because each layer has very different distances as we get deeper in the network.
     - div = mean(distances_for_tasks_pairs[L-1]) or div = mean(distances_for_tasks_pairs[L]) or div = mean(distances_for_tasks_pairs[L-1, L])
-
     Example 2:
     - another option is to get two meta-batch of tasks and just feed them directly like in 2. Then one wouldn't have
     to worry as much wether to include the diagnoal or not.
-
 2. Compute diveristy for pair of data sets/loaders:
     Example 1:
     - get 1 big batch of images for each data set/loader such that we have many classes (ideally all the classes for
@@ -27,7 +24,6 @@ Example use:
     where B1, B2 are the number of images.
     - repeat what was done for example 1.1 from few-shot learning benchmark i.e. compute pair of pair distances of tasks
     and compute diversity from it.
-
 3. Compute diversity using task2vec
     Example 1:
     - batch = get one very large batch
@@ -103,7 +99,6 @@ class FSLTaskDataSet(Dataset):
     def __getitem__(self, idx: int):
         """
         typical implementation:
-
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = read_image(img_path)
         label = self.img_labels.iloc[idx, 1]
@@ -140,7 +135,6 @@ def select_index(B: int, rand: bool = True):
 
 def select_index_pair(B1, B2, rand: bool = True, consider_diagonal: bool = False) -> tuple[int, int]:
     """
-
     :param B1:
     :param B2:
     :param rand:
@@ -167,7 +161,6 @@ def get_list_tasks_tuples(B1: int, B2: int,
                           consider_diagonal: bool = False
                           ) -> list[tuple[int, int]]:
     """
-
     :param B1:
     :param B2:
     :param num_tasks_to_consider:
@@ -208,19 +201,16 @@ def get_all_required_distances_for_pairs_of_tasks_using_cca_like_metrics(f1: nn.
     # ) -> list[OrderedDict[LayerIdentifier, float]]:
     """
     [L] x [B, n*k, C,H,W]^2 -> [L] x [B', n*k, C,H,W] -> [B', L]
-
     Compute the pairwise distances between the collection of tasks in X1 and X2:
         get_distances_for_task_pairs = [d(f(tau_s1), f(tau_s2))]_{s1,s2 \in {num_tasks_to_consider}}
     of size [B', L]. In particular notice how number of tasks used B' gives 1 distance value btw tasks (for a fixed layer).
     used to compute diversity:
         div = mean(get_distances_for_task_pairs)
         ci = ci(get_distances_for_task_pairs)
-
     Note:
         - make sure that M is safe i.e. M >= 10*D' e.g. for filter (image patch) based comparison
         D'= ceil(M*H*W) so M*H*W >= s*C for safety margin s say s=10.
         - if cls/head layer is taken into account and small (e.g. n_c <= D' for the other layers) then M >= s*n_c.
-
     :param f1:
     :param f2:
     :param X1: [B, M, D] or [B, M, C, H, W]
@@ -318,7 +308,6 @@ def diversity_using_cca_like_metrics(f1: nn.Module, f2: nn.Module,
         - IMPORTANT: X1 == X2 size is [B, n*k, C,H,W]
         - layer_names = [L]
         - note: for dist(task1, task2) we get [B'] distances. dist: [L]x[B',n*k, C,H,W] ->
-
     :return: [L]^2, [B', L]
     """
     # from anatome.helper import LayerIdentifier, dist_data_set_per_layer, _dists_per_task_per_layer_to_list, \
@@ -368,7 +357,6 @@ def diversity_using_cca_like_metrics(f1: nn.Module, f2: nn.Module,
 def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
     """
     Compute diversity: sample one batch of tasks and use a random cross product of different tasks to compute diversity.
-
     div: [L] x [B', n*K, C,H,W]^2 -> [L, 1]
     for a set of layers & batch of tasks -> computes div for each layer.
     """
@@ -417,7 +405,6 @@ def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
 # --- size aware div
 """
 how to take into account the data set size in the diversity coefficient?
-
 - y-axis freq
 - x-axis div
 - size_aware_div_ceoff(B, smooth) = int_{x \in div} count(x) * div(x) * freq(x) 
@@ -425,7 +412,6 @@ how to take into account the data set size in the diversity coefficient?
 	- and integrals
 - size_aware_div_ceoff(B, discrete with bin_size = X) = sum_{x \in div(bin_size)} count(x) * div(x) * freq(x)
 	- discrete sums are fine
-
 - count(x) = 2, idea for count(x) is that when div(x) == 1 it means the tasks at batch named x are maximally different, therefore there are 2 effective counts every time we compute the task2vec distance between tasks (weighted by div, saying)
 - general eq
 	- sum_{x \in divs} effective_count_concepts(x) * freq(x)
@@ -496,7 +482,6 @@ def get_task_embeddings_from_few_shot_l2l_benchmark(tasksets,
                                                     classifier_opts: Optional = None,
                                                     ) -> list[task2vec.Embedding]:
     """
-
     note:
         - you can't just pass a nn.Module, it has to have the classifier setter & getter due to how task2vec works. My
         guess is that since it does have to fine tune the final layer before computing FIM, then it requires to have
@@ -547,7 +532,6 @@ def get_task_embeddings_from_few_shot_dataloader(args: Namespace,
     """
     Returns list of task2vec embeddings using the normal pytorch dataloader interface.
     Should work for torchmeta data sets & meta-data set (MDS).
-
     Algorithm:
     - sample the 4 tuples of T tasks
     - loop through each task & use it as data to produce the task2vec
@@ -560,22 +544,14 @@ def get_task_embeddings_from_few_shot_dataloader(args: Namespace,
 
     # -
     from uutils.torch_uu import process_meta_batch
-    num_tasks_to_consider = 500
-    #batch = next(iter(loader))  # batch [B, n*k, C, H, W] or B*[n_b*k_b, C, H, W]
-    #spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+    batch = next(iter(loader))  # batch [B, n*k, C, H, W] or B*[n_b*k_b, C, H, W]
+    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
 
     # - compute embeddings for tasks
     embeddings: list[task2vec.Embedding] = []
     for t in range(num_tasks_to_consider):
         print(f'\n--> task_num={t}\n')
-        batch = next(iter(loader))
-        a,b,c,d = process_meta_batch(args, batch)
-        #print(pmb)
-        spt_x_t, spt_y_t, qry_x_t, qry_y_t = a[0],b[0],c[0],d[0]#spt_x[t], spt_y[t], qry_x[t], qry_y[t]
-        print(spt_x_t.shape)
-        print(spt_y_t.shape)
-        print(qry_x_t.shape)
-        print(qry_y_t.shape)
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
 
         # concatenate the support and query sets to get the full task's data and labels
         data = torch.cat((spt_x_t, qry_x_t), 0)
@@ -600,7 +576,6 @@ def get_task2vec_diversity_coefficient_from_embeddings(embeddings: list[task2vec
         - compute the pairwise cosine distance between each task embedding
         - div, ci = compute the diversity coefficient for the benchmark & confidence interval (ci)
         - return div, ci
-
     # - get your data
     embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_dataloader(args,
                                                                                     args.dataloaders,
@@ -609,12 +584,10 @@ def get_task2vec_diversity_coefficient_from_embeddings(embeddings: list[task2vec
                                                                                     split=split,
                                                                                     classifier_opts=args.classifier_opts,
                                                                                     )
-
     # - compute distance matrix & task2vec based diversity, to demo` task2vec, this code computes pair-wise distance between task embeddings
     distance_matrix: np.ndarray = task_similarity.pdist(embeddings, distance='cosine')
     print(f'{distance_matrix=}')
     distances_as_flat_array, _, _ = get_diagonal(distance_matrix, check_if_symmetric=True)
-
     # - compute div
     div_tot = float(distances_as_flat_array.sum())
     print(f'Diversity: {div_tot=}')
@@ -622,22 +595,17 @@ def get_task2vec_diversity_coefficient_from_embeddings(embeddings: list[task2vec
     print(f'Diversity: {(div, ci)=}')
     standardized_div: float = get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(distance_matrix)
     print(f'Standardised Diversity: {standardized_div=}')
-
     import torch
     import random
-
     class RandomDataset(torch.utils.data.Dataset):
         def __init__(self, num_samples):
             self.num_samples = num_samples
-
         def __getitem__(self, index):
             data = torch.randn(1, 1) # generate random data
             label = random.randint(0, 1) # generate random label
             return data, label
-
         def __len__(self):
             return self.num_samples
-
     dataset = RandomDataset(100) # 100 samples
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
     """
@@ -663,7 +631,6 @@ def get_standardized_diversity_coffecient_from_embeddings(embeddings: list[task2
     """
     Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
     across benchmarks.
-
     ref:
         - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
@@ -679,7 +646,6 @@ def get_standardized_diversity_coffecient_from_pair_wise_comparison_of_tasks(dis
     """
     Compute the standardized diversity coefficient from a list of task embeddings to ease the comparison of divs
     across benchmarks.
-
     ref:
         - https://stats.stackexchange.com/questions/604296/how-does-one-create-comparable-metrics-when-the-original-metrics-are-not-compara?noredirect=1#comment1121965_604296
     """
