@@ -560,14 +560,22 @@ def get_task_embeddings_from_few_shot_dataloader(args: Namespace,
 
     # -
     from uutils.torch_uu import process_meta_batch
-    batch = next(iter(loader))  # batch [B, n*k, C, H, W] or B*[n_b*k_b, C, H, W]
-    spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
+    num_tasks_to_consider = 500
+    #batch = next(iter(loader))  # batch [B, n*k, C, H, W] or B*[n_b*k_b, C, H, W]
+    #spt_x, spt_y, qry_x, qry_y = process_meta_batch(args, batch)
 
     # - compute embeddings for tasks
     embeddings: list[task2vec.Embedding] = []
     for t in range(num_tasks_to_consider):
         print(f'\n--> task_num={t}\n')
-        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        batch = next(iter(loader))
+        a,b,c,d = process_meta_batch(args, batch)
+        #print(pmb)
+        spt_x_t, spt_y_t, qry_x_t, qry_y_t = a[0],b[0],c[0],d[0]#spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        print(spt_x_t.shape)
+        print(spt_y_t.shape)
+        print(qry_x_t.shape)
+        print(qry_y_t.shape)
 
         # concatenate the support and query sets to get the full task's data and labels
         data = torch.cat((spt_x_t, qry_x_t), 0)
