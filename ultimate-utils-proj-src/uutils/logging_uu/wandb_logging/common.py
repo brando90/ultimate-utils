@@ -185,9 +185,14 @@ def try_printing_wandb_url(log_to_wandb: bool = False) -> str:
         try:
             # print(f'{wandb.run.dir=}')
             print(f'{wandb.run.get_url()=}')
+            print(_get_sweep_url_hardcoded())
+            print(f'{wandb.get_sweep_url()=}')
             return str(wandb.run.get_url())
         except Exception as e:
-            print(f'No wandb? error: {e=}')
+            err_msg: str = f'Error from wandb url get {try_printing_wandb_url=}: {e=}'
+            print(err_msg)
+            import logging
+            logging.warning(err_msg)
             return str(e)
 
 
@@ -224,7 +229,7 @@ def hook_wandb_watch_model(args: Namespace,
     wandb.watch(model, loss, log=log, log_freq=mdl_watch_log_freq)
 
 
-def get_sweep_url(entity: str, project: str, sweep_id) -> str:
+def _get_sweep_url_hardcoded(entity: str, project: str, sweep_id) -> str:
     """
     ref:
         - hoping for an official answer here:

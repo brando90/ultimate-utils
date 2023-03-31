@@ -9,6 +9,7 @@ note:
 
 ref:
     - read: https://docs.wandb.ai/guides/sweeps
+    - ref: https://community.wandb.ai/t/how-do-i-select-a-gpu-before-running-a-wandb-agent/4135/2
 """
 
 import wandb
@@ -18,7 +19,7 @@ import torch
 
 sweep_config: dict = {
     "project": "playground",
-    "entity": "your_wanbd_username",
+    "entity": "brando",
     "name": "my-ultimate-sweep",
     "metric":
         {"name": "train_loss",
@@ -61,6 +62,7 @@ project = sweep_config['project']
 sweep_id = wandb.sweep(sweep_config)
 print(f'{sweep_id=}')
 print(f"https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}")
+# wandb.get_sweep_url()
 
 def my_train_func():
     # read the current value of parameter "a" from wandb.config
@@ -82,4 +84,4 @@ def my_train_func():
 
 # run the sweep, The cell below will launch an agent that runs train 5 times, usingly the randomly-generated hyperparameter values returned by the Sweep Controller.
 wandb.agent(sweep_id, function=my_train_func, count=5)
-print(f"https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}")
+wandb.get_sweep_url()
