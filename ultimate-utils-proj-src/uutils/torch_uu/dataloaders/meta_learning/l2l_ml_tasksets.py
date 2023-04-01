@@ -26,7 +26,6 @@ from learn2learn.vision.benchmarks import BenchmarkTasksets
 
 from uutils import expanduser
 
-from pdb import set_trace as st
 
 def get_all_l2l_official_benchmarks_supported() -> list:
     """
@@ -39,26 +38,28 @@ def get_all_l2l_official_benchmarks_supported() -> list:
 
 def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
-    # - hack cuz data analysis suddenly makes my data option dissapear idk why
-    # if hasattr(args, 'hardcoding_data_option'):
-    #     if args.hardcoding_data_option == 'mini-imagenet':
-    #         print(f'{args.data_option=}')
-    #         args.data_option = 'mini-imagenet'
-    #         args.data_path = Path('~/data/l2l_data/').expanduser()
-    #         args.data_augmentation = 'lee2019'
-    #         print(f'{args.data_option=}')
+    # TODO, remove if statement for cifarfs and mi and timgnet and have a unified interface for it using l2l
     # - get benchmark tasksets loader
-    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print('WARNING no data augmentation')
-    print(f'{args.data_option=}')
-    if 'cifarfs' in args.data_option or 'fc100' in args.data_option:
+    print(f'{args.data_augmentation=}') if hasattr(args, 'data_augmentation') else print(
+        'WARNING you didnt set data augmentation flag in args')
+    if args.data_option == 'cifarfs_default_l2l':
+        loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
+            args.data_option,
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+        )
+        assert False, 'Doesnt use data augmentation, dont use! Its here just to demo how to use l2l.'
+        raise NotImplemented
+    elif args.data_option == 'cifarfs_rfs' or args.data_option == 'fc100_rfs':
         # note: we use our implementation since l2l's does not have standard data augmentation for cifarfs (for some reason)
-        args.data_augmentation = 'rfs2020'
         assert args.data_augmentation, f'You should be using data augmentation but got {args.data_augmentation=}'
         print(f'{args.data_augmentation=}')
         from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_tasksets
         loaders: BenchmarkTasksets = get_tasksets(
-            # args.data_option.split('_')[0],  # returns cifarfs or fc100 string
-            args.data_option,
+            args.data_option.split('_')[0],  # returns cifarfs or fc100 string
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,
@@ -146,7 +147,7 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             data_augmentation=args.data_augmentation,
         )
     elif args.data_option == 'hdb4_micod':
-        # args.data_path = expanduser('/lfs/ampere1/0/brando9/data/l2l_data')
+        args.data_path = expanduser('/lfs/ampere1/0/brando9/data/l2l_data')
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.hdb4_micod_l2l import hdb4_micod_l2l_tasksets
         loaders: BenchmarkTasksets = hdb4_micod_l2l_tasksets(
@@ -267,6 +268,28 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'hdb8':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import hdb8_l2l_tasksets
+        loaders: BenchmarkTasksets = hdb8_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'hdb9':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import hdb9_l2l_tasksets
+        loaders: BenchmarkTasksets = hdb9_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
     else:
         """
         BenchmarkTasksets = namedtuple('BenchmarkTasksets', ('train', 'validation', 'test'))
@@ -278,10 +301,6 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             'cifarfs': cifarfs_tasksets,
         }
         """
-        # raise NotImplemented
-        # note fc100, cifarfs, don't have data augmentations, so fail them, instead use other code above
-        assert 'cifarfs' not in str(args.data_option), f'For: cifarfs & fc100 use our code so data_augmentation is on.'
-        assert 'fc100' not in str(args.data_option), f'For: cifarfs & fc100 use our code so data_augmentation is on.'
         loaders: BenchmarkTasksets = learn2learn.vision.benchmarks.get_tasksets(
             args.data_option,
             train_samples=args.k_shots + args.k_eval,
@@ -289,7 +308,6 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             test_samples=args.k_shots + args.k_eval,
             test_ways=args.n_cls,
             root=args.data_path,
-            data_augmentation=args.data_augmentation,
         )
     return loaders
 

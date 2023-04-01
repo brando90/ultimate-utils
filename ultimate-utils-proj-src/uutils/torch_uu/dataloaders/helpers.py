@@ -11,8 +11,6 @@ from torch import nn
 
 from pdb import set_trace as st
 
-from uutils.torch_uu.dataloaders.usl.usl_dataloaders import get_pytorch_dataloaders_from_regular_l2l_tasksets
-
 
 def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool = False):
     """
@@ -43,15 +41,13 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 def get_sl_dataloader(args: Namespace) -> dict:
     # - set world size if not existing
     args.world_size = 1 if not hasattr(args, 'world_size') else args.world_size
-
     # - set args.data_option to None if not set, likely we are inferring sl loader from data_path
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
-
-    # - print data agumentation if it has been set
+    # - print data gumentation if it has been set
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
-    #  set data_path for legacy reasons/not crash code
+    # - set data_path for legacy reasons/not crash code
     if hasattr(args, 'data_path'):
         args.data_path.expanduser() if isinstance(args.data_path, Path) else args.data_path
         args.data_path: str = str(args.data_path)
@@ -125,6 +121,12 @@ def get_sl_dataloader(args: Namespace) -> dict:
     elif args.data_option == 'hdb7':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb7_usl_all_splits_dataloaders
         dataloaders: dict = hdb7_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb8':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb8_usl_all_splits_dataloaders
+        dataloaders: dict = hdb8_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb9':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb9_usl_all_splits_dataloaders
+        dataloaders: dict = hdb9_usl_all_splits_dataloaders(args)
     elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
@@ -158,8 +160,7 @@ def get_sl_dataloader(args: Namespace) -> dict:
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
             dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
         else:
-            print(f'got {args.data_path=} or wrong data option: {args.data_option=}')
-            dataloaders: dict = get_pytorch_dataloaders_from_regular_l2l_tasksets(args)
+            raise ValueError(f'Invalid data set: got {args.data_path=} or wrong data option: {args.data_option}')
     else:
         raise ValueError(f'Invalid data set: got {args.data_path=}')
     return dataloaders
