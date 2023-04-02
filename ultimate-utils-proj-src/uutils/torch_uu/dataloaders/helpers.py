@@ -11,6 +11,8 @@ from torch import nn
 
 from pdb import set_trace as st
 
+from uutils.torch_uu.dataloaders.usl.usl_dataloaders import get_pytorch_dataloaders_from_regular_l2l_tasksets
+
 
 def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool = False):
     """
@@ -44,7 +46,7 @@ def get_sl_dataloader(args: Namespace) -> dict:
     # - set args.data_option to None if not set, likely we are inferring sl loader from data_path
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
-    # - print data gumentation if it has been set
+    # - print data augumentation if it has been set
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
     # - set data_path for legacy reasons/not crash code
@@ -160,7 +162,8 @@ def get_sl_dataloader(args: Namespace) -> dict:
             from uutils.torch_uu.dataloaders.cifar100fs_fc100 import get_sl_l2l_cifarfs_dataloaders
             dataloaders: dict = get_sl_l2l_cifarfs_dataloaders(args)
         else:
-            raise ValueError(f'Invalid data set: got {args.data_path=} or wrong data option: {args.data_option}')
+            print(f'got {args.data_path=} or wrong data option: {args.data_option=}')
+            dataloaders: dict = get_pytorch_dataloaders_from_regular_l2l_tasksets(args)
     else:
         raise ValueError(f'Invalid data set: got {args.data_path=}')
     return dataloaders
