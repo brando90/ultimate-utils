@@ -4,7 +4,7 @@ ref:
     - official SL training from l2l: https://github.com/learnables/learn2learn/blob/master/examples/vision/supervised_pretraining.py
     didn't know about it on time. Alas.
 """
-#import datasets
+import datasets
 from pathlib import Path
 
 import os
@@ -186,7 +186,7 @@ def get_dataset_from_l2l_tasksets(tasksets) -> tuple[Dataset, Dataset, Dataset]:
     else:
         raise ValueError(f'not implemented for {type(tasksets.train)}')
 
-'''
+
 class USLDatasetFromL2L(datasets.Dataset):
 
     def __init__(self, original_l2l_dataset: datasets.Dataset):
@@ -210,7 +210,7 @@ class USLDatasetFromL2L(datasets.Dataset):
     def __len__(self) -> int:
         """ Get the length. """
         return len(self.original_l2l_dataset)
-'''
+
 
 def label_to_long(label: int) -> int:
     """ Convert the label to long. """
