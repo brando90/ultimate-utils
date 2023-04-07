@@ -43,15 +43,13 @@ def replace_final_layer(args: Namespace, n_classes: int, BYPASS_PROTECTION: bool
 def get_sl_dataloader(args: Namespace) -> dict:
     # - set world size if not existing
     args.world_size = 1 if not hasattr(args, 'world_size') else args.world_size
-
     # - set args.data_option to None if not set, likely we are inferring sl loader from data_path
     args.data_option = None if not hasattr(args, 'data_option') else args.data_option
     print(f'{get_sl_dataloader=}')
-
-    # - print data agumentation if it has been set
+    # - print data augumentation if it has been set
     if hasattr(args, 'data_augmentation'):
         print(f'----> {args.data_augmentation=}')
-    #  set data_path for legacy reasons/not crash code
+    # - set data_path for legacy reasons/not crash code
     if hasattr(args, 'data_path'):
         args.data_path.expanduser() if isinstance(args.data_path, Path) else args.data_path
         args.data_path: str = str(args.data_path)
@@ -84,6 +82,53 @@ def get_sl_dataloader(args: Namespace) -> dict:
         dataloaders: dict = hdb5_vggair_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 34 + 71, f'hdb5 expects more classes but got {args.model.cls.out_features=},' \
                                                        f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'dtd':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import dtd_usl_all_splits_dataloaders
+        dataloaders: dict = dtd_usl_all_splits_dataloaders(args)
+        assert args.model.cls.out_features == 33, f'dtd expects more classes but got {args.model.cls.out_features=},' \
+                                                       f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'fc100':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import fc100_usl_all_splits_dataloaders
+        dataloaders: dict = fc100_usl_all_splits_dataloaders(args)
+        assert args.model.cls.out_features == 60, f'fc100 expects more classes but got {args.model.cls.out_features=},' \
+                                                  f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'cu_birds':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import cu_birds_usl_all_splits_dataloaders
+        dataloaders: dict = cu_birds_usl_all_splits_dataloaders(args)
+        assert args.model.cls.out_features == 140, f'cubirds expects more classes but got {args.model.cls.out_features=},' \
+                                                  f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'delaunay':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import delaunay_usl_all_splits_dataloaders
+        dataloaders: dict = delaunay_usl_all_splits_dataloaders(args)
+        assert args.model.cls.out_features == 34, f'delaunay expects more classes but got {args.model.cls.out_features=},' \
+                                                  f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'fungi':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import fungi_usl_all_splits_dataloaders
+        dataloaders: dict = fungi_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 994, f'fungi expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'aircraft':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import aircraft_usl_all_splits_dataloaders
+        dataloaders: dict = aircraft_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 71, f'aircraft expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'flower':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import flower_usl_all_splits_dataloaders
+        dataloaders: dict = flower_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 34, f'flower expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'hdb6':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb6_usl_all_splits_dataloaders
+        dataloaders: dict = hdb6_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb7':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb7_usl_all_splits_dataloaders
+        dataloaders: dict = hdb7_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb8':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb8_usl_all_splits_dataloaders
+        dataloaders: dict = hdb8_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb9':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb9_usl_all_splits_dataloaders
+        dataloaders: dict = hdb9_usl_all_splits_dataloaders(args)
     elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)

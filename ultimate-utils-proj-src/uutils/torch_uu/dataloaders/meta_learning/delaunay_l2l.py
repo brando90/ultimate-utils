@@ -173,6 +173,25 @@ class Task_transform_delaunay(Callable):
         from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
         return get_remaining_transforms_mi(dataset, self.ways, self.samples)
 
+def get_delaunay_from_zenodo(root='~/data/l2l_data/delauny_l2l_bm_splits',
+                             url: str = 'https://zenodo.org/record/7756788/files/delauny_l2l_bm_splits.zip',
+                             ):
+    """
+    Download the delaunay dataset from zenodo.
+    ref:
+        - https://zenodo.org/record/7756788#.ZBn09-zMJf0
+    """
+    download_and_extract(url=url,
+                         path_used_for_zip=root,
+                         path_used_for_dataset=root,
+                         rm_zip_file_after_extraction=False,
+                         force_rewrite_data_from_url_to_file=True,
+                         clean_old_zip_file=True,
+                         )
+    print(f'Done downloading Delaunay {root=} {url=}')
+    # -- now test if it was downloaded & it works correctly
+    loop_through_delaunay()
+    print('Success! Delaunay data set works and a simple loop over it works! \n\a')
 
 def get_delaunay_from_zenodo(root='~/data/l2l_data/delauny_l2l_bm_splits',
                              url: str = 'https://zenodo.org/record/7756788/files/delauny_l2l_bm_splits.zip',
@@ -457,7 +476,8 @@ if __name__ == "__main__":
 
     start = time.time()
     # - run experiment
-    loop_through_delaunay()
+    get_delaunay_from_zenodo()
+    #loop_through_delaunay()
     # plot_some_mi_images_using_l2l_hdb1_data_augmentation()
     # torchmeta_plot_images_is_the_padding_there()
     # check_padding_random_crop_cifar_pure_torch()

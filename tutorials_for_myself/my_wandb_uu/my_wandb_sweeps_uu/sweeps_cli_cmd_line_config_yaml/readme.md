@@ -1,4 +1,13 @@
 
+# Quick Demo
+
+```
+export SWEEPID=$(wandb sweep config.yaml)
+NUM=10
+wandb agent train_sl.py --count $NUM $SWEEPID
+wandb agent train_maml.py --count $NUM $SWEEPID
+```
+
 # TODO
 
 todo:
