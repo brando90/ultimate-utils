@@ -10,25 +10,43 @@ Use python matplotlib.
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Parameters
+# Define the range of N values, from 0 to 1000
+N = np.linspace(0, 1000, 1001)
+
+# Define the alpha and c values
 alpha = -1
 c = 2
-N = np.logspace(0, 3, 1000)  # Logarithmically spaced N values from 1 to 1000
 
-# Calculate CE(N)
+# Calculate the CE(N) values using the formula N^alpha / c^alpha
 CE_N = (N ** alpha) / (c ** alpha)
 
-# Calculate Accuracy
+# Calculate the acc values using the formula exp(-CE(N))
 acc = np.exp(-CE_N)
 
-# Create the plot
+# Create a new figure
 plt.figure()
-plt.semilogx(N, acc, label="acc = exp(-CE(N))")
-plt.xlim(1, 1000)
+
+# Plot the acc values against N values on a log-linear scale
+plt.plot(N, acc)
+
+# Set the x-axis scale to logarithmic
+plt.xscale("log")
+
+# Set the y-axis scale to linear
+plt.yscale("linear")
+
+# Set the y-axis limits between 0 and 1
 plt.ylim(0, 1)
-plt.xlabel("N [log]")
-plt.ylabel("acc [linear]")
-plt.title("Log-Linear Plot of Accuracy vs N")
-plt.legend()
-plt.grid(True)
+
+# Add x-axis label
+plt.xlabel("N")
+
+# Add y-axis label
+plt.ylabel("acc = exp(-CE(N))")
+
+# Add a title to the plot
+plt.title("Log-linear plot of acc = exp(-CE(N))")
+
+# Display the plot
 plt.show()
+

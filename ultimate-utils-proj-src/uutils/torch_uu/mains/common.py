@@ -73,6 +73,7 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
     Horrrible hack comment:
     - I accidentally did .cls = new_cls in SL code
     """
+    print(f'{load_model_optimizer_scheduler_from_ckpt}=')
     # - prepare args from ckpt
     path_to_checkpoint = args.path_to_checkpoint if path_to_checkpoint is None else path_to_checkpoint
     # we could do a best effort set_device if args.device is None, e.g. call set_device(args), now no, responsibility is in main script runnning for now
@@ -80,6 +81,7 @@ def load_model_optimizer_scheduler_from_ckpt(args: Namespace,
     from uutils.torch_uu.distributed import set_devices
     set_devices(args)
     print(f'{args.device=}')
+    print(f'{path_to_checkpoint=}')
     # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cpu'))
     ckpt: dict = torch.load(path_to_checkpoint, map_location=args.device)
     # ckpt: dict = torch.load(path_to_checkpoint, map_location=torch.device('cuda:0'))
@@ -287,9 +289,15 @@ def meta_learning_type(args: Namespace) -> bool:
 def _get_maml_agent(args: Namespace, agent_hps: dict = {}):
     """
     Note:
-        - some of these functions might assume you've already loaded .model correct in args.
+        - some of these functions might assume you've already loaded .model correctly in args.
+
+    Q: how did the old code work?
+        - see: main_experiment_analysis_sl_vs_maml_performance_comp_distance.py
     """
     print(f'{_get_maml_agent=}')
+    # - args.allow_unused
+    args.allow_unused = True
+    print(f'{args.allow_unused=}')
     # - default agent for now is L2L, might need to do higher one to check if that is the one giving odd results
     from uutils.torch_uu.meta_learners.maml_meta_learner import MAMLMetaLearnerL2L
     agent = MAMLMetaLearnerL2L(args, args.model, **agent_hps)
