@@ -1,25 +1,5 @@
 #%%
 """
-# In Python, plot
-#     acc = exp( -CE(N) )^L
-# where L (Length of Seq) goes from L=1 to 5 linearly in increments of 1 and,
-#     CE(N) = N^alpha / c^alpha.
-# So the y-axsis is acc = exp( -CE(N) ) [linear] and x-axis is log N (num. of parameters) [log]
-# -- in a log linear plot, so use plt.xscale("log") and plt.yscale("linear").
-# Where alpha = -1 (note alpha < 0),
-# N goes from 1 to 1_000 (logarithmically) (note N > 0),
-# c = 4 (note c > 0).
-# Bound the y-axis between 0 and 1.
-# Include in the legends the values of L.
-# Use grids.
-# Use a title Accuracy vs. Number of Parameters.
-# Use labels for the axes, y-axis is Accuracy (acc = exp( -CE(N) )),
-# x-axis log N (log Number of Parameters).
-# Use a legends.
-# Add code to save the plot in png, svg, pdf with a good filename at my desktop path from home ~, expand the path in py.
-# Make sure to add comments explaining the code.
-# Use python matplotlib and give me all the code at once.
-
 In Python, create one figure with two plots.
 First plot (right)
     acc = exp( -CE(N) )^L
@@ -66,11 +46,11 @@ N = np.logspace(0, 3, num=1000)
 c = 4
 CE = (N**alpha) / (c**alpha)
 
-ax1.plot(N, CE, label=r'$\log y = \log \left(\frac{N^{\alpha}}{c^{\alpha}}\right)$')
+ax1.plot(N, CE, label=r'$ CE(N) = \log \left(\frac{N^{\alpha}}{c^{\alpha}}\right)$')
 ax1.set_xscale('log')
 ax1.set_yscale('log')
-ax1.set_xlabel(r'$\log N$ (Number of parameters)')
-ax1.set_ylabel(r'$\log CE(N) = \frac{N^{\alpha}}{c^{\alpha}}$')
+ax1.set_xlabel(r'$N$ (Number of parameters)')
+ax1.set_ylabel(r'$CE(N) = \frac{N^{\alpha}}{c^{\alpha}}$')
 ax1.legend()
 ax1.grid()
 
@@ -83,8 +63,8 @@ for l in L:
 ax2.set_xscale('log')
 ax2.set_yscale('linear')
 ax2.set_ylim(0, 1)
-ax2.set_xlabel(r'$\log N$ (Number of parameters)')
-ax2.set_ylabel('Accuracy (acc = exp(-CE(N)))')
+ax2.set_xlabel(r'$N$ (Number of parameters)')
+ax2.set_ylabel('Accuracy $acc = exp(-CE(N))^L$')
 ax2.legend()
 ax2.grid()
 
@@ -183,8 +163,8 @@ for L in L_values:
 ax2.set_xscale('log')
 ax2.set_yscale('linear')
 ax2.set_ylim(0, 1)
-ax2.set_xlabel('log N (log Number of parameters)')
-ax2.set_ylabel('Accuracy (acc)')
+ax2.set_xlabel('N (Number of parameters)')
+ax2.set_ylabel('Accuracy $acc = exp(-CE(N))^L$')
 ax2.grid()
 ax2.legend()
 
@@ -306,8 +286,8 @@ for i, L in enumerate(L_values):
     ax2.plot(N_values, acc_values[:, i], label=f'L = {L}')
 
 ax2.set_xscale('log')
-ax2.set_xlabel('N (log Number of parameters)')
-ax2.set_ylabel('Accuracy (acc)')
+ax2.set_xlabel('N (Number of parameters)')
+ax2.set_ylabel('Accuracy $acc = exp(-CE(N))^L$')
 ax2.set_ylim(0, 1)
 # ax2.set_title('Accuracy vs log N')
 ax2.grid()
