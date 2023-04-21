@@ -1,211 +1,101 @@
 #%%
 """
-In Python, plot
+# In Python, plot
+#     acc = exp( -CE(N) )^L
+# where L (Length of Seq) goes from L=1 to 5 linearly in increments of 1 and,
+#     CE(N) = N^alpha / c^alpha.
+# So the y-axsis is acc = exp( -CE(N) ) [linear] and x-axis is log N (num. of parameters) [log]
+# -- in a log linear plot, so use plt.xscale("log") and plt.yscale("linear").
+# Where alpha = -1 (note alpha < 0),
+# N goes from 1 to 1_000 (logarithmically) (note N > 0),
+# c = 4 (note c > 0).
+# Bound the y-axis between 0 and 1.
+# Include in the legends the values of L.
+# Use grids.
+# Use a title Accuracy vs. Number of Parameters.
+# Use labels for the axes, y-axis is Accuracy (acc = exp( -CE(N) )),
+# x-axis log N (log Number of Parameters).
+# Use a legends.
+# Add code to save the plot in png, svg, pdf with a good filename at my desktop path from home ~, expand the path in py.
+# Make sure to add comments explaining the code.
+# Use python matplotlib and give me all the code at once.
+
+In Python, create one figure with two plots.
+First plot (right)
     acc = exp( -CE(N) )^L
-where L (Length of Seq) goes from L=1 to 5 linearly in increments of 1 and,
+where L (Length of Seq) goes from L=1 to 5 linearly in increments of 1, starting at 1.
+For the second plot (left)
     CE(N) = N^alpha / c^alpha.
-So the y-axsis is acc = exp( -CE(N) ) [linear] and x-axis is log N (num. of parameters) [log]
--- in a log linear plot, so use plt.xscale("log") and plt.yscale("linear").
 Where alpha = -1 (note alpha < 0),
-N goes from 1 to 1_000 (logarithmically) (note N > 0),
-c = 1 (note c > 0).
-Bound the y-axis between 0 and 1.
-Include in the legends the values of L.
-Use grids.
-Use a title Accuracy vs. Number of Parameters.
-Use labels for the axes, y-axis is Accuracy (acc = exp( -CE(N) )),
-x-axis log N (log Number of Parameters).
-Use a legends.
+N goes from 1 to 1_000 (logarithmically) its important N starts at 1=10^0,
+c = 4 (note c > 0).
+
+The parameters for the first plot (right) are:
+the y-axsis is acc = exp( -CE(N) ) [linear] and x-axis is log N (log Number of parameters) [log],
+use a log-linear plot, so use plt.xscale("log") and plt.yscale("linear"),
+bound the y-axis between 0 and 1,
+include in the legends the values of L,
+use grids,
+use labels for the axes, y-axis is Accuracy (acc),
+use a legends,
+in a log linear plot, so use plt.xscale("log") and plt.yscale("linear").
+
+The parameters for the second plot (left) are:
+The y-axis is log CE(N) = log( N^alpha / c^alpha) (in proper latex for matplotlib),
+label y-axis log CE(N) = N^alpha / c^alpha,
+label x-axis is log N (Number of parameters),
+use grids,
+use legends log y = log CE(N),
+use a log-log plot  plt.xscale("log") and plt.yscale("log").
+
+Add code to save the plot in png, svg, pdf with a good filename at my desktop path from home ~, expand the path in py.
 Make sure to add comments explaining the code.
 Use python matplotlib and give me all the code at once.
 """
 
-# import numpy as np
-# import matplotlib.pyplot as plt
-#
-#
-# # Define the function CE(N)
-# def CE(N, alpha=-1, c=1):
-#     return (N ** alpha) / (c ** alpha)
-#
-#
-# # Define the function acc(CE, L)
-# def acc(CE, L):
-#     return np.exp(-CE * L)
-#
-#
-# # Set up the plot
-# plt.figure()
-#
-# # Generate N values logarithmically from 1 to 1000
-# N_values = np.logspace(0, 3, 1000)
-#
-# # Loop through L values from 1 to 5
-# for L in range(1, 6):
-#     # Calculate the acc values for each N and L
-#     acc_values = acc(CE(N_values), L)
-#
-#     # Plot the results
-#     plt.plot(N_values, acc_values, label=f"L = {L}")
-#
-# # Set the x and y scales
-# plt.xscale("log")
-# plt.yscale("linear")
-#
-# # Set the y-axis limits
-# plt.ylim(0, 1)
-#
-# # Add a grid
-# plt.grid()
-#
-# # Add a title
-# plt.title("Accuracy vs Number of Parameters for Different Sequence Lengths")
-#
-# # Add labels for the axes
-# plt.xlabel("Number of Parameters (log scale)")
-# plt.ylabel("Accuracy (linear scale)")
-#
-# # Add a legend
-# plt.legend()
-#
-# # Show the plot
-# plt.show()
-
-# import numpy as np
-# import matplotlib.pyplot as plt
-#
-# # Define the functions
-# def CE(N, alpha, c):
-#     return N**alpha / c**alpha
-#
-# def acc(CE, L):
-#     return np.exp(-CE * L)
-#
-# # Set up the plot
-# fig, ax = plt.subplots()
-#
-# # Define the parameters
-# alpha = -1
-# c = 1
-# N_values = np.logspace(0, 3, 100)  # Logarithmically spaced N values from 1 to 1000
-#
-# # Loop over sequence lengths L and plot the curves
-# for L in range(1, 6):
-#     y_values = acc(CE(N_values, alpha, c), L)
-#     ax.plot(N_values, y_values, label=f'L={L}')
-#
-# # Set the title and axis labels
-# ax.set_title('Accuracy vs. Number of Parameters')
-# ax.set_xlabel('N (Number of Parameters)')
-# ax.set_ylabel('Accuracy (acc)')
-#
-# # Set the axis scales and bounds
-# ax.set_xscale('log')
-# ax.set_ylim(0, 1)
-#
-# # Add grid and legend
-# ax.grid()
-# ax.legend()
-#
-# # Add arrow and text
-# arrow_start = (N_values[0], acc(CE(N_values[0], alpha, c), 1))
-# arrow_end = (N_values[-1], acc(CE(N_values[-1], alpha, c), 5))
-# ax.annotate('',
-#             xy=arrow_end, xycoords='data',
-#             xytext=arrow_start, textcoords='data',
-#             arrowprops=dict(arrowstyle="->",
-#                             lw=2, color='red'))
-# ax.text(15, 0.5, 'increasing seq length', rotation=15, color='red', fontsize=12)
-#
-# # Show the plot
-# plt.show()
-
-
-# import numpy as np
-# import matplotlib.pyplot as plt
-#
-# # Define the CE function
-# def CE(N, alpha, c):
-#     return (N**alpha) / (c**alpha)
-#
-# # Define the acc function
-# def acc(CE, L):
-#     return np.exp(-CE * L)
-#
-# # Set parameters
-# alpha = -1
-# c = 1
-# N_values = np.logspace(0, 3, 100)  # N goes from 1 to 1000 logarithmically
-# L_values = np.arange(1, 6)  # L goes from 1 to 5 linearly in increments of 1
-#
-# # Set up the plot
-# plt.figure()
-# plt.xscale("log")  # Set x-axis scale to log
-# plt.yscale("linear")  # Set y-axis scale to linear
-# plt.ylim(0, 1)  # Bound the y-axis between 0 and 1
-# plt.xlabel("log N (num. of parameters)")  # x-axis label
-# plt.ylabel("acc = exp( -CE(N) )")  # y-axis label
-# plt.title("Log-Linear Plot of acc vs log N")  # Title of the plot
-# plt.grid()  # Add grid lines
-#
-# # Plot the curves for different L values
-# for L in L_values:
-#     CE_values = CE(N_values, alpha, c)
-#     acc_values = acc(CE_values, L)
-#     plt.plot(N_values, acc_values, label=f"L = {L}")
-#
-# # # Add the horizontal arrow and text
-# # arrow_start = (N_values[0], acc(CE(N_values[0], alpha, c), L_values[0]))
-# # arrow_end = (N_values[-1], acc(CE(N_values[-1], alpha, c), L_values[-1]))
-# # plt.annotate("increasing seq length",
-# #              xy=arrow_start,
-# #              xytext=arrow_end,
-# #              textcoords='data',
-# #              arrowprops=dict(facecolor='black', arrowstyle='<->'))
-#
-# # Add the legend
-# plt.legend()
-#
-# # Show the plot
-# plt.show()
-
-
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
-# Constants
+# Create a figure with two subplots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+# Left plot (ax1)
 alpha = -1
-c = 1
-L_values = np.arange(1, 6, 1)  # L goes from 1 to 5 in increments of 1
-N_values = np.logspace(0, 3, 1000)  # N goes from 1 to 1000 logarithmically
+N = np.logspace(0, 3, num=1000)
+c = 4
+CE = (N**alpha) / (c**alpha)
 
-# Function to calculate CE(N)
-def CE(N, alpha, c):
-    return (N ** alpha) / (c ** alpha)
+ax1.plot(N, CE, label=r'$\log y = \log \left(\frac{N^{\alpha}}{c^{\alpha}}\right)$')
+ax1.set_xscale('log')
+ax1.set_yscale('log')
+ax1.set_xlabel(r'$\log N$ (Number of parameters)')
+ax1.set_ylabel(r'$\log CE(N) = \frac{N^{\alpha}}{c^{\alpha}}$')
+ax1.legend()
+ax1.grid()
 
-# Function to calculate accuracy (acc)
-def accuracy(N, L, alpha, c):
-    return np.exp(-CE(N, alpha, c) * L)
+# Right plot (ax2)
+L = np.arange(1, 6)
+for l in L:
+    acc = np.exp(-CE)**l
+    ax2.plot(N, acc, label=f'L = {l}')
 
-# Creating the plot
-plt.figure()
+ax2.set_xscale('log')
+ax2.set_yscale('linear')
+ax2.set_ylim(0, 1)
+ax2.set_xlabel(r'$\log N$ (Number of parameters)')
+ax2.set_ylabel('Accuracy (acc = exp(-CE(N)))')
+ax2.legend()
+ax2.grid()
 
-for L in L_values:
-    acc = accuracy(N_values, L, alpha, c)
-    plt.plot(N_values, acc, label=f'L={L}')
+# Save the figure in PNG, SVG, and PDF formats on your desktop
+desktop_path = os.path.expanduser("~/Desktop")
+plt.savefig(os.path.join(desktop_path, "figure.png"))
+plt.savefig(os.path.join(desktop_path, "figure.svg"))
+plt.savefig(os.path.join(desktop_path, "figure.pdf"))
 
-plt.xscale('log')
-plt.yscale('linear')
-plt.title('Accuracy vs. Number of Parameters')
-plt.xlabel('log N (log Number of Parameters)')
-plt.ylabel('Accuracy (acc = exp( -CE(N) ))')
-plt.legend()
-plt.grid()
-plt.ylim(0, 1)
-
-# Display the plot
+# Show the figure
 plt.show()
-
 
 
 
