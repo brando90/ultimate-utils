@@ -1,3 +1,6 @@
+"""
+inspired from: https://github.com/brando90/diversity-for-predictive-success-of-meta-learning/blob/main/div_src/diversity_src/experiment_mains/main_diversity_with_task2vec.py
+"""
 import os
 
 from pprint import pprint
