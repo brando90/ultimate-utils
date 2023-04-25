@@ -551,18 +551,54 @@ def get_task_embeddings_from_few_shot_dataloader(args: Namespace,
     embeddings: list[task2vec.Embedding] = []
     for t in range(num_tasks_to_consider):
         print(f'\n--> task_num={t}\n')
-        spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
+        from uutils.torch_uu.distributed import process_batch_ddp
+        batch_x, batch_y = process_batch_ddp(args, batch)
 
-        # concatenate the support and query sets to get the full task's data and labels
-        data = torch.cat((spt_x_t, qry_x_t), 0)
-        labels = torch.cat((spt_y_t, qry_y_t), 0)
-
-        # print(data.shape, labels.shape)
-        fsl_task_dataset: Dataset = FSLTaskDataSet(spt_x=None, spt_y=None, qry_x=data, qry_y=labels)
+        # using the FSLTaskDataSet to since it already works to create
+        dataset: Dataset = FSLTaskDataSet(spt_x=None, spt_y=None, qry_x=batch_x, qry_y=batch_y)
 
         print(f'{len(fsl_task_dataset)=}')
         embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network), classifier_opts=classifier_opts).embed(
             fsl_task_dataset)
+        print(f'{embedding.hessian.shape=}')
+        embeddings.append(embedding)
+    return embeddings
+
+
+def get_task_embeddings_from_normal_dataloader(args: Namespace,
+                                                 dataloaders: dict,
+                                                 probe_network: ProbeNetwork,
+                                                 num_tasks_to_consider: int,
+                                                 split: str = 'validation',
+                                                 classifier_opts: Optional = None,
+                                                 ) -> list[task2vec.Embedding]:
+    """
+    Compute the list of task embeddings from a data loader. So it will only sample a set of num_tasks_to_consider tasks (approximately ~ data sets or data from a task)
+    and embed them. You can think of a batch as a task or a small data set from a task.
+
+    Note: If the data loader doesn't know/sample according to the details of the concatenation/union of data sets, then
+    this just samples tasks/batches from the entire union without using dat asert information. This is usually fine.
+    """
+    import torch
+    from copy import deepcopy
+    loader = dataloaders[split]
+
+    # - compute embeddings for tasks
+    embeddings: list[task2vec.Embedding] = []
+    for t in range(num_tasks_to_consider):
+        print(f'\n--> task_num={t}\n')
+        batch = next(iter(loader))
+
+        # concatenate the support and query sets to get the full task's data and labels
+        data = batch[0]
+        labels = batch[1]
+
+        # uses the already implemented FSLTaskDataSet to create the dummy data set so task2vec code works
+        dataset: Dataset = FSLTaskDataSet(spt_x=None, spt_y=None, qry_x=data, qry_y=labels)
+
+        print(f'{len(dataset)=}')
+        embedding: task2vec.Embedding = Task2Vec(deepcopy(probe_network), classifier_opts=classifier_opts).embed(
+            dataset)
         print(f'{embedding.hessian.shape=}')
         embeddings.append(embedding)
     return embeddings
