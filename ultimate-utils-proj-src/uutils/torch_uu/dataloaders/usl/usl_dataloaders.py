@@ -211,7 +211,6 @@ class USLDatasetFromL2L(datasets.Dataset):
         """ Get the length. """
         return len(self.original_l2l_dataset)
 
-
 def label_to_long(label: int) -> int:
     """ Convert the label to long. """
     return int(label)

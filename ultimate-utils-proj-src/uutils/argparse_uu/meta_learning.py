@@ -133,6 +133,9 @@ def parse_args_meta_learning() -> Namespace:
                                                                              '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668/ckpt.pt')
     parser.add_argument('--ckpt_freq', type=int, default=-1)
 
+    #parser.add_argument('--fo', type=bool, default=True)
+    #parser.add_argument('--first_order', type=bool, default=True)
+
     # - dist/distributed options
     parser.add_argument('--init_method', type=str, default=None)
 

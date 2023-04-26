@@ -369,3 +369,183 @@ class Task_transform_cu_birds:
     def __call__(self, dataset):
         from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
         return get_remaining_transforms_mi(dataset, self.ways, self.samples)
+
+
+
+# - quickdraw
+
+def get_remaining_transforms_quickdraw(dataset: MetaDataset, ways: int, samples: int) -> list[TaskTransform]:
+    from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
+    remaining_task_transforms = get_remaining_transforms_mi(dataset, ways=ways, samples=samples)
+    return remaining_task_transforms
+
+
+def get_quickdraw_datasets(
+        root='~/data/l2l_data/',
+        data_augmentation='quickdraw',
+        device=None,
+        **kwargs,
+) -> tuple[MetaDataset, MetaDataset, MetaDataset]:
+    """Tasksets for quickdraw benchmarks."""
+    if data_augmentation is None:
+        train_data_transforms = torchvision.transforms.ToTensor()
+        test_data_transforms = torchvision.transforms.ToTensor()
+    elif data_augmentation == 'normalize':
+        train_data_transforms = Compose([
+            lambda x: x / 255.0,
+        ])
+        test_data_transforms = train_data_transforms
+    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2':
+        train_data_transforms = get_transform(augment=True)
+        test_data_transforms = get_transform(augment=False)
+    elif data_augmentation == 'hdb4_micod' or data_augmentation == 'quickdraw':
+        size: int = 84
+        scale: tuple[float, float] = (0.18, 1.0)
+        padding: int = 8
+        ratio: tuple[float, float] = (0.75, 1.3333333333333333)
+        from uutils.torch_uu.dataset.delaunay_uu import delauny_random_resized_crop_random_crop
+        train_data_transforms, _, test_data_transforms = delauny_random_resized_crop_random_crop(
+            size=size,
+            scale=scale,
+            padding=padding,
+            ratio=ratio,
+        )
+    else:
+        raise ValueError(f'Invalid data_augmentation argument. Got: {data_augmentation=}')
+
+    train_dataset = l2l.vision.datasets.Quickdraw(root=root,
+                                                transform=train_data_transforms,
+                                                mode='train',
+                                                download=True)
+    valid_dataset = l2l.vision.datasets.Quickdraw(root=root,
+                                                transform=test_data_transforms,
+                                                mode='validation',
+                                                download=True)
+    test_dataset = l2l.vision.datasets.Quickdraw(root=root,
+                                               transform=test_data_transforms,
+                                               mode='test',
+                                               download=True)
+    if device is not None:
+        train_dataset = l2l.data.OnDeviceDataset(
+            dataset=train_dataset,
+            device=device,
+        )
+        valid_dataset = l2l.data.OnDeviceDataset(
+            dataset=valid_dataset,
+            device=device,
+        )
+        test_dataset = l2l.data.OnDeviceDataset(
+            dataset=test_dataset,
+            device=device,
+        )
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    valid_dataset = l2l.data.MetaDataset(valid_dataset)
+    test_dataset = l2l.data.MetaDataset(test_dataset)
+
+    # - add names to be able to get the right task transform for the indexable dataset
+    train_dataset.name = 'train_quickdraw'
+    valid_dataset.name = 'val_quickdraw'
+    test_dataset.name = 'test_quickdraw'
+
+    _datasets = (train_dataset, valid_dataset, test_dataset)
+    return _datasets
+
+
+class Task_transform_quickdraw:
+    def __init__(self, ways, samples):
+        self.ways = ways
+        self.samples = samples
+
+    def __call__(self, dataset):
+        from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
+        return get_remaining_transforms_mi(dataset, self.ways, self.samples)
+
+
+
+# - tieredimagenet
+
+def get_remaining_transforms_ti(dataset: MetaDataset, ways: int, samples: int) -> list[TaskTransform]:
+    from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
+    remaining_task_transforms = get_remaining_transforms_mi(dataset, ways=ways, samples=samples)
+    return remaining_task_transforms
+
+
+def get_ti_datasets(
+        root='~/data/l2l_data/',
+        data_augmentation='ti',
+        device=None,
+        **kwargs,
+) -> tuple[MetaDataset, MetaDataset, MetaDataset]:
+    """Tasksets for ti benchmarks."""
+    if data_augmentation is None:
+        train_data_transforms = torchvision.transforms.ToTensor()
+        test_data_transforms = torchvision.transforms.ToTensor()
+    elif data_augmentation == 'normalize':
+        train_data_transforms = Compose([
+            lambda x: x / 255.0,
+        ])
+        test_data_transforms = train_data_transforms
+    elif data_augmentation == 'rfs2020' or data_augmentation == 'hdb2':
+        train_data_transforms = get_transform(augment=True)
+        test_data_transforms = get_transform(augment=False)
+    elif data_augmentation == 'hdb4_micod' or data_augmentation == 'ti':
+        size: int = 84
+        scale: tuple[float, float] = (0.18, 1.0)
+        padding: int = 8
+        ratio: tuple[float, float] = (0.75, 1.3333333333333333)
+        from uutils.torch_uu.dataset.delaunay_uu import delauny_random_resized_crop_random_crop
+        train_data_transforms, _, test_data_transforms = delauny_random_resized_crop_random_crop(
+            size=size,
+            scale=scale,
+            padding=padding,
+            ratio=ratio,
+        )
+    else:
+        raise ValueError(f'Invalid data_augmentation argument. Got: {data_augmentation=}')
+
+    train_dataset = l2l.vision.datasets.TieredImagenet(root=root,
+                                                transform=train_data_transforms,
+                                                mode='train',
+                                                download=True)
+    valid_dataset = l2l.vision.datasets.TieredImagenet(root=root,
+                                                transform=test_data_transforms,
+                                                mode='validation',
+                                                download=True)
+    test_dataset = l2l.vision.datasets.TieredImagenet(root=root,
+                                               transform=test_data_transforms,
+                                               mode='test',
+                                               download=True)
+    if device is not None:
+        train_dataset = l2l.data.OnDeviceDataset(
+            dataset=train_dataset,
+            device=device,
+        )
+        valid_dataset = l2l.data.OnDeviceDataset(
+            dataset=valid_dataset,
+            device=device,
+        )
+        test_dataset = l2l.data.OnDeviceDataset(
+            dataset=test_dataset,
+            device=device,
+        )
+    train_dataset = l2l.data.MetaDataset(train_dataset)
+    valid_dataset = l2l.data.MetaDataset(valid_dataset)
+    test_dataset = l2l.data.MetaDataset(test_dataset)
+
+    # - add names to be able to get the right task transform for the indexable dataset
+    train_dataset.name = 'train_ti'
+    valid_dataset.name = 'val_ti'
+    test_dataset.name = 'test_ti'
+
+    _datasets = (train_dataset, valid_dataset, test_dataset)
+    return _datasets
+
+
+class Task_transform_ti:
+    def __init__(self, ways, samples):
+        self.ways = ways
+        self.samples = samples
+
+    def __call__(self, dataset):
+        from uutils.torch_uu.dataloaders.meta_learning.mini_imagenet_mi_l2l import get_remaining_transforms_mi
+        return get_remaining_transforms_mi(dataset, self.ways, self.samples)

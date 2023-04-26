@@ -177,6 +177,39 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'omni':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import omniglot_l2l_tasksets
+        loaders: BenchmarkTasksets = omniglot_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'mi':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import mi_l2l_tasksets
+        loaders: BenchmarkTasksets = mi_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'ti':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import ti_l2l_tasksets
+        loaders: BenchmarkTasksets = ti_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
     elif args.data_option == 'cu_birds':
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.maml_patricks_l2l import cu_birds_l2l_tasksets
@@ -280,6 +313,28 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.maml_patricks_l2l import hdb9_l2l_tasksets
         loaders: BenchmarkTasksets = hdb9_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'hdb10':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import hdb10_l2l_tasksets
+        loaders: BenchmarkTasksets = hdb10_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
+    elif args.data_option == 'hdb11':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import hdb11_l2l_tasksets
+        loaders: BenchmarkTasksets = hdb11_l2l_tasksets(
             train_samples=args.k_shots + args.k_eval,
             train_ways=args.n_cls,
             test_samples=args.k_shots + args.k_eval,

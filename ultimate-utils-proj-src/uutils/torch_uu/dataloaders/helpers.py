@@ -117,6 +117,22 @@ def get_sl_dataloader(args: Namespace) -> dict:
         dataloaders: dict = flower_usl_all_splits_dataloaders(args)
         #assert args.model.cls.out_features == 34, f'flower expects more classes but got {args.model.cls.out_features=},' \
         #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'ti':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import ti_usl_all_splits_dataloaders
+        dataloaders: dict = ti_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 34, f'flower expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'mi':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import mi_usl_all_splits_dataloaders
+        dataloaders: dict = mi_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 34, f'flower expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'omni':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import omni_usl_all_splits_dataloaders
+        dataloaders: dict = omni_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 34, f'flower expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
+
     elif args.data_option == 'hdb6':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb6_usl_all_splits_dataloaders
         dataloaders: dict = hdb6_usl_all_splits_dataloaders(args)
@@ -129,6 +145,12 @@ def get_sl_dataloader(args: Namespace) -> dict:
     elif args.data_option == 'hdb9':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb9_usl_all_splits_dataloaders
         dataloaders: dict = hdb9_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb10':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb10_usl_all_splits_dataloaders
+        dataloaders: dict = hdb10_usl_all_splits_dataloaders(args)
+    elif args.data_option == 'hdb11':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb11_usl_all_splits_dataloaders
+        dataloaders: dict = hdb11_usl_all_splits_dataloaders(args)
     elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
