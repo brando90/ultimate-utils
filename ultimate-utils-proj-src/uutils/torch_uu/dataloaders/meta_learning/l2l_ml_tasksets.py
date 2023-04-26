@@ -276,6 +276,17 @@ def get_l2l_tasksets(args: Namespace) -> BenchmarkTasksets:
             root=args.data_path,
             data_augmentation=args.data_augmentation,
         )
+    elif args.data_option == 'quickdraw':
+        print(f'{args.data_augmentation=}')
+        from diversity_src.dataloaders.maml_patricks_l2l import quickdraw_l2l_tasksets
+        loaders: BenchmarkTasksets = quickdraw_l2l_tasksets(
+            train_samples=args.k_shots + args.k_eval,
+            train_ways=args.n_cls,
+            test_samples=args.k_shots + args.k_eval,
+            test_ways=args.n_cls,
+            root=args.data_path,
+            data_augmentation=args.data_augmentation,
+        )
     elif args.data_option == 'hdb6':
         print(f'{args.data_augmentation=}')
         from diversity_src.dataloaders.maml_patricks_l2l import hdb6_l2l_tasksets

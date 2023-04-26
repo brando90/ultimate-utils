@@ -215,6 +215,59 @@ def fc100_usl_all_splits_dataloaders(
     # next(iter(dataloaders[split]))
     return dataloaders
 
+
+def quickdraw_usl_all_splits_dataloaders(
+        args: Namespace,
+        root: str = '~/data/l2l_data/',
+        data_augmentation='quickdraw',
+        device=None,
+) -> dict:
+    print(f'----> {data_augmentation=}')
+    print(f'{quickdraw_usl_all_splits_dataloaders=}')
+    root = os.path.expanduser(root)
+    from diversity_src.dataloaders.maml_patricks_l2l import get_quickdraw_list_data_set_splits
+    dataset_list_train, dataset_list_validation, dataset_list_test = get_quickdraw_list_data_set_splits(root,
+                                                                                                         data_augmentation,
+                                                                                                         device)
+    # - print the number of classes in each split
+    # print('-- Printing num classes')
+    # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+    # - concat l2l datasets to get usl single dataset
+    relabel_filename: str = 'quickdraw_train_relabel_usl.pt'
+    train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+    relabel_filename: str = 'quickdraw_val_relabel_usl.pt'
+    valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+    relabel_filename: str = 'quickdraw_test_relabel_usl.pt'
+    test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+    #assert len(train_dataset.labels) == 60, f'Err:\n{len(train_dataset.labels)=}'
+    # - get data loaders, see the usual data loader you use
+    from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+    train_loader, val_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=train_dataset,
+        val_dataset=valid_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+    _, test_loader = get_serial_or_distributed_dataloaders(
+        train_dataset=test_dataset,
+        val_dataset=test_dataset,
+        batch_size=args.batch_size,
+        batch_size_eval=args.batch_size_eval,
+        rank=args.rank,
+        world_size=args.world_size
+    )
+
+    # next(iter(train_loader))
+    dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+    # next(iter(dataloaders[split]))
+    return dataloaders
+
+
 def cu_birds_usl_all_splits_dataloaders(
         args: Namespace,
         root: str = '~/data/l2l_data/',
@@ -880,7 +933,7 @@ def loop_through_usl_hdb_and_pass_data_through_mdl():
     #dataloaders: dict = dtd_usl_all_splits_dataloaders(args)
     #dataloaders = fungi_usl_all_splits_dataloaders(args)
 
-    for dataloaders in [hdb11_usl_all_splits_dataloaders(args)]: #dtd_usl_all_splits_dataloaders(args), cu_birds_usl_all_splits_dataloaders(args), fc100_usl_all_splits_dataloaders(args),
+    for dataloaders in [quickdraw_usl_all_splits_dataloaders(args)]: #dtd_usl_all_splits_dataloaders(args), cu_birds_usl_all_splits_dataloaders(args), fc100_usl_all_splits_dataloaders(args),
         print(dataloaders['train'].dataset.labels)
         print(dataloaders['val'].dataset.labels)
         print(dataloaders['test'].dataset.labels)
