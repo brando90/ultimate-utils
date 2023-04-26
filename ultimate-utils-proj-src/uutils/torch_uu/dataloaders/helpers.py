@@ -92,6 +92,11 @@ def get_sl_dataloader(args: Namespace) -> dict:
         dataloaders: dict = fc100_usl_all_splits_dataloaders(args)
         assert args.model.cls.out_features == 60, f'fc100 expects more classes but got {args.model.cls.out_features=},' \
                                                   f'\nfor model {type(args.model)=}'
+    elif args.data_option == 'quickdraw':
+        from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import quickdraw_usl_all_splits_dataloaders
+        dataloaders: dict = quickdraw_usl_all_splits_dataloaders(args)
+        #assert args.model.cls.out_features == 241, f'quickdraw expects more classes but got {args.model.cls.out_features=},' \
+        #                                          f'\nfor model {type(args.model)=}'
     elif args.data_option == 'cu_birds':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import cu_birds_usl_all_splits_dataloaders
         dataloaders: dict = cu_birds_usl_all_splits_dataloaders(args)
