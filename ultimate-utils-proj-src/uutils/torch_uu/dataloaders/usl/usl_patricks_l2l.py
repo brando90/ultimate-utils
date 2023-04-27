@@ -896,6 +896,527 @@ def hdb11_usl_all_splits_dataloaders(
     return dataloaders
 
 
+#=====dataset hdb12======#
+def hdb12_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb12_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb12_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb12_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb12_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb12_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb12======#
+#=====dataset hdb13======#
+def hdb13_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb13_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb13_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb13_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb13_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb13_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb13======#
+#=====dataset hdb14======#
+def hdb14_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb14_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb14_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb14_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb14_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb14_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb14======#
+#=====dataset hdb15======#
+def hdb15_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb15_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb15_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb15_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb15_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb15_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb15======#
+#=====dataset hdb16======#
+def hdb16_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb16_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb16_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb16_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb16_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb16_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb16======#
+#=====dataset hdb17======#
+def hdb17_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb17_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb17_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb17_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb17_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb17_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb17======#
+#=====dataset hdb18======#
+def hdb18_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb18_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb18_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb18_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb18_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb18_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb18======#
+#=====dataset hdb19======#
+def hdb19_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb19_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb19_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb19_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb19_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb19_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb19======#
+#=====dataset hdb20======#
+def hdb20_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb20_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb20_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb20_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb20_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb20_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb20======#
+#=====dataset hdb21======#
+def hdb21_usl_all_splits_dataloaders(
+            args: Namespace,
+            root: str = '~/data/l2l_data/',
+            data_augmentation='hdb4_micod',
+            device=None,
+    ) -> dict:
+        print(f'----> {data_augmentation=}')
+        print(f'{delaunay_usl_all_splits_dataloaders=}')
+        root = os.path.expanduser(root)
+        from diversity_src.dataloaders.maml_patricks_l2l import get_hdb21_list_data_set_splits
+        dataset_list_train, dataset_list_validation, dataset_list_test = get_hdb21_list_data_set_splits(root,
+                                                                                                             data_augmentation,
+                                                                                                             device)
+        # - print the number of classes in each split
+        # print('-- Printing num classes')
+        # from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_train, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # get_num_classes_l2l_list_meta_dataset(dataset_list_validation, verbose=True)
+        # - concat l2l datasets to get usl single dataset
+        relabel_filename: str = 'hdb21_train_relabel_usl.pt'
+        train_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_train, root, relabel_filename)
+        relabel_filename: str = 'hdb21_val_relabel_usl.pt'
+        valid_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_validation, root, relabel_filename)
+        relabel_filename: str = 'hdb21_test_relabel_usl.pt'
+        test_dataset = ConcatDatasetMutuallyExclusiveLabels(dataset_list_test, root, relabel_filename)
+        #assert len(train_dataset.labels) == 34, f'Err:{len(train_dataset.labels)=}'
+        # - get data loaders, see the usual data loader you use
+        from uutils.torch_uu.dataloaders.common import get_serial_or_distributed_dataloaders
+        train_loader, val_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=train_dataset,
+            val_dataset=valid_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+        _, test_loader = get_serial_or_distributed_dataloaders(
+            train_dataset=test_dataset,
+            val_dataset=test_dataset,
+            batch_size=args.batch_size,
+            batch_size_eval=args.batch_size_eval,
+            rank=args.rank,
+            world_size=args.world_size
+        )
+
+        # next(iter(train_loader))
+        dataloaders: dict = {'train': train_loader, 'val': val_loader, 'test': test_loader}
+        # next(iter(dataloaders[split]))
+        return dataloaders
+#=====end dataset hdb21======#
+
 # - gen labels
 def get_len_labels_list_datasets(datasets: list[Dataset], verbose: bool = False) -> int:
     if verbose:
