@@ -1,16 +1,36 @@
 """
 ---- Rephrase for scientific writing ----
 
-Provide me with different re-writes of the text in quotations.
-Remain professional, concise, scientifically sounding, persuasive yet simple, that uses the active voice:
+Provide me with different re-writes of the scientific text in quotations.
+Remain professional, concise, scientifically sounding, persuasive yet simple, use the active voice:
 "
-Current trends to pre-train capable Large Language Models (LLMs) mostly focus on scaling of model and dataset size.
+Our key contributions is:
+	Demonstrate that pre-training public datasets of open LLMs \cite{llama} are highly diverse
 "
-It should be of top quality for a NeurIPS NIP ICML machine learning publication
+It should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
 (do not change citations e.g. \citep{...}, urls or names).
-Also, do not change any part that is already excellent. Do not sound exaggerated or pompous.
-Keep it concise, scientific use the active voice.
-Provide 10 options:
+Also, do not change any part that is already excellent.
+Do not sound exaggerated or pompous.
+Keep it concise, scientific, use the active voice.
+Provide 20 re-phrased options:
+"""
+
+"""
+I have a couple of different phrasing for a sentence in a scientific paper I am writing in the quotes bellow.
+I would like more more re-phrasing options:
+"
+Option 1: 
+We help ground aspects of data quality by examining task coverage via the concrete measure of the diversity coefficient.
+
+Option 2:
+Help ground the imprecise discussion of data quality by studying data coverage through the concrete diversity coefficient
+"
+It should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
+(do not change citations e.g. \citep{...}, urls or names).
+Also, do not change any part that is already excellent.
+Do not sound exaggerated or pompous.
+Keep it concise, scientific, use the active voice.
+Re-write it amd provide 20 better re-phrased options:
 """
 
 """
@@ -49,8 +69,9 @@ It should a title of top quality for a NeurIPS NIP ICML machine learning publica
 Do not sound exaggerated or pompous.
 Keep the tile very concise, scientific use the active voice. 
 Provide 20 single sentence title options:
+"""
 
-
+"""
 ---- Combine into one sentence using anchor sentence ----
 
 Provide me with different re-writes of the text in quotations.
@@ -121,8 +142,17 @@ Provide me with a correct Latex bib entry for a .bib file using the following ex
 ```
 Using the above examples, create a correct Latex bib entry for a .bib file for the (anchor) citation:
 ```Anchor citation:
-David, S. B., Lu, T., Luu, T., & Pal, D. (2010). Impossibility Theorems for Domain Adaptation. Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics, 129–136. https://proceedings.mlr.press/v9/david10a.html
+Longpre, S., Yauney, G., Reif, E., Lee, K., Roberts, A., Zoph, B., Zhou, D., Wei, J., Robinson, K., Mimno, D., & Ippolito, D. (2023). A Pretrainer’s Guide to Training Data: Measuring the Effects of Data Age, Domain Coverage, Quality, & Toxicity (arXiv:2305.13169). arXiv. https://doi.org/10.48550/arXiv.2305.13169
 ```
 Do not change anything factual information of the anchor citation e.g. the names of the authors, url, proceedings, title, name, etc.:
+"""
 
+"""
+---- Synonyms ----
+
+Provide me good quality synonyms to:
+"
+We help ground
+"
+Give me 20 high quality synonyms, always use active voice, be professional if you provide a phrase as a synonym:
 """
