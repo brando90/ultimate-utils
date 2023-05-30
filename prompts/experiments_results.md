@@ -10,7 +10,15 @@ in the style of the top experiment example I will provide.
 My experiment description:
 ```text
 My experiment notes:
+Among the five sub-datasets of The Pile, NIH ExPorter, PubMed Abstracts, and USPTO have low diversity (0.15-0.17).
+This may be explained by dataset composition, since these datasets were curated from documents of a specialized field. 
+For instance, NIH ExPorter and PubMed Abstracts are medicine-focused. 
+Therefore, these datasets may contain sequences written in specific formats and prose, e.g. patent backgrounds in USPTO may share similar formats and semantics as do abstracts in NIH ExPorter or PubMed Abstracts. 
+Therefore, sequences from these datasets may be more similar structurally and semantically.
 
+Pile-CC and HackerNews, both of which cover a broader variety of topics, have higher diversity. Between the two, Pile-CC has higher diversity, which is consistent with its composition. We expect a greater variety of text topics, document formats, etc. from a general web scrape such as Pile-CC vs. a computer science and entrepreneurship-focused website such as HackerNews.
+
+These results show that combining tasks from two different datasets computes a higher diversity coefficient. This aligns with our expectation that combining data from different sources increases the overall diversity of the data.
 ```
 Top experiment example only use their style:
 ```text
@@ -43,9 +51,11 @@ orders of magnitude more efficient in the number of MACs and the time to learn a
 one order of magnitude smaller in the number of steps to adapt.
 
 General outline:
-\textbf{Experiments:} explain the actual experiments objectively.
-\textbf{Results:} explain the results objectively and evaluation metrics. 
-Then the key observations, with comments relating to conclusions, interpretations, implications, and contributions. 
+\textbf{Experiments:} *describe* the actual experiments objectively (especially in 1st sentence).
+\textbf{Results:} *describe* the results objectively and evaluation metrics 
+(reference of supporting evidence e.g. tables, figures, etc. likely goes here).
+Then explain *the key observations with out interpretations*, 
+with comments relating to conclusions, interpretations, implications, and contributions. 
 ```
 Your experiment section should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
 (do not change citations e.g. \citep{...}, urls or names).
@@ -53,7 +63,7 @@ Do not copy the facts but the style of the top experiment section example I prov
 Also, do not change any part that is already excellent.
 Do not sound exaggerated or pompous.
 Keep it concise, scientific, direct, use the active voice.
-Provide 20 re-phrased options:
+Provide 3 re-phrased options:
 
 ## Great outputs I choose:
 TODO

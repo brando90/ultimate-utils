@@ -12,7 +12,14 @@ My caption notes:
 ```
 ```text
 Top caption example:
-
+Table 1: \textbf{Freezing successive layers (preventing inner loop adaptation) does not affect accuracy, supporting 
+feature reuse.} 
+To test the amount of feature reuse happening in the inner loop adaptation, we test the
+accuracy of the model when we freeze (prevent inner loop adaptation) a contiguous block of layers at test time.
+We find that freezing even all four convolutional layers of the network (all layers except the network head) hardly
+affects accuracy. 
+This strongly supports the feature reuse hypothesis: layers don’t have to change rapidly at
+adaptation time; they already contain good features from the meta-initialization.
 
 General outline of a great scientific caption:
 \textbf{Bold the Main Contribution or Point or Conclusion of the figures.} 
