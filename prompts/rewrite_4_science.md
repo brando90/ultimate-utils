@@ -1,8 +1,4 @@
 # ---- Rephrase for scientific writing ----
-```text
-references: 
-    - memory efficient meta-learning: https://proceedings.neurips.cc/paper/2021/hash/cc1aa436277138f61cda703991069eaf-Abstract.html
-```
 
 # Prompt: one sentence to multiple re-phrasings
 Provide me with different re-writes of the scientific text in quotations.

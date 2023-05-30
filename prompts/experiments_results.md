@@ -1,4 +1,8 @@
 # ---- Write Experiment & Results section ----
+```text
+references: 
+    - memory efficient meta-learning: https://proceedings.neurips.cc/paper/2021/hash/cc1aa436277138f61cda703991069eaf-Abstract.html
+```
 
 # Prompt: experiment description
 Rewrite my experiment description into top scientific machine learning experiment section, 
