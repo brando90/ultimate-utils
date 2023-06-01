@@ -88,6 +88,7 @@ Do not change any part that is already excellent.
 Do not sound exaggerated or pompous.
 Keep it concise, scientific, direct, use the active voice.
 Follow the instructions conditioned by the example provided above.
+The discussion section should be similar in length to the top example i.e. 1, 2 or 3 paragraphs.
 Provide 3 re-phrased options:
 
 # Prompt:
