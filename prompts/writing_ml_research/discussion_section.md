@@ -1,10 +1,12 @@
 # ---- Write Captions for Figures in a Research Paper ----
 references: 
     - (fantastic discussion section!): Are Emergent Abilities of Large Language Models a Mirage? https://arxiv.org/abs/2304.15004
+    - MAML: https://arxiv.org/abs/1703.03400
+    - Hashimoto: http://proceedings.mlr.press/v139/hashimoto21a/hashimoto21a.pdf 
 
 # Prompt:
-Write a top quality for a NeurIPS NIPS ICML ICLR machine learning publication.
-Instructions:
+Write a top quality for a NeurIPS NIPS ICML ICLR machine learning publication from my notes, top quality examples, and instructions.
+Instructions to write great discussion section:
 ```markdown
 Instructions to write a top quality discussion section for Machine Learning papers:
 1. First (perhaps two/three) sentences: highlight concisely the main results, contribution and conclusion.
@@ -23,24 +25,66 @@ Other useful points to keep in mind in the writing of the discussion:
 ```
 
 Here is an example of a top quality discussion section:
-```markdown
+```latex
+% top example 1
 \section{Discussion}
-Our paper presents an alternative explanation for claimed emergent abilities of large language models. For a fixed task and a fixed model family, the researcher can choose a metric to create an emergent ability or choose a metric to ablate an emergent ability. Ergo, \textit{emergent abilities may be creations of the researcher's choices, not a fundamental property of the model family on the specific task.} We emphasize that nothing in this paper should be interpreted as claiming that large language models \textit{cannot} display emergent abilities; rather, our message is that previously claimed emergent abilities in \cite{brown2020language, ganguli2022predictability,srivastava2022beyond,wei2022emergent} might likely be a mirage induced by researcher analyses.
+Our paper presents an alternative explanation for claimed emergent abilities of large language models. 
+For a fixed task and a fixed model family, the researcher can choose a metric to create an emergent ability or choose a metric to ablate an emergent ability. 
+Ergo, \textit{emergent abilities may be creations of the researcher's choices, not a fundamental property of the model family on the specific task.} 
+We emphasize that nothing in this paper should be interpreted as claiming that large language models \textit{cannot} display emergent abilities; rather, our message is that previously claimed emergent abilities in \cite{brown2020language, ganguli2022predictability,srivastava2022beyond,wei2022emergent} might likely be a mirage induced by researcher analyses.
 
 Our paper has several implications. Firstly, a task and a metric are distinct and meaningful choices when constructing a benchmark. Secondly, when choosing metric(s), one should consider the metric's effect on the per-token error rate and adapt their measuring process accordingly, e.g., if one chooses accuracy, one should make sure to have sufficient data to accurately measure accuracy to avoid the risk of drawing invalid scientific conclusions.
 Thirdly, when making claims about capabilities of large models, including proper controls is critical. In this particular setting, emergent abilities claims are possibly infected by a failure to control for multiple comparisons. In BIG-Bench alone, there are $\geq$ 220 tasks, $\sim 40$ metrics per task, $\sim10$ model families, for a total of $\sim 10^6$ task-metric-model family triplets, meaning probability that \textit{no} task-metric-model family triplet exhibits an emergent ability by random chance might be small.
 Fourthly, scientific progress can be hampered when models and their outputs are not made public for independent scientific investigation.
+
+% top example 2
+\section{Discussion}
+We introduced a meta-learning method based on learning easily adaptable model parameters through gradient descent. 
+Our approach has a number of benefits. 
+It is simple and does not introduce any learned parameters for metalearning. 
+It can be combined with any model representation
+that is amenable to gradient-based training, and any differentiable objective, including classification, regression, and
+reinforcement learning. Lastly, since our method merely
+produces a weight initialization, adaptation can be performed with any amount of data and any number of gradient steps, though we demonstrate state-of-the-art results
+on classification with only one or five examples per class.
+We also show that our method can adapt an RL agent using
+policy gradients and a very modest amount of experience.
+
+Reusing knowledge from past tasks may be a crucial ingredient in making high-capacity scalable models, such as
+deep neural networks, amenable to fast training with small
+datasets. We believe that this work is one step toward a simple and general-purpose meta-learning technique that can
+be applied to any problem and any model. Further research
+in this area can make multitask initialization a standard ingredient in deep learning and reinforcement learning.
+
+% top example 3
+In this work, we’ve proposed a new approach to predicting the performance of a prediction model as a function of
+training data composition that consists of measuring model
+accuracies for small n and a range of q and fitting a parametric model 
+V (n, q) := −α log(n) + \sum_^m_{i=1}( \sum^K_{k=1}\lambda_{i,k} q_k)^−1.
+Our main contribution is to show that for a range of models,
+this nonlinear parametric model is a more natural approximation to generalization error than existing linear approximations. 
+Empirical results on the Amazon sentiment regression
+task show that this approximation is accurate under a range
+of conditions, and experiments on neural models suggest
+that the method can continue to perform well in more realistic situations where the theory does not necessarily hold.
+Our work is a first step in going beyond closed-form estimates of model performance or additivity assumptions. It
+is an open question whether the same approach can scale
+to more extreme extrapolation settings or large numbers of
+data sources, and we hope to explore this in future work.
 ```
 
 Here is my sample discussion section that needs rewriting and improvement (perhaps as a set of bullet points or informal notes). 
 Make it top quality for a NeurIPS NIPS ICML ICLR machine learning publication as the instructions and examples require:
-```markdown
+```latex
+% My discussion section
+\section{Discussion}
 
 ```
-The improved discussion section should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
-(do not change citations e.g. \citep{...}, urls or names).
+My improved discussion section be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication.
+Do not change citations e.g. \citep{...}, urls.
 Do not copy the facts but the style of the top abstract example I provided.
-Also, do not change any part that is already excellent.
+Do not change the facts in my example.
+Do not change any part that is already excellent.
 Do not sound exaggerated or pompous.
 Keep it concise, scientific, direct, use the active voice.
 Follow the instructions conditioned by the example provided above.
