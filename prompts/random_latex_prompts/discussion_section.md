@@ -1,32 +1,50 @@
 # ---- Write Captions for Figures in a Research Paper ----
 references: 
+    - (fantastic discussion section!): Are Emergent Abilities of Large Language Models a Mirage? https://arxiv.org/abs/2304.15004
 
-[//]: # (    - Are Emergent Abilities of Large Language Models a Mirage? https://arxiv.org/abs/2304.15004)
-
-# Prompt: 
-```markdown
+# Prompt:
+Write a top quality for a NeurIPS NIPS ICML ICLR machine learning publication.
 Instructions:
+```markdown
+Instructions to write a top quality discussion section for Machine Learning papers:
+1. First (perhaps two/three) sentences: highlight concisely the main results, contribution and conclusion.
+2. The discussion section should highlight the benefits, without exaggerating. 
+3. The discussion section should discuss the limitations of the work in an honest (positive) way without diminishing your findings. Honest work is more trustworthy and thus more impactful.
+4. Discuss the implications of the work and impact to the field of machine learning or relevant subfield. Connection to future work can be mentioned here.
+
+One line summary for top quality discussion section: Discussion; Highlight key results and then proceeds to discusses implication (thus the work's potential impact), benefits, limitations, interpretations, compare with relevant literature, and future work (it can be connected to impact and implications).
+
+Other useful points to keep in mind in the writing of the discussion:
+- Make sure discussion sections prose flows well and logically.
+- Use the active voice.
+- Be concise, clear, and use precise language. If language is precise then it's more likely to be trustworthy since it's more likely to be objective. 
+- Discussion sections should reflect critical thinking and evaluations.
+- Although your discussion section discusses limitation, it should still make your work positive, persuasive and impactful.
+```
+
+Here is an example of a top quality discussion section:
+```markdown
+\section{Discussion}
+Our paper presents an alternative explanation for claimed emergent abilities of large language models. For a fixed task and a fixed model family, the researcher can choose a metric to create an emergent ability or choose a metric to ablate an emergent ability. Ergo, \textit{emergent abilities may be creations of the researcher's choices, not a fundamental property of the model family on the specific task.} We emphasize that nothing in this paper should be interpreted as claiming that large language models \textit{cannot} display emergent abilities; rather, our message is that previously claimed emergent abilities in \cite{brown2020language, ganguli2022predictability,srivastava2022beyond,wei2022emergent} might likely be a mirage induced by researcher analyses.
+
+Our paper has several implications. Firstly, a task and a metric are distinct and meaningful choices when constructing a benchmark. Secondly, when choosing metric(s), one should consider the metric's effect on the per-token error rate and adapt their measuring process accordingly, e.g., if one chooses accuracy, one should make sure to have sufficient data to accurately measure accuracy to avoid the risk of drawing invalid scientific conclusions.
+Thirdly, when making claims about capabilities of large models, including proper controls is critical. In this particular setting, emergent abilities claims are possibly infected by a failure to control for multiple comparisons. In BIG-Bench alone, there are $\geq$ 220 tasks, $\sim 40$ metrics per task, $\sim10$ model families, for a total of $\sim 10^6$ task-metric-model family triplets, meaning probability that \textit{no} task-metric-model family triplet exhibits an emergent ability by random chance might be small.
+Fourthly, scientific progress can be hampered when models and their outputs are not made public for independent scientific investigation.
+```
+
+Here is my sample discussion section that needs rewriting and improvement (perhaps as a set of bullet points or informal notes). 
+Make it top quality for a NeurIPS NIPS ICML ICLR machine learning publication as the instructions and examples require:
+```markdown
 
 ```
-```text
-Guides for writing abstracts according to TODO:
-1. state the problem
-2. state why it's an interesting problem
-3. state what your solution achieves
-4. what follows from your solution
-```
-```text
-Top abstract example:
-Recent work claims that large language models display emergent abilities, abilities not present in smaller-scale models that are present in larger-scale models. What makes emergent abilities intriguing is two-fold: their sharpness, transitioning seemingly instantaneously from not present to present, and their unpredictability, appearing at seemingly unforeseeable model scales. Here, we present an alternative explanation for emergent abilities: that for a particular task and model family, when analyzing fixed model outputs, emergent abilities appear due to the researcher's choice of metric rather than due to fundamental changes in model behavior with scale. Specifically, nonlinear or discontinuous metrics produce apparent emergent abilities, whereas linear or continuous metrics produce smooth, continuous predictable changes in model performance. We present our alternative explanation in a simple mathematical model, then test it in three complementary ways: we (1) make, test and confirm three predictions on the effect of metric choice using the InstructGPT/GPT-3 family on tasks with claimed emergent abilities; (2) make, test and confirm two predictions about metric choices in a meta-analysis of emergent abilities on BIG-Bench; and (3) show to choose metrics to produce never-before-seen seemingly emergent abilities in multiple vision tasks across diverse deep networks. Via all three analyses, we provide evidence that alleged emergent abilities evaporate with different metrics or with better statistics, and may not be a fundamental property of scaling AI models.
-```
-Your Abstract for should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
+The improved discussion section should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
 (do not change citations e.g. \citep{...}, urls or names).
 Do not copy the facts but the style of the top abstract example I provided.
 Also, do not change any part that is already excellent.
 Do not sound exaggerated or pompous.
 Keep it concise, scientific, direct, use the active voice.
-Provide 10 re-phrased options:
-
+Follow the instructions conditioned by the example provided above.
+Provide 3 re-phrased options:
 
 # Prompt:
 
@@ -37,6 +55,11 @@ TODO
 
 
 # -- Notes --
+Summary
+```markdown
+Discussion: Highlight key results and then proceeds to discusses implication (thus the work's potential impact), benefits, limitations, interpretations, compare with relevant literature, and future work (can be conected to impact and implications).
+Conclusion: Provide a concise conclusion that summarizes your main findings, their implications, and potential future directions. No new information or arguments should be presented in the conclusion.
+```
 
 ```markdown
 What are the best practices or advice for writing a top quality machine learning discussion section for a research paper
@@ -83,4 +106,12 @@ future directions for research, but without the detailed discussion and analysis
 The distinction between these sections can sometimes blur, and in some papers, they may be combined into one "Discussion and Conclusion" section. 
 However, even in this case, the roles of discussing and concluding should be clear in the text. 
 It's also important to follow the specific guidelines of the journal or conference you are submitting to, as they may have particular preferences for how these sections should be structured.
+```
+```markdown
+Brando — 
+Hi professor, 
+Curious on your perspective. I find that main results & conclusions are often combined in the discussion section. 
+Sometimes I'm not sure what the point of a conclusion section is if the conclusion is stated in the discussion section. What is your perspective in general? (with the caveat that the answer likely depends on the paper)
+sanmi — 
+Agreed, I think it's fine to combine. One usually does not need both.
 ```
