@@ -3,7 +3,7 @@
 ## Computing Diversity tutorial
 
 For background on our formal diversity we recommend our short [**6 page reference**](https://brando90.github.io/brandomiranda/professional_documents/ICML_2023_DeployGenAI_Workshop__Diversity_Coefficient___LLMs__6pg_.pdf) and longer arxiv link (to be released soon).
-For more references see the end of this document or see the related work section of the paper previously referenced. 
+For more references see the end of this document, the related work section of the paper previously referenced, or [**Brando's publication page**](https://brando90.github.io/brandomiranda/publications.html). 
 
 ### Compute Diversity using normal pytorch dataloader
 
