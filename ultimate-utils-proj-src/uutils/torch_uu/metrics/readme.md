@@ -1,8 +1,11 @@
 # Computing metrics & tutorials
 
-## Computing diversity tutorial
+## Computing Diversity tutorial
 
-### Compute diversity using normal pytorch dataloader
+For background on our formal diversity we recommend our short 6 page reference: https://brando90.github.io/brandomiranda/professional_documents/ICML_2023_DeployGenAI_Workshop__Diversity_Coefficient___LLMs__6pg_.pdf and longer arxiv link (to be released soon).
+For more references see the end of this document or see the related work section of the paper previously referenced. 
+
+### Compute Diversity using normal pytorch dataloader
 
 ```python
 # -- lets create som dummy data set
@@ -138,7 +141,7 @@ embeddings: list[task2vec.Embedding] = get_task_embeddings_from_few_shot_l2l_ben
 
 ## Citations
 
-If you use this implementation consider citing us:
+If you use this implementation please consider citing us:
 
 ```
 @article{Miranda2022,
@@ -170,7 +173,7 @@ consider citing us:
 
 arxiv url: coming soon.
 
-If you use our task2vec diversities or complexities consider citing the authors of task2vec:
+If you use our task2vec diversities or complexities consider citing the authors of Task2Vec:
 
 ```
 @report{AchilleUCLA,
