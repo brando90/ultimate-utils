@@ -14,3 +14,7 @@ Do not sound exaggerated or pompous.
 Keep it concise, scientific, use the active voice.
 Should be impactful and maybe catchy, controversial, or surprising or interesting -- yet short and accurate factual.
 Re-write it amd provide 20 better re-phrased options:
+
+
+# -- Notes --
+Title will have ~1000 readers according to Simon Jones! https://www.microsoft.com/en-us/research/uploads/prod/2016/07/How-to-write-a-great-research-paper.pdf
