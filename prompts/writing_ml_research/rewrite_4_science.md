@@ -5,10 +5,7 @@ Provide me with different re-writes of the scientific text in quotations.
 Remain professional, concise, scientifically sounding, persuasive yet simple, use the active voice:
 ```latex
 % rewrite/rephrase bellow
-Therefore, vast amounts of effort have been invested in understanding neural scaling laws 
--- empirical findings that deep artificial networks exhibit power law scaling in performance metrics as a function of 
-the \textit{size} of the pre-training dataset, model given a compute budget 
-\citep{schaeffer2023emergent, hestness2017deep,rosenfeld2019constructive,henighan2020scaling,kaplan2020scaling,gordon2021data,hernandez2021scaling,jones2021scaling,zhai2022scaling,hoffmann2022training, clark2022unified, neumann2022scaling}.
+In addition, previous work demonstrated that without thoughtful consideration of metrics when evaluating LLMs it's possible to accidentally misguide one self e.g. claiming emergence in LLM \citep{schaeffer2023emergent}.
 ```
 It should be of top quality for a NeurIPS NIPs ICML ICLR AAAI CVPR machine learning publication
 (do not change citations e.g. \citep{...} \cite{...}, urls or names). 

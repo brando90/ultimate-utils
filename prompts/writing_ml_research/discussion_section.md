@@ -232,3 +232,80 @@ models has not yet been extensively explored. Careful consideration of the inten
 further study of uncertainty quantification in meta-learning approaches will be essential in order to
 minimize any negative societal consequences of LITE if deployed in real-world applications.
 ```
+
+Example with Q/A in discussion, actually this is not in the discussion section, but it's a good example of 
+FAQ (ref https://arxiv.org/pdf/1909.02729.pdf):
+```latex
+% itmenize so that question are numbered/easy to reference
+\textbf{Why has it not been noticed yet that this simple approach works so well?}
+Non-transductive fine-tuning as a baseline has been considered before (Vinyals et al., 2016; Chen
+et al., 2018). The fact that this is comparable to state-of-the-art has probably gone unnoticed
+because of the following reasons:
+• Given that there are only a few labeled support samples provided in the few-shot setting,
+initializing the classifier becomes important. The support-based initialization (cf. Section 3.1)
+motivated from the deep metric learning literature (Hu et al., 2015; Movshovitz-Attias et al.,
+2017; Qi et al., 2018; Gidaris & Komodakis, 2018) classifies support samples correctly (for
+a support shot of 1, this may not be true for higher support shots). This initialization, as
+opposed to initializing the weights of the classifier randomly, was critical to performance in
+our experiments.
+• In our experience, existing meta-training methods, both gradient-based ones and metricbased ones, are difficult to tune for larger architectures. We speculate that this is the reason a
+large part of the existing literature focuses on smaller backbone architectures. The few-shot
+learning literature has only recently started to move towards bigger backbone architectures
+(Oreshkin et al., 2018; Rusu et al., 2018). From Table 3 we see that non-tranductive finetuning gets better with a deeper backbone architecture. A similar observation was made
+by (Chen et al., 2018). The observation that we can use “simple” well-understood training
+techniques from standard supervised learning that scale up to large backbone architectures
+for few-shot classification is a key contribution of our paper.
+Transductive methods have recently started to become popular in the few-shot learning literature
+(Nichol et al., 2018; Liu et al., 2018a). Because of the scarcity of labeled support samples, it is
+crucial to make use of the unlabeled query samples in the few-shot regime.
+Our advocated baseline makes use of both a good initialization and transduction, relatively new in
+the few-shot learning literature, which makes this simplistic approach go unrecognized till now
+```
+
+rfs: 
+```latex
+\section{Discussion}
+We have proposed a simple baseline for few-shot image
+classification in the meta-learning context. This approach
+has been underappreciated in the literature thus far. We
+show with numerous experiments that such a simple baseline
+outperforms the current state-of-the-arts on four widelyused few-shot benchmarks. 
+Combined with self-distillation,
+the performance further improves by 2-3%. Even when
+meta-training labels are unavailable, it may be possible to
+leverage state of the art self-supervised learning approaches
+to learn very good embeddings for meta-testing tasks.
+
+1. \textbf{Q: What is the intuition of this paper?}
+A: We hope this paper will shed new light on few-shot classification. We believe representations play an important
+role. Shown by our empirical experiments, a linear model
+can generalize well as long as a good representation of the
+data is given.
+
+2. Why does this simple baseline work? Is there anything
+that makes few-shot classification special?
+A: Few-shot classification is a special case of meta-learning
+in terms of compositionality of tasks. Each task is an Kway classification problem, and on current benchmarks the
+classes, even between tasks, are all mutually exclusive. This
+means we can merge all N of the K-way classification tasks
+into a single but harder NK-way classification task. Our
+finding is that training an embedding model on this new
+NK-way task turns out to transfer well to meta-testing set.
+On the other hand, we also find that self-supervised embedding, which does not explicitly require this NK compositionality, achieves a similar level of performance. A concurrent work [10] studies the representations for few-shot
+learning from the theoretical point of view.
+
+3. Does your work negate recent progress in meta-learning?
+A: No. Meta-learning is much broader than just fewshot classification. Although we show a simple baseline
+outperforms other complicated meta-learning algorithms
+in few-shot classification, methods like MAML may still
+be favorable in other meta-learning domains (e.g., metareinforcement learning).
+
+4. Why does distillation work? What does it suggest?
+A: The soft-labels [18] from the teacher model depict the
+fact that some classes are closer to each other than other
+classes. For example, a white goat is much more similar
+to a brown horse than to an airplane. But the one-hot label
+does not capture this. After being regularized by soft-labels,
+the network learns to capture the metric distance. From theoretical perspective, [36] provides analysis for linear case.
+Ongoing work [31] argues distillation amplifies regularization in Hilbert space.
+```
