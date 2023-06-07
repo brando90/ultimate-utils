@@ -8,3 +8,4 @@
   be applied to any problem and any model.
   - C. Finn, P. Abbeel, and S. Levine. Model-agnostic meta-learning for fast adaptation of deep networks. In ICML, 2017.
   - (shows why there is impact)
+- If researcher scores models outputs using a nonlinear metric

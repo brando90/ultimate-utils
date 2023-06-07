@@ -15,6 +15,9 @@ Instructions to write great introduction section:
 Instructions to write a top quality Introduction section for Machine Learning papers:
 1.
 
+One line summary for top quality introduction section: The introduction (1 page, 100 readers); 
+i. Describe the problem ii. State your contributions iii. And after briefly implication/impact, why it matters.
+
 Other useful points to keep in mind in the writing of the introduction:
 - 
 ```
@@ -33,15 +36,15 @@ Make it top quality for a NeurIPS NIPS ICML ICLR machine learning publication as
 
 ```
 My improved introduction section be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication.
-Do not change citations e.g. \citep{...}, urls.
-Do not copy the facts but the style of the top abstract example I provided.
-Do not change the facts in my example.
-Do not change any part that is already excellent.
-Do not sound exaggerated or pompous.
-Keep it concise, scientific, direct, use the active voice.
-Follow the instructions conditioned by the example provided above.
-The introduction section should be similar in length to the top example i.e. 1, 2 or 3 paragraphs.
-Provide 3 re-phrased options:
+Do not change citations e.g. \citep{...}, urls. 
+Do not copy the facts but the style of the top abstract example I provided. 
+Do not change the facts in my example. 
+Do not change any part that is already excellent. 
+Do not sound exaggerated or pompous. 
+Keep it concise, scientific, direct, use the active voice. 
+Follow the instructions conditioned by the example provided above. 
+The introduction section should be similar in length to the top example i.e. 1, 2 or 3 paragraphs. 
+Provide 3 re-phrased options: 
 
 
 # -- Notes --
