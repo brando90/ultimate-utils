@@ -8,7 +8,7 @@ references:
 ```markdown
 First:
 1. Write a 1-2 sentence contribution/conclusion/main result.
-2. Write a list of benefits and limitations with arguments in favor and against each point.
+2. Write a list of benefits and limitations with arguments in favor and against each point. Optionally, if there is future work to mention after limitation it can be mentioned. 
 3. Implication & impact (& future work maybe)
 4. The choose the points we want to put in paper from points 2, 3
 5. Then write the section well.
@@ -28,13 +28,14 @@ Instructions to write a top quality discussion section for Machine Learning pape
 
 One line summary for top quality discussion section: Discussion; Highlight key results and then proceeds to discusses implication (thus the work's potential impact), benefits, limitations, interpretations, compare with relevant literature, and future work (it can be connected to impact and implications).
 
-Other useful points to keep in mind in the writing of the discussion:
+Other useful points to keep in mind in the writing of the discussion section:
 - Make sure discussion sections prose flows well and logically.
 - Use the active voice.
 - Be concise, clear, and use precise language. If language is precise then it's more likely to be trustworthy since it's more likely to be objective. 
 - Discussion sections should reflect critical thinking and evaluations.
 - Although your discussion section discusses limitation, it should still make your work positive, persuasive and impactful.
 - good starting sentences:  "We propose..." or "We introduce..." or "Our paper presents..."
+- Note, future work can be followed up after a discussion of limitation of the current work.
 ```
 
 Here is an example of a top quality discussion section:

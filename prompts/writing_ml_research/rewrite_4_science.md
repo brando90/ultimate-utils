@@ -5,7 +5,7 @@ Provide me with different re-writes of the scientific text in quotations.
 Remain professional, concise, scientifically sounding, persuasive yet simple, use the active voice:
 ```latex
 % rewrite/rephrase bellow
-In addition, previous work demonstrated that without thoughtful consideration of metrics when evaluating LLMs it's possible to accidentally misguide one self e.g. claiming emergence in LLM \citep{schaeffer2023emergent}.
+-	One of the reasons humans are so effective at learning programming and mathematics is that they learn beyond pattern recognition. They are able to build intuitive high level models that capture relationships and similarity between concepts. In particular, these high level models and rules are difficult to formally specify in traditional handcrafted systems. Instead, a learning system learns these from the partial proof term data we mine and it is able to do high level proof steps by sketching partial proof terms.
 ```
 It should be of top quality for a NeurIPS NIPs ICML ICLR AAAI CVPR machine learning publication
 (do not change citations e.g. \citep{...} \cite{...}, urls or names). 

@@ -42,12 +42,12 @@ The message should engage the women, especially start the conversation positivel
 It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
 It is fine if it's funny, witty, flirty (without overdoing it) yet mature and shows I'm a
 stable independent man that is high value.
-But most important is that it follow the iceberg or triangle approach to getting to know someone.
+But most important is that it follow the iceberg or triangle approach to getting to know someone,
 i.e. the message I write to her is connected to something about her in her profile, and ideally
-invites us to get to know each other more -- especially making her feel implicitly that she likes 
-me more and more as she gets to know me more.
-This latter part is done because we wrote something connected to her profile yet also 
-respect my guidelines and my current attempts and ideas 
+invites us to get to know each other more -- especially making her feel implicitly that we like 
+each other more and more as we get to know each other more.
+This latter part is done because we wrote something connected to her profile yet. 
+Also respect my guidelines and use my current attempts and ideas 
 -- since that would ideally connect to things we might have in common. 
 Connecting at a values level and having fun being lightweight or lighthearted or relaxed tone.
 Do not compliment her in ways that sounds needy, be casual and relaxed, grounded.

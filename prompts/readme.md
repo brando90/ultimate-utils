@@ -18,6 +18,7 @@ But it's not been as successful as I hoped.
 - GPT4 isn't very insightful e.g. it's not capable of writing a conversation starter in one shot for hinge/bumble. 
   - The main issue is that it doesn't realize -- even if you tell it -- to try to connect with the person in a meaningful way.
   - Like going beyond their profile and creating a genuine human connection that would lead to an fun, exciting yet relaxed conversation. 
+- Notes from talking to Zach, do rlhf, thus conv with chatgpt reveal your preferences, it seems you still DO have to provide the main idea/insight. It's not good at that. But it's a good function mapper, so it will improve an already good idea. 
 
 Boiler Plate
 ```markdown

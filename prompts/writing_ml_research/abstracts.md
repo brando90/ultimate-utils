@@ -12,9 +12,9 @@ My abstract notes:
 ```text
 Guides for writing abstracts according to TODO:
 1. state the problem
-2. state why it's an interesting problem
+2. state why it's an interesting or important problem
 3. state what your solution achieves
-4. what follows from your solution
+4. what follows/implications from your solution, i.e. impact
 ```
 ```text
 Top abstract example:
