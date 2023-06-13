@@ -1,8 +1,20 @@
 # ---- Write patent ----
 
-# Prompt: 
+# Prompt: One shot patent
+Write a top quality machine learning US patent for a machine learning invention using the current paragraphs and
+bullet points:
+```text
 
+```
 
+# Prompt: Merge each section into one prose to make a final one patent professional document
+Write a top quality machine learning US patent for a machine learning invention using the current paragraphs and
+bullet points, the goal is to make a single documet:
+```text
+% This is my current draft
+```
+Do not change the names of papers, citations, urls, names, or any part that is already excellent.
+Write a professional single patent document:
 
 # -- Notes --
 

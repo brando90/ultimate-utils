@@ -1,11 +1,11 @@
 # ---- Rephrase for scientific writing ----
 
-# Prompt: one sentence to multiple re-phrasings
+# Prompt: One sentence to multiple re-phrased sentences
 Provide me with different re-writes of the scientific text in quotations.
 Remain professional, concise, scientifically sounding, persuasive yet simple, use the active voice:
 ```latex
 % rewrite/rephrase bellow
--	One of the reasons humans are so effective at learning programming and mathematics is that they learn beyond pattern recognition. They are able to build intuitive high level models that capture relationships and similarity between concepts. In particular, these high level models and rules are difficult to formally specify in traditional handcrafted systems. Instead, a learning system learns these from the partial proof term data we mine and it is able to do high level proof steps by sketching partial proof terms.
+While they rely on few-shot prompting and in addition rely on the existence of natural language proofs as hints for DPS to work.
 ```
 It should be of top quality for a NeurIPS NIPs ICML ICLR AAAI CVPR machine learning publication
 (do not change citations e.g. \citep{...} \cite{...}, urls or names). 
