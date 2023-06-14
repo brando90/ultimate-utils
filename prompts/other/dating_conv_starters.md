@@ -56,7 +56,6 @@ It has to be 1 or 2 sentences -- max 3 sentences.
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
 Give me 7 options:
 
-
 # -- Notes --
 
 ```markdown
@@ -80,4 +79,20 @@ Hi Kristen, did you innovation to iced coffee lead you into a career in tech? Wo
 Hi Kristen, would you be willing to share me your secret about iced coffee? Perhaps the revolution is still waiting and just needs "the rubber duck technique".  
 
 Hi Kirsten, did your innovative approach to iced coffee lead you to the tech field? I'm curious about your secret recipe – maybe it's just awaiting its "rubber duck moment" to revolutionize the industry.
+```
+
+Strategy for messaging someone on a dating app from the Men's side
+```markdown
+Goal: The main goal is to entice a response that leads to a positive interaction. 
+Distinguishable: It has to be different from the other simple responses others are sending (e.g. what is your favorite country instead ask what draws you to a country, culture, food, music, etc. note this assume we already decide that travel is in the top two most important). 
+Choosing topic: Choose a topic from her profile that you think is the most important for her, but that I can still build over. 
+How you can pick is by cross referencing what they said on their profile with what is available non social media.
+Further advice on choosing the topic: normally when you are asking a question around what motivates them to do something or if what they chose turned out the way they expected why and why not, that tends to get results faster
+How to develop the topic: We are still using the iceberg/triangle strategy i.e., as we get to know someone the connect grows deeper because we learn that we value similar life styles.  
+To develop depth/Pro tip: make sure that any question you ask you have answers for you. 
+Example:
+topic: With Orge she speaks about travel and how she had been gone for three years
+Indistinguishable question: What is your favorite travel location?
+Distinguishable/interesting question: 
+what draws you to a country, culture, food, music, etc.?
 ```
