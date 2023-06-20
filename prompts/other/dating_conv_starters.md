@@ -8,35 +8,14 @@ See the ones I have, are all based on my or sim's insights first.
 Provide me with different options for a high quality first message to a woman in a dating app
 (e.g. Hinge Bumble Coffee and Beagles) using her profile prompts that I will provide:
 ```markdown
-[//]: # (Her profile prompts)
-Name: Kirsten
-Job: Tech
-Age: 31
-
-We'll get along if
-You have a big heart, spread kidness, family is everything and we can share quality 
-conversations over meals we cook together or fine out.
-
-Green fags I look for
-Enjoy spending summers traveling by the beach/lake, 
-winters skiing, 
-has good taste in wine, 
-and agrees Steph Curry is better than LeBron.
-
-Biggest risk I've taken 
-Started a business in College to revolutionize the way iced coffee is made. 
-Starbucks was supposed to buy it from me!
+[//]: # (Her profile)
+About Ala wang
+Hi, I am a positive person who like to explore the things that I have not done before. 🧚‍♀️I like to explore my inner self, so I have doing meditation🧘‍♀️.And,I love the ocean 🌊and the forest, 🌳where I can relax and recharge in nature. I also like to explore various foods 🥟🍤and enjoy be with my pets🐰
 ```
 Also consider my ideas or current attempted openers or ideas:
 ```markdown
 [//]: # (My attempted openers or ideas)
-idea 1: I don't know who Steph Curry or LeBron are, so don't mention it.
-idea 2: I don't drink so don't talk about wine.
-idea 3: I love summer in the beach or a lake house.
-idea 4: I like travelling and culture. 
-idea 5: I also love quality conversation.
-
-Current attempt opener: Did your invention with ice coffee lead you into a career in tech?
+Hi Ala, I'm reading altered-trait, a science meditation book and thought about you. Do you ever take mindfulness walks in the forest/nature? What is your favorite way to recharge?
 ```
 The message should engage the women, especially start the conversation positively. 
 It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
