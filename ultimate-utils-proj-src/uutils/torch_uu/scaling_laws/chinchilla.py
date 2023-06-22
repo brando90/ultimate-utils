@@ -6,12 +6,12 @@ In particular the optimization equation form in their paper is:
 
 Where N is the number of model parameters,
 D is the number of training tokens,
-C=FLOPs(N, D, its) where it's can be ignored since it's the number of tokens D.
+C=FLOPs(N, D, its) where its can be ignored since it's the number of tokens D.
 FLOPS = floating point operations per second (FLOPS, flops or flop/s).
 
 
 Note:
-    - Chinchilla 70B=70e109 was trained on 1.4T=1.4e12 tokens (stated for intuition).
+    - Chinchilla 70B=7e10 was trained on 1.4T=1.4e12 tokens (stated for intuition).
 
 ref:
     - Training Compute-Optimal Large Language Models: https://arxiv.org/abs/2203.15556
@@ -24,9 +24,30 @@ def chinchilla_scaling_law_estimate_num_params_num_tokens_gpt2_sudharsan_sundar(
                                                                                 # for completeness, but it should be same a number of tokens, since Chinchilla goes through data set once
                                                                                 ) -> tuple[float, float]:
     """Get number of parameters N and number of tokens D to train on for a given compute budget C=FLOPs(N,D)=FLOPs(N,D,its=D)."""
+
+    """
+    Note: Chinchilla paper describes 3 approaches, which are all similar but have meaningful differences at very large 
+    scales (e.g. 200B+ params). I use approach #1 for this function, as it is most prominently featured in the paper.
+    
+    High level principles:
+        - Parameter count and tokens should be scaled equally. E.g. if you want a 10x larger model, you should then 
+        train on 10x num tokens
+        
+        - Rough approximation: params:tokens is approx. 1:20
+            - Highly accurate in the range of 400M - 10B. Accuracy begins to deteriorate (not much) at larger scales
+        
+        - According to Kaplan et. al. (2020), FLOPs(N, D) ~= 6*N*D
+    
+    """
+
+    # Rough calculation
+    num_params: float = (compute_budget_flps / (6 * 20)) ** 0.5
+    num_tokens: float = ((compute_budget_flps * 20) / 6) ** 0.5
+
+
     num_params: float = -1
     num_tokens: float = -1
-    # TODO
+
     return num_params, num_tokens
 
 
