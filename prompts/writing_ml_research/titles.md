@@ -1,6 +1,6 @@
 # ---- Recipie for Impactful Machine Learning Research Paper ----
 
-# Prompt: Bettter Titles for Impactful Machine Learning Research Paper
+# Prompt: Better Titles for Impactful Machine Learning Research Paper
 Improve my scientific title for a NeurIPS NIPs ICML ICLR machine learning publication (maximizing impact): 
 ```markdown
 %current title

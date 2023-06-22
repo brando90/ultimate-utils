@@ -80,7 +80,6 @@ Then explain *the key observations with out interpretations*,
 with comments relating to conclusions, interpretations, implications, and contributions.
 If possible with key observations, as a bullet point list (as part of the results).
 ```
-
 Your experiment section should be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication
 (do not change citations e.g. \citep{...}, urls or names).
 Do not copy the facts but the style of the top experiment section example I provided.
