@@ -20,5 +20,8 @@ Ideas of what could go here:
 			- Prover1 =  LLM + Thor, Draft Sketch Prove (DSP), baldur, diversity model, etc.
 		- (Prover + LLM (our own)) [later]
 		- MiniF2F (Isabella, PISA) + prover + model (likely best/small debug)
-	- ideally being able to include this in helm: https://crfm.stanford.edu/helm/latest/ 
+	- ideally being able to include this in helm: https://crfm.stanford.edu/helm/latest/
+```text
+you should write the minimal testing env that takes in an LLM, runs a prover from one of the Isabelle provers (using PISA?) that Tony is an author (e.g. DPS, Baldur), and tests the proving accuracy on the MiniF2F-Isabelle https://github.com/openai/miniF2F
+```
 - Data extraction tools?
