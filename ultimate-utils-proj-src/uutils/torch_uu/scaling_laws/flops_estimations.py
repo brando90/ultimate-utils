@@ -2,7 +2,8 @@
 Collection of FLOPs estimate.
 
 Thoughts:
-Idk if this really matters to us in academia. I don't pay per FLOP. I can just run my job for as long as the SNAP cluster
+Idk if this really matters to us in academia (for fine-tuning or pretraining).
+I don't pay per FLOP. I can just run my job for as long as the SNAP cluster
 users allow me -- without complaining.
 My thought is that it's more important to decide for a fair comparison of methods:
 number of token Ds, batch size B, model size N, optimizer, (etc.) and fix the number iterations its.
