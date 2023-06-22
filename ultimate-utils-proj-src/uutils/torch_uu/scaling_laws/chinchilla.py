@@ -27,7 +27,7 @@ def chinchilla_scaling_law_estimate_num_params_num_tokens_gpt2_sudharsan_sundar(
 
     """
     Note: Chinchilla paper describes 3 approaches, which are all similar but have meaningful differences at very large 
-    scales (e.g. 200B+ params). I use approach #1 for this function, as it is most prominently featured in the paper.
+    scales (e.g. 20B+ params). I use approach #1 for this function, as it is most prominently featured in the paper.
     
     High level principles:
         - Parameter count and tokens should be scaled equally. E.g. if you want a 10x larger model, you should then 
