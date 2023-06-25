@@ -18,6 +18,7 @@ ref:
 """
 from typing import Tuple
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def chinchilla_scaling_law_estimate_num_params_num_tokens_gpt2_sudharsan_sundar(compute_budget_flps: float,
@@ -53,6 +54,14 @@ def chinchilla_scaling_law_estimate_num_params_num_tokens_gpt2_sudharsan_sundar(
     num_params: float = (compute_budget_flps / (6 * 20)) ** 0.5
     num_tokens: float = ((compute_budget_flps * 20) / 6) ** 0.5
 
+    # 'Hand-computed' precise solution
+    # logged_compute = np.log10(compute_budget_flps)
+    # logged_params = ((8.603 - 13.0) / (19.283 - 28.114)) * logged_compute + (8.602 - 9.603)
+    # logged_tokens = ((0.903 - 5.335) / (19.283 - 28.114)) * logged_compute + (0.903 - 9.678)
+    #
+    # num_params: float = np.power(10, logged_params)
+    # num_tokens: float = np.power(10, logged_tokens) * np.power(10, 9)
+
     return num_params, num_tokens
 
 
@@ -65,19 +74,39 @@ def num_params_num_tokens_chinchilla_approach1_fix_mdl_size_vary_train_tokens(co
 
     """
 
+    # Code adapted from https://github.com/karpathy/nanoGPT/blob/master/scaling_laws.ipynb
+    raw = [
+        [1.92e19, 400e6, 8e9],
+        [1.21e20, 1e9, 20.2e9],
+        [1.23e22, 10e9, 205.1e9],
+        [5.76e23, 67e9, 1.5e12],
+        [3.85e24, 175e9, 3.7e12],
+        [9.9e24, 280e9, 5.9e12],
+        [3.43e25, 520e9, 11e12],
+        [1.27e26, 1e12, 21.2e12],
+        [1.3e28, 10e12, 216.2e12],
+    ]
+
+    x = np.array([np.log10(x[0]) for x in raw])
+    y = np.array([np.log10(x[1]) for x in raw])
+    y2 = np.array([np.log10(x[2]) for x in raw])
+    A = np.vstack([x, np.ones(len(x))]).T
+    m, c = np.linalg.lstsq(A, y, rcond=None)[0]
+    m2, c2 = np.linalg.lstsq(A, y2, rcond=None)[0]
+    # print(f"y = {m}x + {c}")
+    # print(f"y2 = {m2}x + {c2}")
+
     logged_compute = np.log10(compute_budget_flps)
-    logged_params = ((8.603 - 13.0) / (19.283 - 28.114)) * logged_compute + (8.602 - 9.603)
-    logged_tokens = ((0.903 - 5.335) / (19.283 - 28.114)) * logged_compute + (0.903 - 9.678)
+    logged_params = m * logged_compute + c
+    logged_tokens = m2 * logged_compute + c2
 
     num_params: float = np.power(10, logged_params)
-    num_tokens: float = np.power(10, logged_tokens) * np.power(10, 9)
-    # NOTE: I can make a more general implementation/fill in the other approaches, but it doesn't seem like it's
-    # central to what we're trying to do right now.
+    num_tokens: float = np.power(10, logged_tokens)
 
     return num_params, num_tokens
 
 
-def num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles() -> int:
+def num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(compute_budget_flps: float) -> Tuple[float, float]:
     """
     Optimal param count is proportional to compute^{0.49}
     Optimal token count is proportional to compute^{0.51}
@@ -85,10 +114,39 @@ def num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles() -> int:
     Table A3, pg 26
     """
 
-    pass
+    # Code adapted from https://github.com/karpathy/nanoGPT/blob/master/scaling_laws.ipynb
+    raw = [
+        [1.84e19, 400e6, 7.7e9],
+        [1.20e20, 1e9, 20.0e9],
+        [1.32e22, 10e9, 219.5e9],
+        [6.88e23, 67e9, 1.7e12],
+        [4.54e24, 175e9, 4.3e12],
+        [1.18e25, 280e9, 7.1e12],
+        [4.19e25, 520e9, 13.4e12],
+        [1.59e26, 1e12, 26.5e12],
+        [1.75e28, 10e12, 292.0e12],
+    ]
+
+    x = np.array([np.log10(x[0]) for x in raw])
+    y = np.array([np.log10(x[1]) for x in raw])
+    y2 = np.array([np.log10(x[2]) for x in raw])
+    A = np.vstack([x, np.ones(len(x))]).T
+    m, c = np.linalg.lstsq(A, y, rcond=None)[0]
+    m2, c2 = np.linalg.lstsq(A, y2, rcond=None)[0]
+    # print(f"y = {m}x + {c}")
+    # print(f"y2 = {m2}x + {c2}")
+
+    logged_compute = np.log10(compute_budget_flps)
+    logged_params = m * logged_compute + c
+    logged_tokens = m2 * logged_compute + c2
+
+    num_params: float = np.power(10, logged_params)
+    num_tokens: float = np.power(10, logged_tokens)
+
+    return num_params, num_tokens
 
 
-def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss() -> int:
+def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(compute_budget_flps: float) -> Tuple[float, float]:
     """
     Optimal param count is proportional to compute^{0.46}
     Optimal token count is proportional to compute^{0.54}
@@ -96,7 +154,44 @@ def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss() -> in
     Table A3, pg 26
     """
 
-    pass
+    # Code adapted from https://github.com/karpathy/nanoGPT/blob/master/scaling_laws.ipynb
+    # Found error in Table A3: row 5 has compute 1 OOM lower than it should be
+    raw = [
+        [2.21e19, 400e6, 9.2e9],
+        [1.62e20, 1e9, 27.1e9],
+        [2.46e22, 10e9, 410.1e9],
+        [1.71e24, 67e9, 4.1e12],
+        [1.26e25, 175e9, 12.0e12],
+        [3.52e25, 280e9, 20.1e12],
+        [1.36e26, 520e9, 43.5e12],
+        [5.65e26, 1e12, 94.1e12],
+        [8.55e28, 10e12, 1425.5e12],
+    ]
+
+    x = np.array([np.log10(x[0]) for x in raw])
+    y = np.array([np.log10(x[1]) for x in raw])
+    y2 = np.array([np.log10(x[2]) for x in raw])
+    A = np.vstack([x, np.ones(len(x))]).T
+    m, c = np.linalg.lstsq(A, y, rcond=None)[0]
+    m2, c2 = np.linalg.lstsq(A, y2, rcond=None)[0]
+    # print(f"y = {m}x + {c}")
+    # print(f"y2 = {m2}x + {c2}")
+
+    x_hat = np.linspace(20, 28, 100)
+    y_hat = m * x_hat + c
+
+    plt.plot(x, y)
+    plt.plot(x_hat, y_hat)
+    plt.show()
+
+    logged_compute = np.log10(compute_budget_flps)
+    logged_params = m * logged_compute + c
+    logged_tokens = m2 * logged_compute + c2
+
+    num_params: float = np.power(10, logged_params)
+    num_tokens: float = np.power(10, logged_tokens)
+
+    return num_params, num_tokens
 
 
 def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss_v2() -> int:
@@ -113,7 +208,8 @@ def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss_v2() ->
     beta=y for this approach. So, we can then back out a=.46, b=.54 from this to find out the relationship between 
     compute scaling, and param and data scaling. It seems like this final form (using a and b) is what the paper 
     actually uses as its approach, and not the intermediate step involving alpha and beta, so using a and b seem
-    like the way the paper says we should consider scaling laws.
+    like the way the paper says we should consider scaling laws. (and spending extra time/effort trying to figure out
+    the difference doesn't seem especially useful.)
     
     That being said, it's not clear to me whether the form using alpha and beta is exactly the same as using a and b, 
     or if the form using a and b is only a close approximation.  
@@ -170,4 +266,42 @@ print('Precise estimate (params, tokens): ',
       'Actual (params, tokens): ',
       280000000000 / 10**9,
       5900000000000 / 10**9)
+
+print('Approach 2 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(1.84e19)[0] / 10**9,
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(1.84e19)[1] / 10**9,
+      'Actual (params, tokens): ',
+      .4,
+      7.7)
+print('Approach 2 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(6.88e23)[0] / 10**9,
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(6.88e23)[1] / 10**9,
+      'Actual (params, tokens): ',
+      67,
+      1700)
+print('Approach 2 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(4.19e25)[0] / 10**9,
+      num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(4.19e25)[1] / 10**9,
+      'Actual (params, tokens): ',
+      520,
+      13400)
+
+print('Approach 3 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(2.21e19)[0] / 10**9,
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(2.21e19)[1] / 10**9,
+      'Actual (params, tokens): ',
+      .4,
+      9.2)
+print('Approach 3 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(1.71e24)[0] / 10**9,
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(1.71e24)[1] / 10**9,
+      'Actual (params, tokens): ',
+      67,
+      4100)
+print('Approach 3 estimate (params, tokens): ',
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(1.36e26)[0] / 10**9,
+      num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(1.36e26)[1] / 10**9,
+      'Actual (params, tokens): ',
+      520,
+      43500)
 
