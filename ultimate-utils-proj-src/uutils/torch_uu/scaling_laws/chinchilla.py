@@ -110,8 +110,11 @@ def num_params_num_tokens_chinchilla_appraoch2_isoflop_profiles(compute_budget_f
     """
     Optimal param count is proportional to compute^{0.49}
     Optimal token count is proportional to compute^{0.51}
-
-    Table A3, pg 26
+    
+    Precise calculation of Approach #2:
+        - I essentially use the lines from Figure 1 in the Chinchilla paper.
+        - I find these lines by fitting a linear function to the optimal values described in Table A3 (pg 26)
+            - I log both compute and params by 10 to make the equation easier to calculate/linear
     """
 
     # Code adapted from https://github.com/karpathy/nanoGPT/blob/master/scaling_laws.ipynb
@@ -151,7 +154,10 @@ def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(compute
     Optimal param count is proportional to compute^{0.46}
     Optimal token count is proportional to compute^{0.54}
 
-    Table A3, pg 26
+    Precise calculation of Approach #3:
+        - I essentially use the lines from Figure 1 in the Chinchilla paper.
+        - I find these lines by fitting a linear function to the optimal values described in Table A3 (pg 26)
+            - I log both compute and params by 10 to make the equation easier to calculate/linear
     """
 
     # Code adapted from https://github.com/karpathy/nanoGPT/blob/master/scaling_laws.ipynb
