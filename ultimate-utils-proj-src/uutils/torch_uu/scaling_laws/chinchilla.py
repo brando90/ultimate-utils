@@ -183,12 +183,12 @@ def num_params_num_tokens_chinchilla_approach3_fitting_a_parametric_loss(compute
     # print(f"y = {m}x + {c}")
     # print(f"y2 = {m2}x + {c2}")
 
-    x_hat = np.linspace(20, 28, 100)
-    y_hat = m * x_hat + c
+    # x_hat = np.linspace(20, 28, 100)
+    # y_hat = m * x_hat + c
 
-    plt.plot(x, y)
-    plt.plot(x_hat, y_hat)
-    plt.show()
+    # plt.plot(x, y)
+    # plt.plot(x_hat, y_hat)
+    # plt.show()
 
     logged_compute = np.log10(compute_budget_flps)
     logged_params = m * logged_compute + c
