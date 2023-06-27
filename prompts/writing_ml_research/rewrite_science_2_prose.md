@@ -1,32 +1,22 @@
 # ---- Rephrase for scientific writing ----
 
-# Prompt: One sentence to multiple re-phrased sentences
+# Prompt: One sentence to multiple re-phrased sentences or paragraph(s)
 Provide me with different re-writes of the scientific text in quotations.
 Remain professional, concise, scientifically sounding, persuasive yet simple, use the active voice:
 ```latex
 % rewrite/rephrase bellow
-\textbf{Why and when does diversity matter?}
-We conjecture two main reasons why diversity matters and explain our rationale:
-\begin{enumerate}
-    \item \textbf{Conjecture 1: Diversity matters because it enables learning-to-learn (proxy for General Intelligence).}
-    This is the main conjecture we provide evidence in this paper. 
-    The main argument is that if there is high diversity, it means there are many tasks in the dataset.
-    Therefore, for the model to do well, it has to do well on all tasks.
-    One way to do it is by learning-to-learn and therefore transfer when challenged with solving a new task. 
-    An alternative would be memorizing all the tasks. 
-    \item \textbf{Conjecture 2: Diversity matters because it increases changes that training set covers test set.}
-    Diversity is a formalization of coverage -- it aims to be the effective (average) number of tasks in a dataset.
-    Therefore, the higher the diversity, the more tasks a dataset has.
-    This (might) increase the probability that the training set covers the test set and improves performance.
-    This exploration of this conjecture is left for future work. 
-\end{enumerate}
+Most of our diversity computations use small models.
+There is a debate about emergence in large language models, however, we hypothesize our results generalize to all size models.
+We hypothesize this because the observation of emergence is highly dependent on the metric and the sharp unpredictable jumps go away when using smooth metrics \cite{schaeffer2023emergent}.
 ```
 It should be of top quality for a NeurIPS NIPs ICML ICLR AAAI CVPR machine learning publication
 (do not change citations e.g. \citep{...} \cite{...}, urls or names). 
 Also, do not change any part that is already excellent. 
 Do not sound exaggerated or pompous. 
 Keep it concise scientific, use the active voice. 
-Provide 5 re-phrased options: 
+If it's a list of bullet points, re-write it top quality paragraph or paragraphs.
+Use scientific language where appriopriate e.g., using words like conjecture, hypothesis, implication, demonstrate, etc.
+Provide 3 re-phrased options:
 
 ## Great outputs I choose:
 TODO

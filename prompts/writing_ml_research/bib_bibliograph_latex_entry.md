@@ -1,7 +1,12 @@
 # ---- Create a BibTeX entry for a LaTeX bibliography ----
 
 # Prompt: Create a correct Latex bib entry ----
-Provide me with a correct Latex bibliography entry for a .bib file using the following examples:
+Provide me with a correct Latex bibliography entry for a.bib file entry for a .bib file for the (anchor) citation:
+```latex 
+% my Anchor citation
+Zhang, C., Bengio, S., Hardt, M., Recht, B., & Vinyals, O. (2021). Understanding deep learning (still) requires rethinking generalization. Communications of the ACM, 64(3), 107–115. https://doi.org/10.1145/3446776
+```
+use the following examples for the right format:
 ```Examples to follow:
 @article{lake2015human,
   title={Human-level concept learning through probabilistic program induction},
@@ -48,12 +53,10 @@ Provide me with a correct Latex bibliography entry for a .bib file using the fol
   organization={PMLR}
 }
 ```
-Using the above examples, create a correct Latex bibliography entry for a .bib file for the (anchor) citation:
-```Anchor citation:
-EleutherAI/math-lm. (n.d.). Retrieved June 12, 2023, from https://github.com/EleutherAI/math-lm
-```
-Do not change anything factual information of the anchor citation 
-e.g. don't change or invent the names of the authors, url, proceedings, title, name, etc.:
+Do not change anything factual or true information of the anchor citation 
+e.g. don't change or invent the names of the authors, url, proceedings, title, all name(s), the communications, 
+the associations (e.g. ICML, Nature, ACM, Science, Nature Communications), organization, dates, etc.
+Give me the .bib entry for the anchor citation:
 
 
 # -- notes --
