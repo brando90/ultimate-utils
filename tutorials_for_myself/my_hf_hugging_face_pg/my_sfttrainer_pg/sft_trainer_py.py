@@ -9,6 +9,7 @@ ref: https://huggingface.co/docs/trl/main/en/sft_trainer#training-adapters
 ref: https://discuss.huggingface.co/t/when-to-use-sfttrainer/40998/5
 """
 # %%
+# ref: https://huggingface.co/docs/trl/main/en/sft_trainer
 from datasets import load_dataset
 from trl import SFTTrainer
 
@@ -23,6 +24,7 @@ trainer = SFTTrainer(
 trainer.train()
 
 #%%
+# ref: https://huggingface.co/docs/trl/main/en/sft_trainer
 from transformers import AutoModelForCausalLM
 from datasets import load_dataset
 from trl import SFTTrainer
@@ -41,6 +43,7 @@ trainer = SFTTrainer(
 trainer.train()
 
 #%%
+# ref: https://huggingface.co/docs/trl/main/en/sft_trainer
 """
 if you're training a model that requires prompts e.g. AF, chat bots: https://huggingface.co/docs/trl/main/en/sft_trainer#advanced-usage
 """
@@ -71,8 +74,9 @@ trainer = SFTTrainer(
 trainer.train()
 
 #%%
+# ref: https://huggingface.co/docs/trl/main/en/sft_trainer
 """
-https://huggingface.co/docs/trl/main/en/sft_trainer#training-adapters
+ref: https://huggingface.co/docs/trl/main/en/sft_trainer#training-adapters
 """
 
 from datasets import load_dataset
