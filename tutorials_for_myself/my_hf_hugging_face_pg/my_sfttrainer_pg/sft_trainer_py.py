@@ -1,3 +1,13 @@
+"""
+SFTTrainer: extension of normal trainer that optionally accepts peft params.
+
+trainer vs sfttrainer:
+
+tldr; same as trainer but accepts a peft config so it can run lora fine-tuning.
+
+ref: https://huggingface.co/docs/trl/main/en/sft_trainer#training-adapters
+ref: https://discuss.huggingface.co/t/when-to-use-sfttrainer/40998/5
+"""
 # %%
 from datasets import load_dataset
 from trl import SFTTrainer

@@ -1,14 +1,3 @@
-"""
-Standard causaul lm decoder trainer example from Alpca using HF trainer.
-
-Note: SFTTrainer is not used but it could be used. If given a peft (e.g.) lora param, then it can be used to compare peft
-models vs non-peft models.
-
-refs:
-    - alpaca train.py: https://github.com/tatsu-lab/stanford_alpaca/blob/main/train.py
-    - fulle fine-tuning: https://github.com/tatsu-lab/stanford_alpaca#fine-tuning
-
-"""
 #    Copyright 2023 Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
