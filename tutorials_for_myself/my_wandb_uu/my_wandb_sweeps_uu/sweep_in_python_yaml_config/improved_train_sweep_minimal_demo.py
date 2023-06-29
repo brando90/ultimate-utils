@@ -1,37 +1,16 @@
 """
-Procedure for executing the sweep:
-1. Define the sweep configuration in a YAML file and import it into python.
-2. Initialize the sweep on the wandb platform via python and retrieve the sweep_id.
-3. Once the sweep_id is acquired, execute the sweep using the desired number of agents.
+Logical flow for running a sweep:
+1. Define the sweep configuration in a YAML file and load it in Python as a dict.
+2. Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
+3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
 
 ref: https://chat.openai.com/share/fbf98147-3987-4d75-b7c5-52b67a1048a6
 """
-
 import yaml
 import wandb
 import torch
 from pathlib import Path
 from pprint import pprint
-
-# Load YAML file into Python dictionary
-config_path = Path(
-    '~/ultimate-utils/tutorials_for_myself/my_wandb_uu/my_wandb_sweeps_uu/sweep_in_python_yaml_config/sweep_config.yaml').expanduser()
-
-with open(config_path, 'r') as file:
-    sweep_config = yaml.safe_load(file)
-
-pprint(sweep_config)
-
-# Retrieve entity and project details from the configuration
-entity = sweep_config['entity']
-project = sweep_config['project']
-
-# Initialize sweep on wandb's platform & obtain sweep_id to create agents
-sweep_id = wandb.sweep(sweep_config, entity=entity, project=project)
-print(f'Sweep ID: {sweep_id}')
-print(f"Sweep URL: https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}")
-wandb.get_sweep_url()
-
 
 # Define the training function
 def train_model():
@@ -56,8 +35,15 @@ def train_model():
     run.finish()
 
 
-# Execute the sweep with a specified number of agents
-wandb.agent(sweep_id, function=train_model, count=5)
-
-print(f"Sweep URL: https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}")
-wandb.get_sweep_url()
+if __name__ == '__main__':
+    # -- 1. Define the sweep configuration in a YAML file and load it in Python as a dict.
+    path2sweep_config = '~/ultimate-utils/tutorials_for_myself/my_wandb_uu/my_wandb_sweeps_uu/sweep_in_python_yaml_config/sweep_config.yaml'
+    config_path = Path(path2sweep_config).expanduser()
+    with open(config_path, 'r') as file:
+        sweep_config = yaml.safe_load(file)
+    # -- 2. Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
+    sweep_id = wandb.sweep(sweep_config, entity=sweep_config['entity'], project=sweep_config['project'])
+    # -- 3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
+    wandb.agent(sweep_id, function=train_model, count=5)
+    # print(f"Sweep URL: https://wandb.ai/{sweep_config['entity']}/{sweep_config['project']}/sweeps/{sweep_id}")
+    wandb.get_sweep_url()
