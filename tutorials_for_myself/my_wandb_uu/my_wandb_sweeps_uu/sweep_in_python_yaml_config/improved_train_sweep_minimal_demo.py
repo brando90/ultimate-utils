@@ -16,7 +16,7 @@ from pprint import pprint
 def train_model():
     # Initialize a new wandb run
     run = wandb.init()
-    wandb.get_sweep_url()
+    print(f'{wandb.get_sweep_url()=}')
 
     # Retrieve learning rate and number of iterations from the sweep configuration
     lr = wandb.config.lr
@@ -41,9 +41,12 @@ if __name__ == '__main__':
     config_path = Path(path2sweep_config).expanduser()
     with open(config_path, 'r') as file:
         sweep_config = yaml.safe_load(file)
+
     # -- 2. Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
     sweep_id = wandb.sweep(sweep_config, entity=sweep_config['entity'], project=sweep_config['project'])
+    # print(f"Sweep URL: https://wandb.ai/{sweep_config['entity']}/{sweep_config['project']}/sweeps/{sweep_id}")
+    print(f'{wandb.get_sweep_url()=}')
+
     # -- 3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
     wandb.agent(sweep_id, function=train_model, count=5)
-    # print(f"Sweep URL: https://wandb.ai/{sweep_config['entity']}/{sweep_config['project']}/sweeps/{sweep_id}")
-    wandb.get_sweep_url()
+

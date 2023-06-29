@@ -185,7 +185,7 @@ def try_printing_wandb_url(log_to_wandb: bool = False) -> str:
         try:
             # print(f'{wandb.run.dir=}')
             print(f'{wandb.run.get_url()=}')
-            print(_get_sweep_url_hardcoded())
+            # print(_get_sweep_url_hardcoded())
             print(f'{wandb.get_sweep_url()=}')
             return str(wandb.run.get_url())
         except Exception as e:
