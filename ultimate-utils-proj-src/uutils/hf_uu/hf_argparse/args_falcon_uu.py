@@ -68,3 +68,7 @@ class TrainingArguments(transformers.TrainingArguments):
             "Use fast tokenizer only if you can live with that."
         },
     )
+
+@dataclass
+class GeneralArguments:
+    path2sweep_config: str = field(default=None, metadata={"help": "Path to the wandb sweep config .yaml file."})
