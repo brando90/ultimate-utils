@@ -30,20 +30,12 @@ class ModelArguments:
 @dataclass
 class DataArguments:
     data_path: str = field(default=None, metadata={"help": "Path to the training data."})
-    # eval_splits: Optional[List[str]] = field(
-    #     default_factory=lambda: ["val"],
-    #     metadata={
-    #         "help": "Splits to use for evaluation. "
-    #         "If None, empty, or the splits are not found in the dataset, no evaluation is performed."
-    #     },
-    # )
-
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
     pad_token: str = field(default=DEFAULT_PAD_TOKEN)
-    cache_dir: str = field(default=DEFAULT_CACHE_DIR)
-    wandb_project: str = field(default=WANDB_PROJECT)  # TODO
+    # cache_dir: str = field(default=DEFAULT_CACHE_DIR)
+    # wandb_project: str = field(default=WANDB_PROJECT)  # TODO
     flash_attn: bool = field(default=False)
     optim: str = field(default="adamw_torch")
     model_max_length: int = field(
