@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import wandb
 import yaml
@@ -10,11 +11,9 @@ def get_sweep_config(path2sweep_config: str) -> dict:
         sweep_config = yaml.safe_load(file)
     return sweep_config
 
-
 def exec_run_for_wandb_sweep(path2sweep_config: str,
                              train: callable,
-                             count: int = 5,
-                             ) -> str:  # str but not sure https://chat.openai.com/share/4ef4748c-1796-4c5f-a4b7-be39dfb33cc4
+                             ) -> None:  # str but not sure https://chat.openai.com/share/4ef4748c-1796-4c5f-a4b7-be39dfb33cc4
     """
     Run standard sweep from config file.
 
@@ -34,5 +33,5 @@ def exec_run_for_wandb_sweep(path2sweep_config: str,
     # _print_sweep_url(sweep_config, sweep_id)
 
     # -- 3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
-    wandb.agent(sweep_id, function=train, count=count)  # train in charge of doing run = wandb.init() and run.finish()
-    return sweep_id  # not sure if I should be returning this
+    wandb.agent(sweep_id, function=train, count=sweep_config.get('run_cap'))  # train does wandb.init() & run.finish()
+    # return sweep_id  # not sure if I should be returning this
