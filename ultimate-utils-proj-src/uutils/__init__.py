@@ -1811,6 +1811,8 @@ def calculate_bytes_for_model_size(num_params: int,
     Calculates size of model in given precision ideally in bytes:
         size = num_params * precision in bytes (number of bytes to represent float)
 
+    bits -> bytes == bits / 8 (since 1 bytes is 8 bits)
+
     number of GigaBytes for model size = num_params * precision in bytes
     1 Byte = 8 bits ~ 1 character = 1 addressable unit in memmory
     FB32 = 4 bytes = 4 * 8 bits = 32 bits = 1S 8Exp 23Mantissa
