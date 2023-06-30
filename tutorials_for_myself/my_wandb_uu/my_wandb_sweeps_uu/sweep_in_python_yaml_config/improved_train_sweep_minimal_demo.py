@@ -4,7 +4,9 @@ Logical flow for running a sweep:
 2. Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
 3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
 
-ref: https://chat.openai.com/share/fbf98147-3987-4d75-b7c5-52b67a1048a6
+ref
+    - youtube video: https://www.youtube.com/watch?v=9zrmUIlScdY
+    - https://chat.openai.com/share/fbf98147-3987-4d75-b7c5-52b67a1048a6
 """
 import yaml
 import wandb
