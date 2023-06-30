@@ -97,13 +97,18 @@ from transformers import HfArgumentParser
 # script_args = parser.parse_args_into_dataclasses()[0]
 
 
-def get_args_for_run_from_cmd_args_or_sweep(parser: HfArgumentParser,
-                                            path2sweep_config: Optional[str] = None,
-                                            ) -> list[tuple, Optional[str]]:  # to help the user know with sweep
+def _legacy_get_args_for_run_from_cmd_args_or_sweep(parser: HfArgumentParser,
+                                                    path2sweep_config: Optional[str] = None,
+                                                    ) -> list[tuple]:
     """
+    Warning: decided against this.
+
     Parses the arguments from the command line
     note:
         - if you pass the general parser then it will decide how to organize the tuple of args for you already.
+
+    ref:
+        - if ever return to this approach: https://stackoverflow.com/questions/76585219/what-is-the-official-way-to-run-a-wandb-sweep-with-hugging-face-hf-transformer
     """
     # 1. parse all the arguments from the command line
     # parser = HfArgumentParser((ModelArguments, DataArguments, CustomTrainingArguments, GeneralArguments))

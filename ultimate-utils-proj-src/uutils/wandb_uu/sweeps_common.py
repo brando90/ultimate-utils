@@ -35,4 +35,4 @@ def exec_run_for_wandb_sweep(path2sweep_config: str,
 
     # -- 3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
     wandb.agent(sweep_id, function=train, count=count)  # train in charge of doing run = wandb.init() and run.finish()
-    return sweep_id
+    return sweep_id  # not sure if I should be returning this
