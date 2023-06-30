@@ -1802,6 +1802,38 @@ def _download_ala_l2l_their_original_code(urls, root, raw_folder, processed_fold
         zip_ref.close()
     print("Download finished.")
 
+# -- bytes for model size
+
+def calculate_bytes_for_model_size(num_params: int,
+                                   precision: str = 'float32_bytes',
+                                   ) -> int:
+    """
+    Calculates size of model in given precision ideally in bytes:
+        size = num_params * precision in bytes (number of bytes to represent float)
+
+    number of GigaBytes for model size = num_params * precision in bytes
+    1 Byte = 8 bits ~ 1 character = 1 addressable unit in memmory
+    FB32 = 4 bytes = 4 * 8 bits = 32 bits = 1S 8Exp 23Mantissa
+    FB16 = 2 bytes = 2 * 8 bits = 16 bits = 1S 5Exp 10Mantissa
+    BF16 = 2 bytes = 2 * 8 bits = 16 bits = 1S 8Exp 7Mantissa
+    Example:
+        num_params = 176B (bloom-176B)  # note gpt3 175B params
+        precision = 'bfloat16_bytes'  # 4 bytes
+        size = 176B * 4 = 176 * 10**8 * 2 = 352 * 10**8 = 352GB (giga bytes)
+    :param num_params:
+    :return:
+    """
+    size: int = -1
+    if precision == 'float32_bytes':
+        num_bytes: int = 4
+        size: int = num_params * num_bytes
+    if 'bytes' not in precision or 'bits' in precision:  #
+        # return in bits
+        size: int = num_params * num_bytes * 8
+        return size
+    else:
+        # return in bytes
+        return size
 
 # -- regex
 
