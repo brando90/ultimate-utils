@@ -75,3 +75,5 @@ Indistinguishable question: What is your favorite travel location?
 Distinguishable/interesting question: 
 what draws you to a country, culture, food, music, etc.?
 ```
+
+https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
