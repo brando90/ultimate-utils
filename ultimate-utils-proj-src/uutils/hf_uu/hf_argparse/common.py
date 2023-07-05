@@ -2,140 +2,122 @@
 
 """
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
+import transformers
 import yaml
+
 from transformers import HfArgumentParser
+from wandb.sdk.lib import RunDisabled
+from wandb.sdk.wandb_run import Run
+
+from uutils.wandb_uu.sweeps_common import get_sweep_config
 
 
-# # -- falcon_peft.py ref: https://gist.github.com/pacman100/1731b41f7a90a87b457e8c5415ff1c14
-# @dataclass
-# class ScriptArguments:
-#     """
-#     These arguments vary depending on how many GPUs you have, what their capacity and features are, and what size model you want to train.
-#     """
-#
-#     local_rank: Optional[int] = field(default=-1, metadata={"help": "Used for multi-gpu"})
-#
-#     per_device_train_batch_size: Optional[int] = field(default=4)
-#     per_device_eval_batch_size: Optional[int] = field(default=1)
-#     gradient_accumulation_steps: Optional[int] = field(default=4)
-#     learning_rate: Optional[float] = field(default=2e-4)
-#     max_grad_norm: Optional[float] = field(default=0.3)
-#     weight_decay: Optional[int] = field(default=0.001)
-#     lora_alpha: Optional[int] = field(default=16)
-#     lora_dropout: Optional[float] = field(default=0.1)
-#     lora_r: Optional[int] = field(default=64)
-#     max_seq_length: Optional[int] = field(default=512)
-#     model_name: Optional[str] = field(
-#         default="tiiuae/falcon-7b",
-#         metadata={
-#             "help": "The model that you want to train from the Hugging Face hub. E.g. gpt2, gpt2-xl, bert, etc."
-#         },
-#     )
-#     dataset_name: Optional[str] = field(
-#         default="timdettmers/openassistant-guanaco",
-#         metadata={"help": "The preference dataset to use."},
-#     )
-#     use_4bit: Optional[bool] = field(
-#         default=True,
-#         metadata={"help": "Activate 4bit precision base model loading"},
-#     )
-#     use_nested_quant: Optional[bool] = field(
-#         default=False,
-#         metadata={"help": "Activate nested quantization for 4bit base models"},
-#     )
-#     bnb_4bit_compute_dtype: Optional[str] = field(
-#         default="float16",
-#         metadata={"help": "Compute dtype for 4bit base models"},
-#     )
-#     bnb_4bit_quant_type: Optional[str] = field(
-#         default="nf4",
-#         metadata={"help": "Quantization type fp4 or nf4"},
-#     )
-#     num_train_epochs: Optional[int] = field(
-#         default=1,
-#         metadata={"help": "The number of training epochs for the reward model."},
-#     )
-#     fp16: Optional[bool] = field(
-#         default=False,
-#         metadata={"help": "Enables fp16 training."},
-#     )
-#     bf16: Optional[bool] = field(
-#         default=False,
-#         metadata={"help": "Enables bf16 training."},
-#     )
-#     packing: Optional[bool] = field(
-#         default=False,
-#         metadata={"help": "Use packing dataset creating."},
-#     )
-#     gradient_checkpointing: Optional[bool] = field(
-#         default=True,
-#         metadata={"help": "Enables gradient checkpointing."},
-#     )
-#     optim: Optional[str] = field(
-#         default="paged_adamw_32bit",
-#         metadata={"help": "The optimizer to use."},
-#     )
-#     lr_scheduler_type: str = field(
-#         default="constant",
-#         metadata={"help": "Learning rate schedule. Constant a bit better than cosine, and has advantage for analysis"},
-#     )
-#     max_steps: int = field(default=10000, metadata={"help": "How many optimizer update steps to take"})
-#     warmup_ratio: float = field(default=0.03, metadata={"help": "Fraction of steps to do a warmup for"})
-#     group_by_length: bool = field(
-#         default=True,
-#         metadata={
-#             "help": "Group sequences into batches with same length. Saves memory and speeds up training considerably."
-#         },
-#     )
-#     save_steps: int = field(default=10, metadata={"help": "Save checkpoint every X updates steps."})
-#     logging_steps: int = field(default=10, metadata={"help": "Log every X updates steps."})
-#
-#
-# parser = HfArgumentParser(ScriptArguments)
-# script_args = parser.parse_args_into_dataclasses()[0]
-
-
-def _legacy_get_args_for_run_from_cmd_args_or_sweep(parser: HfArgumentParser,
-                                                    path2sweep_config: Optional[str] = None,
-                                                    ) -> list[tuple]:
-    """
-    Warning: decided against this.
-
-    Parses the arguments from the command line
-    note:
-        - if you pass the general parser then it will decide how to organize the tuple of args for you already.
-
-    ref:
-        - if ever return to this approach: https://stackoverflow.com/questions/76585219/what-is-the-official-way-to-run-a-wandb-sweep-with-hugging-face-hf-transformer
-    """
-    # 1. parse all the arguments from the command line
-    # parser = HfArgumentParser((ModelArguments, DataArguments, CustomTrainingArguments, GeneralArguments))
-    # _, _, _, general_args = parser.parse_args_into_dataclasses()  # default args is to parse sys.argv
-    # 2. if the wandb_config option is on, then overwrite run cmd line configuration in favor of the sweep_config.
-    if path2sweep_config:  # None => False => not getting wandb_config
-        # overwrite run configuration with the wandb_config configuration (get config and create new args)
-        config_path = Path(path2sweep_config).expanduser()
-        with open(config_path, 'r') as file:
-            sweep_config = dict(yaml.safe_load(file))
-        sweep_args: list[str] = [item for pair in [[f'--{k}', str(v)] for k, v in sweep_config.items()] for item in
-                                 pair]
-        args: tuple = parser.parse_args_into_dataclasses(args=sweep_args)
-        # model_args, data_args, training_args, general_args = parser.parse_args_into_dataclasses(args=sweep_args)
-        # args: tuple = (model_args, data_args, training_args, general_args)  # decided against named obj to simplify code
-        # 3. execute run from sweep
-        # Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
-        # sweep_id = wandb.sweep(sweep_config, entity=sweep_config['entity'], project=sweep_config['project'])
-        # # Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
-        # train = lambda : train(args)  # pkg train with args i.e., when you call train() it will all train(args).
-        # wandb.agent(sweep_id, function=train, count=general_args.count)
-        # # print(f"Sweep URL: https://wandb.ai/{sweep_config['entity']}/{sweep_config['project']}/sweeps/{sweep_id}")
-        # wandb.get_sweep_url()
+def report_to2wandb_init_mode(report_to: str) -> str:
+    if report_to == 'none':
+        return 'disabled'
     else:
-        # use the args from the command line
-        model_args, data_args, training_args, general_args = parser.parse_args_into_dataclasses()
-        # 3. execute run
-        args: tuple = (model_args, data_args, training_args, general_args)  # decided against named obj to simplify code
-        # train(args)
+        assert report_to == 'wandb', f'Err {report_to=}.'
+        return 'online'
+
+
+def wandb_sweep_config_2_sys_argv_args_str(config: dict) -> list[str]:
+    """Make a sweep config into a string of args the way they are given in the terminal.
+    Replaces sys.argv list of strings "--{arg_name} str(v)" with the arg vals from the config.
+    This is so that the input to the train script is still an HF argument tuple object (as if it was called from
+    the terminal) but overwrites it with the args/opts given from the sweep config file.
+    """
+    args: list[str] = [item for pair in [[f'--{arg_name}', str(v)] for arg_name, v in config.items()] for item in pair]
     return args
+
+
+def setup_wandb_for_train_with_hf_trainer(parser: HfArgumentParser,
+                                          ) -> tuple[tuple, Union[Run, RunDisabled, None]]:
+    """
+    Set up wandb for the train function that uses hf trainer. If report_to is none then wandb is disabled o.w. if
+    report_to is wandb then we set the init to online to log to wandb platform.
+
+    Note:
+        - for now your parser needs to have 3 dataclasses due to this line in the code:
+            e.g. model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+        - note this could be a context manager. Do nothing for now. Just call run.finish() in train.
+    """
+    import wandb
+    # - get the report_to (again) from args to init wandb for your hf trainer
+    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    report_to = training_args.report_to
+    mode = report_to2wandb_init_mode(report_to)
+    run: Union[Run, RunDisabled, None] = wandb.init(mode)
+    # - discover what type of run your doing (no wandb or sweep with wandb)
+    if isinstance(wandb.config, wandb.Config):  # then you are in a sweep!
+        print(f'{wandb.get_sweep_url()}')
+        # - overwrite the args using the config
+        config = wandb.config
+        args = wandb_sweep_config_2_sys_argv_args_str(config)
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses(args)
+    else:  # then load the debug config or use the defaults from args
+        # I realized that if I'm already using the arg parse then the defaults could be there and no need for default config when using hf wandb
+        # config: dict = get_sweep_config(training_args.path2debug_config)
+        # args = wandb_sweep_config_2_sys_argv_args_str(config)
+        # args = parser.parse_args_into_dataclasses(args)
+        pass
+    return (model_args, data_args, training_args), run
+
+
+# - examples & tests
+
+def train_demo(parser: HfArgumentParser,
+               ):
+    import torch
+
+    # - init run, if report_to is wandb then 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
+    args, run = setup_wandb_for_train_with_hf_trainer(parser)
+    model_args, data_args, training_args = args
+    print(model_args, data_args, training_args)
+
+    # Simulate the training process
+    num_its = 5  # usually obtained from args or config
+    lr = 0.1  # usually obtained from args or config
+    train_loss = 8.0 + torch.rand(1).item()
+    for i in range(num_its):
+        train_loss -= lr * torch.rand(1).item()
+        run.log({"lr": lr, "train_loss": train_loss})
+
+    # Finish the current run
+    run.finish()
+
+
+def main_example_run_train_debug_sweep_mode_for_hf_trainer(train: callable = train_demo):
+    """
+
+python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.py --report_to none
+
+python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.py --report_to wandb
+    """
+    from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep
+    from uutils.hf_uu.hf_argparse.falcon_uu.falcon_args import ModelArguments, DataArguments, TrainingArguments
+
+    # - get simple args, just report_to, path2sweep_config, path2debug_seep
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+
+    # - run train
+    report_to = training_args.report_to
+    train = train_demo
+    if report_to == "none":
+        train(parser)
+    elif report_to == "wandb":
+        path2sweep_config = training_args.path2sweep_config
+        train = lambda: train(parser)
+        exec_run_for_wandb_sweep(path2sweep_config, train)
+    else:
+        raise ValueError(f'Invaid hf report_to option: {report_to=}.')
+
+
+if __name__ == '__main__':
+    import time
+
+    start_time = time.time()
+    main_example_run_train_debug_sweep_mode_for_hf_trainer()
+    print(f"The main function executed in {time.time() - start_time} seconds.\a")

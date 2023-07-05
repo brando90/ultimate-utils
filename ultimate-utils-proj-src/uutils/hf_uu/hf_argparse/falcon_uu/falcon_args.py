@@ -72,4 +72,5 @@ class TrainingArguments(transformers.TrainingArguments):
         },
     )
     path2sweep_config: str = field(default=None, metadata={"help": "Path to the wandb sweep config .yaml file."})
+    # path2debug_config: str = field(default='~/', metadata={"help": "Path to the wandb sweep config .yaml file."})
     report_to: str = field(default="none", metadata={"help": "Report to wandb or none."})
