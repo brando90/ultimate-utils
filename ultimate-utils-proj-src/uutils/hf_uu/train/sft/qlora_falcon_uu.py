@@ -3,6 +3,7 @@ from transformers import HfArgumentParser
 from uutils.hf_uu.hf_argparse.falcon_uu import ModelArguments, DataArguments, TrainingArguments
 from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep
 
+from pdb import set_trace as st
 
 def train(args: tuple):
     run = wandb.init()

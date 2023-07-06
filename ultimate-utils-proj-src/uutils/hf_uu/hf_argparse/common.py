@@ -1,26 +1,36 @@
 """
 
 """
-from pathlib import Path
-from typing import Optional, Union
+import argparse
+from argparse import Namespace
+from typing import Union
 
 import transformers
-import yaml
 
 from transformers import HfArgumentParser
 from wandb.sdk.lib import RunDisabled
 from wandb.sdk.wandb_run import Run
 
-from uutils.wandb_uu.sweeps_common import get_sweep_config
+from uutils.hf_uu.common import report_to2wandb_init_mode
 
 
-def report_to2wandb_init_mode(report_to: str) -> str:
-    if report_to == 'none':
-        return 'disabled'
-    else:
-        assert report_to == 'wandb', f'Err {report_to=}.'
-        return 'online'
+# -- simple args
 
+def get_simple_args() -> Namespace:
+    # - great terminal argument parser
+    parser = argparse.ArgumentParser()
+
+    # -- create argument options
+    parser.add_argument('--report_to', type=str, default='none', help='')
+    parser.add_argument('--path2sweep_config', type=str, default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/sweep_config.yaml', help='Its recommended')
+    parser.add_argument('--path2debug_config', type=str, default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/debug_config.yaml', help='Its recommended')
+
+    # -- parse args and return args namespace obj
+    args: Namespace = parser.parse_args()
+    return args
+
+
+# --
 
 def wandb_sweep_config_2_sys_argv_args_str(config: dict) -> list[str]:
     """Make a sweep config into a string of args the way they are given in the terminal.
@@ -32,8 +42,8 @@ def wandb_sweep_config_2_sys_argv_args_str(config: dict) -> list[str]:
     return args
 
 
-def setup_wandb_for_train_with_hf_trainer(parser: HfArgumentParser,
-                                          ) -> tuple[tuple, Union[Run, RunDisabled, None]]:
+def setup_wandb_for_train_hf_trainer_with_parser(parser: HfArgumentParser,
+                                                 ) -> tuple[tuple, Union[Run, RunDisabled, None]]:
     """
     Set up wandb for the train function that uses hf trainer. If report_to is none then wandb is disabled o.w. if
     report_to is wandb then we set the init to online to log to wandb platform.
@@ -67,12 +77,11 @@ def setup_wandb_for_train_with_hf_trainer(parser: HfArgumentParser,
 
 # - examples & tests
 
-def train_demo(parser: HfArgumentParser,
-               ):
+def train_demo(parser: HfArgumentParser):
     import torch
 
     # - init run, if report_to is wandb then 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
-    args, run = setup_wandb_for_train_with_hf_trainer(parser)
+    args, run = setup_wandb_for_train_hf_trainer_with_parser(parser)
     model_args, data_args, training_args = args
     print(model_args, data_args, training_args)
 
@@ -96,7 +105,7 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.
 python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.py --report_to wandb
     """
     from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep
-    from uutils.hf_uu.hf_argparse.falcon_uu.falcon_args import ModelArguments, DataArguments, TrainingArguments
+    from uutils.hf_uu.hf_argparse.falcon_args import ModelArguments, DataArguments, TrainingArguments
 
     # - get simple args, just report_to, path2sweep_config, path2debug_seep
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
