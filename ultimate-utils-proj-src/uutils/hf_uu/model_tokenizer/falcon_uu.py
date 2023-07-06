@@ -14,39 +14,45 @@ Pay attention to the following best practices when training a model with that tr
 todo: why trust_remote_code? I want more details.
 """
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
 
-def get_model_tokenizer_lora_peft_falcon(model_name: str="ybelkada/falcon-7b-sharded-bf16"):
+
+def get_model_tokenizer_qlora_falcon7b(model_name: str = "ybelkada/falcon-7b-sharded-bf16",
+                                       config: wand.Config, # todo
+                                       lora_alpha=16, # todo
+                                       lora_dropout=0.1, # todo
+                                       lora_r=64, # todo
+                                       ) -> tuple:
     """
+    Load the Falcon 7B model, quantize it in 4bit and attach LoRA adapters on it.
 
-    todo: comment each line
-
-    !pip install -q -U trl transformers accelerate git+https://github.com/huggingface/peft.git
-    !pip install -q datasets bitsandbytes einops wandb
+    bf16 = 1S, 7Exp, 8Mantissa
+    ref:
+        - https://colab.research.google.com/drive/1DOi8MFv4SWN9NImVornZ7t6BgmLoPQO-#scrollTo=AjB0WAqFSzlD
     """
-    # model_name = "ybelkada/falcon-7b-sharded-bf16"
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
 
+    # model_id = "tiiuae/falcon-7b"
+    # model_name: str = "ybelkada/falcon-7b-sharded-bf16"
+
+    # - get bnb config for int8 model
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
+        bnb_4bit_compute_dtype=torch.float16,  # todo: looks weird, check later
     )
 
+    # - get falcon int8 model
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
         trust_remote_code=True
     )
-    model.config.use_cache = False
+    model.config.use_cache = False  # todo: why?
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token
 
     from peft import LoraConfig
-
-    lora_alpha = 16
-    lora_dropout = 0.1
-    lora_r = 64
 
     peft_config = LoraConfig(
         lora_alpha=lora_alpha,
@@ -61,3 +67,5 @@ def get_model_tokenizer_lora_peft_falcon(model_name: str="ybelkada/falcon-7b-sha
             "dense_4h_to_h",
         ]
     )
+    return model, tokenizer, peft_config
+

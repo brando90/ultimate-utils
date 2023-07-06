@@ -1,14 +1,16 @@
 from argparse import Namespace
 from pathlib import Path
-from pprint import pprint
-from typing import Optional, Union
+from typing import Union
 
 import wandb
 import yaml
 from wandb.sdk.lib import RunDisabled
 from wandb.sdk.wandb_run import Run
 
+import uutils
+
 from pdb import set_trace as st
+
 
 # def dict_to_namespace(data: dict):
 #     if isinstance(data, dict):
@@ -112,7 +114,7 @@ def train_demo(args: Namespace):
     # - init run, if report_to is wandb then: 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
     config, run = setup_wandb_for_train_with_hf_trainer(args)
     print(f'{config=}')
-    pprint(config)
+    uutils.pprint_any_dict(config)
 
     # Simulate the training process
     num_its = config.get('num_its')  # usually obtained from args or config
@@ -128,7 +130,6 @@ def train_demo(args: Namespace):
 
 def main_example_run_train_debug_sweep_mode_for_hf_trainer():
     """
-
 python -m pdb -c continue /Users/brandomiranda/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweeps_common.py --report_to none
 python -m pdb -c continue /Users/brandomiranda/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweeps_common.py --report_to wandb
     """
@@ -140,8 +141,8 @@ python -m pdb -c continue /Users/brandomiranda/ultimate-utils/ultimate-utils-pro
 
     # - run train
     report_to = args.report_to
-    train: callable = train_demo
     if report_to == "none":
+        train: callable = train_demo
         train(args)
     elif report_to == "wandb":
         path2sweep_config = args.path2sweep_config

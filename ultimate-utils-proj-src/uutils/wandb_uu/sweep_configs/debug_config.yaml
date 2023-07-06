@@ -4,7 +4,7 @@
 program: ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweeps_common.py
 project: playground
 entity: brando
-name: debug-not-logging-to-wandb-plataform-test  # sweep name. Note this replaces the wandb group for organizing runs
+name: debug-logging-to-wandb-plataform-test  # sweep name. Note this replaces the wandb group for organizing runs
 description: debug-not-logging-to-wandb-plataform-test # Added from the other configuration file
 
 # Define metric to optimize

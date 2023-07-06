@@ -94,6 +94,9 @@ setup(
         # 'torchtext',  # often gives issues so don't use it by default
 
         'fairseq',
+
+        # HF options
+        # 'bitsandbytes',
     ]
 )
 
