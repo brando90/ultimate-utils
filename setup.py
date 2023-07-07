@@ -95,9 +95,19 @@ setup(
 
         'fairseq',
 
-        # HF options
-        # 'bitsandbytes',
+        #  - dq edge new imports
+        #!pip install -q -U trl transformers accelerate git+https://github.com/huggingface/peft.git
+        #!pip install -q datasets bitsandbytes einops wandb
+        # pip install -e ~/the-data-quality-edge-for-top-llms
+        # 'trl',
+        # 'transformers', # already above
+        # 'accelerate',
         # 'peft',
+
+        # 'datasets'
+        # 'bitsandbytes',
+        # 'einops',
+        # 'wandb'
     ]
 )
 
