@@ -5,8 +5,6 @@ import uutils
 from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep, setup_wandb_for_train_with_hf_trainer
 
 
-
-
 def main_falcon():
     """
 python -m pdb -c continue /Users/brandomiranda/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/mains_hf/falcon_uu/main_falcon_uu.py --report_to none
@@ -19,6 +17,7 @@ python -m pdb -c continue /Users/brandomiranda/ultimate-utils/ultimate-utils-pro
     print(args)
 
     # - run train
+    from uutils.hf_uu.train.sft.qlora_ft import train_falcon
     report_to = args.report_to
     if report_to == "none":
         train: callable = train_falcon

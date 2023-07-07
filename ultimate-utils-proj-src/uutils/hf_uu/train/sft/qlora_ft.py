@@ -1,9 +1,12 @@
 from argparse import Namespace
+import torch
+
 from trl import SFTTrainer
 
 import uutils
 from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer
 
+from pdb import set_trace as st
 
 def train_falcon(args: Namespace):
     # - init run, if report_to is wandb then: 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
@@ -16,8 +19,9 @@ def train_falcon(args: Namespace):
     trainset, _, testset = get_guanaco_datsets_add_splits_train_test_only()
 
     # qlora flacon7b
-    from uutils.hf_uu.model_tokenizer.falcon_uu import get_model_tokenizer_qlora_falcon7b
+    from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b
     model, tokenizer, peft_config, training_arguments = get_model_tokenizer_qlora_falcon7b()
+    st()
 
     # - qlora-ft (train)
     max_seq_length = 512  # todo, get from config

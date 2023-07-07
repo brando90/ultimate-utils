@@ -105,7 +105,7 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.
 python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/hf_argparse/common.py --report_to wandb
     """
     from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep
-    from uutils.hf_uu.hf_argparse.falcon_args import ModelArguments, DataArguments, TrainingArguments
+    from uutils.hf_uu.hf_argparse.falcon_uu_args import ModelArguments, DataArguments, TrainingArguments
 
     # - get simple args, just report_to, path2sweep_config, path2debug_seep
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
