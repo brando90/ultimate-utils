@@ -121,6 +121,17 @@ def gpu_minimalist_test() -> None:
     print(torch.__version__);
     print((torch.randn(2, 4).cuda() @ torch.randn(4, 1).cuda()))
 
+def test_bfloat16(compute_dtype: torch.dtype):
+    """
+python -c "import torch; print(torch.cuda.get_device_capability());"
+    """
+    # if compute_dtype == torch.float16 and args.use_4bit:
+    if compute_dtype == torch.float16:
+        major, _ = torch.cuda.get_device_capability()
+        if major >= 8:
+            print("=" * 80)
+            print("Your GPU supports bfloat16, you can accelerate training with the argument --bfloat16")
+            print("=" * 80)
 
 # -
 

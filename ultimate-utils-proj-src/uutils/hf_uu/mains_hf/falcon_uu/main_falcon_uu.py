@@ -6,25 +6,24 @@ from uutils.wandb_uu.sweeps_common import exec_run_for_wandb_sweep, setup_wandb_
 
 
 def train_falcon(args: Namespace):
-
     # - init run, if report_to is wandb then: 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
     config, run = setup_wandb_for_train_with_hf_trainer(args)
     print(f'{config=}')
     uutils.pprint_any_dict(config)
 
-    # Simulate the training process
+    # - the get datasets todo: preprocessing, padding, streaming
     from uutils.hf_uu.data_hf.common import get_guanaco_datsets_add_splits_train_test_only
     trainset, _, testset = get_guanaco_datsets_add_splits_train_test_only()
 
     # qlora flacon7b
     model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b()
 
-    #
+    # - qlora-ft (train)
     from trl import SFTTrainer
     max_seq_length = 512
     trainer = SFTTrainer(
         model=model,
-        train_dataset=dataset,
+        train_dataset=trainset,
         peft_config=peft_config,
         dataset_text_field="text",
         max_seq_length=max_seq_length,

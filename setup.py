@@ -97,6 +97,7 @@ setup(
 
         # HF options
         # 'bitsandbytes',
+        # 'peft',
     ]
 )
 
