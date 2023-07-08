@@ -106,11 +106,16 @@ def get_model_tokenizer_qlora_falcon7b(
     # - Get falcon tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path,
                                               trust_remote_code=True)  # execs code downloaded from hf hub
-    # tokenizer.pad_token = tokenizer.eos_token  # todo: why? https://stackoverflow.com/questions/76633368/why-does-the-falcon-qlora-tutorial-code-use-eos-token-as-pad-token
+    # tokenizer.pad_token = tokenizer.eos_token  # ref: https://stackoverflow.com/questions/76633368/why-does-the-falcon-qlora-tutorial-code-use-eos-token-as-pad-token
     # tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # I think this is fine if during the training pad is ignored
     tokenizer.add_special_tokens({'pad_token': '<|pad|>'})  # I think this is fine if during the training pad is ignored
+
+    # - Modify model
+    # add pad token embed
     model.resize_token_embeddings(len(tokenizer))  # todo: I think this is fine if during the training pad is ignored
     model.transformer.word_embeddings.padding_idx = len(tokenizer) - 1
+    model.config.max_new_tokens = len(tokenizer)
+    # model.config.min_length = 1
     print(f'{model=}')
     print(f'{type(tokenizer)=}')
     print(f'{tokenizer.pad_token=}')
@@ -191,7 +196,8 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/model_tokenizer/fal
     # check it generates something sensible
     # tokenizer.decode(model.generate(**tokenizer(sent, return_tensors='pt'), do_sample=True)[0])
     input_ids, attention_mask = encoded_input['input_ids'], encoded_input['attention_mask']
-    predicted_tokens_ids = model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True)[0]
+    predicted_tokens_ids_options = model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True)
+    predicted_tokens_ids = predicted_tokens_ids_options[0]
     predicted_sent = tokenizer.decode(predicted_tokens_ids)
     print(f'original sentence: {sent=}')
     print(f'predicted sentence: {predicted_sent=}')
