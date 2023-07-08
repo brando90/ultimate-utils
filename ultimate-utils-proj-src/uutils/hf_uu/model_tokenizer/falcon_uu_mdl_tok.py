@@ -13,8 +13,12 @@ Pay attention to the following best practices when training a model with that tr
 
 todo: why trust_remote_code? I want more details.
 """
+import sys
+
 import torch
 from peft import LoraConfig
+
+from transformers.modeling_utils import PreTrainedModel
 
 from pdb import set_trace as st
 
@@ -93,15 +97,22 @@ def get_model_tokenizer_qlora_falcon7b(
         quantization_config=bnb_config,
         trust_remote_code=True  # allows to execute custom code you download from the uploaded model code you are using
     )
+    print(f'{type(model)=}')
+    print(f'{model=}')
     # this is here to save gpu vram. Likely only needed when using 40b or when oom issues happen ref: https://stackoverflow.com/questions/76633335/why-does-hugging-face-falcon-model-use-mode-config-use-cache-false-why-wouldn
     model.config.use_cache = use_cache
+    print(f'{type(model)=}')
 
     # - Get falcon tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path,
                                               trust_remote_code=True)  # execs code downloaded from hf hub
     # tokenizer.pad_token = tokenizer.eos_token  # todo: why? https://stackoverflow.com/questions/76633368/why-does-the-falcon-qlora-tutorial-code-use-eos-token-as-pad-token
-    # tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    # model.resize_token_embeddings(len(tokenizer))  # todo: what to do here?
+    # tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # I think this is fine if during the training pad is ignored
+    tokenizer.add_special_tokens({'pad_token': '<|pad|>'})  # I think this is fine if during the training pad is ignored
+    model.resize_token_embeddings(len(tokenizer))  # todo: I think this is fine if during the training pad is ignored
+    model.transformer.word_embeddings.padding_idx = len(tokenizer) - 1
+    print(f'{model=}')
+    print(f'{type(tokenizer)=}')
     print(f'{tokenizer.pad_token=}')
     # data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False) todo
 
@@ -115,12 +126,15 @@ def get_model_tokenizer_qlora_falcon7b(
         # model card for falcon tiiuae/falcon-7b: https://huggingface.co/tiiuae/falcon-7b/blob/main/modelling_RW.py
         # does seem to include all trainable params as done by qlora on their own paper
         target_modules=[
+            # word_embeddings,
             "query_key_value",
             "dense",
             "dense_h_to_4h",
             "dense_4h_to_h",
+            # "lm_head"
         ]
     )
+    print(f'{type(peft_config)=}')
 
     # todo: print the num params of the lora = D1*r + D2*r and num of bytes by prec. (bytes) * num params
     return model, tokenizer, peft_config
@@ -143,6 +157,14 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/model_tokenizer/fal
     # qlora flacon7b
     from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b
     model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b()
+    model: PreTrainedModel = model
+    print(f'{model=}')
+    sent = 'Dogs are great because they are '
+    print()
+
+    # print to see if pad tokens are present and if it ignores the tokens at the end
+    encoded_input = tokenizer(sent, padding='max_length', max_length=10, return_tensors='pt')
+    print(f'{encoded_input=}')
 
     # Print all special tokens
     print('\n---- start Print all special tokens')
@@ -164,11 +186,15 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/model_tokenizer/fal
         raise ValueError(f"Token ID {pad_token_id} is not present in the model's embedding matrix.")
 
     print(f'{pad_embedding=}')
-    print('Success!')
+    print('Success!\n')
 
     # check it generates something sensible
-    sent = 'Dogs are great because they are '
-    tokenizer.decode(model.generate(**tokenizer(sent, return_tensors='pt'), do_sample=True)[0])
+    # tokenizer.decode(model.generate(**tokenizer(sent, return_tensors='pt'), do_sample=True)[0])
+    input_ids, attention_mask = encoded_input['input_ids'], encoded_input['attention_mask']
+    predicted_tokens_ids = model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True)[0]
+    predicted_sent = tokenizer.decode(predicted_tokens_ids)
+    print(f'original sentence: {sent=}')
+    print(f'predicted sentence: {predicted_sent=}')
     print('Success2!')
 
 
