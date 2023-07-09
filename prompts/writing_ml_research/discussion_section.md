@@ -16,7 +16,7 @@ Instead of going straight to the dicussion section (randomly)
 ```
 
 # Prompt:
-Write a top quality for a NeurIPS NIPS ICML ICLR AAAI CVPR machine learning publication from my notes, 
+Write a top quality discussion section for a NeurIPS NIPS ICML ICLR AAAI CVPR machine learning publication from my notes, 
 top quality examples, and instructions provided.
 Instructions to write great discussion section:
 ```markdown
