@@ -14,9 +14,9 @@ The output of the latex pseudocode or algorithms is for top quality publication 
 Do not change citations or urls e.g. \citep{...}, urls.
 Do not change the variable names but do make them compatible with latex.
 Do not change any part that is already excellent.
-Provide 3 latex pseudo codes / algorithms :
+Provide 3 latex pseudo codes / algorithms from my pseudo python:
 
-# --- notes
+# -- notes --
 Do not sound exaggerated or pompous.
 Do not change the facts in my example.
 Keep it concise, scientific, direct, use the active voice.
