@@ -14,7 +14,6 @@ from pdb import set_trace as st
 
 from uutils.hf_uu.hf_argparse.falcon_uu_args import get_training_arguments_falcon7b
 
-
 def train_falcon(args: Namespace):
     import uutils
     from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer
@@ -32,6 +31,8 @@ def train_falcon(args: Namespace):
     # model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b()
     from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b_default
     model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b_default()
+    from uutils.hf_uu.common import print_dtype_hf_model_torch
+    print_dtype_hf_model_torch(model)
 
     # training_arguments
     # training_arguments = get_training_arguments_falcon7b()
@@ -57,5 +58,23 @@ def train_falcon(args: Namespace):
 
     trainer.train()
 
+    # Inference
+    prompt = f'''What is the difference between nuclear fusion and fission?
+    ###Response:'''
+
+    input_ids = tokenizer(prompt, return_tensors='pt').input_ids.cuda()
+    output = model.generate(
+        inputs=input_ids,
+        temperature=0.7,
+        max_new_tokens=512,
+        top_p=0.15,
+        top_k=0,
+        repetition_penalty=1.1,
+        eos_token_id=tokenizer.eos_token_id
+    )
+    print(tokenizer.decode(output[0], skip_special_tokens=True))
+    st()
+
     # Finish the current run
     run.finish()
+
