@@ -44,6 +44,8 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+print('WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A GPU)')
+
 setup(
     name='ultimate-utils',  # project name
     version='0.6.1',
@@ -84,14 +86,15 @@ setup(
         # - later check why we are not installing it...
         # 'seaborn'
         # 'nltk'
+        'wandb',
 
         # - user should install its own PyTorch -- since their code might need a special version with a specific cuda,
         #   hopefully it's compatible with uutils pytorch, if not some torch code in uutils might need to bre re-written
         #   or a second version for newer pytorch or legacy pytorch might be needed
-        'torch>=1.9.1',
-        'torchvision>=0.10.1',
-        'torchaudio>=0.9.1',
-        # 'torchtext',  # often gives issues so don't use it by default
+        # 'torch>=1.9.1',
+        # 'torchvision>=0.10.1',
+        # 'torchaudio>=0.9.1',
+        ## 'torchtext',  # often gives issues so don't use it by default
 
         'fairseq',
 
@@ -107,7 +110,6 @@ setup(
         # 'datasets'
         # 'bitsandbytes',
         # 'einops',
-        # 'wandb'
     ]
 )
 

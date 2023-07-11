@@ -5,6 +5,8 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
+> WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A GPU)
+
 ## Standard pip install [Recommended]
 
 If you are going to use a gpu the do this first before continuing 
