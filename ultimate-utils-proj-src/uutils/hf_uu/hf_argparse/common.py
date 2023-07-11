@@ -17,13 +17,23 @@ from uutils.hf_uu.common import report_to2wandb_init_mode
 # -- simple args
 
 def get_simple_args() -> Namespace:
+    """
+    Get simple args for experiment. The idea is that all arguments are in the config file (for the sweep) so it's only
+    needed to give the config path.
+
+    todo: fix wandb so that only 1 config file has to be maintain for real expts vs debug: https://community.wandb.ai/t/generating-only-a-local-concrete-set-of-values-for-a-sweep-locally-without-logging-remotely/4692
+    """
     # - great terminal argument parser
     parser = argparse.ArgumentParser()
 
     # -- create argument options
     parser.add_argument('--report_to', type=str, default='none', help='')
-    parser.add_argument('--path2sweep_config', type=str, default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/sweep_config.yaml', help='Its recommended')
-    parser.add_argument('--path2debug_config', type=str, default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/debug_config.yaml', help='Its recommended')
+    parser.add_argument('--path2config', type=str,
+                        default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/debug_config.yaml',
+                        help='Its recommended to avoid running a random default. Example params: '
+                             '--path2config ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/sweep_config.yaml'
+                             '--path2config ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/debug_config.yaml'
+                        )
 
     # -- parse args and return args namespace obj
     args: Namespace = parser.parse_args()

@@ -95,7 +95,7 @@ def setup_wandb_for_train_with_hf_trainer(args: Namespace,
         # - use debug config from file
         config: wandb.Config = wandb.Config()
         config.update(vars(args))
-        config_dict: dict = get_sweep_config(args.path2debug_config)
+        config_dict: dict = get_sweep_config(args.path2config)
         config.update(config_dict)
     else:  # then load the debug config
         # https://docs.wandb.ai/ref/python/run?_gl=1*80ki1e*_ga*MTYwMTE3MDYzNS4xNjUyMjI2MTE1*_ga_JH1SJHJQXJ*MTY4ODU5NDI0NS4zMDAuMS4xNjg4NTk1MDg3LjU5LjAuMA..

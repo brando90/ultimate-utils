@@ -16,6 +16,7 @@ todo: why trust_remote_code? I want more details.
 import sys
 
 import torch
+from torch import bfloat16, float16
 from peft import LoraConfig
 
 from transformers.modeling_utils import PreTrainedModel
@@ -23,9 +24,9 @@ from transformers.modeling_utils import PreTrainedModel
 from pdb import set_trace as st
 
 
-def test_bfloat16_int4(compute_dtype: torch.dtype,
-                       use_4bit,
-                       ):
+def _test_bfloat16_int4(compute_dtype: torch.dtype,
+                        use_4bit,
+                        ) -> bool:
     """
 python -c "import torch; print(torch.cuda.get_device_capability());"
     todo: check other code test_bfloat16() do we need use_4bit?
@@ -36,18 +37,24 @@ python -c "import torch; print(torch.cuda.get_device_capability());"
             print("=" * 80)
             print("Your GPU supports bfloat16, you can accelerate training with the argument --bfloat16")
             print("=" * 80)
+            print(f'{torch.bfloat16=}')
+            return True
+    return False
 
 
 def get_model_tokenizer_qlora_falcon7b(
         # -- mode args
         # model_id = "tiiuae/falcon-7b"
         pretrained_model_name_or_path: str = "ybelkada/falcon-7b-sharded-bf16",
-        use_cache: bool = True,
+        use_cache: bool = True,  # this is here to save gpu vram. Likely only needed when using 40b.
         # -- lora args
         lora_alpha=16,  # todo
         lora_dropout=0.1,  # todo, evidence drop out really help? google, crfm, gpt4
         lora_r=64,  # todo
-        bnb_4bit_compute_dtype=torch.float16,  # changed it from Guanaco hf
+        # if you want to overwrite comp dtype pass it explicitly, for now defualt to bfloat if available else float16
+        # bnb_4bit_compute_dtype=torch.float16,  # changed it from Guanaco hf
+        # bnb_4bit_compute_dtype=torch.bfloat16,  # changed it from Guanaco hf
+        bnb_4bit_compute_dtype=None,  # changed it from Guanaco hf
 
         # -- training args
         output_dir="./results",
@@ -83,6 +90,11 @@ def get_model_tokenizer_qlora_falcon7b(
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
 
+    # try to use bfloat16 if no comp. dtype is given
+    if bnb_4bit_compute_dtype is None:  # only if not given try the bfloat16 default or float16 default
+        from uutils.torch_uu import bfloat16_avail
+        bnb_4bit_compute_dtype = bfloat16 if bfloat16_avail() else float16
+
     # - Get bnb config for bit-4 base model (bnb lib for using 4bit qlora quantization techniques by tim dettmers)
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=load_in_4bit,  # load (usually huge) base model in 4 bits
@@ -100,27 +112,27 @@ def get_model_tokenizer_qlora_falcon7b(
     print(f'{type(model)=}')
     print(f'{model=}')
     # this is here to save gpu vram. Likely only needed when using 40b or when oom issues happen ref: https://stackoverflow.com/questions/76633335/why-does-hugging-face-falcon-model-use-mode-config-use-cache-false-why-wouldn
-    model.config.use_cache = use_cache
+    model.config.use_cache = use_cache  # likely only needed when oom issues happen
     print(f'{type(model)=}')
 
     # - Get falcon tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path,
                                               trust_remote_code=True)  # execs code downloaded from hf hub
-    # tokenizer.pad_token = tokenizer.eos_token  # ref: https://stackoverflow.com/questions/76633368/why-does-the-falcon-qlora-tutorial-code-use-eos-token-as-pad-token
+    tokenizer.pad_token = tokenizer.eos_token  # todo: this is wrong since it pads out eos and learns to not ouptut eos after fine-tuning ref: https://stackoverflow.com/questions/76633368/why-does-the-falcon-qlora-tutorial-code-use-eos-token-as-pad-token
     # tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # I think this is fine if during the training pad is ignored
-    tokenizer.add_special_tokens({'pad_token': '<|pad|>'})  # I think this is fine if during the training pad is ignored
-    tokenizer.pad_token = '<|pad|>'
+    # tokenizer.add_special_tokens({'pad_token': '<|pad|>'})  # I think this is fine if during the training pad is ignored
+    # tokenizer.pad_token = '<|pad|>'
 
     # - Modify model
     # add pad token embed
-    model.resize_token_embeddings(len(tokenizer))  # todo: I think this is fine if during the training pad is ignored
-    model.transformer.word_embeddings.padding_idx = len(tokenizer) - 1
-    model.config.max_new_tokens = len(tokenizer)
-    model.config.pad_token_id = len(tokenizer) - 1
+    # model.resize_token_embeddings(len(tokenizer))  # todo: I think this is fine if during the training pad is ignored
+    # model.transformer.word_embeddings.padding_idx = len(tokenizer) - 1
+    # model.config.max_new_tokens = len(tokenizer)
+    # model.config.pad_token_id = len(tokenizer) - 1
     # model.config.min_length = 1
-    print(f'{model=}')
-    print(f'{type(tokenizer)=}')
-    print(f'{tokenizer.pad_token=}')
+    # print(f'{model=}')
+    # print(f'{type(tokenizer)=}')
+    # print(f'{tokenizer.pad_token=}')
     # data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False) todo
 
     # - Get falcon lora config
@@ -133,7 +145,7 @@ def get_model_tokenizer_qlora_falcon7b(
         # model card for falcon tiiuae/falcon-7b: https://huggingface.co/tiiuae/falcon-7b/blob/main/modelling_RW.py
         # does seem to include all trainable params as done by qlora on their own paper
         target_modules=[
-            # word_embeddings,
+            # word_embeddings, # todo, check in original pdf qlora, else try to fine-tune it too? oh might introduce params...?
             "query_key_value",
             "dense",
             "dense_h_to_4h",
@@ -143,7 +155,7 @@ def get_model_tokenizer_qlora_falcon7b(
     )
     print(f'{type(peft_config)=}')
 
-    # todo: print the num params of the lora = D1*r + D2*r and num of bytes by prec. (bytes) * num params
+    # todo: print the num params of the lora = D1*r + D2*r and num of bytes by prec. (bytes) * num params, code peft_uu
     return model, tokenizer, peft_config
 
 
@@ -204,6 +216,58 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/model_tokenizer/fal
     print(f'original sentence: {sent=}')
     print(f'predicted sentence: {predicted_sent=}')
     print('Success2!')
+
+
+def get_model_tokenizer_qlora_falcon7b_default() -> tuple:
+    """
+    directly from https://colab.research.google.com/drive/1DOi8MFv4SWN9NImVornZ7t6BgmLoPQO-#scrollTo=AjB0WAqFSzlD
+    """
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
+
+    # Loading the model
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
+
+    model_name = "ybelkada/falcon-7b-sharded-bf16"
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.float16,
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        quantization_config=bnb_config,
+        trust_remote_code=True
+    )
+    model.config.use_cache = False
+
+    # Loading the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
+
+    # Lora
+    from peft import LoraConfig
+
+    lora_alpha = 16
+    lora_dropout = 0.1
+    lora_r = 64
+
+    peft_config = LoraConfig(
+        lora_alpha=lora_alpha,
+        lora_dropout=lora_dropout,
+        r=lora_r,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=[
+            "query_key_value",
+            "dense",
+            "dense_h_to_4h",
+            "dense_4h_to_h",
+        ]
+    )
+    return model, tokenizer, peft_config
 
 
 if __name__ == '__main__':

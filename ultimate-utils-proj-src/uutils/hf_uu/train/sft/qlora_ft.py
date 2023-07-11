@@ -1,17 +1,26 @@
+"""
+Note: one disadvantage I hypothesize about qlora is that although it's hypothesized that qlora
+fixes the errors introduced by 4 bit quant, the truth is that a perfect eval to check this is very hard. In particular,
+it might only fix the errors up to the relevant fine-tuning task. Even if MMLU results are still good (due to imperfect
+benchmark). The qlora model might only perform well up to some limits of what the fine-tuning data wants it to do.
+Might be worth checking, asking Tim.
+"""
 from argparse import Namespace
 import torch
 
 from trl import SFTTrainer
 
-import uutils
-from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer
-
 from pdb import set_trace as st
 
+from uutils.hf_uu.hf_argparse.falcon_uu_args import get_training_arguments_falcon7b
+
+
 def train_falcon(args: Namespace):
+    import uutils
+    from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer
+
     # - init run, if report_to is wandb then: 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
     config, run = setup_wandb_for_train_with_hf_trainer(args)
-    print(f'{config=}')
     uutils.pprint_any_dict(config)
 
     # - the get datasets todo: preprocessing, padding, streaming
@@ -19,9 +28,15 @@ def train_falcon(args: Namespace):
     trainset, _, testset = get_guanaco_datsets_add_splits_train_test_only()
 
     # qlora flacon7b
-    from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b
-    model, tokenizer, peft_config, training_arguments = get_model_tokenizer_qlora_falcon7b()
-    st()
+    # from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b
+    # model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b()
+    from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_qlora_falcon7b_default
+    model, tokenizer, peft_config = get_model_tokenizer_qlora_falcon7b_default()
+
+    # training_arguments
+    # training_arguments = get_training_arguments_falcon7b()
+    from uutils.hf_uu.hf_argparse.falcon_uu_args import original_training_args
+    training_arguments = original_training_args()
 
     # - qlora-ft (train)
     max_seq_length = 512  # todo, get from config
