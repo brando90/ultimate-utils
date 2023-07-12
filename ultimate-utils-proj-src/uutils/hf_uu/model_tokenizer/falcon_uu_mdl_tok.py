@@ -14,32 +14,34 @@ Pay attention to the following best practices when training a model with that tr
 todo: why trust_remote_code? I want more details.
 """
 import sys
+from typing import Optional
 
 import torch
 from torch import bfloat16, float16
 from peft import LoraConfig
+from transformers import PreTrainedTokenizerFast
 
 from transformers.modeling_utils import PreTrainedModel
 
 from pdb import set_trace as st
 
 
-def _test_bfloat16_int4(compute_dtype: torch.dtype,
-                        use_4bit,
-                        ) -> bool:
+
+def add_brand_new_pad_token_to_tokenizer_falcon(tokenizer: PreTrainedTokenizerFast,
+                                                model: PreTrainedModel,
+                                                pad_token: str = '[PAD]',
+                                                ):
+    """ Add pad token to tokenizer and model. This is needed for the model to work with the trainer.
+    note: this function cannot be made general due to not impossibility of extracting the word embedding layer for any
+    hf model due to specific names of layers.
     """
-python -c "import torch; print(torch.cuda.get_device_capability());"
-    todo: check other code test_bfloat16() do we need use_4bit?
-    """
-    if compute_dtype == torch.float16 and use_4bit:
-        major, _ = torch.cuda.get_device_capability()
-        if major >= 8:
-            print("=" * 80)
-            print("Your GPU supports bfloat16, you can accelerate training with the argument --bfloat16")
-            print("=" * 80)
-            print(f'{torch.bfloat16=}')
-            return True
-    return False
+    tokenizer.add_special_tokens({'pad_token': pad_token})  # I think this is fine if during the training pad is ignored
+
+    model.resize_token_embeddings(len(tokenizer))  # todo: I think this is fine if during the training pad is ignored
+    model.transformer.word_embeddings.padding_idx = len(tokenizer) - 1
+    model.config.max_new_tokens = len(tokenizer)
+    model.config.pad_token_id = len(tokenizer) - 1
+    model.config.min_length = 1
 
 
 def get_model_tokenizer_qlora_falcon7b(
@@ -159,6 +161,84 @@ def get_model_tokenizer_qlora_falcon7b(
     return model, tokenizer, peft_config
 
 
+def get_model_tokenizer_qlora_falcon7b_default() -> tuple:
+    """
+    directly from https://colab.research.google.com/drive/1DOi8MFv4SWN9NImVornZ7t6BgmLoPQO-#scrollTo=AjB0WAqFSzlD
+    """
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
+
+    # Loading the model
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
+
+    model_name = "ybelkada/falcon-7b-sharded-bf16"
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.float16,
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        quantization_config=bnb_config,
+        trust_remote_code=True
+    )
+    model.config.use_cache = False
+
+    # Loading the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
+
+    # Lora
+    from peft import LoraConfig
+
+    lora_alpha = 16
+    lora_dropout = 0.1
+    lora_r = 64
+
+    peft_config = LoraConfig(
+        lora_alpha=lora_alpha,
+        lora_dropout=lora_dropout,
+        r=lora_r,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules=[
+            "query_key_value",
+            "dense",
+            "dense_h_to_4h",
+            "dense_4h_to_h",
+        ]
+    )
+    return model, tokenizer, peft_config
+
+
+def get_model_tokenizer_fp32_falcon(pretrained_model_name_or_path: str = "tiiuae/falcon-7b",
+                                    use_cache: bool = True,  # False saves gpu mem ow keeps more in mem for speed
+                                    ) -> tuple[PreTrainedModel, PreTrainedTokenizerFast, Optional[LoraConfig]]:
+    """ Get Falcon model and Tokenizer.
+
+    :param pretrained_model_name_or_path: "tiiuae/falcon-7b" or "tiiuae/falcon-1b" see: https://huggingface.co/tiiuae
+    """
+    # Loading the model
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
+
+    # Loading the model (type will be RWForCausalLM)
+    model = AutoModelForCausalLM.from_pretrained(
+        pretrained_model_name_or_path,
+        trust_remote_code=True
+    )
+    model.config.use_cache = use_cache  # False saves gpu mem ow True keeps more mdl stuff in mem for speed gains
+    print(f'{type(model)=}')
+
+    # Loading the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, trust_remote_code=True)
+    print(f'{type(tokenizer)=}')
+    # tokenizer.pad_token = tokenizer.eos_token
+    add_brand_new_pad_token_to_tokenizer_falcon(tokenizer, model)
+    return model, tokenizer, None
+
+
 # -- tests
 
 def example_test_model_already_has_pad_token():
@@ -216,58 +296,6 @@ python ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/model_tokenizer/fal
     print(f'original sentence: {sent=}')
     print(f'predicted sentence: {predicted_sent=}')
     print('Success2!')
-
-
-def get_model_tokenizer_qlora_falcon7b_default() -> tuple:
-    """
-    directly from https://colab.research.google.com/drive/1DOi8MFv4SWN9NImVornZ7t6BgmLoPQO-#scrollTo=AjB0WAqFSzlD
-    """
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
-
-    # Loading the model
-    import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
-
-    model_name = "ybelkada/falcon-7b-sharded-bf16"
-
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
-    )
-
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        quantization_config=bnb_config,
-        trust_remote_code=True
-    )
-    model.config.use_cache = False
-
-    # Loading the tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    tokenizer.pad_token = tokenizer.eos_token
-
-    # Lora
-    from peft import LoraConfig
-
-    lora_alpha = 16
-    lora_dropout = 0.1
-    lora_r = 64
-
-    peft_config = LoraConfig(
-        lora_alpha=lora_alpha,
-        lora_dropout=lora_dropout,
-        r=lora_r,
-        bias="none",
-        task_type="CAUSAL_LM",
-        target_modules=[
-            "query_key_value",
-            "dense",
-            "dense_h_to_4h",
-            "dense_4h_to_h",
-        ]
-    )
-    return model, tokenizer, peft_config
 
 
 if __name__ == '__main__':

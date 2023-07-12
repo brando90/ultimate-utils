@@ -1,6 +1,8 @@
 from torch import bfloat16, float16
 from transformers import TrainingArguments
 
+from uutils import expanduser
+
 
 def get_training_arguments_falcon7b(output_dir="./results",
                                     per_device_train_batch_size=4,  # todo how to set
@@ -48,20 +50,22 @@ def get_training_arguments_falcon7b(output_dir="./results",
     return training_arguments
 
 
-def original_training_args():
+def get_original_training_args(output_dir="./results",
+                               per_device_train_batch_size=4,
+                               gradient_accumulation_steps=4,
+                               optim="paged_adamw_32bit",
+                               save_steps=10,
+                               logging_steps=10,
+                               learning_rate=2e-4,
+                               max_grad_norm=0.3,
+                               max_steps=500,
+                               warmup_ratio=0.03,
+                               lr_scheduler_type="constant",
+                               ):
+    """
+    original training args from Guanaco: https://colab.research.google.com/drive/1BiQiw31DT7-cDp1-0ySXvvhzqomTdI-o?usp=sharing
+    """
     from transformers import TrainingArguments
-
-    output_dir = "./results"
-    per_device_train_batch_size = 4
-    gradient_accumulation_steps = 4
-    optim = "paged_adamw_32bit"
-    save_steps = 10
-    logging_steps = 10
-    learning_rate = 2e-4
-    max_grad_norm = 0.3
-    max_steps = 500
-    warmup_ratio = 0.03
-    lr_scheduler_type = "constant"
 
     training_arguments = TrainingArguments(
         output_dir=output_dir,
@@ -77,5 +81,42 @@ def original_training_args():
         warmup_ratio=warmup_ratio,
         group_by_length=True,
         lr_scheduler_type=lr_scheduler_type,
+    )
+    return training_arguments
+
+
+def get_training_args_falcon_7b_32fp_28gb_mem(report_to="none",
+                                              output_dir="./results",
+                                              per_device_train_batch_size=4,
+                                              gradient_accumulation_steps=4,
+                                              optim="paged_adamw_32bit",
+                                              save_steps=10,
+                                              logging_steps=10,
+                                              learning_rate=2e-4,
+                                              max_grad_norm=0.3,
+                                              max_steps=500,
+                                              warmup_ratio=0.03,
+                                              lr_scheduler_type="constant",
+                                              ):
+    """
+    original training args from Guanaco: https://colab.research.google.com/drive/1BiQiw31DT7-cDp1-0ySXvvhzqomTdI-o?usp=sharing
+    """
+    output_dir: str = str(expanduser(output_dir))
+
+    training_arguments = TrainingArguments(
+        output_dir=output_dir,
+        per_device_train_batch_size=per_device_train_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        optim=optim,
+        save_steps=save_steps,
+        logging_steps=logging_steps,
+        learning_rate=learning_rate,
+        # fp16=True,
+        max_grad_norm=max_grad_norm,
+        max_steps=max_steps,
+        warmup_ratio=warmup_ratio,
+        group_by_length=True,
+        lr_scheduler_type=lr_scheduler_type,
+        report_to=report_to,
     )
     return training_arguments

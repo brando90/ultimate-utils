@@ -83,6 +83,8 @@ def setup_wandb_for_train_with_hf_trainer(args: Namespace,
     Set up wandb for the train function that uses hf trainer. If report_to is none then wandb is disabled o.w. if
     report_to is wandb then we set the init to online to log to wandb platform. Always uses config to create the
     run config. It uses wandb.config for a sweep or a debug config (via args.path2debug_config) for report_to none runs.
+
+    todo: might be more gen to check wandd.config is None
     """
     report_to = args.report_to
     mode = 'disabled' if report_to == 'none' else 'online'  # no 'dryrun' since wandb logging is already tested by hf

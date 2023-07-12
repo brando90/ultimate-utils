@@ -12,9 +12,9 @@ from trl import SFTTrainer
 
 from pdb import set_trace as st
 
-from uutils.hf_uu.hf_argparse.falcon_uu_args import get_training_arguments_falcon7b
+from uutils.hf_uu.hf_argparse.falcon_uu_training_args import get_training_arguments_falcon7b
 
-def train_falcon(args: Namespace):
+def train_falcon_qlora_ft(args: Namespace):
     import uutils
     from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer
 
@@ -36,8 +36,8 @@ def train_falcon(args: Namespace):
 
     # training_arguments
     # training_arguments = get_training_arguments_falcon7b()
-    from uutils.hf_uu.hf_argparse.falcon_uu_args import original_training_args
-    training_arguments = original_training_args()
+    from uutils.hf_uu.hf_argparse.falcon_uu_training_args import get_original_training_args
+    training_arguments = get_original_training_args()
 
     # - qlora-ft (train)
     max_seq_length = 512  # todo, get from config
