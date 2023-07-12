@@ -2,22 +2,19 @@ from torch import bfloat16, float16
 from transformers import TrainingArguments
 
 from uutils import expanduser
+from pdb import set_trace as st
 
 
 def get_training_arguments_falcon7b(output_dir="./results",
-                                    per_device_train_batch_size=4,  # todo how to set
-                                    gradient_accumulation_steps=4,  # todo how to set
-                                    # paging so that the sudden mem gpu spikes don't cause the run to shut down
-                                    # (one non obvious cause are too long seqs)
-                                    # todo: why 32 bit opt?
-                                    # todo: paged nadamw opt?
+                                    per_device_train_batch_size=1,
+                                    gradient_accumulation_steps=16,  # num its to accumulate before opt update step
                                     optim="paged_adamw_32bit",
-                                    save_steps=10,
-                                    logging_steps=10,
+                                    save_steps=10,  # how often to save, if <1 -> % of train steps
+                                    logging_steps=10,  # how often to log, if <1 -> % of train steps
                                     learning_rate=2e-4,
                                     max_grad_norm=0.3,
-                                    max_steps=500,
-                                    warmup_ratio=0.03,
+                                    max_steps=500,  # number of training steps/its
+                                    warmup_ratio=0.03,  # number of steps for a linear warmup
                                     lr_scheduler_type="constant",
 
                                     fp16=True,
@@ -51,19 +48,18 @@ def get_training_arguments_falcon7b(output_dir="./results",
 
 
 def get_original_training_args(output_dir="./results",
-                               per_device_train_batch_size=4,
-                               gradient_accumulation_steps=4,
+                               per_device_train_batch_size=1,
+                               gradient_accumulation_steps=16,  # num its to accumulate before opt update step
                                optim="paged_adamw_32bit",
-                               save_steps=10,
-                               logging_steps=10,
+                               save_steps=10,  # how often to save, if <1 -> % of train steps
+                               logging_steps=10,  # how often to log, if <1 -> % of train steps
                                learning_rate=2e-4,
                                max_grad_norm=0.3,
-                               max_steps=500,
-                               warmup_ratio=0.03,
+                               max_steps=500,  # number of training steps/its
+                               warmup_ratio=0.03,  # number of steps for a linear warmup
                                lr_scheduler_type="constant",
                                ):
     """
-    original training args from Guanaco: https://colab.research.google.com/drive/1BiQiw31DT7-cDp1-0ySXvvhzqomTdI-o?usp=sharing
     """
     from transformers import TrainingArguments
 
@@ -85,23 +81,34 @@ def get_original_training_args(output_dir="./results",
     return training_arguments
 
 
-def get_training_args_falcon_7b_32fp_28gb_mem(report_to="none",
+def get_training_args_falcon_7b_32fp_28gb_mem(report_to: str = "none",
                                               output_dir="./results",
-                                              per_device_train_batch_size=4,
-                                              gradient_accumulation_steps=4,
-                                              optim="paged_adamw_32bit",
-                                              save_steps=10,
-                                              logging_steps=10,
+                                              per_device_train_batch_size=1,
+                                              gradient_accumulation_steps=1,  # n_its to accum. before opt update step
+                                              # optim="paged_adamw_32bit",
+                                              optim="adafactor",
+                                              save_steps=10,  # how often to save, if <1 -> % of train steps
+                                              logging_steps=10,  # how often to log, if <1 -> % of train steps
                                               learning_rate=2e-4,
                                               max_grad_norm=0.3,
-                                              max_steps=500,
-                                              warmup_ratio=0.03,
+                                              max_steps=500,  # number of training steps/its
+                                              warmup_ratio=0.03,  # number of steps for a linear warmup
                                               lr_scheduler_type="constant",
+
+                                              verbose: bool = True,
                                               ):
     """
     original training args from Guanaco: https://colab.research.google.com/drive/1BiQiw31DT7-cDp1-0ySXvvhzqomTdI-o?usp=sharing
+
+    tricks:
+        - set batch size small but grad accum large: https://chat.openai.com/share/49068fb4-1406-406e-81f5-e1f13736b0ac
+            - 1 (batch size per device) * 8 (number of GPUs, from --nproc_per_node=8) * 16 (gradient accumulation steps) = 128.
+        -
     """
+    from uutils import get_filtered_local_params
+    # decided not to do: put if stmt for dtype although says 32fb would be nice to check 16fb curious
     output_dir: str = str(expanduser(output_dir))
+    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
 
     training_arguments = TrainingArguments(
         output_dir=output_dir,

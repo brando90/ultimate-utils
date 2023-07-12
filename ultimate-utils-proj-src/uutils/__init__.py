@@ -619,6 +619,22 @@ def check_number_of_files_open_vs_allowed_open():
     print(f"Number of open files: {open_files}")
 
 
+def get_filtered_local_params(local_vars, verbose: bool = False, var_name_in_front: str = '') -> dict[str, Any]:
+    # Get all local variables done outside the function
+    # e.g. local_vars = locals()
+
+    # Filter out undesired variables
+    filtered_vars = {k: v for k, v in local_vars.items() if k != 'self' and not k.startswith('__')}
+
+    # Print the variable names and their values
+    if verbose:
+        if var_name_in_front != '':
+            print(f"{var_name_in_front}:")
+        for var_name, var_value in filtered_vars.items():
+            print(f"{var_name}: {var_value}")
+    return filtered_vars
+
+
 ##
 
 def make_and_check_dir2(path):
@@ -837,7 +853,7 @@ def pprint_dict(dic):
     pprint_any_dict(dic)
 
 
-def pprint_any_dict(dic: dict, indent: Optional[int] = None):
+def pprint_any_dict(dic: dict, indent: Optional[int] = None, var_name_in_front: str = ''):
     """
     This pretty prints a json.
 
@@ -849,6 +865,8 @@ def pprint_any_dict(dic: dict, indent: Optional[int] = None):
     todo: how to have pprint do indent and keep value without making it into a string.
     """
     import json
+    if var_name_in_front != '':
+        print(f'{var_name_in_front}=')
 
     if indent:
         # make all keys strings recursively with their naitve str function
@@ -1440,6 +1458,7 @@ def check_dict1_is_in_dict2(dict1: dict,
             print(f"--> {k=} is in both dicts, look: \n{dict1[k]=} \n{dict2[k]=} \n")
     return True
 
+
 def is_pos_def(x: np.ndarray) -> bool:
     """
     ref:
@@ -1802,6 +1821,7 @@ def _download_ala_l2l_their_original_code(urls, root, raw_folder, processed_fold
         zip_ref.close()
     print("Download finished.")
 
+
 # -- bytes for model size
 
 def calculate_bytes_for_model_size(num_params: int,
@@ -1836,6 +1856,7 @@ def calculate_bytes_for_model_size(num_params: int,
     else:
         # return in bytes
         return size
+
 
 # -- regex
 

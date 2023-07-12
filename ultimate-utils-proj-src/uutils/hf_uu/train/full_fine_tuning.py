@@ -6,7 +6,8 @@ def train_falcon_7b_32fp_28gb_mem(args: Namespace):
     import torch
     import uutils
     from uutils.wandb_uu.sweeps_common import setup_wandb_for_train_with_hf_trainer  # todo: check wandd.config is None?
-    from uutils.hf_uu.common import assert_model_dtype_is
+    from uutils.hf_uu.common import assert_model_dtype_is, print_dtype_hf_model_torch
+    from uutils.hf_uu.common import estimate_memory_used_by_loaded_model_no_data
 
     # -- Check GPU memory
     from uutils.hf_uu.common import print_gpu_memory_usage
@@ -14,7 +15,7 @@ def train_falcon_7b_32fp_28gb_mem(args: Namespace):
 
     # -- Init wand run. if report_to is wandb then: 1. sweep use online args merges with sweep config, else report_to is none and wandb is disabled
     config, run = setup_wandb_for_train_with_hf_trainer(args)
-    uutils.pprint_any_dict(config)
+    uutils.pprint_any_dict(config, var_name_in_front='config')
 
     # -- Get DataSet Splits todo: preprocessing, padding, streaming
     print('---- Get DataSet Splits')
@@ -25,20 +26,22 @@ def train_falcon_7b_32fp_28gb_mem(args: Namespace):
     print('---- Get Model')
     from uutils.hf_uu.model_tokenizer.falcon_uu_mdl_tok import get_model_tokenizer_fp32_falcon
     model, tokenizer, peft_config = get_model_tokenizer_fp32_falcon()
-    from uutils.hf_uu.common import estimate_memory_used_by_loaded_model_no_data
     estimate_memory_used_by_loaded_model_no_data(model, 'cuda', verbose=True)
-    st()
-    from uutils.hf_uu.common import print_dtype_hf_model_torch
     print_dtype_hf_model_torch(model)
     assert_model_dtype_is(torch.float32, model, num_layers=1)
 
-    # training_arguments
+    # -- Get Training Arguments
+    print('---- Get Training Arguments')
     # training_arguments = get_training_arguments_falcon7b()
     from uutils.hf_uu.hf_argparse.falcon_uu_training_args import get_training_args_falcon_7b_32fp_28gb_mem
     training_arguments = get_training_args_falcon_7b_32fp_28gb_mem(report_to=args.report_to)
+    # print(f'{training_arguments=}')
 
     # - full-fine tune (train) -- using SFTrainer since has same API as Trainer but also accepts peft params
-    max_seq_length = 512  # todo, get from config
+    # The max_seq_length is the max length for input seq (tr & eval) truncating longer sequences and padding shorter ones, it will be fixed and helps predicibility OOM errs. https://chat.openai.com/share/f4e48c26-b729-42d2-8a3c-600b3dc587e8
+    max_seq_length = 512  # todo, get from config, use above comment
+    # tokenizer.model_max_length = max_seq_length   # perhaps more general...actually SFTrainer same interface as Trainer so passing it in SFTrainer is fine. Just use SFTrainer instead of Trainer.
+    print(f'{max_seq_length=}')
     from trl import SFTTrainer
     trainer = SFTTrainer(
         model=model,

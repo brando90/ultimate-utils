@@ -127,15 +127,18 @@ def print_visible_gpu_names():
     pynvml.nvmlShutdown()
 
 
-def get_pytorch_gpu_usage(verbose: bool = False):
+def get_pytorch_gpu_usage(model: PreTrainedModel = None,
+                          verbose: bool = False,
+                          ):
+    """ Get the memory used by the model in the gpu."""
     import torch
 
     current_device = torch.cuda.current_device()
     # converts bytes to mega bytes
     allocated = torch.cuda.memory_allocated(current_device) / 1024 ** 2
     if verbose:
-        print("Model device (check if in gpu):", next(model.parameters()).device)
-        print(f'PyTorch is using: {allocated} MB on GPU {current_device}')
+        print("-> Model device (check if in gpu):", next(model.parameters()).device)
+        print(f'-> PyTorch is using: {allocated} MB on GPU {current_device}')
     return allocated
 
 
@@ -148,5 +151,5 @@ def estimate_memory_used_by_loaded_model_no_data(model: PreTrainedModel,
     Note that this is only for the model and does not include the memory used by the tokenizer.
     """
     model.to(device)  # manually doing this to check memory used by model but hf does it in trained e.g., fsdp etc.
-    allocated = get_pytorch_gpu_usage(verbose=verbose)
+    allocated = get_pytorch_gpu_usage(model=model, verbose=verbose)
     return allocated

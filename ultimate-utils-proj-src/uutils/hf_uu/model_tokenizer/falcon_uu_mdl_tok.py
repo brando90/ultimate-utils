@@ -26,6 +26,24 @@ from transformers.modeling_utils import PreTrainedModel
 from pdb import set_trace as st
 
 
+def get_any_bnb_quant_config(quantize_mode: str):
+    from transformers import BitsAndBytesConfig
+    if quantize_mode == "4bit":
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16,
+        )
+    elif quantize_mode == "8bit":
+            bnb_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+        )
+    elif quantize_mode == "16bit":
+        bnb_config = BitsAndBytesConfig(
+        )
+    return bnb_config
+
+
 
 def add_brand_new_pad_token_to_tokenizer_falcon(tokenizer: PreTrainedTokenizerFast,
                                                 model: PreTrainedModel,
@@ -234,6 +252,7 @@ def get_model_tokenizer_fp32_falcon(pretrained_model_name_or_path: str = "tiiuae
     # Loading the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, trust_remote_code=True)
     print(f'{type(tokenizer)=}')
+    print(f'{tokenizer.model_max_length=}')
     # tokenizer.pad_token = tokenizer.eos_token
     add_brand_new_pad_token_to_tokenizer_falcon(tokenizer, model)
     return model, tokenizer, None
