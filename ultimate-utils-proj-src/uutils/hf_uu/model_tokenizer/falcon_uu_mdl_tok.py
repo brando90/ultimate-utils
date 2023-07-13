@@ -232,12 +232,17 @@ def get_model_tokenizer_qlora_falcon7b_default() -> tuple:
 
 
 def get_model_tokenizer_fp32_falcon(pretrained_model_name_or_path: str = "tiiuae/falcon-7b",
-                                    use_cache: bool = True,  # False saves gpu mem ow keeps more in mem for speed
+                                    use_cache: bool = False,  # False saves gpu mem ow keeps more in mem for speed
+                                    verbose: bool = True,
                                     ) -> tuple[PreTrainedModel, PreTrainedTokenizerFast, Optional[LoraConfig]]:
     """ Get Falcon model and Tokenizer.
 
     :param pretrained_model_name_or_path: "tiiuae/falcon-7b" or "tiiuae/falcon-1b" see: https://huggingface.co/tiiuae
     """
+    from uutils import get_filtered_local_params
+    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
+
+    from uutils.hf_uu.common import hf_dist_print
     # Loading the model
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoTokenizer
 
@@ -247,12 +252,12 @@ def get_model_tokenizer_fp32_falcon(pretrained_model_name_or_path: str = "tiiuae
         trust_remote_code=True
     )
     model.config.use_cache = use_cache  # False saves gpu mem ow True keeps more mdl stuff in mem for speed gains
-    print(f'{type(model)=}')
+    hf_dist_print(f'{type(model)=}')
 
     # Loading the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path, trust_remote_code=True)
-    print(f'{type(tokenizer)=}')
-    print(f'{tokenizer.model_max_length=}')
+    hf_dist_print(f'{type(tokenizer)=}')
+    hf_dist_print(f'{tokenizer.model_max_length=}')
     # tokenizer.pad_token = tokenizer.eos_token
     add_brand_new_pad_token_to_tokenizer_falcon(tokenizer, model)
     return model, tokenizer, None

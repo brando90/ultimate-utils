@@ -137,8 +137,8 @@ def get_pytorch_gpu_usage(model: PreTrainedModel = None,
     # converts bytes to mega bytes
     allocated = torch.cuda.memory_allocated(current_device) / 1024 ** 2
     if verbose:
-        print("-> Model device (check if in gpu):", next(model.parameters()).device)
-        print(f'-> PyTorch is using: {allocated} MB on GPU {current_device}')
+        print("----> Model device (check if in gpu):", next(model.parameters()).device)
+        print(f'----> PyTorch is using: {allocated} MB on GPU {current_device}')
     return allocated
 
 
@@ -150,6 +150,28 @@ def estimate_memory_used_by_loaded_model_no_data(model: PreTrainedModel,
     on a single gpu. Note that this is an estimate and the actual memory used by the model will be slightly higher.
     Note that this is only for the model and does not include the memory used by the tokenizer.
     """
+    import os
+    local_rank = int(os.getenv("LOCAL_RANK", -1))
+    if local_rank != -1:
+        print('WARNING: you are using dist gpus. This method doesnt work with fsdp model sharding because idk how to'
+              'use hf accelerate which is inside the trainer to allocate the model then ask the machine to report'
+              'gpu memory.')
+
+    # print(f'{device=}')
+    from uutils import get_filtered_local_params
+    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
+    # - load to device and get gpu memory usage
     model.to(device)  # manually doing this to check memory used by model but hf does it in trained e.g., fsdp etc.
     allocated = get_pytorch_gpu_usage(model=model, verbose=verbose)
     return allocated
+
+def hf_dist_print(string: str,
+                  var_name_in_front: str = '',
+                  ):
+    import os
+    local_rank = int(os.getenv("LOCAL_RANK", -1))
+    if local_rank in [0, -1]:  # rank -1 usually means it's not distributed training
+        if var_name_in_front != '':
+            print(f'{var_name_in_front} = {string}')
+        else:
+            print(string)

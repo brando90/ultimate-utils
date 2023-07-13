@@ -620,6 +620,12 @@ def check_number_of_files_open_vs_allowed_open():
 
 
 def get_filtered_local_params(local_vars, verbose: bool = False, var_name_in_front: str = '') -> dict[str, Any]:
+    """
+    Set local_vars = locals() from parent function to print parent function input parameters & names.
+
+suggested call:
+    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
+    """
     # Get all local variables done outside the function
     # e.g. local_vars = locals()
 

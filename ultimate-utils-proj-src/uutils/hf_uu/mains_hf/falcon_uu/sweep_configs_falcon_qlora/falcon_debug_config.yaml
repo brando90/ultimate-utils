@@ -1,7 +1,7 @@
 # wandb-sweep-config.yaml
 
 # Set project, entity and name for sweep
-program: ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweeps_common.py
+program: ~/ultimate-utils/ultimate-utils-proj-src/uutils/hf_uu/mains_hf/falcon_uu/main_falcon_uu.py
 project: playground
 entity: brando
 name: debug-logging-to-wandb-plataform-test  # sweep name. Note this replaces the wandb group for organizing runs
@@ -17,11 +17,11 @@ method: random
 
 # Define hyperparameters to sweep over
 #parameters:
-optimizer: nadam
+optimizer: paged_adamw_32bit
 scheduler: cosine
 lr: 0.0001
-batch_size: 32
-num_its: 2
+#per_device_train_batch_size: 32
+#max_steps: 2
 
 # Specify a maximum number of runs in a sweep (I'm using this as number of counts)
 run_cap: 1

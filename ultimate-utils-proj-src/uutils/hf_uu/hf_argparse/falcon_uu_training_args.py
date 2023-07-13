@@ -81,22 +81,22 @@ def get_original_training_args(output_dir="./results",
     return training_arguments
 
 
-def get_training_args_falcon_7b_32fp_28gb_mem(report_to: str = "none",
-                                              output_dir="./results",
-                                              per_device_train_batch_size=1,
-                                              gradient_accumulation_steps=1,  # n_its to accum. before opt update step
-                                              # optim="paged_adamw_32bit",
-                                              optim="adafactor",
-                                              save_steps=10,  # how often to save, if <1 -> % of train steps
-                                              logging_steps=10,  # how often to log, if <1 -> % of train steps
-                                              learning_rate=2e-4,
-                                              max_grad_norm=0.3,
-                                              max_steps=500,  # number of training steps/its
-                                              warmup_ratio=0.03,  # number of steps for a linear warmup
-                                              lr_scheduler_type="constant",
+def get_training_args_falcon_7b_fp32(report_to: str = "none",
+                                     output_dir="./results",
+                                     per_device_train_batch_size=1,
+                                     gradient_accumulation_steps=1,  # n_its to accum. before opt update step
+                                     optim="paged_adamw_32bit",
+                                     # optim="adafactor",
+                                     save_steps=10,  # how often to save, if <1 -> % of train steps
+                                     logging_steps=10,  # how often to log, if <1 -> % of train steps
+                                     learning_rate=2e-4,
+                                     max_grad_norm=0.3,
+                                     max_steps=500,  # number of training steps/its
+                                     warmup_ratio=0.03,  # number of steps for a linear warmup
+                                     lr_scheduler_type="constant",
 
-                                              verbose: bool = True,
-                                              ):
+                                     verbose: bool = True,
+                                     ):
     """
     original training args from Guanaco: https://colab.research.google.com/drive/1BiQiw31DT7-cDp1-0ySXvvhzqomTdI-o?usp=sharing
 
