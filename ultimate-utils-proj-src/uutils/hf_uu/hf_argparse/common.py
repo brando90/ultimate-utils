@@ -28,7 +28,7 @@ def get_simple_args() -> Namespace:
 
     # -- create argument options
     parser.add_argument('--report_to', type=str, default='none', help='')
-    parser.add_argument('--path2config', type=str,
+    parser.add_argument('--path2sweep_config', type=str,
                         default='~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/debug_config.yaml',
                         help='Its recommended to avoid running a random default. Example params: '
                              '--path2config ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweep_configs/sweep_config.yaml'
