@@ -231,13 +231,14 @@ def get_model_tokenizer_qlora_falcon7b_default() -> tuple:
     return model, tokenizer, peft_config
 
 
-def get_model_tokenizer_fp32_falcon(pretrained_model_name_or_path: str = "tiiuae/falcon-7b",
+def get_model_tokenizer_fp32_falcon(#pretrained_model_name_or_path: str = "tiiuae/falcon-7b",
+                                    pretrained_model_name_or_path: str = "tiiuae/falcon-rw-1b",
                                     use_cache: bool = False,  # False saves gpu mem ow keeps more in mem for speed
                                     verbose: bool = True,
                                     ) -> tuple[PreTrainedModel, PreTrainedTokenizerFast, Optional[LoraConfig]]:
     """ Get Falcon model and Tokenizer.
 
-    :param pretrained_model_name_or_path: "tiiuae/falcon-7b" or "tiiuae/falcon-1b" see: https://huggingface.co/tiiuae
+    :param pretrained_model_name_or_path: "tiiuae/falcon-7b" or "tiiuae/falcon-rw-1b" see: https://huggingface.co/tiiuae
     """
     from uutils import get_filtered_local_params
     get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
