@@ -89,14 +89,11 @@ setup(
         # 'seaborn'
         # 'nltk'
         'wandb',
+        'twine',
 
-        # - user should install its own PyTorch -- since their code might need a special version with a specific cuda,
-        #   hopefully it's compatible with uutils pytorch, if not some torch code in uutils might need to bre re-written
-        #   or a second version for newer pytorch or legacy pytorch might be needed
-        # 'torch>=1.9.1',
-        # 'torchvision>=0.10.1',
-        # 'torchaudio>=0.9.1',
-        ## 'torchtext',  # often gives issues so don't use it by default
+        'torch',
+        'torchvision',
+        'torchaudio',
 
         'fairseq',
 
