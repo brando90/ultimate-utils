@@ -14,7 +14,7 @@ def print_dtype_hf_model_torch(model,
                                num_layers: int = 1,
                                ):
     """Print the data type (dtype) of the weights of a Hugging Face model. e.g., is it fp16, bp16, fp32, tf32, etc."""
-    print('Checking for dtype of HF model.')
+    # print('Checking for dtype of HF model...')
     import torch
     # from transformers import AutoModel
     #
@@ -29,7 +29,8 @@ def print_dtype_hf_model_torch(model,
     # for key, value in model_state_dict.items():
     for key, value in model.state_dict().items():
         if isinstance(value, torch.Tensor):
-            print(f"--> Weight '{key}' has datatype: {value.dtype}")
+            # print(f"--> Weight '{key}' has datatype: {value.dtype}")
+            print(f"--> Model datatype: {value.dtype}")
             if num_layers == 1:
                 return
 
@@ -144,26 +145,35 @@ def get_pytorch_gpu_usage(model: PreTrainedModel = None,
 
 def estimate_memory_used_by_loaded_model_no_data(model: PreTrainedModel,
                                                  device: str = 'cuda',
-                                                 verbose: bool = True,
+                                                 verbose: bool = False,
+                                                 var_name_in_front: str = '',
                                                  ):
     """ Estimate the memory used by the model without any data. This is useful to know how many models can be loaded
     on a single gpu. Note that this is an estimate and the actual memory used by the model will be slightly higher.
     Note that this is only for the model and does not include the memory used by the tokenizer.
     """
-    import os
-    local_rank = int(os.getenv("LOCAL_RANK", -1))
-    if local_rank != -1:
-        print('WARNING: you are using dist gpus. This method doesnt work with fsdp model sharding because idk how to'
-              'use hf accelerate which is inside the trainer to allocate the model then ask the machine to report'
-              'gpu memory.')
+    try:
+        import os
+        local_rank = int(os.getenv("LOCAL_RANK", -1))
+        if local_rank != -1:
+            print('WARNING: you are using dist gpus. This method doesnt work with fsdp model sharding because idk how to'
+                  'use hf accelerate which is inside the trainer to allocate the model then ask the machine to report'
+                  'gpu memory.')
 
-    # print(f'{device=}')
-    from uutils import get_filtered_local_params
-    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
-    # - load to device and get gpu memory usage
-    model.to(device)  # manually doing this to check memory used by model but hf does it in trained e.g., fsdp etc.
-    allocated = get_pytorch_gpu_usage(model=model, verbose=verbose)
+        # print(f'{device=}')
+        from uutils import get_filtered_local_params
+        get_filtered_local_params(locals(), verbose=verbose, var_name_in_front=var_name_in_front) if verbose else None
+        # - load to device and get gpu memory usage
+        model.to(device)  # manually doing this to check memory used by model but hf does it in trained e.g., fsdp etc.
+        allocated = get_pytorch_gpu_usage(model=model, verbose=verbose)
+        print_dtype_hf_model_torch(model)
+    except Exception as e:
+        # print any error
+        # print(f'Perhaps error: {e}')
+        allocated = None
+        pass
     return allocated
+
 
 def hf_dist_print(string: str,
                   var_name_in_front: str = '',
