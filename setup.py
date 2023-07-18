@@ -104,7 +104,7 @@ setup(
         'accelerate',
         'peft',
 
-        'datasets'
+        'datasets',
         'bitsandbytes',
         'einops',
     ]
