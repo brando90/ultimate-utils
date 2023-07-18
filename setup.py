@@ -1,34 +1,36 @@
 """
-conda create -n uutils_env python=3.9
+conda create -n uutils_env python=3.10
 conda activate uutils_env
 conda remove --all --name uutils_env
 rm -rf /Users/brando/anaconda3/envs/uutils_env
-
-conda create -n uutils_env_gpu python=3.9
-conda activate uutils_env_gpu
-conda remove --all --name uutils_env_gpu
-rm -rf /Users/brando/anaconda3/envs/uutils_env_gpu
-
-conda create -n uutils_env_cpu python=3.9
-conda activate uutils_env_cpu
-conda remove --all --name uutils_env_gpu
-rm -rf /Users/brando/anaconda3/envs/uutils_env_gpu
 
 pip install -e ~/ultimate-utils/ultimate-utils-proj-src/
 pip install ultimate-utils
 
 To test it:
 python -c "import uutils; uutils.hello()"
-python -c "import uutils; uutils.torch_uu.hello()"
-
-python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 python -c "import uutils; uutils.torch_uu.gpu_test()"
 
-PyTorch:
-- basing the torch install from the pytorch website as of this writing: https://pytorch.org/get-started/locally/
-pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-pip3 install torch torchvision torchaudio
-pip install torch torchvision torchaudio
+For full details see
+```
+~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md
+```
+For quick push do:
+```bash
+# change library version
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+
+cd ~/ultimate-utils/
+python setup.py sdist bdist_wheel
+twine check dist/*
+twine upload dist/*
+
+cd ~/ultimate-utils/
+rm -rf build
+rm -rf dist
+```
 
 refs:
     - setup tools: https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#using-find-or-find-packages
@@ -48,7 +50,7 @@ print('WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.6.1',
+    version='0.7.0',
     description="Brando's ultimate utils for science, machine learning and AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
