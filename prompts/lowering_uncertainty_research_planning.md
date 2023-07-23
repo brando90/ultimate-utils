@@ -75,7 +75,7 @@ In this way, vectoring promotes both efficiency and depth in research, helping r
 ```
 
 ## Lean Startup methodology
-TODO
+TODO 
 
 ## Assumptions & Sanity Checks
 
