@@ -36,8 +36,8 @@ Now I will try to identify a few potential actions with their assumptions (uncer
 This is the format:
 ```
 <plan_format>
-Essential/Impactful Goal (EssGoal):
-Plan:
+Essential/Impactful Goal (EssG):
+Plan1:
 Action 1 (Ac1):
     Assumption 1 (Ass1):
 Action 2 (Ac2):
@@ -48,7 +48,13 @@ My chosen decision of which action to take and why:
 </plan_format>
 
 <plan>
-...
+- plan 
+	- EssG: extract informal thms/pfs and put into a data frame with informal thms/pfs
+		- Ac1: use original evaporate to get i thms/pfs -> i df via Claude 2.0 or Copilote Chat
+			- Ass1: evaporate is a published research by stanford so it's likely works
+			- Ass2: easy to figure out how to use despite little code
+	- Decision:
+		- I actually don't know of a different action that is more direct with least uncertainty than Ac1 right now, that doesn't require me to think of complete alternatives/pivots e.g., extract them with an LLM or re-implementing evaporate or find better work than evaporate. Right now this also leverages that I'm familiar with evaporate. 
 </plan>
 ```
 Now I will recall vectoring in once sentence before I request for feedback on my research plan:
@@ -58,8 +64,13 @@ Vectoring in research is the targeted reduction of uncertainty in the direction 
 No give me excellent yet concise feedback on my research plan under the vectoring methodology. 
 Your feedback should increase the chances I succeed in learning about my most essential goal.
 If you idenitfy a potential blind spot (e.g., unknown unknowns) that might cause a failure or waaste my time, mention them.
+Also feel free to suggest sanity checks to validate my starting point 
+e.g., it's good to test and validate the approach on a small sample first before committing fully due to the uncertainties.
 If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good.
 Provide helpful feedback:
+
+concrete examples: https://chat.openai.com/share/921c9bf5-e6e4-4cc5-bc8a-dbbaf2f86b42
+btw, claude 2.0 seemed to give a better answer than gpt4, e.g., it suggested to sanity check my starting point.
 
 # Notes
 
@@ -364,3 +375,33 @@ TODO: ask what chat gpt thinks + this
 
 ## Chris Hahn's research approach: Try to break it so that what survives is the best
 TODO
+
+## Tips
+
+- Quick Skimming: I learned one can asses a direction quickly without delving to much in depth to it by skimming the options e.g., read the tutorial, does it actually look useful/good/quick/high quality?
+
+## Concrete examples of research assesment
+
+```markdown
+Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology You are an top research expert professor at Stanford giving feedback. I'd like to asses my research plan under the "Vectoring in Research" framework/methodology. In particular, with emphasis in identifying the most important goal along with future actions to reach that goal in the most direct way possible, while considering potential risks, assumptions and uncertainties. In more detail, this is the vectoring methodology: ``` Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. This critical aspect is called a "vector." The goal of vectoring is to manage and reduce risk and uncertainty. Instead of trying to solve all aspects of a problem simultaneously, researchers pick one vector (dimension of uncertainty) and focus on reducing its risk and uncertainty within a short time frame, typically 1-2 weeks. The concept advocates an iterative approach, where after one vector's risk is mitigated, new vectors (risks or uncertainties) might emerge. Then, the process of vectoring is repeated for the new vector. This continuous re-vectoring allows researchers to keep honing the core insights of the research project. The vectoring process involves generating and ranking questions based on their criticality, then rapidly answering the most critical question. This approach is often supplemented by assumption mapping, which is a strategy for articulating and ranking questions based on their importance and the level of known information. In summary, Vectoring in Research is a method to manage complexity and risk in research projects by focusing on the most significant risks or uncertainties, reducing them, and then moving on to the next most important risk or uncertainty, in a continuous iterative process. The goal is hopefully moving in the direction of the most essential goal or even refining the goal itself if critical information is learned in the vectoring iterative process. ``` Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework. This is the format: ``` <plan_format> Essential/Impactful Goal (EssG): Plan: Action 1 (Ac1): Assumption 1 (Ass1): Action 2 (Ac2): Assumption 2 (Ass2): Action 3 (Ac3): Assumption 3 (Ass3): My chosen decision of which action to take and why: </plan_format> <plan> - plan - EssG: extract informal thms/pfs and put into a data frame with informal thms/pfs - Ac1: use original evaporate to get i thms/pfs -> i df via Claude 2.0 or Copilote Chat - Ass1: evaporate is a published research by stanford so it's likely works - Ass2: easy to figure out how to use despite little code - Decision: - I actually don't know of a different action that is more direct with least uncertainty than Ac1 right now, that doesn't require me to think of complete alternatives/pivots e.g., extract them with an LLM or re-implementing evaporate or find better work than evaporate. Right now this also leverages that I'm familiar with evaporate. </plan> ``` Now I will recall vectoring in once sentence before I request for feedback on my research plan: ``` Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal. ``` No give me excellent yet concise feedback on my research plan under the vectoring methodology. Your feedback should increase the chances I succeed in learning about my most essential goal. If you idenitfy a potential blind spot (e.g., unknown unknowns) that might cause a failure or waaste my time, mention them. If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good. Provide helpful feedback:
+
+
+Claude 2.0:
+Here is my feedback on your research plan under the vectoring methodology:
+
+Your essential goal of extracting informal theorems/proofs into a dataframe seems quite reasonable as an initial step. Action 1 of using the existing evaporate tool to extract these informal results is a good starting point, as it leverages prior work and your familiarity with the tool. 
+
+The main assumption around evaporate working as intended seems fair, since it is published research. However, I would suggest testing it out on a small sample first to validate your assumptions, rather than assuming it will work smoothly at scale right away. 
+
+Overall your proposed action seems well aligned with vectoring principles - it focuses on a clear essential goal, proposes a direct action to make progress, and names the key assumption. My main suggestion would be to test and validate the approach on a small sample first before committing fully. This helps reduce uncertainty and risk.
+
+Additionally, some potential blind spots to consider:
+
+- Will the output format of evaporate need cleanup/processing to get it into the desired dataframe format? Factor in time for this.
+
+- How will you evaluate quality of the extracted theorems/proofs? Garbage in, garbage out.
+
+- Can you access or sample the informal source content needed to test evaporate at small scale first?
+
+But overall this seems like a reasonable starting point. The key will be to start small, validate assumptions early, and be ready to pivot if needed. Let me know if this helps provide useful vectoring feedback on your proposed research plan!
+```
