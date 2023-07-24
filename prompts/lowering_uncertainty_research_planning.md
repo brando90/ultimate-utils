@@ -8,22 +8,52 @@ They are:
 - Prompt 1: attempting to guess/extrapolate/identifying unknown unknowns -- to reduce risks we are unaware of.
 - Prompt 2: asses my vectoring plan with assumptions for effective tackling of the unknown i.e., research
 
-# Prompt1: Make a smart Inference of what the unknown unknowns are of my research plan
-TODO
+# Prompt1: Make a smart Inference/Smart Guess of what the unknown unknowns are of my research plan
+
 
 
 # Promp2: Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology
-TODO
+You are an top research expert professor at Stanford giving feedback. 
+I'd like to asses my research plan under the "Vectoring in Research" framework/methodology.
+In particular, with emphasis in identifying the most important goal along with future actions to reach that goal in the
+most direct way possible, while considering potential risks, assumptions and uncertainties. 
+In more detail, this is the vectoring methodology:
 ```markdown
-Description of Vectoring methodology
+Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. This critical aspect is called a "vector."
+The goal of vectoring is to manage and reduce risk and uncertainty. 
+Instead of trying to solve all aspects of a problem simultaneously, researchers pick one vector (dimension of uncertainty) 
+and focus on reducing its risk and uncertainty within a short time frame, typically 1-2 weeks.
+The concept advocates an iterative approach, where after one vector's risk is mitigated, new vectors (risks or uncertainties) might emerge. Then, the process of vectoring is repeated for the new vector. This continuous re-vectoring allows researchers to keep honing the core insights of the research project.
+The vectoring process involves generating and ranking questions based on their criticality, then rapidly answering the most critical question. 
+This approach is often supplemented by assumption mapping, which is a strategy for articulating and ranking questions based on their importance and the level of known information.
 
+In summary, Vectoring in Research is a method to manage complexity and risk in research projects by focusing on the most significant risks or uncertainties, 
+reducing them, and then moving on to the next most important risk or uncertainty, in a continuous iterative process.
+The goal is hopefully moving in the direction of the most essential goal or even refining the goal itself if critical
+information is learned in the vectoring iterative process.
 ```
-my research plan:
+Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework:
 ```markdown
-
+Essential/Impactful Goal:
+Plan:
+Action 1 (Ac1):
+    Assumption 1 (Ass1):
+Action 2 (Ac2):
+    Assumption 2 (Ass2):
+Action 3 (Ac3): 
+    Assumption 3 (Ass3):
+My chosen decision of which action to take and why: 
+...
 ```
-give me excellent feedback, that increases the chances I succeed and if you can idenitfy a potential blind spot that might
-cause a failure or waaste my time:
+Now I will recall vectoring in once sentence before I request for feedback on my research plan:
+```markdown
+Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal.
+```
+No give me excellent yet concise feedback on my research plan under the vectoring methodology. 
+Your feedback should increase the chances I succeed in learning about my most essential goal.
+If you idenitfy a potential blind spot (e.g., unknown unknowns) that might cause a failure or waaste my time, mention them.
+If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good.
+Provide helpful feedback:
 
 # Notes
 
@@ -53,7 +83,7 @@ In summary, Vectoring in Research is a method to manage complexity and risk in r
 
 ```markdown
 One sentence summary of Vectoring: 
-Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect.
+Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful/essential aspect/goal.
 ```
 ref: gpt4 summary: https://chat.openai.com/share/f36336ec-ecf2-4e15-a130-4f3782f27baf
 ref: ground truth: https://web.stanford.edu/class/cs197/slides/04-vectoring.pdf
