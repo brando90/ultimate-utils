@@ -10,15 +10,15 @@ They are:
 
 # Prompt1: Make a smart Inference/Smart Guess of what the unknown unknowns are of my research plan
 
+# Prompt2: Assuming there will always be risks we cannot take into account (unknown unknowns), is our research plan adaptable, flexible and robust?
 
-
-# Promp2: Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology
+# Prompt3: Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology
 You are an top research expert professor at Stanford giving feedback. 
 I'd like to asses my research plan under the "Vectoring in Research" framework/methodology.
 In particular, with emphasis in identifying the most important goal along with future actions to reach that goal in the
 most direct way possible, while considering potential risks, assumptions and uncertainties. 
 In more detail, this is the vectoring methodology:
-```markdown
+```
 Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. This critical aspect is called a "vector."
 The goal of vectoring is to manage and reduce risk and uncertainty. 
 Instead of trying to solve all aspects of a problem simultaneously, researchers pick one vector (dimension of uncertainty) 
@@ -32,9 +32,11 @@ reducing them, and then moving on to the next most important risk or uncertainty
 The goal is hopefully moving in the direction of the most essential goal or even refining the goal itself if critical
 information is learned in the vectoring iterative process.
 ```
-Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework:
-```markdown
-Essential/Impactful Goal:
+Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework.
+This is the format:
+```
+<plan_format>
+Essential/Impactful Goal (EssGoal):
 Plan:
 Action 1 (Ac1):
     Assumption 1 (Ass1):
@@ -43,10 +45,14 @@ Action 2 (Ac2):
 Action 3 (Ac3): 
     Assumption 3 (Ass3):
 My chosen decision of which action to take and why: 
+</plan_format>
+
+<plan>
 ...
+</plan>
 ```
 Now I will recall vectoring in once sentence before I request for feedback on my research plan:
-```markdown
+```
 Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal.
 ```
 No give me excellent yet concise feedback on my research plan under the vectoring methodology. 
@@ -58,9 +64,179 @@ Provide helpful feedback:
 # Notes
 
 ## Unknown Unknowns
+
+```markdown
+Unknown unknowns are risks that we are unaware of.
+
+"Known unknowns" and "unknown unknowns" are terms used in risk management and project planning. 
+They refer to different types of uncertainties that one might encounter in a project or task. 
+Understanding these concepts can help in identifying, managing, and mitigating risks effectively.
+
+Known Unknowns: These are uncertainties or risks that we are aware of but do not know the outcome.
+In risk management & project planning, these risks are often identified during the planning phase and are accounted for 
+by building buffers or safety margins that try to account for the known unknown (known uncertainty).
+These potential problems (known unknown) are identified, and plans are made to help deal with them. 
+For example:
+Time Contingency/Buffer: Extra time is allocated in the project schedule to manage potential delays.
+Cost/Financial Contingency/Buffer: Extra budget is allocated to handle potential cost overruns.
+Resource Contingency/Buffer: Extra resources (such as personnel or equipment) are planned for in case they are needed. 
+Plan B/Backup Plan: Sometimes, an alternative approach or strategy (a "Plan B") is developed and can be put into action if a particular risk materializes.
+
+Unknown unknowns: These are risks or uncertainties that we're not even aware exist, so we cannot plan for them.
+
+```
+
+```markdown
+Known unknowns:
+Known Unknowns: These are uncertainties or risks that we are aware of but do not know the outcome. For example, we might 
+know that a particular phase of a project will have challenges because we are using a new technology or method, but we 
+don't know what specific issues might arise or how severe they will be. This uncertainty is 'known' because we're aware 
+of its existence, even though we don't know the details or implications. In project management, these risks are often 
+identified during the planning phase and are accounted for by building in contingencies, such as additional time or 
+resources, to manage them.
+
+Certainly, another term often used instead of "contingencies" is "buffer" or "safety margin". These terms all refer to the extra resources — time, money, personnel, etc. — that are allocated in a project plan to handle potential risks or uncertainties, or the "known unknowns."
+
+So, when we say that "risks are often identified during the planning phase and are accounted for by building in buffers", it means that during the planning phase of a project, potential problems are identified, and plans are made to help deal with them. These plans usually involve allocating extra resources (the buffer) to manage these potential problems if they do arise.
+
+For example:
+
+Time Buffer: Extra time is built into the project schedule to manage possible delays. This means that if a task is estimated to take ten days, but there's a chance it might be delayed, the project schedule might allow for fifteen days for that task to provide a time buffer.
+
+Financial Buffer: Additional funds are set aside in the project budget to handle unexpected costs. This means if a part of the project is estimated to cost $10,000, but there's a risk that the cost could go over that amount, a financial buffer of an additional $2,000 might be added to the budget.
+
+Resource Buffer: Additional resources (like extra personnel or equipment) are arranged to be available in case they are needed. For instance, if a project relies on a certain piece of machinery, having a backup machine available creates a resource buffer.
+
+Backup Plan: Sometimes, an alternate plan or strategy is prepared to be implemented if a particular risk happens. This backup plan acts as a buffer strategy to ensure the project can continue even when faced with certain issues.
+
+By identifying potential risks and building in these buffers, project managers attempt to lessen the impact of known unknowns, thereby improving the chances of successfully completing the project within its deadline, budget, and quality requirements.
+```
+
+```markdown
+Unknown unknowns: Unknown Unknowns: These are risks or uncertainties that we're not even aware exist, so we cannot plan 
+for them. 
+For instance, during a construction project, an unknown unknown might be an archaeological discovery on the 
+construction site that halts work. These are unpredictable risks that were not foreseen and could not have been 
+reasonably predicted. 
+**Since we can't identify these risks in advance, we can't plan for them directly. 
+Instead, we  manage these risks indirectly by ensuring that our project plans are flexible and adaptable, 
+and that we have the capacity to respond effectively to unexpected events when they occur**.
+
+Sure, let's use an example from a field like pharmaceutical research and development (R&D), where dealing with unknown unknowns is quite common.
+
+Suppose a pharmaceutical company is conducting R&D for a new drug to treat a specific disease. They've planned for known unknowns such as potential difficulties in synthesizing the drug, possible side effects, and regulatory hurdles, among other things.
+
+An unknown unknown in this context might be the sudden emergence of a research study that demonstrates a certain common ingredient used in the formulation of the drug has serious health implications that were not previously known. This is something the company could not have anticipated or planned for directly, because it wasn't a known risk at the outset of the project.
+
+The company can mitigate the risk of this unknown unknown by having an adaptable, flexible plan in place. Here's how:
+
+Diversification of Research: Instead of putting all their resources into the development of one drug, the company can conduct parallel research on multiple potential drug formulations. This way, if there's an unexpected issue with one, they have others they can pivot to.
+
+Regular Monitoring and Learning: The research team should regularly review the latest scientific literature and developments in their field. This keeps them updated and prepared to adapt their research based on new knowledge that emerges.
+
+Building in Time and Budget Flexibility: The research plan should allow for unexpected developments. This might involve budgeting extra funds for unexpected costs and planning a timeline that allows for potential delays.
+
+Stakeholder Communication: Regular communication with stakeholders (like investors, regulatory bodies, etc.) helps in managing their expectations. It also ensures that any required change in direction due to unforeseen circumstances can be better understood and accepted.
+
+Robust Experimentation and Validation Process: By thoroughly testing and validating their results at every step, they can mitigate the impact of unexpected issues and adapt their research as required.
+
+Iterative Development: By breaking down their research and development process into smaller, iterative steps, the company can incorporate new learnings more easily and adapt their direction more quickly if required.
+
+Remember, the key to dealing with unknown unknowns is not to try to predict them, but to build systems and processes that allow for flexibility and adaptability in the face of unexpected events.
+
+
+
+Let's consider a research project in computer science focusing on the development of a new machine learning algorithm. The team has identified and planned for several known unknowns, such as the difficulty in training the model, the availability of quality training data, computational resources, etc.
+
+An example of an unknown unknown could be the discovery of a critical vulnerability in a widely used software library that the algorithm relies on, causing it to behave unpredictably or making it exploitable. This is something the team couldn't have anticipated because it wasn't a known risk when they started the project.
+
+To mitigate the risk of such unknown unknowns, the team can employ several strategies:
+
+Modular Design: Design the algorithm and the overall software in a modular manner. This makes it easier to replace or update individual components (like the vulnerable software library) without affecting the entire system.
+
+Regular Updates and Review: Maintain an awareness of current developments and updates in the field of machine learning and the software libraries being used. This allows the team to quickly respond to any newly discovered issues.
+
+Version Control: Use version control systems to keep track of changes in the codebase. This allows the team to revert to a previous state if something breaks, providing a safety net against unexpected issues.
+
+Robust Testing: Implement comprehensive testing strategies including unit tests, integration tests, and system tests to ensure that all parts of the software are working as expected, and to catch any unexpected behaviors as early as possible.
+
+Flexibility in Planning: Incorporate flexibility in the project timeline and budget to account for unexpected roadblocks or challenges.
+
+Cross-functional Teams: Having a team with diverse skills can help in managing unexpected challenges. For instance, having team members with expertise in cybersecurity can help in quickly addressing a newly discovered software vulnerability.
+
+Remember, the key to managing unknown unknowns is flexibility and adaptability, rather than trying to predict all possible issues in advance.
+
+
+
+Sure, let's consider a scenario where a research group is working on the development of a machine learning model to predict certain outcomes based on large volumes of data. The team is aware of and has planned for many known unknowns, such as the quality of the training data, the potential for overfitting or underfitting, the choice of the most suitable algorithms, etc.
+
+An example of an unknown unknown in this context could be the discovery of a fundamental flaw in the statistical assumptions that the model was built upon. This flaw could lead to systematically biased predictions, which was not anticipated when the project started, making it an unknown unknown.
+
+Here are some strategies to indirectly prepare for such unknown unknowns:
+
+Thorough Initial Research: Prior to embarking on the model development, ensure a thorough literature review and understanding of the problem domain. This can provide early insights into potential pitfalls or alternate methodologies that might be worth considering.
+
+Ensemble Methods: Instead of relying on a single predictive model, use ensemble methods that combine the predictions of several models. This can help improve prediction accuracy and robustness, and it might mitigate the impact of any one model's assumptions being off.
+
+Regular Cross-validation: Perform regular cross-validation checks during the model development phase. This not only helps in tuning the model parameters but could also highlight any fundamental inconsistencies or flaws in the model's predictions.
+
+Adaptable Architecture: Develop the model in such a way that key assumptions or components can be modified without requiring a complete overhaul. This gives the team the ability to adapt the model based on new learnings or findings.
+
+Broad Skillset in the Team: A team with a diverse set of skills could bring different perspectives, potentially spotting issues that might not be apparent if everyone had the same background.
+
+Peer Reviews and Collaboration: Encourage frequent peer reviews and collaborations with other researchers in the field. This exposes your methods and assumptions to more scrutiny, increasing the chances of uncovering potential unknown unknowns.
+
+Remember, the key here is not to predict the unknown unknowns but to develop a system that is adaptable and resilient enough to handle unexpected events when they arise.
+
+
+
+Sure, let's consider a deep learning research project that involves the development of a large language model based on transformers. The research team would be aware of, and plan for, several known unknowns, such as the computational resources required for training, the quality and quantity of training data, the choice of hyperparameters, etc.
+
+An example of an unknown unknown in this context could be a discovery that certain linguistic or cultural biases in the training data lead to a significant impact on the performance of the model in certain contexts, beyond what was initially expected or understood. This issue, not being fully understood or predictable at the start of the project, qualifies as an unknown unknown.
+
+To mitigate the potential impact of such unknown unknowns, the research team could consider the following strategies:
+
+Comprehensive Data Review: Ensure a thorough review and understanding of the training data, including its potential limitations and biases. This knowledge might help to identify and address previously unconsidered issues.
+
+Model Interpretability: While interpretability in deep learning is challenging, techniques such as attention visualization, saliency maps, or LIME (Local Interpretable Model-Agnostic Explanations) could be used to better understand how the model is making its predictions.
+
+Regular Evaluation and Validation: Conduct frequent and diverse evaluation of the model's performance across various contexts and datasets. This might include not just standard benchmarks, but also novel scenarios or edge cases.
+
+Diversity in Research Team: A research team that is diverse in terms of linguistic and cultural backgrounds might be better placed to identify unexpected biases or performance issues.
+
+Iterative Development: Use an iterative development approach, where feedback from each stage of testing and evaluation is used to refine the model, its training process, or the data it is being trained on.
+
+External Collaborations and Reviews: Engaging with the broader research community for peer reviews, collaborations, or shared evaluations can provide additional perspectives and scrutiny, potentially highlighting unknown unknowns.
+
+Remember, the goal is not necessarily to predict unknown unknowns (as by definition, they can't be predicted), but to create a research and development process that is robust and flexible enough to respond effectively when unexpected issues do arise.
+
+
+Certainly, let's consider a deep learning project where the goal is to develop a transformer-based language model for advanced natural language understanding tasks. This team has planned for known unknowns such as computational requirements, model architecture choices, and hyperparameter tuning.
+
+An example of an unknown unknown could be the discovery that the transformer model behaves unpredictably when dealing with a certain complex linguistic construct, one that wasn't part of the initial testing and validation scenarios. The model's inability to generalize to these constructs wasn't known or predicted at the project's outset, making it an unknown unknown.
+
+Here are several strategies to indirectly prepare for such unknown unknowns:
+
+Diverse Dataset Creation: While it's not directly about bias, ensuring a diverse range of linguistic constructs and languages in your training data can potentially uncover unexpected behaviors of your model.
+
+Continual Validation and Testing: Regularly test the model against a variety of different scenarios, including complex and unusual linguistic constructs or contexts.
+
+Model Debugging Techniques: Utilize techniques and tools designed for debugging deep learning models. Tools like TensorBoard can help visualize the internal workings of a model and could potentially highlight issues not initially foreseen.
+
+Modularity in Model Architecture: Construct the model in a modular way so that parts of the architecture can be swapped or altered as needed. If an unknown unknown arises that requires a change in architecture, this modularity can allow for easier adaptation.
+
+Continual Learning: Employ continual learning strategies, where the model can adapt and learn from new data or scenarios even after the initial training phase. This could potentially help the model adapt to unanticipated scenarios or constructs.
+
+Engagement with the Research Community: Stay engaged with the wider research community. New papers, techniques, and findings can shed light on potential unknown unknowns.
+
+Ensemble Approaches: Using a collection of models instead of just one can improve robustness. If an unknown unknown affects one model in the ensemble, the others might still provide reliable outputs.
+
+Again, the primary objective here isn't to predict all possible unknown unknowns, but to develop an adaptable and resilient research process to manage unexpected issues as they arise.
+```
+
 start from here: https://chat.openai.com/share/e98bc26d-7f72-44b6-96ef-7173add183c5
 
-## Vectoring in Research CS 197
+## Vectoring in Research CS 197`
 ```markdown
 "Vectoring in Research," as presented in Stanford's CS 197 & 197C course by Sean Liu & Lauren Gillespie, refers to an approach or methodology for tackling complex research projects. Here's a summarized interpretation of the concept:
 
