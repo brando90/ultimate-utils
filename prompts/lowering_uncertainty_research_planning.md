@@ -13,11 +13,11 @@ They are:
 # Prompt2: Assuming there will always be risks we cannot take into account (unknown unknowns), is our research plan adaptable, flexible and robust?
 
 # Prompt3: Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology
-You are an top research expert professor at Stanford giving feedback. 
-I'd like to asses my research plan under the "Vectoring in Research" framework/methodology.
-In particular, with emphasis in identifying the most important goal along with future actions to reach that goal in the
-most direct way possible, while considering potential risks, assumptions and uncertainties. 
-In more detail, this is the vectoring methodology:
+You are a top research expert, professor at Stanford giving feedback to make a research plan excellent. 
+You are using the "Vectoring in Research" framework/methodology to asses the research plan. 
+In particular, with emphasis in identifying the most impactful/important research goal with future actions to that are 
+most direct in attaining that goal -- while minimizing/identifying potential risks, assumptions and uncertainties. 
+In more detail, this is the vectoring methodology: 
 ```
 Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. This critical aspect is called a "vector."
 The goal of vectoring is to manage and reduce risk and uncertainty. 
@@ -29,22 +29,22 @@ This approach is often supplemented by assumption mapping, which is a strategy f
 
 In summary, Vectoring in Research is a method to manage complexity and risk in research projects by focusing on the most significant risks or uncertainties, 
 reducing them, and then moving on to the next most important risk or uncertainty, in a continuous iterative process.
-The goal is hopefully moving in the direction of the most essential goal or even refining the goal itself if critical
+The goal is to move in the direction of the most essential goal or even refining the goal itself if critical
 information is learned in the vectoring iterative process.
 ```
-Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework.
-This is the format:
+Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework. 
+This is the format: 
 ```
 <plan_format>
 Essential/Impactful Goal (EssG):
-Plan1:
-Action 1 (Ac1):
-    Assumption 1 (Ass1):
-Action 2 (Ac2):
-    Assumption 2 (Ass2):
-Action 3 (Ac3): 
-    Assumption 3 (Ass3):
-My chosen decision of which action to take and why: 
+- Plan1:
+    - Action 1 (Ac1):
+        - Assumption 1 (Ass1):
+    - Action 2 (Ac2):
+        - Assumption 2 (Ass2):
+    - Action 3 (Ac3): 
+        - Assumption 3 (Ass3):
+- Decision (what and why):
 </plan_format>
 
 <plan>
@@ -61,16 +61,20 @@ Now I will recall vectoring in once sentence before I request for feedback on my
 ```
 Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal.
 ```
-No give me excellent yet concise feedback on my research plan under the vectoring methodology. 
-Your feedback should increase the chances I succeed in learning about my most essential goal.
-If you idenitfy a potential blind spot (e.g., unknown unknowns) that might cause a failure or waaste my time, mention them.
+Now give me excellent yet concise feedback on my research plan under the vectoring methodology. 
+Your feedback should increase the chances I succeed in learning about my most essential research goal. 
+If you identify a potential blind spot (e.g., unknown unknowns) that might cause a failure or waste my time, mention them. 
+But also remember that unknown unknowns are by definition unpredictable, so if you can't identify those blind spots then
+make sure the plan is adaptable, flexible and robust.
 Also feel free to suggest sanity checks to validate my starting point 
-e.g., it's good to test and validate the approach on a small sample first before committing fully due to the uncertainties.
-If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good.
+e.g., it's good to test and validate the approach on a small sample first before committing fully due to the uncertainties. 
+If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good. 
 Provide helpful feedback:
 
-concrete examples: https://chat.openai.com/share/921c9bf5-e6e4-4cc5-bc8a-dbbaf2f86b42
-btw, claude 2.0 seemed to give a better answer than gpt4, e.g., it suggested to sanity check my starting point.
+concrete examples: 
+1. https://chat.openai.com/share/921c9bf5-e6e4-4cc5-bc8a-dbbaf2f86b42, https://claude.ai/chat/3d227faf-037e-4ec3-a220-e0390796df7f
+   2. seems claude 2.0 seemed to give a better answer than gpt4, e.g., it suggested to sanity check my starting point.
+2. 
 
 # Notes
 
@@ -405,3 +409,4 @@ Additionally, some potential blind spots to consider:
 
 But overall this seems like a reasonable starting point. The key will be to start small, validate assumptions early, and be ready to pivot if needed. Let me know if this helps provide useful vectoring feedback on your proposed research plan!
 ```
+
