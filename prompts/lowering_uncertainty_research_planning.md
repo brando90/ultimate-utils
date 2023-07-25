@@ -19,6 +19,7 @@ In particular, with emphasis in identifying the most impactful/important researc
 most direct in attaining that goal -- while minimizing/identifying potential risks, assumptions and uncertainties. 
 In more detail, this is the vectoring methodology: 
 ```
+<vectoring>
 Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. This critical aspect is called a "vector."
 The goal of vectoring is to manage and reduce risk and uncertainty. 
 Instead of trying to solve all aspects of a problem simultaneously, researchers pick one vector (dimension of uncertainty) 
@@ -31,6 +32,7 @@ In summary, Vectoring in Research is a method to manage complexity and risk in r
 reducing them, and then moving on to the next most important risk or uncertainty, in a continuous iterative process.
 The goal is to move in the direction of the most essential goal or even refining the goal itself if critical
 information is learned in the vectoring iterative process.
+</vectoring>
 ```
 Now I will try to identify a few potential actions with their assumptions (uncertainties) asess it under the vectoring framework. 
 This is the format: 
@@ -48,18 +50,22 @@ Essential/Impactful Goal (EssG):
 </plan_format>
 
 <plan>
-- plan 
-	- EssG: extract informal thms/pfs and put into a data frame with informal thms/pfs
-		- Ac1: use original evaporate to get i thms/pfs -> i df via Claude 2.0 or Copilote Chat
-			- Ass1: evaporate is a published research by stanford so it's likely works
-			- Ass2: easy to figure out how to use despite little code
+- plan0
+	- EssG: sanity check, validate/falsify that evaporate does indeed work to create a data frame for my theorems & proofs on my dummy latex textbook
+	- Ac0: simplest action is to roll back to the version of evaporate and test that directly without modifications, only the correct pip installations I was missing
+		- Ass0: I'm assuming their code actually works when they wrote the paper with their data. If this isn't true I need to write to Simran directly again
+	- Ac1: if prev works then do it on my data
+	- Ac2: if it doesn't work, then implement my own version of evaporate specialized for theorem proving. First direct evaporate so using an LLM then the evaporate code and evaporate code+ is the hardest (idk if worth it, perhaps direct is fine, it's a one time cost per textbook and then if we need a larger more scalable version we can do evaproate code?)
+		- Ass2: unknown if evaporate direct vs e code or e code + is hard to do...
 	- Decision:
-		- I actually don't know of a different action that is more direct with least uncertainty than Ac1 right now, that doesn't require me to think of complete alternatives/pivots e.g., extract them with an LLM or re-implementing evaporate or find better work than evaporate. Right now this also leverages that I'm familiar with evaporate. 
+		- Ac0 is the decision because it's the most direct way to sanity check if evaporate works. I'm assuming that if it does work it will work for my use case since it's a very similar scenario and LLMs are robust + evaporate is research done at Stanford.
 </plan>
 ```
 Now I will recall vectoring in once sentence before I request for feedback on my research plan:
 ```
+<vectoring_summary>
 Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal.
+</vectoring_summary>
 ```
 Now give me excellent yet concise feedback on my research plan under the vectoring methodology. 
 Your feedback should increase the chances I succeed in learning about my most essential research goal. 
@@ -69,12 +75,20 @@ make sure the plan is adaptable, flexible and robust.
 Also feel free to suggest sanity checks to validate my starting point 
 e.g., it's good to test and validate the approach on a small sample first before committing fully due to the uncertainties. 
 If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good. 
-Provide helpful feedback:
+Provide helpful excellent feedback according to the specifications:
+
+...
+
+Now proceed to give me concrete feedback using the unknown unknown criteria? 
+Can we try to identify unpredictable issues? 
+And also independently, asses the flexibility, adaptability and robustness of my initial research plan: 
+
 
 concrete examples: 
 1. https://chat.openai.com/share/921c9bf5-e6e4-4cc5-bc8a-dbbaf2f86b42, https://claude.ai/chat/3d227faf-037e-4ec3-a220-e0390796df7f
    2. seems claude 2.0 seemed to give a better answer than gpt4, e.g., it suggested to sanity check my starting point.
-2. 
+2. https://chat.openai.com/share/629602aa-40a2-4225-8817-33b52417279d, https://claude.ai/chat/a4acaa59-f15c-486c-8145-e653eacfd094
+   3. this time gpt4 gave a better answer, it was more detailed, Claude 2.0 seemed to short and not nuanced/insightful enough. But both provided similar and useful comments when prompted to specifically talk about unknown unknowns. e.g., quick iterative testing + no long term commitments. 
 
 # Notes
 
