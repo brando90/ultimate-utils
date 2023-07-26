@@ -1,4 +1,4 @@
-# ----  ----
+# ---- Prompts for Assessing & Rubber Ducking discussions on your research plan according to Vectoring  ----
 references: 
     - https://web.stanford.edu/class/cs197/slides/04-vectoring.pdf 
 
