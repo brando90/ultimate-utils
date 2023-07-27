@@ -65,4 +65,14 @@ Experiments:
 - How to write a great research talk/paper/proposal Simon Jones: https://www.microsoft.com/en-us/research/academic-program/write-great-research-paper/
   - how to write a good research paper slides: https://www.microsoft.com/en-us/research/uploads/prod/2016/07/How-to-write-a-great-research-paper.pdf
 
-## Boiler plate:
+
+## Citation
+If you find our repo helpful consider citing ultimate-utils:
+```latex
+@software{brando2021ultimateutils,
+    author={Brando Miranda},
+    title={Ultimate Utils - the Ultimate Utils library for Machine Learning and Artificial Intelligence},
+    url={https://github.com/brando90/ultimate-utils},
+    year={2021}
+}
+```

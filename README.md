@@ -199,7 +199,7 @@ it should be installed. You can import and test the print as mentioned above.
 ## Citation
 If you use this implementation consider citing us:
 
-```
+```latex
 @software{brando2021ultimateutils,
     author={Brando Miranda},
     title={Ultimate Utils - the Ultimate Utils library for Machine Learning and Artificial Intelligence},
