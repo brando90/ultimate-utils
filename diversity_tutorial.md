@@ -8,7 +8,7 @@ First, we need to install ultimate-utils and its prerequisites - Brando has crea
 
 # Tutorials
 
-## Quick Start - How to compute Diversity Coefficient for few-shot learning vision datasets?
+## Quick Start - Diversity Computation for few-shot learning vision datasets?
 This example computes the Task2Vec diversity of the training split of the FGVC-Aircraft (https://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/) benchmark:
 ```python
 from uutils.argparse_uu.meta_learning import parse_args_meta_learning, fix_for_backwards_compatibility
