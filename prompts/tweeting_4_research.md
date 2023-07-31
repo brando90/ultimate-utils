@@ -102,15 +102,78 @@ Do it in the format I gave:
 
 ```markdown
 # - tweet 1
-Excited to share our #ICML2023 paper comparing pre-training & meta-learning for few-shot learning! We find meta-learning can outperform pre-training given high formal diversity. [Paper link] 1/13
+Excited to share our #ICML2023 workshop paper:
 
+**Is Pre-Training Truly Better than Meta-Learning?**
+
+Joint w/ @patrick @saumya @yuxiong @sanmikoyejo
+
+https://arxiv.org/abs/2306.13840
+
+Not on highly diverse data sets!
+1/13
+[put image from poster showing diverse imgs]
+
+# - tweet 2
+We provide code to easily compute formal diversities of vision data sets! 
+
+https://github.com/brando90/ultimate-utils/blob/master/diversity\\_tutorial.md
+
+We also have code to compute diversities for NLP!
+
+https://github.com/alycialee/beyond-scale-language-data-diversity/tree/main/diversity#quick-start
+
+2/13
+[put related tweet beyond scale]
+
+# - tweet 3
+Is Pre-Training Truly Better than Meta-Learning?
+We "prove" not by counter example. 
+We show Pre-training does not always beat MAML and find this happens most of the time when the data sets are highly diverse. 
+
+3/13
+[counts table]
 ```
 
+```markdown
+Here are 13 suggested tweets to summarize the key points from the paper:
 
+#1 New work re-evaluates claims that pre-training is better than meta-learning for few-shot learning using rigorous stats. We show meta-learning can beat pre-training given high diversity! https://arxiv.org/pdf/2306.13841.pdf
 
+#2 We provide code to easily compute dataset diversity coefficients to test our claims yourself! https://github.com/brando90/ultimate-utils/blob/master/diversity\\_tutorial.md
+
+#3 Using effect size & dataset diversity we show: when diversity is low, pre-training beats MAML. But when diversity is high, MAML beats pre-training!
+
+#4 We evaluate 21 few-shot learning benchmarks. Pre-training beats MAML on low diversity datasets. But on high diversity datasets, MAML wins!
+
+#5 We demonstrate pre-training does NOT always beat meta-learning. Dataset diversity is key! Explicit meta-learning helps on diverse data.
+
+#6 On low diversity data, pre-training effect size beats MAML. On high diversity data, MAML effect size beats pre-training!
+
+#7 We show meta-learning & pre-training differences are subtle using effect size. Less than 0.2 effect sizes on average. Dataset diversity brings clarity.
+
+#8 We provide extensive experiments over 21 diverse datasets with rigorous statistical tests. Pre-training vs MAML differences are nuanced.
+
+#9 Our data-centric perspective demonstrates the role of diversity. Meta-learning aids when data has high task variation. Pre-training better on low diversity.
+
+#10 We emphasize fair comparisons: same model, optimizer, full convergence. Unlike prior work, our study isolates algorithm differences.
+
+#11 Our work inspires research into problem-centric ML using metrics like diversity. Going beyond algorithms & hardware to the problem itself!
+
+#12 We demonstrate meta-learning remains an open research area. The interplay with pre-training and dataset diversity needs further study.
+
+#13 Limitation: We only compare MAML vs pre-training extensively. Testing other meta-learning algorithms is important future work.
+```
+
+# Example conversation
 examples:
 - Claude 2.0 Beyond Scale: https://claude.ai/chat/7a4ce0f6-9869-43f1-a1e5-8683ddcd5e47 
 - Pre-training vs Meta-Learning:
+
+
+
+
+
 
 # Prompt2: Help me write an advertisement for the time of my research poster
 Help me write an advertisement for the time of my research poster.
