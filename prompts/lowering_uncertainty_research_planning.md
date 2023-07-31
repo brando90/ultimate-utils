@@ -12,60 +12,75 @@ They are:
 
 # Prompt2: Assuming there will always be risks we cannot take into account (unknown unknowns), is our research plan adaptable, flexible and robust?
 
-# Prompt3: Asses my Research Plan to Tackle uncertainty under the Vectoring in Research framework/methodology
+# Prompt3: Asses my Research Plan to rackle uncertainty under the Vectoring in Research framework methodology
 You are a research expert, top CS professor at Stanford, giving feedback to make a research plan excellent. 
 You are using the "Vectoring in Research" framework methodology to assess the research plan. 
 In particular, with emphasis in identifying the most impactful & important research goal with future actions that 
-most directly attain the essential goal -- while minimizing & identifying potential risks, assumptions and uncertainties. 
+most directly attain solve the essential goal -- while minimizing & identifying potential risks, assumptions and uncertainties. 
 In more detail, this is the vectoring methodology: 
 ```
 <vectoring>
-Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or 
-"dimension of risk," in a project at a given time. 
-This critical aspect or dimension is called a "vector." 
-The goal of vectoring is to manage and reduce risk and uncertainty. 
-Instead of trying to solve all aspects of a problem simultaneously, researchers pick one vector (dimension of uncertainty) 
-and focus on reducing its risk and uncertainty within a short time frame, typically 1-2 weeks.
-The concept advocates an iterative approach, where after one vector's risk is mitigated, new vectors (risks or uncertainties) might emerge. 
-Then, the process of vectoring is repeated for the new vector. 
+Vectoring is an iterative process used in research to identify and focus on the most critical aspect, or "dimension of risk," in a project at a given time. 
+This critical aspect or dimension is called a "vector". 
+The goal of vectoring is to manage and reduce risk and uncertainty & make make most direct progress as effortlesly as possible in the most essential goal. 
+Instead of trying to solve all aspects of a problem simultaneously, researchers pick one (essential) vector (dimension of uncertainty) 
+and focus on reducing its risk and uncertainty within a short time frame, typically 1-2 weeks (but if shorter is possible great).
+The methodology advocates an iterative approach, where after one vector's risk is mitigated, new vectors (risks or uncertainties) might emerge. 
+Then, the process of vectoring is repeated for the new vector that makes most direct progress on the essential goal. 
 This continuous re-vectoring allows researchers to keep honing the core insights of the research project.
-The vectoring process involves generating and ranking questions based on their criticality, then rapidly answering the most critical question. 
+The vectoring process involves generating and ranking questions based on their criticality, then rapidly answering the most critical essential question. 
 This approach is often supplemented by assumption mapping, which is a strategy for articulating and ranking questions based on their importance and the level of known information.
 
 In summary: Vectoring in Research is a method to manage complexity and risk in research projects by focusing on the most significant risks or uncertainties, 
-reducing them, and then moving on to the next most important risk or uncertainty, in a continuous iterative process.
-The goal is to move in the direction of the most essential goal or even refining the goal itself if critical
-information is learned in the vectoring iterative process.
+reducing them, and then moving on to the next most important essentual risk uncertainty or goal, in a continuous iterative process.
+The goal is to move in the direction of the most essential goal or even refining the goal itself if critical information is learned in the vectoring iterative process.
 </vectoring>
 ```
-Now I will try to identify a few potential actions with their assumptions, uncertainties & risks, 
-to formulate my research plan.
-So that you can assess it under the vectoring framework. 
-This is the format: 
+Now I will provide a research plan that has already identified some potential assumptions problems and potential actions to solve mitigate them. 
+The research plan will be given in the following format:
 ```
 <plan_format>
-Essential/Impactful Goal (EssG):
 - Plan1:
-    - Action 1 (Ac1):
-        - Assumption 1 (Ass1):
-    - Action 2 (Ac2):
-        - Assumption 2 (Ass2):
-    - Action 3 (Ac3): 
-        - Assumption 3 (Ass3):
-- Decision (what and why):
+    - Essential/Impactful Goal (EssG):
+    - Question/Problem 1 (Q/P1): ...
+        - ...
+    - Assumption 0 (Ass1):
+      - Action 0 (Ac1): ...
+      - Action 1 (Ac2) : ...
+      - ...
+      - Decision (what & why) (Dec): ... 
+      - Other ideas ...
+        - ...
+    - Assumption 1 (Ass2):
+      - Action 1 (Ac2):
+    - Extra
+    - Assumption 1 (Ass2):
+      - Action 1 (Ac2):
 </plan_format>
-
+```
+This my concrete plan to evaluate under the vectoring framework methodology and give feedback: 
+```
 <plan>
 - plan0
-	- EssG: extract my own thms & pfs into a df
-	- Ac0: understand how the data and schema is saved, run string, pretty print the json data
-		- Ass0: I'm assuming this will matter for me to understand the code, modify it and find where my own data is
-		- Ass1: I'm assuming it's simple to put the data into a data frame
-	- Ac1: once understood & modified, run it on my debug LA data set
-	- Decision: do Ac0
+	- EssG: extract theorem & proofs statements robustly for our i data base, so we can train the model to translate IL <-> FL
+	- Q/P0: why are some of the theorems incomplete?
+		- seems part of the equations are missing
+	- Q/P1: why is the data extracted as a list with multiple strings? 
+		- (perhaps it's minor since we can pull the list and concat it)
+		- (the key name does seem odd, do we truly need that? Perhaps if we just loop through the keys it doesn't matter)
+	- Ass0: not enough pdf doc textbook to infer a good py extraction function
+		- Ac-1: Evaporate direct
+		- Ac0: give a larger fake textbook
+		- Ac1: use a stronger model GPT4
+		- Ac2: open up the python functions, study it and see if an idea of why the extraction is not good enough come up
+		- Ac3: if none of above ask Simran or think of more ideas
+		- Decision (Dec): decided this because I can't think of some other reason why the extraction function can't extract it well
+		- other ideas
+			- use weak supervision to filter functions?
+			- might need to modify the evaporate prompt to be better for our domain (maths)
 </plan>
 ```
-Now I will recall vectoring in once sentence before I request for expert excellent feedback on my research plan:
+Now I recall the vectoring methodology framework again in one sentence, since the insightful research feedback should be based on this framework: 
 ```
 <vectoring_summary>
 Vectoring in research is the targeted reduction of uncertainty in the direction of project's most impactful aspect/goal.
@@ -79,14 +94,15 @@ make sure the plan is adaptable, flexible and robust.
 Also feel free to suggest sanity checks to validate my starting point 
 e.g., it's good to test and validate the approach on a small sample first before committing fully, due to the uncertainties. 
 If the decision to take is already excellent under the vectoring methodology you can say why and confirm it's good. 
-Provide helpful excellent feedback according to the specifications:
+Provide helpful excellent feedback according to the specifications.
+
+Also, the attached pdf research paper(s) and code is the background knowledge for the research project.
 
 ...
 
 Now proceed to give me concrete feedback using the unknown unknown criteria. 
 Can we try to identify unpredictable issues? 
-And also, assess the flexibility, adaptability and robustness of my initial research plan to address unknown unknowns: 
-
+And also, assess the flexibility, adaptability and robustness of my initial research plan to address unknown unknowns:
 
 concrete examples: 
 1. https://chat.openai.com/share/921c9bf5-e6e4-4cc5-bc8a-dbbaf2f86b42, https://claude.ai/chat/3d227faf-037e-4ec3-a220-e0390796df7f
@@ -94,7 +110,37 @@ concrete examples:
 2. https://chat.openai.com/share/629602aa-40a2-4225-8817-33b52417279d, https://claude.ai/chat/a4acaa59-f15c-486c-8145-e653eacfd094
    2. this time gpt4 gave a better answer, it was more detailed, Claude 2.0 seemed to short and not nuanced/insightful enough. But both provided similar and useful comments when prompted to specifically talk about unknown unknowns. e.g., quick iterative testing + no long term commitments. 
 3. https://chat.openai.com/share/379bb0ab-c107-4410-9e10-a888fc0b6c18, https://claude.ai/chat/edecf623-0634-4641-9ed8-1d230402e7e3
-   3. I still like claude more. Not sure why, its nice to talk to it. GPT4 did say to articulate ess goal why its impactful, thats useful even if not written down a good reminder. I like prompting it for unknown unknowns as follows. Good responses. 
+   3. I still like claude more. Not sure why, it's nice to talk to it. GPT4 did say to articulate ess goal why its impactful, thats useful even if not written down a good reminder. I like prompting it for unknown unknowns as follows. Good responses. 
+4. with background of work
+   4. backgorund 1 paper pdf + 4 python files: https://claude.ai/chat/07767e4e-9992-43a1-8542-d7deb714baf0 (idk of a good gpt4 plugin that receives files, it's ok to not do that one imho since alpaca says claude is nearly as good as gpt4 and I've observed they are very comparable not really replacable since they behave differently)
+   4. no background: https://claude.ai/chat/2d51712e-91d5-49aa-9184-d21b96f5713b, https://chat.openai.com/share/089fcaeb-40bd-4584-bf2f-03dfc59426ed
+
+# Adding pdfs to paper - back of the envelope calc
+Q: Can we add the background knowledge to these discussions with Claude/ChatGPT?
+Q: Interesting! I just checked out one of the ChatGPT demos. I wonder how much domain knowledge the model needs about your research area to be helpful — or if it's most useful as an elicitation device, and doesn't actually need to know anything about your topic.
+Q: putting synonyms for prompt good?
+Q: its better prompt engineering to have unknown unknowns seperately from the entire vectoring prompt (todo: read more about prompt engineering)
+
+8bits = 1 bytes = 1 char --> 
+Claude allows 5 files 10MB each. 
+My PT vs MAML paper is 27 pages, 11 figures 23 tables = 2.4MB long.
+So we can fit 5 real pdfs in the prompt to claude for vectoring advice + likely merge more papers into the pdfs to reach the 10MB limit.
+
+# Evaporate summary
+
+```markdown
+Evaporate is a system that uses large language models (LLMs) to extract structured data from unstructured or semi-structured documents.
+
+The key components I see are:
+
+Evaporate-Direct directly prompts the LLM to extract attributes and values from each document. This provides high quality but is expensive as it processes every document.
+Evaporate-Code synthesizes Python functions using the LLM to extract attributes, then applies these functions to process documents. This reduces cost but can have lower quality.
+Evaporate-Code+ improves on Code by generating multiple candidate functions and aggregating their outputs using weak supervision. This aims to improve quality while maintaining low cost.
+The system supports different document formats like HTML, PDF, text without customization by prompting the LLM.
+It evaluates on tasks like extracting tables from scratch (open IE) as well as populating a predefined schema (closed IE).
+I will provide the code. The code handles chunking large documents, scoring and selecting generated functions, and aggregating multiple noisy extractions. 
+The prompts provide examples for the LLM. Overall, it's a novel approach to information extraction that leverages LLMs' few-shot learning capabilities. 
+```
 
 # Notes
 
@@ -442,3 +488,27 @@ Keep in mind that velocity in this context doesn't refer to rushing through rese
 
 ref: gpt4 summary https://chat.openai.com/share/e090a6cc-26e2-470e-adda-afd7019ea8f2
 ref: MB slides https://web.stanford.edu/class/cs197/slides/04-vectoring.pdf 
+
+
+## Learning 
+
+```markdown
+amazing it was able to identify something I only suspected might be true after going to ICML
+
+Now proceed to give me concrete feedback using the unknown unknown criteria. Can we try to identify unpredictable issues? And also, assess the flexibility, adaptability and robustness of my initial research plan to address unknown unknowns:
+BM
+You raise an excellent point about trying to identify potential unpredictable issues and assess the flexibility of the research plan. Here is some feedback along those lines:
+Unknown unknowns:
+A core assumption seems to be that cleaner theorem data will enable training the IL<->FL translator. But there could be other unknown gaps between the informal theorems and formal logic that cause issues, even with clean data. For example, ambiguities in natural language or different levels of rigor.
+The extraction functions themselves may have inherent limitations that are currently unknown, only discovered through deeper inspection. There could be edge cases or nuances of mathematical notation that the functions cannot handle properly.
+
+
+In particular, in ICML they trained a translator just on unpaired examples to translate and it was able to do it. So perhaps the clean data I'm trying to get is not needed...
+
+I can't detect giving the paper pdf and 4 python files makes a difference.
+```
+
+```markdown
+Active Learning Approach: Consider an active learning approach, where your model is continuously learning and updating itself as it processes more data. 
+This can help it to adapt to any unknown unknowns that may emerge in the data over time.
+```
