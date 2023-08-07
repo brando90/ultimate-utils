@@ -37,48 +37,31 @@ The goal is to move in the direction of the most essential goal or even refining
 </vectoring>
 ```
 Now I will provide a research plan that has already identified some potential assumptions problems and potential actions to solve mitigate them. 
-The research plan will be given in the following format:
+The research plan will be given in the following flexible/approximate format:
 ```
-<plan_format>
+<plan_format> 
 - Plan1:
     - Essential/Impactful Goal (EssG):
-    - Question/Problem 1 (Q/P1): ...
-        - ...
-    - Assumption 0 (Ass1):
-      - Action 0 (Ac1): ...
-      - Action 1 (Ac2) : ...
+    # -- Outline the Hypothesis (question) to clarify and the Assumption we are making for believing this hypothesis
+    - Hypothesis & Assumption 0 (HAss0):
+      # -- Then the most direct action(s) to address the most essential goal via the hypothesis that has assumptions
+      - Action 0 (Ac0): ...
+      - Action 1 (Ac1) : ...
       - ...
       - Decision (what & why) (Dec): ... 
-      - Other ideas ...
-        - ...
-    - Assumption 1 (Ass2):
-      - Action 1 (Ac2):
-    - Extra
-    - Assumption 1 (Ass2):
-      - Action 1 (Ac2):
-</plan_format>
+      - ...
+    - Hypothesis & Assumption 1 (HAss1):
+      - Action 0 (Ac0): ...
+      - ...
+    - Hypothesis & Assumption 2 (HAss2):
+      - Action 0 (Ac0): ...
+      - ...
+</plan_format> 
 ```
 This my concrete plan to evaluate under the vectoring framework methodology and give feedback: 
 ```
-<plan>
-- plan0
-	- EssG: extract theorem & proofs statements robustly for our i data base, so we can train the model to translate IL <-> FL
-	- Q/P0: why are some of the theorems incomplete?
-		- seems part of the equations are missing
-	- Q/P1: why is the data extracted as a list with multiple strings? 
-		- (perhaps it's minor since we can pull the list and concat it)
-		- (the key name does seem odd, do we truly need that? Perhaps if we just loop through the keys it doesn't matter)
-	- Ass0: not enough pdf doc textbook to infer a good py extraction function
-		- Ac-1: Evaporate direct
-		- Ac0: give a larger fake textbook
-		- Ac1: use a stronger model GPT4
-		- Ac2: open up the python functions, study it and see if an idea of why the extraction is not good enough come up
-		- Ac3: if none of above ask Simran or think of more ideas
-		- Decision (Dec): decided this because I can't think of some other reason why the extraction function can't extract it well
-		- other ideas
-			- use weak supervision to filter functions?
-			- might need to modify the evaporate prompt to be better for our domain (maths)
-</plan>
+<current_plan> 
+</current_plan> 
 ```
 Now I recall the vectoring methodology framework again in one sentence, since the insightful research feedback should be based on this framework: 
 ```
