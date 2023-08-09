@@ -95,7 +95,7 @@ setup(
         'torchvision',
         'torchaudio',
 
-        'fairseq',
+        # 'fairseq',
 
         #  - dq edge new imports
         # pip install -e ~/the-data-quality-edge-for-top-llms
