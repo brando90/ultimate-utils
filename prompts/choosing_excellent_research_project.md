@@ -13,5 +13,8 @@
         - personal_curiosity, topics question your are interested curiosity fascinated what your hearts believe obsessed
             - geoff hinton thinks this is important
 - michelle's
-- Cs 197 has slides
-- GPT4/Claude
+- Cs 197 has slides - todo
+    - https://web.stanford.edu/class/cs197/
+    - https://web.stanford.edu/class/cs197/slides/01-intro.pdf
+    - https://web.stanford.edu/class/cs197/slides/02-literature-search.pdf
+- GPT4/Claude - todo
