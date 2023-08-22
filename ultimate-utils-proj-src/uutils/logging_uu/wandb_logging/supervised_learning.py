@@ -6,11 +6,11 @@ from typing import Callable, Any
 from progressbar import ProgressBar
 
 import uutils
-from uutils.logging_uu.wandb_logging.common import log_2_wanbd
+from uutils.logging_uu.wandb_logging.common import log_2_wanbd, log_2_wanbd_half_loss
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
-from uutils.torch_uu.eval.eval import eval_sl
+from uutils.torch_uu.eval.eval import eval_sl, eval_sl_gpt2_half_loss
 
 from pdb import set_trace as st
 
@@ -53,6 +53,7 @@ def log_train_val_stats(args: Namespace,
                         training: bool = False,  # default for SL
 
                         save_val_ckpt: bool = True,
+                        get_loss_half: bool = False
                         ):
     _log_train_val_stats(args=args,
                          step=step,
@@ -69,7 +70,8 @@ def log_train_val_stats(args: Namespace,
                          save_val_ckpt=save_val_ckpt,
                          log_to_tb=getattr(args, 'log_to_tb', False),
                          log_to_wandb=getattr(args, 'log_to_wandb', False),
-                         uu_logger_log=getattr(args, 'log_to_wandb', False)
+                         uu_logger_log=getattr(args, 'log_to_wandb', False),
+                         get_loss_half = get_loss_half
                          )
 
 
@@ -89,6 +91,7 @@ def _log_train_val_stats(args: Namespace,
                          log_to_tb: bool = False,
                          log_to_wandb: bool = False,
                          uu_logger_log: bool = False,
+                         get_loss_half: bool = False
                          ):
     """
     Log train and val stats every step (where step is .epoch_num or .it)
@@ -109,21 +112,28 @@ def _log_train_val_stats(args: Namespace,
         # - compute val stats for logging & determining if to ckpt val model
         val_loss, val_loss_ci, val_acc, val_acc_ci = eval_sl(args, args.agent, args.dataloaders, training=training)
 
+        if get_loss_half:
+            # val stats on only the second half of each block
+            val_loss_h, val_loss_h_ci, val_acc_h, val_acc_h_ci = eval_sl_gpt2_half_loss(args, args.agent, args.dataloaders, training=training)
+
         # - print
         args.logger.log('\n')
         args.logger.log(f"-> {step_name}={step}: {train_loss=}, {train_acc=}")
-        args.logger.log(f"-> {step_name}={step}: {val_loss=}, {val_acc=}")
+        args.logger.log(f"-> {step_name}={step}: {val_loss=}, {val_acc=}, {val_acc_ci=}")
+        if get_loss_half:
+            args.logger.log(f"-> {step_name}={step}: {val_loss_h=}, {val_acc_h=}, {val_acc_h_ci=}")
 
         # - get eval stats
-        if float(val_loss - val_loss_ci) < float(args.best_val_loss) and save_val_ckpt:
-            args.best_val_loss = float(val_loss)
+        if float(val_acc + val_acc_ci) > float(args.best_val_loss) and save_val_ckpt:
+            args.best_val_loss = float(val_acc)
+            print("best val acc updated to:", args.best_val_loss, "competing value: ",float(val_acc + val_acc_ci))
             # if train_loss < 0.5: after 0.5, the loss has decreased enough to make this worth it. TODO: put loss value once you know lowest train loss FMs get
             if step >= 20 * ckpt_freq:  # saving ckpt is expensive and at the beginning val will keep decreasing, so this hack so that a lot of training has happening, alternative we could do train loss < 0.2
                 save_for_supervised_learning(args, ckpt_filename='ckpt_best_val.pt')
 
         # - log ckpt
         if step % ckpt_freq == 0:
-            save_for_supervised_learning(args, ckpt_filename='ckpt.pt')
+            save_for_supervised_learning(args, ckpt_filename='step_'+str(step)+'_ckpt.pt')
 
         # - save args
         uutils.save_args(args, args_filename='args.json')
@@ -132,7 +142,7 @@ def _log_train_val_stats(args: Namespace,
         if bar is not None:
             bar.update(step)
 
-        # - record into stats collector
+        # - record into stats collector (TODO: add half loss as well?)
         if uu_logger_log:
             args.logger.record_train_stats_stats_collector(step, train_loss, train_acc)
             args.logger.record_val_stats_stats_collector(step, val_loss, val_acc)
@@ -141,7 +151,10 @@ def _log_train_val_stats(args: Namespace,
 
         # - log to wandb
         if log_to_wandb:
-            log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
+            if get_loss_half:
+                log_2_wanbd_half_loss(step, train_loss, train_acc, val_loss, val_acc, val_loss_h, val_acc_h, step_name)
+            else:
+                log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
 
         # - log to tensorboard
         if log_to_tb:

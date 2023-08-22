@@ -5,6 +5,7 @@ from typing import Any
 
 import torch
 from learn2learn.data import TaskDataset
+import progressbar
 from progressbar import ProgressBar
 from torch import Tensor
 from torch.optim import Optimizer
@@ -19,6 +20,7 @@ from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check
 from uutils.torch_uu.distributed import print_dist, is_lead_worker
 
 from pdb import set_trace as st
+import math
 
 
 def print_inside_halt(args: Namespace, halt: bool, i: int = 0):
@@ -153,13 +155,33 @@ def meta_train_gpt2(args: Namespace, meta_learner, dataloaders: dict, outer_opt,
 
     # print(args.batch_size, meta_batch_size, "args and Meta BatchSize")
     # args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
-    args.bar = uutils.get_good_progressbar(max_value=args.num_its)
+    args.bar = uutils.get_good_progressbar(max_value=progressbar.UnknownLength)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+
     meta_learner.train() if training else meta_learner.eval()
     halt: bool = False
 
     # ----added - 0th iter---#
     log_zeroth_step(args, meta_learner)
     for i, batch in enumerate(dataloaders['train']):
+        if args.opt_option == 'adamw_gpt' and args.scheduler_option == 'None':
+            ####### clumsy workaround for custom scheduler
+            # 1) linear warmup for warmup_iters steps
+            if args.it < args.scheduler_hps['warmup_iters']:
+                lr =  args.lr * args.it / args.scheduler_hps['warmup_iters']
+            # 2) if iter > lr_decay_iters, return min learning rate
+            elif args.it > args.scheduler_hps['lr_decay_iters']:
+                lr =  args.scheduler_hps['min_lr']
+            # 3) in between, use cosine decay down to min learning rate
+            else:
+                decay_ratio = (args.it - args.scheduler_hps['warmup_iters']) / (args.scheduler_hps['lr_decay_iters'] - args.scheduler_hps['warmup_iters'])
+                assert 0 <= decay_ratio <= 1
+                coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff ranges 0..1
+                lr =  args.scheduler_hps['min_lr'] + coeff * (args.lr - args.scheduler_hps['min_lr'])
+
+            for param_group in outer_opt.param_groups:
+                param_group['lr'] = lr
+
         batch = (batch[0].to(args.device), batch[1].to(args.device))
         outer_opt.zero_grad()
 
@@ -187,22 +209,25 @@ def meta_train_gpt2(args: Namespace, meta_learner, dataloaders: dict, outer_opt,
         if (args.it % args.log_scheduler_freq == 0) or args.debug:
             scheduler_step(args, scheduler)
 
-        # - Convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
-        halt: bool = check_halt(args)
 
         # - go to next it & before that check if we should halt
         args.it += 1
 
         # - log full stats
-        print_dist(msg=f'[{args.it=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+        print_dist(msg=f'[{args.it=}] {train_loss=}, {train_acc=}, {args.convg_meter.counts_above_current_lowest=}', rank=args.rank, flush=True)
         # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
         if args.it % args.log_freq == 0 or halt or args.debug:
             step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
             log_train_val_stats(args, args.it, step_name, train_loss, train_acc, training=True)
-            # args.convg_meter.update(train_loss)
+        
+        args.convg_meter.update(train_loss)
+        # - Convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
+        halt: bool = check_halt(args)
 
         # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
         if halt:
+            print("halting...")
+            log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
             break
 
 

@@ -34,6 +34,7 @@ class GPTIterableDataset(IterableDataset):
         """
         self.ids = tokenized_dataset
         self.dataset_len = tokenized_dataset.size
+        self.split = split
 
         if split == 'train':
             self.split_start = 0
@@ -46,6 +47,15 @@ class GPTIterableDataset(IterableDataset):
         self.block_size = block_size
 
     def __iter__(self):
+        # if self.split == 'val':
+        #     for idx in range(0, self.split_len - self.block_size - 1):
+        #         # return the next block_size ids as input
+        #         x = torch.from_numpy((self.ids[idx + self.split_start : idx + self.split_start + self.block_size]).astype(np.int64))
+        #         # return the next indices as output
+        #         y = torch.from_numpy((self.ids[idx + self.split_start + 1 : idx + self.split_start + 1 + self.block_size]).astype(np.int64))
+        #         yield x, y
+
+        # else:
         while True:
             # sample a starting index for the example
             idx = random.randint(0, self.split_len - self.block_size - 2)
@@ -55,6 +65,8 @@ class GPTIterableDataset(IterableDataset):
             y = torch.from_numpy((self.ids[idx + self.split_start + 1 : idx + self.split_start + 1 + self.block_size]).astype(np.int64))
             yield x, y
 
+    def __len__(self):
+        return self.split_len - self.block_size - 1
 
 class GPT_MetaDataset(l2l.data.MetaDataset):
     def __init__(self, tokenized_dataset, block_size, vocab_size, split = 'train'):

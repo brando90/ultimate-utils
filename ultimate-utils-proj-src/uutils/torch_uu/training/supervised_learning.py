@@ -26,6 +26,7 @@ from uutils.torch_uu.distributed import print_dist, is_lead_worker
 from uutils.torch_uu.training.common import get_trainer_progress_bar, scheduler_step, check_halt, gradient_clip, \
     ConvergenceMeter
 import time
+import math
 
 
 def train_agent_fit_single_batch(args: Namespace,
@@ -89,7 +90,8 @@ def train_agent_iterations(args: Namespace,
                            opt: Optimizer,
                            scheduler: _LRScheduler,
                            halt_loss: str = 'train',
-                           target_loss = None
+                           target_loss = None,
+                           use_half_loss = False
                            ) -> tuple[Tensor, Tensor]:
     """
     Trains models wrt to number of iterations given. Should halt once the number of iterations desired is reached. 
@@ -110,66 +112,68 @@ def train_agent_iterations(args: Namespace,
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
-            ####### clumsy workaround to get lr
-            # 1) linear warmup for warmup_iters steps
-            if args.it < args.scheduler_hps['warmup_iters']:
-                lr =  args.lr * args.it / args.scheduler_hps['warmup_iters']
-            # 2) if iter > lr_decay_iters, return min learning rate
-            elif args.it > args.scheduler_hps['lr_decay_iters']:
-                lr =  args.scheduler_hps['min_lr']
-            # 3) in between, use cosine decay down to min learning rate
-            else:
-                decay_ratio = (args.it - args.scheduler_hps['warmup_iters']) / (args.scheduler_hps['lr_decay_iters'] - args.scheduler_hps['warmup_iters'])
-                assert 0 <= decay_ratio <= 1
-                coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff ranges 0..1
-                lr =  args.scheduler_hps['min_lr'] + coeff * (args.lr - args.scheduler_hps['min_lr'])
+            if args.opt_option == 'adamw_gpt' and args.scheduler_option == 'None':
+                ####### clumsy workaround for custom scheduler
+                # 1) linear warmup for warmup_iters steps
+                if args.it < args.scheduler_hps['warmup_iters']:
+                    lr =  args.lr * args.it / args.scheduler_hps['warmup_iters']
+                # 2) if iter > lr_decay_iters, return min learning rate
+                elif args.it > args.scheduler_hps['lr_decay_iters']:
+                    lr =  args.scheduler_hps['min_lr']
+                # 3) in between, use cosine decay down to min learning rate
+                else:
+                    decay_ratio = (args.it - args.scheduler_hps['warmup_iters']) / (args.scheduler_hps['lr_decay_iters'] - args.scheduler_hps['warmup_iters'])
+                    assert 0 <= decay_ratio <= 1
+                    coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff ranges 0..1
+                    lr =  args.scheduler_hps['min_lr'] + coeff * (args.lr - args.scheduler_hps['min_lr'])
 
-            for param_group in opt.param_groups:
-                param_group['lr'] = lr
+                for param_group in opt.param_groups:
+                    param_group['lr'] = lr
 
             # import time
-            t_bto = time.time()
+            # t_bto = time.time()
             batch = (batch[0].to(args.device), batch[1].to(args.device))
             # opt.zero_grad(set_to_none=True)
             opt.zero_grad()
-            t_bm = time.time()
-            train_loss, train_acc = model(batch, training=True)
-            t_am = time.time()
+            # t_bm = time.time()
+            train_loss, train_acc = model(batch, training=True, half_loss = use_half_loss)
+            # t_am = time.time()
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
-            t_lb = time.time()
+            # t_lb = time.time()
             gradient_clip(args, opt)
             opt.step()  # the right update is done since all procs have the right synced grads
-            t_opt = time.time()
-            print("t_bto - t_bm=", t_bm - t_bto)
-            print("t_am-t_bm", t_am-t_bm)
-            print("t_lb-t_am", t_lb-t_am)
-            print("t_opt - t_lb", t_opt-t_lb)
+            # t_opt = time.time()
+            # print("t_bto - t_bm=", t_bm - t_bto)
+            # print("t_am-t_bm", t_am-t_bm)
+            # print("t_lb-t_am", t_lb-t_am)
+            # print("t_opt - t_lb", t_opt-t_lb)
 
             # - scheduler
             # if (args.it % args.log_scheduler_freq == 0) or args.debug:
             #     scheduler_step(args, scheduler)
 
 
+            # - log full stats
+            # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}, {args.convg_meter.counts_above_current_lowest=}', rank=args.rank, flush=True)
+            if i % args.log_freq == 0 or args.debug:
+                step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
+                log_train_val_stats(args, args.it, step_name, train_loss, train_acc, get_loss_half = True)
+                # print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
+            if halt_loss == 'train':
+                args.convg_meter.update(train_loss)
+            else:
+                args.convg_meter.update(val_loss)
+
             # - convergence (or idx + 1 == n, this means you've done n loops where idx = it or epoch_num).
             halt: bool = check_halt(args)
-
             # - go to next it & before that check if we should halt
             args.it += 1
 
-            # - log full stats
-            # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
-            print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
-            if i % args.log_freq == 0 or halt or args.debug:
-                step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
-                log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
-                # print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
-                if halt_loss == 'train':
-                    args.convg_meter.update(train_loss)
-                else:
-                    args.convg_meter.update(val_loss)
-
             # - break out of the inner loop to start halting, the outer loop will terminate too since halt is True.
             if halt:
+                print("halting...")
+                log_train_val_stats(args, args.it, step_name, train_loss, train_acc)
                 break
 
     return train_loss, train_acc

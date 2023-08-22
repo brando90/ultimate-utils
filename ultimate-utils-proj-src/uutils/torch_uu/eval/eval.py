@@ -35,6 +35,20 @@ def eval_sl(args: Namespace,
         val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(task_dataset, training)
     return val_loss, val_loss_ci, val_acc, val_acc_ci
 
+def eval_sl_gpt2_half_loss(args: Namespace,
+            model: Agent,
+            dataloaders,
+            split: str = 'val',
+            training: bool = False,
+            ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """
+    Evaluate the current model on the eval set (val set strongly recommended), but compute loss only on second half
+    """
+    batch: Any = next(iter(dataloaders[split]))
+    # batch: Any = next(iter(dataloaders['test']))
+    val_loss, val_loss_ci, val_acc, val_acc_ci = model.eval_forward(batch, training, half_loss = True)
+    return val_loss, val_loss_ci, val_acc, val_acc_ci
+
 
 def meta_eval(args: Namespace,
               model: Agent,

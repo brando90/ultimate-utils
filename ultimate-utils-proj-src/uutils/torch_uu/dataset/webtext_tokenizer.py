@@ -9,7 +9,7 @@ from datasets import load_dataset, DatasetDict
 
 def get_tokenized_webtext():
     split_name = 'train'
-    tokenized_file_loc = '/lfs/hyperion/0/saumg/openwebtext_'+split_name+'_tokenised.bin'
+    tokenized_file_loc = '/lfs/mercury2/0/saumg/gpt2/openwebtext_'+split_name+'_tokenised.bin'
     tokenized_dtype = np.uint16
 
     if os.path.exists(tokenized_file_loc):
@@ -31,12 +31,12 @@ def get_tokenized_webtext():
             #     split_name = 'train['+str(split_perc*10)+'%:'+str((split_perc + 1)*10)+'%]'
             split_name = 'train['+str(split_perc*10)+'%:'+str((split_perc + 1)*10)+'%]'
             # split_name = 'train[:1%]'
-            split_file_loc = '/lfs/hyperion/0/saumg/openwebtext_'+split_name+'_tokenised.bin'
+            split_file_loc = '/lfs/mercury2/0/saumg/gpt2/openwebtext_'+split_name+'_tokenised.bin'
 
             if not os.path.exists(split_file_loc):
                 print("tokenisation starting at split_perc=", split_perc)
                 total_dataset = DatasetDict()
-                total_dataset['train'] = load_dataset('openwebtext', split = split_name, cache_dir = '/lfs/hyperion/0/saumg/')
+                total_dataset['train'] = load_dataset('openwebtext', split = split_name, cache_dir = '/lfs/mercury2/0/saumg/gpt2/')
 
                 enc = tiktoken.get_encoding("gpt2")
                 def process(example):

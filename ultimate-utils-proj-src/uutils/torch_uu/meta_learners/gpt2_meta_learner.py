@@ -68,7 +68,10 @@ class GPTMetaLearnerL2L(nn.Module):
 
 
     def eval_forward(self, batch, training: bool = True, call_backward: bool = False):
-        meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # meta_batch_size: int = max(self.args.batch_size // self.args.world_size, 1)
+        # set to one, computing ci done in _forward
+        meta_batch_size = 1
+        # print("called eval_forward with meta_batch_size = ", meta_batch_size)
         return self._forward(args=self.args, batch = batch, meta_batch_size=meta_batch_size, training=training,  # always true to avoid .eval()
             call_backward=call_backward,  # False for val/test
             )
@@ -83,26 +86,28 @@ class GPTMetaLearnerL2L(nn.Module):
 
         batch = (batch[0].to(args.device), batch[1].to(args.device))
         self.base_model.train() if training else self.base_model.eval()
-        meta_losses, meta_accs = [], []
+        # meta_losses, meta_accs = [], []
         # print('--start forward')
-        for task in range(meta_batch_size):
+        # for task in range(meta_batch_size):
 
-            # -- Inner Loop Adaptation
-            learner = self.maml.clone()
-            loss, acc = self.fast_adapt(
-                args=args,
-                batch=batch,
-                learner=learner,
-                adaptation_steps=args.nb_inner_train_steps,
-                device=args.device,
-            )
-            if call_backward:
-                loss.backward()
-            # collect losses & accs
-            meta_losses.append(loss.item())
-            meta_accs.append(acc.item())
-        assert len(meta_losses) == meta_batch_size
-        assert len(meta_accs) == meta_batch_size
+        # -- Inner Loop Adaptation
+        learner = self.maml.clone()
+        meta_losses, meta_accs = self.fast_adapt(
+            args=args,
+            batch=batch,
+            learner=learner,
+            adaptation_steps=args.nb_inner_train_steps,
+            device=args.device,
+        )
+        if call_backward:
+            loss = torch.mean(meta_losses)
+            loss.backward()
+        # collect losses & accs
+        # meta_losses.append(loss.item())
+        # meta_accs.append(acc.item())
+        
+        # assert len(meta_losses) == meta_batch_size
+        # assert len(meta_accs) == meta_batch_size
         meta_loss, meta_loss_ci = torch_compute_confidence_interval(tensorify(meta_losses))
         meta_acc, meta_acc_ci = torch_compute_confidence_interval(tensorify(meta_accs))
 
@@ -121,7 +126,7 @@ class GPTMetaLearnerL2L(nn.Module):
 
         # Evaluate the adapted model
         eval_logits = learner(batch[0])
-        evaluation_error, evaluation_accuracy = self.loss_for_half(eval_logits, batch[1], first_half = False)
+        evaluation_error, evaluation_accuracy = self.loss_for_half(eval_logits, batch[1], first_half = False, reduction = 'none')
         
         return evaluation_error, evaluation_accuracy
 

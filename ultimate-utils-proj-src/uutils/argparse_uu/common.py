@@ -87,6 +87,9 @@ def setup_args_for_experiment(args: Namespace,
         args.it = 0 if not hasattr(args, 'it') else args.it
         assert args.it >= 0, f'Iteration to train has to be start at zero or above but got: {args.it}'
         args.epoch_num = -1
+    elif args.training_mode == 'eval':
+        # no need to set it or epochs
+        pass
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
     # - logging frequencies
@@ -107,6 +110,9 @@ def setup_args_for_experiment(args: Namespace,
         args.log_freq = 5 if args.log_freq == -1 else args.log_freq
         log_scheduler_freq = 1
         ckpt_freq = args.log_freq
+    elif args.training_mode == 'eval':
+        # no need to set freq
+        pass
     else:
         raise ValueError(f'Invalid training mode: {args.training_mode}')
     if hasattr(args, 'log_scheduler_freq'):  # if log_scheduler_freq exists, then replace it by the user or the default

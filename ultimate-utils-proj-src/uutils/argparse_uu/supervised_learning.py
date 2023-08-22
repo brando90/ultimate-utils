@@ -30,6 +30,7 @@ def parse_args_standard_sl() -> Namespace:
                              'epochs'
                              'iterations_train_convergence'
                              'epochs_train_convergence'
+                             'eval'
                              '- Note: since the code checkpoints the best validation model anyway, it is already doing'
                              'early stopping, so early stopping criterion is not implemented. You can kill the job'
                              'if you see from the logs in wanbd that you are done.'

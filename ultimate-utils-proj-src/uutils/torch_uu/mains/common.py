@@ -12,7 +12,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 from uutils.torch_uu.checkpointing_uu import resume_from_checkpoint
-from uutils.torch_uu.distributed import move_model_to_dist_device_or_serial_device
+from uutils.torch_uu.distributed import move_model_to_dist_device_or_serial_device, is_running_parallel
 from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
 from uutils.torch_uu.optim_uu.adafactor_uu import get_default_adafactor_opt_fairseq_and_hps_dict, \
     get_default_adafactor_scheduler_fairseq_and_hps_dict
@@ -229,7 +229,15 @@ def _get_and_create_model_opt_scheduler(args: Namespace,
         from uutils.torch_uu.optim_uu.sgd_uu import get_opt_sgd_rfs
         args.opt, args.opt_hps = get_opt_sgd_rfs(args.model, **opt_hps)
     elif opt_option == 'adamw_gpt':
-        args.opt = args.model.module.configure_optimizers(**opt_hps)
+        if is_running_parallel(args.rank):
+            # if running parallely then model class moved to ddp
+            args.opt = args.model.module.configure_optimizers(**opt_hps)
+        else:
+            args.opt = args.model.configure_optimizers(**opt_hps)
+    elif opt_option == 'sophia':
+        from uutils.torch_uu.optim_uu.sophia import SophiaG
+        args.opt = SophiaG(args.model.parameters(), **opt_hps)
+        # args.opt_hps = opt_hps
     else:
         raise ValueError(f'Optimizer option is invalid: got {opt_option=}')
 
