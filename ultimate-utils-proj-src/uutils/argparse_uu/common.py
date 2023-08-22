@@ -25,7 +25,7 @@ def create_default_log_root(args: Namespace):
     print(f'{args.log_root=}')
     # args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
     # for now always overwrite the log_root since you need to guarantee the given log_root is on the machine this process is running on.
-    args.log_root: Path = Path('~/data/logs/').expanduser()
+    # args.log_root: Path = Path('~/data/logs/').expanduser()
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.log_root: Path = args.log_root.expanduser()
     assert isinstance(args.log_root, Path), f'Error, it is not of type Path: {args.log_root=}'
