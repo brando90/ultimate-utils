@@ -1,0 +1,52 @@
+# wandb-sweep-config.yaml
+
+# Set project, entity and name for sweep
+# [required]
+program: ~/ultimate-utils/ultimate-utils-proj-src/uutils/wandb_uu/sweeps_common.py
+project: playground
+entity: brando
+name: debug-not-logging-to-wandb-plataform-test  # sweep name. Note this replaces the wandb group for organizing runs
+description: debug-not-logging-to-wandb-plataform-test # Added from the other configuration file
+
+# Define metric to optimize
+# [required]
+metric:
+  name: train_loss
+  goal: minimize
+
+# Choose method for sweep
+# [required]
+method: random
+
+# Define hyperparameters to sweep over
+# [required]
+parameters:
+  optimizer:
+    values: # Values to sweep over for optimizer hyperparameter
+      - adam
+      - adafactor
+      - adamW
+      - nadam
+  scheduler:
+    values: # Values to sweep over for scheduler hyperparameter
+      - cosine
+      - none
+      # todo1: put warmup or default adamw that works well from falcon/alpaca code
+  lr:
+    distribution: log_uniform_values # Distribution for lr hyperparameter
+    min: 0.00001 # Minimum value for lr hyperparameter
+    max: 0.95 # Maximum value for lr hyperparameter
+  batch_size:
+    distribution: q_log_uniform_values # Distribution for batch_size hyperparameter
+    q: 8 # Number of quantization levels for batch_size hyperparameter
+    min: 32 # Minimum value for batch_size hyperparameter
+    max: 512 # Maximum value for batch_size hyperparameter
+  num_its:
+    value: 5 # todo2: Fixed value for num_its hyperparameter
+
+# Specify a maximum number of runs in a sweep (I'm using this as number of counts)
+run_cap: 1
+
+## opt3 ("wandb", "online") yes == usually means run real expt and log to wandb platform.
+#report_to: wandb # turn off all HF trainer's wandb tracking, including with wandb in HF TrainingArguments.
+#mode: online # turn off tracking in wandb via wandb.init(mode), note: no need to do dryrun with hf trainer.

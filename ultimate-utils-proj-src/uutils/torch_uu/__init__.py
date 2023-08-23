@@ -121,6 +121,22 @@ def gpu_minimalist_test() -> None:
     print(torch.__version__);
     print((torch.randn(2, 4).cuda() @ torch.randn(4, 1).cuda()))
 
+def bfloat16_avail() -> bool:
+    """ Checks if bfloat16 is available in your nvidia arch, usually ampere.
+
+    As of my last training data in September 2021, the Nvidia Quadro RTX 8000 is based on the Turing architecture, not Ampere. This was the successor to the Pascal architecture and predecessor to the Ampere architecture.
+    The RTX 8000, like other Turing cards, features RT (Ray Tracing) cores for realistic lighting effects and Tensor cores for AI workloads such as deep learning. It also has 48 GB of GDDR6 memory.
+    However, Nvidia regularly releases new GPUs and architectures, so you might want to check their latest product offerings. Remember, I can only provide information up to my last update in September 2021.
+    """
+    # get major revision to infer if bfloat is avail, ampere is needed my snap Quadro RTX 8000 is not Ampere.
+    major, _ = torch.cuda.get_device_capability()  # _ refers to minor revisions to arch
+    if major >= 8:
+        print("=" * 80)
+        print("Your GPU supports bfloat16, you can accelerate training with the argument --bfloat16")
+        print("=" * 80)
+        return True
+    else:
+        return False
 
 # -
 

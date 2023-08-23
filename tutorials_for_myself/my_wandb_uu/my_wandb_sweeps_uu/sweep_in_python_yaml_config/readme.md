@@ -1,13 +1,9 @@
 # Run Wandb Sweep in python but use a yaml config file
+Logical flow for running a sweep:
+1. Define the sweep configuration in a YAML file and load it in Python as a dict.
+2. Initialize the sweep in Python which create it on your project/eneity in wandb platform and get the sweep_id.
+3. Finally, once the sweep_id is acquired, execute the sweep using the desired number of agents in python.
 
-## Main take-aways
-
-- you need to specify the path to config somewhere. 
-- If you run sweep & agents in python then:
-  - you specify config in wand.sweep(...) call
-  - then agent uses sweep id to choose hyperparms to run your train file
-
-- note:
-  - for now if you have usl & maml (different methods) on different files, then you need to have a separate sweep for each method,
-  likely each file/train method specified in it's own config
-  - shouldn't be to hard to create configs thanks to GPT-4. 
+refs:
+    - youtube video: https://www.youtube.com/watch?v=9zrmUIlScdY
+    - https://chat.openai.com/share/fbf98147-3987-4d75-b7c5-52b67a1048a6com/watch?v=9zrmUIlScdY

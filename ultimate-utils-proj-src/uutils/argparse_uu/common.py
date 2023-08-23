@@ -13,9 +13,6 @@ from datetime import datetime
 
 from uutils.logging_uu.wandb_logging.common import setup_wandb
 
-from pdb import set_trace as st
-
-
 def create_default_log_root(args: Namespace):
     """
     Create the default place where we save things to.
