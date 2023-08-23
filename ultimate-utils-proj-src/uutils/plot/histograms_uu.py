@@ -1,5 +1,6 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import torch
@@ -11,6 +12,41 @@ from torch.utils.data import Dataset, DataLoader
 from uutils.plot import save_to_desktop
 from uutils.torch_uu import make_code_deterministic
 
+
+def get_x_axis_y_axis_from_seaborn_histogram(ax: plt.Axes,
+                                             verbose: bool = False,
+                                             ) -> tuple[np.ndarray, np.ndarray, int, int]:
+    """
+    Get you the x-axis and y-axis from a seaborn histogram, according to how the binning happened and thus
+    the lengths will be the number of bars ~ bins + 1.
+
+    note:
+    don't fully understand but whatever, check it empirically, num of bars is what i want:
+    ```
+    In a histogram, the data is divided into a number of "bins", which are intervals or ranges on the x-axis. Each bin represents a range of values that the data can take on. The data points are then grouped into the bins according to their values, and a bar is drawn for each bin to represent the number of data points that fall into that bin.
+The number of bins is the number of intervals or ranges on the x-axis, it determines the granularity of the histogram. A high number of bins will result in a histogram with many bars and more detailed information, but it could also make it harder to see the overall pattern. A low number of bins will result in fewer bars and less detailed information, but it can make it easier to see the overall pattern.
+On the other hand, the number of bars in a histogram is the number of rectangles used to represent the data in a histogram plot. The number of bars in a histogram is determined by the number of bins used and the number of data points that fall into each bin. A bin with many data points will have a taller bar, while a bin with fewer data points will have a shorter bar.
+In general, the number of bars in a histogram equals the number of bins used but the last bin might contain more than one bin, thus the number of bars is greater than the number of bins.
+    ```
+    """
+    # Extract the x and y axis data (by getting the
+    x_data = [r.get_x() + r.get_width() / 2 for r in ax.patches]
+    y_data = [r.get_height() for r in ax.patches]
+
+    # Convert to numpy arrays
+    x_data, y_data = np.array(x_data), np.array(y_data)
+    #
+    assert x_data.shape == y_data.shape
+    num_bars_in_histogram: int = x_data.shape[0]
+    assert num_bars_in_histogram == y_data.shape[0]
+    num_bins: int = len(ax.get_xticks()) - 1
+    if verbose:
+        print(f'{x_data=}')
+        print(f'{y_data=}')
+        print(f'{sum(y_data)=}')
+        print(f'{num_bars_in_histogram=}')
+        print(f'{num_bins=}')
+    return x_data, y_data, num_bars_in_histogram, num_bins
 
 def get_num_bins(n: int, option: Optional[str] = None) -> Union[int, str]:
     """
@@ -46,7 +82,7 @@ def get_histogram(array: np.ndarray,
                   edgecolor: str = "black",
                   stat: Optional = 'count',
                   color: Optional[str] = None,
-                  ):
+                  ) -> Any:
     """ """
     # - check it's of size (N,)
     if isinstance(array, list):
@@ -65,7 +101,7 @@ def get_histogram(array: np.ndarray,
     fig.patch.set_facecolor(facecolor)
 
     import seaborn as sns
-    p = sns.histplot(array, stat=stat, color=color)
+    ax = sns.histplot(array, stat=stat, color=color)
     # n, bins, patches = plt.hist(array, bins=bins, facecolor='b', alpha=alpha, edgecolor=edgecolor, density=True)
 
     plt.xlabel(xlabel)
@@ -76,6 +112,7 @@ def get_histogram(array: np.ndarray,
     plt.grid(linestyle=linestyle) if linestyle else None
     plt.tight_layout() if tight_layout else None
     plt.show() if show else None
+    return ax
 
 
 def histograms_heigh_width_of_imgs_in_dataset(dataset: Dataset,
@@ -235,6 +272,51 @@ def dummy_task2vec_test():
     plt.show()
 
 
+def do_test_lets_try_to_get_xs_ys_hist():
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # Sample data
+    data = np.random.normal(size=100)
+    print(f'{data=}')
+
+    # Create a histogram plot with sns
+    ax = sns.histplot(data)
+    print(f'{type(ax)=}')
+
+    # Extract the x and y axis data
+    x_data = [r.get_x() + r.get_width() / 2 for r in ax.patches]
+    y_data = [r.get_height() for r in ax.patches]
+
+    # Convert to numpy arrays
+    x_data, y_data = np.array(x_data), np.array(y_data)
+    print(x_data)
+    print(f'{sum(y_data)=}')
+    assert x_data.shape == y_data.shape
+    # - plot
+    plt.show()
+
+    # - test using code in this file
+    ax = get_histogram(data, 'x', 'y', 'title', stat='frequency', linestyle=None, color='b')
+    x_data, y_data, num_bars_in_histogram, num_bins = get_x_axis_y_axis_from_seaborn_histogram(ax, verbose=True)
+    print(f'{x_data, y_data, num_bars_in_histogram, num_bins=}')
+
+    # - sanity check the binned x-axis we got from histograms
+    bins = np.linspace(np.min(data), np.max(data), num_bars_in_histogram)
+    # hist, bin_edges = np.histogram(data, bins)
+    bin_middles = (bins[:-1] + bins[1:]) / 2
+    print('next two approximately equal')
+    print(f'{bin_middles=}')
+    print(f'{x_data=}')
+
+    # - plot
+    plt.show()
+
+    # - end
+    print()
+
+
 if __name__ == "__main__":
     import time
 
@@ -242,7 +324,8 @@ if __name__ == "__main__":
     # - run experiment
     # hist_test()
     # useful_stats_test()
-    dummy_task2vec_test()
+    # dummy_task2vec_test()
+    do_test_lets_try_to_get_xs_ys_hist()
     # - Done
     from uutils import report_times
 

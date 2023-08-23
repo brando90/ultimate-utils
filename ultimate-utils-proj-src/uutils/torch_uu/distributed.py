@@ -3,6 +3,7 @@ For code used in distributed training.
 """
 
 import time
+import uutils
 from argparse import Namespace
 from pathlib import Path
 from typing import Tuple, Union, Callable, Any, Optional
@@ -22,6 +23,14 @@ import os
 
 from pdb import set_trace as st
 
+from uutils.torch_uu import get_device
+
+
+def get_default_world_size() -> int:
+    """ Get the number of GPUs available to the current process, otherwise return 1 (e.g in cpu case). """
+    world_size: int = torch.cuda.device_count() if torch.cuda.is_available() else 1
+    return world_size
+
 
 def set_gpu_id_if_available_simple(args):
     """
@@ -39,23 +48,21 @@ def set_gpu_id_if_available_simple(args):
 
 def set_devices(args, verbose: bool = False):
     """
-    Set device to the gpu id if its distributed pytorch parallel otherwise to the device available.
+    Set device to the gpu id, but if its distributed ddp (via rank) otherwise to the device available.
 
-    :param args:
-    :return:
+    Note:
+        - this code is used in the main() or train() code -- for each rank, even serially -- not in the set_up_args() code.
+        Because to get the right gpu_idx it we need to know the rank.
+        - reason we don't just do args.device = ... is because we have this if statement to check if we are parallel
+        or not and set it according to the rank if using parallel.
     """
     if is_running_serially(args.rank):
-        args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        args.device = get_device()  # serial so no gpu_idx given nor rank given, so cpu or cuda:0
     else:
-        args.device = args.rank
-
+        assert args.rank != -1, "Error: running in parallel but rank is -1 (serial)."
+        args.device = get_device(args.rank)
     if verbose:
-        print(f'{args.device=}, {args.rank=}')
-
-    # todo - I'm not sure if the code bellow should be here...
-    if is_running_parallel(args.rank):
-        if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
-            torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
+        print(f"{args.device=}")
 
 
 def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, cuda: bool = True) -> torch.device:
@@ -83,21 +90,26 @@ def set_devices_and_seed_ala_l2l(args: Namespace, seed: Optional[None] = None, c
             args.device = torch.device('cuda:' + str(device_id))
         print(args.rank, ':', args.device)
 
-    # - set seed
-    import random
-    import numpy as np
-
+    # -- set seed, so all processes in distributed training will act differently my modifying seed using their ags.rank
+    # - note, this assumes either the seed is passed from args.seed and thus the user or the setup code has set the seed
+    # if seed is not set in this function (seed is None or -1) then get the one from the args (note it might still not be set by the user), else if set then use the one passed in.
     seed: int = args.seed if seed is None else seed
-    # rank: int = torch.distributed.get_rank()
-    seed += args.rank
-    random.seed(seed)
-    np.random.seed(seed)
-    if cuda and torch.cuda.device_count():
-        torch.manual_seed(seed)
-        # sebas code doesn't have this so I am leaving it out.
-        # if is_running_parallel(args.rank):
-        #     if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
-        #         torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
+    # rank: int = torch.distributed.get_rank()  # this is what sebas does but we should've already have a rank
+    seed += args.rank  # create see from rank so that process acts different and all of em don't just do the same thing
+    # once a seed for each rank has been decided, set it
+    uutils.seed_everything(seed)
+
+    # - set seed
+    # import random
+    # import numpy as np
+    # random.seed(seed)
+    # np.random.seed(seed)
+    # if cuda and torch.cuda.device_count():
+    #     torch.manual_seed(seed)
+    #     # sebas code doesn't have this so I am leaving it out.
+    #     # if is_running_parallel(args.rank):
+    #     #     if str(torch.device("cuda" if torch.cuda.is_available() else "cpu")) != 'cpu':
+    #     #         torch.cuda.set_device(args.device)  # is this right if we do parallel cpu?
 
 
 # torch.cuda.manual_seed(seed)
@@ -111,34 +123,24 @@ def process_batch_ddp(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
     :param batch:
     :return:
     """
-    x, y = batch
-    if type(x) == torch.Tensor:
-        # x = x.to(args.gpu)
-        x = x.to(args.device)
-    if type(y) == torch.Tensor:
-        # y = y.to(args.gpu)
-        y = y.to(args.device)
-    return x, y
-
-
-def process_batch_ddp_union_rfs(args: Namespace, batch: Any) -> tuple[Tensor, Tensor]:
-    """
-    Make sure args has the gpu for each worker.
-
-    :param args:
-    :param batch:
-    :return:
-    """
+    # weird == 3 due to rfs I think, see: ref: https://github.com/WangYueFt/rfs/
     if len(batch) == 3:
         x, y, _ = batch
     elif len(batch) == 2:
         x, y = batch
     else:
         # img, target, item, sample_idx = batch
-        x, y, item, sample_idx = batch
+        # x, y, item, sample_idx = batch
         raise NotImplementedError
-    x = x.to(args.device)
-    y = y.to(args.device)
+    # if isinstance(batch, dict):
+    #     x, y = batch['train'][0], batch['train'][1]
+    #     # x, y = batch['test'][0], batch['test'][1]
+    if type(x) == torch.Tensor:
+        # x = x.to(args.gpu)
+        x = x.to(args.device)
+    if type(y) == torch.Tensor:
+        # y = y.to(args.gpu)
+        y = y.to(args.device)
     return x, y
 
 
@@ -330,12 +332,19 @@ def init_process_group_l2l(args, local_rank, world_size, init_method=None, backe
         # torch.distributed.barrier()  # causes this warning: https://github.com/pytorch/pytorch/issues/60752
 
 
-def cleanup(rank):
+def cleanup(rank: int,
+            clean_up_wand: bool = False,
+            args: Optional[Namespace] = None,
+            ):
     """ Destroy a given process group, and deinitialize the distributed package """
     # only destroy the process distributed group if the code is not running serially
     if is_running_parallel(rank):
         torch.distributed.barrier()
         dist.destroy_process_group()
+    if clean_up_wand:
+        # cleanup_wandb(args, delete_wandb_dir=True)
+        from uutils.logging_uu.wandb_logging.common import cleanup_wandb
+        cleanup_wandb(args, delete_wandb_dir=False)
 
 
 def get_batch(batch: Tuple[Tensor, Tensor], rank) -> Tuple[Tensor, Tensor]:
@@ -415,6 +424,12 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
     :param force: force is meant to force it into DDP. Meant for debugging.
     :return:
     """
+    # - set device if not set, don't put in setup args because need to running this in it's own python process & rank if it's running parallel
+    if not hasattr(args, 'device'):
+        set_devices(args)  # this sets device if parallel or serial correctly using rank
+    if args.device is None:
+        set_devices(args)  # this sets device if parallel or serial correctly using rank
+    # - move model to device
     if is_running_parallel(rank) or force:
         # model.criterion = self.args.criterion.to(rank)  # I think its not needed since I already put it in the TP so when TP is moved to DDP the rank is moved automatically I hope
         # if gpu avail do the standard of creating a model and moving the model to the GPU with id rank
@@ -429,17 +444,29 @@ def move_model_to_ddp(rank: int, args: Namespace, model: nn.Module, force: bool 
             model = DistributedDataParallel(model,
                                             find_unused_parameters=True)  # I think removing the devices ids should be fine...
     else:  # running serially
+        # args.device = get_device()  # not needed anymore
         model = model.to(args.device)
     return model
 
 
 def move_model_to_dist_device_or_serial_device(rank: int, args: Namespace, model: nn.Module, force: bool = False):
-    if not hasattr(args, 'dist_option'):
-        # for backwards compatibility, default try to do ddp or just serial to device
+    """
+    Moves the model to the right device & handles the case when we are using the special l2l_distributed option in
+    args.dist_option. Otherwise, it just behave as expected, move the model to gpu:0 (or cpu) if serial and to the
+    right gpu if running in parallel according to the args.rank.
+
+    Note:
+        - this code is only needed because of l2l distributed. For that set flag args.dist_option = 'l2l_dist'.
+        Otherwise, don't worry about it.
+    """
+    # set_devices(args)
+    if not hasattr(args, 'dist_option'):  # this flag is not needed unless your running l2l_dist.
+        # just more device according to serial or ddp. Doesn't handle l2l special case
         model = move_model_to_ddp(rank, args, model, force)
     else:
         if args.dist_option == 'ddp':
-            model = move_model_to_ddp(rank, args, model, force)
+            # model = move_model_to_ddp(rank, args, model, force)
+            raise ValueError(f'Error: {args.dist_option=} is not needed anymore.')
         elif args.dist_option == 'l2l_dist':
             # based on https://github.com/learnables/learn2learn/issues/263
             model = model.to(args.device)  # this works for serial and parallel (my guess, just moves to proc's device)

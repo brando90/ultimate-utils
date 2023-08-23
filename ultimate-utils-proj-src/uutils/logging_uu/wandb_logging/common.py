@@ -9,7 +9,7 @@ import wandb
 
 
 def setup_wandb(args: Namespace):
-    print("setup called")
+    args.wandb_run_url = None
     if args.log_to_wandb:
         # os.environ['WANDB_MODE'] = 'offline'
         import wandb
@@ -40,8 +40,8 @@ def setup_wandb(args: Namespace):
         #     args.dir_wandb: Path = args.log_root.expanduser()
         #     dir_wandb = args.dir_wandb
         # - initialize wandb
-        print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
-        print(f'{dir_wandb=}')
+        # print('-- info about wandb setup (info meant to be here for now, when ViT runs maybe we\'remove it)')
+        # print(f'{dir_wandb=}')
         # print(f'{sys.stdout=}')
         # print(f'{os.path.realpath(sys.stdout.name)=}')
         # print(f'{sys.stderr=}')
@@ -58,14 +58,25 @@ def setup_wandb(args: Namespace):
         )
         print("init called")
         # - print local run (to be deleted later https://github.com/wandb/wandb/issues/4409)
-        try:
-            args.wandb_run = wandb.run.dir
-            print(f'{wandb.run.dir=}')
-        except Exception as e:
-            args.wandb_run = 'no wandb run path'
-            print(f'{args.wandb_run=}')
+        print_wanbd_run_info(args)
         # - save args in wandb
         wandb.config.update(args)
+        # - save wandb run url in args
+        print(f'{try_printing_wandb_url(args.log_to_wandb)=}')
+        args.wandb_run_url: str = try_printing_wandb_url(args.log_to_wandb)
+
+
+def print_wanbd_run_info(args: Namespace):
+    try:
+        args.wandb_run = wandb.run.dir
+        args.wandb_run_url = wandb.run.get_url()
+        print(f'{wandb.run.dir=}')
+        print(f'{args.wanbd_url=}')
+    except Exception as e:
+        args.wandb_run = 'no wandb run path (yet?)'
+        args.wandb_run_url = 'no wandb run url (yet?)'
+        print(f'{wandb.run.dir=}')
+        print(f'{args.wandb_run_url=}')
 
 
 def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
@@ -83,6 +94,7 @@ def cleanup_wandb(args: Namespace, delete_wandb_dir: bool = False):
                 if hasattr(args, 'rank'):
                     remove_current_wandb_run_dir(call_wandb_finish=True)
                     # remove_wandb_root_dir(args) if delete_wandb_dir else None
+                print(f'{try_printing_wandb_url(args.log_to_wandb)=}')
             else:
                 remove_current_wandb_run_dir(call_wandb_finish=True)
                 # remove_wandb_root_dir(args) if delete_wandb_dir else None
@@ -137,11 +149,12 @@ def remove_current_wandb_run_dir(args: Optional[Namespace] = None, call_wandb_fi
 # delete it
 
 
-def log_2_wanbd(it: int,
+def log_2_wandb(it: int,
                 train_loss: float, train_acc: float,
                 val_loss: float, val_acc: float,
                 step_metric,
-                mdl_watch_log_freq: int = -1):
+                mdl_watch_log_freq: int = 500,
+                ):
     """
 
     Ref:
@@ -152,8 +165,6 @@ def log_2_wanbd(it: int,
         wandb.define_metric("train acc", step_metric=step_metric)
         wandb.define_metric("val loss", step_metric=step_metric)
         wandb.define_metric("val val", step_metric=step_metric)
-        # if wanbd_mdl_watch_log_freq == -1:
-        #     wandb.watch(args.base_model, args.criterion, log="all", log_freq=mdl_watch_log_freq)
     # - log to wandb
     wandb.log(data={step_metric: it,
                     'train loss': train_loss,
@@ -161,7 +172,9 @@ def log_2_wanbd(it: int,
                     'val loss': val_loss,
                     'val acc': val_acc},
               commit=True)
-
+    # - print to make explicit in console/terminal it's using wandb
+    # note usually this func is callaed with a args.rank check outside, so using print vs print_dist should be fine
+    try_printing_wandb_url(log_to_wandb=True)
 
 def log_2_wanbd_half_loss(it: int,
                 train_loss: float, train_acc: float,
@@ -192,3 +205,80 @@ def log_2_wanbd_half_loss(it: int,
                     'val loss half': val_loss_h,
                     'val acc half': val_acc_h},
               commit=True)
+
+def try_printing_wandb_url(log_to_wandb: bool = False) -> str:
+    """
+    Try to print the wandb url and return it as a string if it succeeds.
+    If it fails, return the error message as a string.
+    """
+    if log_to_wandb:
+        try:
+            # print(f'{wandb.run.dir=}')
+            print(f'{wandb.run.get_url()=}')
+            # print(_get_sweep_url_hardcoded())
+            print(f'{wandb.get_sweep_url()=}')
+            return str(wandb.run.get_url())
+        except Exception as e:
+            err_msg: str = f'Error from wandb url get {try_printing_wandb_url=}: {e=}'
+            print(err_msg)
+            import logging
+            logging.warning(err_msg)
+            return str(e)
+
+
+def hook_wandb_watch_model(args: Namespace,
+                           model,  # could be model or agent
+                           mdl_watch_log_freq: int = 500,
+                           log: str = 'all',  # ['gradients', 'parameters', 'all']
+                           ):
+    """
+    Hook wandb.watch to the model.
+
+    ref:
+        - docs for wandb.watch: https://docs.wandb.ai/ref/python/watch
+        - 5 min youtube: https://www.youtube.com/watch?v=k6p-gqxJfP4
+    """
+    # - if model is None do nothing
+    if model is None:
+        return
+    # - for now default to watch model same as logging loss so use args.log_freq, later perhaps customize in argparse as a flag
+    mdl_watch_log_freq: int = args.log_freq if hasattr(args, 'log_freq') else mdl_watch_log_freq
+    # mdl_watch_log_freq: int = args.log_freq if hasattr(args, 'mdl_watch_log_freq') else mdl_watch_log_freq
+    # - get model if it's agent
+    if hasattr(model, 'model'):  # if it's an agent then this is how you get the model
+        model = model.model
+    # - get loss/criterion (for now decided to use loss everyone instead of criterion
+    loss = None
+    if hasattr(args, 'loss'):
+        loss = args.loss
+    # give priority to the one the model has
+    if hasattr(model, 'loss'):
+        loss = model.loss
+    # - watch model
+    log: str = 'all' if log is None else log
+    wandb.watch(model, loss, log=log, log_freq=mdl_watch_log_freq)
+
+
+def _get_sweep_url_hardcoded(entity: str, project: str, sweep_id) -> str:
+    """
+    ref:
+        - hoping for an official answer here:
+            - SO: https://stackoverflow.com/questions/75852199/how-do-i-print-the-wandb-sweep-url-in-python
+            - wandb discuss: https://community.wandb.ai/t/how-do-i-print-the-wandb-sweep-url-in-python/4133
+    """
+    return f"https://wandb.ai/{entity}/{project}/sweeps/{sweep_id}"
+
+def watch_activations():
+    """
+    ref:
+        - https://community.wandb.ai/t/how-to-watch-the-activations-of-a-model/4101, https://github.com/wandb/wandb/issues/5218
+    """
+    pass
+
+
+def watch_update_step():
+    """
+    ref:
+        - https://community.wandb.ai/t/how-to-watch-the-activations-of-a-model/4101, https://github.com/wandb/wandb/issues/5218
+    """
+    pass

@@ -5,6 +5,8 @@ Mainly for machine learning and programming languages tasks.
 
 ## Installing Ultimate-utils
 
+> WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A GPU)
+
 ## Standard pip install [Recommended]
 
 If you are going to use a gpu the do this first before continuing 
@@ -197,7 +199,7 @@ it should be installed. You can import and test the print as mentioned above.
 ## Citation
 If you use this implementation consider citing us:
 
-```
+```latex
 @software{brando2021ultimateutils,
     author={Brando Miranda},
     title={Ultimate Utils - the Ultimate Utils library for Machine Learning and Artificial Intelligence},

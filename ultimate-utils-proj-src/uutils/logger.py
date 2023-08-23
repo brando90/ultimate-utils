@@ -27,6 +27,50 @@ from uutils.torch_uu.tensorboard import log_2_tb_supervisedlearning
 from pdb import set_trace as st
 
 
+def print_acc_loss_from_training_curve(path: Union[str, Path],
+                                       learning_stats_fname: str = 'experiment_stats.json',
+                                       metrics: list[str] = ['acc', 'loss'],
+                                       splits: list[str] = ['train', 'val'],
+                                       # test missing cuz we don't eval on test during training, no cheating!
+                                       idx: int = -1,  # last value
+                                       clear_accidental_ckpt_str_in_path: str = '/ckpt.pt'
+                                       ) -> dict:
+    """ print acc and loss from training curve ckpt.
+
+    Intention:
+    # path ~ log_root / 'experiment_stats.json'
+    path = '~/data/logs/logs_Feb04_17-38-21_jobid_855372_pid_2723881_wandb_True/experiment_stats.json'
+    # get dict and print acc and loss, split
+
+    """
+    if 'debug_5cnn_2filters' in str(path):
+        data: dict = dict()
+        for split in splits:
+            for metric in metrics:
+                data[f'{split}_{metric}_{idx}'] = -1
+        return data
+    # hopefully something like '~/data/logs/logs_Feb04_17-38-21_jobid_855372_pid_2723881_wandb_True/experiment_stats.json'
+    path: Path = uutils.expanduser(path)
+    if learning_stats_fname != 'experiment_stats.json':
+        path = path / learning_stats_fname
+    # - clear accidental ckpt str in path, remove it, then following code adds the right name to experiment json file
+    if clear_accidental_ckpt_str_in_path in str(path):
+        path: str = str(path).replace(clear_accidental_ckpt_str_in_path, '')
+        path: Path = uutils.expanduser(path)
+    # if end of string is not json, then user forgot to put the path to experiment run, so put your best guess based on how uutils works by default
+    if not str(path).endswith('.json'):
+        path = path / learning_stats_fname
+    # - get loss/accs/metrics from training learning curve stats stored
+    data: dict = dict()
+    with open(path, 'r') as f:
+        experiment_stats: dict = json.load(f)
+        for split in splits:
+            for metric in metrics:
+                print(f'{split} {metric}: {experiment_stats[split][metric][idx]}')
+                data[f'{split}_{metric}_{idx}'] = experiment_stats[split][metric][idx]
+    return data
+
+
 def save_model_as_string(args: Namespace, model: nn.Module):
     """ save model as as string. """
     with open(args.log_root / 'model_as_str.txt', 'w+') as f:
@@ -345,3 +389,27 @@ def save_current_plots_and_stats(
     # careful: even if you return the figure it seems it needs to be closed inside here anyway...so if you close it
     # but return it who knows what might happen.
     # plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+
+
+# - main, tests, examples, tutorials, etc.
+
+def test_print_acc_loss_from_training_curve():
+    path = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663'
+    print_acc_loss_from_training_curve(path)
+    path = '~/data/logs/logs_Mar30_08-17-19_jobid_17733_pid_142663/ckpt.pt/experiment_stats.json'
+    print_acc_loss_from_training_curve(path)
+
+
+# - run main, tests, examples, tutorials, etc.
+
+if __name__ == '__main__':
+    import time
+
+    start_time = time.time()
+    test_print_acc_loss_from_training_curve()
+    print(f'Done! Finished in {time.time() - start_time:.2f} seconds\a\n'
+          f''
+          f''
+          f''
+          f''
+          f'')

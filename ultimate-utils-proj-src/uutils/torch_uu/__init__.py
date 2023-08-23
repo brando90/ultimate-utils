@@ -121,6 +121,22 @@ def gpu_minimalist_test() -> None:
     print(torch.__version__);
     print((torch.randn(2, 4).cuda() @ torch.randn(4, 1).cuda()))
 
+def bfloat16_avail() -> bool:
+    """ Checks if bfloat16 is available in your nvidia arch, usually ampere.
+
+    As of my last training data in September 2021, the Nvidia Quadro RTX 8000 is based on the Turing architecture, not Ampere. This was the successor to the Pascal architecture and predecessor to the Ampere architecture.
+    The RTX 8000, like other Turing cards, features RT (Ray Tracing) cores for realistic lighting effects and Tensor cores for AI workloads such as deep learning. It also has 48 GB of GDDR6 memory.
+    However, Nvidia regularly releases new GPUs and architectures, so you might want to check their latest product offerings. Remember, I can only provide information up to my last update in September 2021.
+    """
+    # get major revision to infer if bfloat is avail, ampere is needed my snap Quadro RTX 8000 is not Ampere.
+    major, _ = torch.cuda.get_device_capability()  # _ refers to minor revisions to arch
+    if major >= 8:
+        print("=" * 80)
+        print("Your GPU supports bfloat16, you can accelerate training with the argument --bfloat16")
+        print("=" * 80)
+        return True
+    else:
+        return False
 
 # -
 
@@ -142,16 +158,15 @@ def gpu_name_otherwise_cpu(print_to_stdout: bool = False):
 def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool = True):
     """
 
-    Note: use_deterministic_algorithms makes all algorithms deterministic while torch_uu.backends.cudnn.deterministic=True
-    makes convs only determinsitic. There is also a way to choose algorithms based on hardware performance, to
-    avoid that use torch_uu.backends.cudnn.benchmark = False (note the agorithm chosen even if determinsitic might be
-    random itself so the other two flags are useful).
-
-    todo -
+    Note:
+        - always_use_deterministic_algorithms: not all algorithms are deterministic. If one doesn't have determinstic
+        algorithm for a given operation, it will throw an error.
+    todo - (idk if this CAN be fixed by me, easily)
      - fix this:
       RuntimeError: Deterministic behavior was enabled with either `torch_uu.use_deterministic_algorithms(True)` or `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8 or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
      - figure out the worker in dataloader thing...https://pytorch.org/docs/stable/notes/randomness.html
      - read the RNN LSTM part
+
     ref:
         - https://pytorch.org/docs/stable/notes/randomness.html
         - https://stackoverflow.com/questions/66130547/what-does-the-difference-between-torch-backends-cudnn-deterministic-true-and
@@ -162,19 +177,18 @@ def make_code_deterministic(seed: int, always_use_deterministic_algorithms: bool
     import torch
     import os
 
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    # - make pytorch determinsitc
-    # makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
-    torch.manual_seed(seed)
+    # - make pytorch determinsitc, makes all ops determinsitic no matter what. Note this throws an errors if you code has an op that doesn't have determinsitic implementation
     if always_use_deterministic_algorithms:
         torch.use_deterministic_algorithms(True)
-    # makes convs deterministic
-    torch.backends.cudnn.deterministic = True
-    # doesn't allow benchmarking to select fastest algorithms for specific ops
-    torch.backends.cudnn.benchmark = False
+        # try:
+        #     torch.set_deterministic(True)
+        #     return True
+        # except Exception as e:
+        #     logging.warning(f'could not set torch to deterministic, {e=}')
+        #     return False
     # - make python determinsitic
-    np.random.seed(seed)
-    random.seed(seed)
+    from uutils import seed_everything
+    seed_everything(seed)
 
 
 def index(tensor: Tensor, value, ith_match: int = 0) -> Union[int, Tensor]:
@@ -275,10 +289,16 @@ def process_batch_simple(args: Namespace, x_batch, y_batch):
 
 
 def process_meta_batch(args, batch) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Processes the meta batch (batch of tasks) and returns the data in the correct format, as follows:
+    shape of data [T, n*K, C, H, W], [T, n*K], [T, n*K, C, H, W], [T, n*K]
+    """
     # - upack the data
     if type(batch) == dict:
+        # spt_x, spt_y, qry_x, qry_y are of shape [T, n*K, C, H, W], [T, n*K], [T, n*K, C, H, W], [T, n*K]
         (spt_x, spt_y), (qry_x, qry_y) = batch["train"], batch["test"]
     elif type(batch) == tuple or type(batch) == list:
+        # spt_x, spt_y, qry_x, qry_y are of shape [T, n*K, C, H, W], [T, n*K], [T, n*K, C, H, W], [T, n*K]
         spt_x, spt_y, qry_x, qry_y = batch
     else:
         raise ValueError(f'Not implemented how to process this batch of type {type(batch)} with value {batch=}')
@@ -358,16 +378,33 @@ def get_device_from_args2(args):
     return next(args.model.parameters()).device
 
 
-def get_device(gpu_idx: int = 0) -> torch.device:
+def get_device(gpu_idx: Optional[int] = 0) -> torch.device:
     """
-    Get default gpu torch device.
-
-    :param gpu_idx:
-    :return:
+    Get default gpu torch device or use cpu
     """
+    # gpu_idx: int = 0 if gpu_idx is None else gpu_idx
     device: torch.device = torch.device(f"cuda:{gpu_idx}" if torch.cuda.is_available() else "cpu")
-    # device: torch.device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
     return device
+
+
+# def get_device_via_env_variables(deterministic: bool = False, verbose: bool = True) -> torch.device:
+#     device: torch.device = torch.device("cpu")
+#     if torch.cuda.is_available():
+#         if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+#             device: torch.device = torch.device("cuda:0")
+#         else:
+#             gpu_idx: list[str] = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+#             if len(gpu_idx) == 1:
+#                 gpu_idx: str = gpu_idx[0]
+#             else:
+#                 # generate random int from 0 to len(gpu_idx) with import statement
+#                 import random
+#                 idx: int = random.randint(0, len(gpu_idx) - 1) if not deterministic else -1
+#                 gpu_idx: str = gpu_idx[idx]
+#             device: torch.device = torch.device(f"cuda:{gpu_idx}")
+#     if verbose:
+#         print(f'{device=}')
+#     return device
 
 
 def create_detached_deep_copy_old(mdl):
@@ -483,9 +520,12 @@ def lp_norm(mdl: nn.Module, p: int = 2, detach: bool = False) -> Tensor:
     return sum(lp_norms)
 
 
-def norm(f: nn.Module, l: int = 2, detach: bool = False):
+def norm(f: nn.Module, l: int = 2, detach: bool = False, cpu: bool = False) -> Tensor:
     # return sum([w.detach().norm(l) for w in f.parameters()])
-    return lp_norm(f, p=l, detach=detach)
+    norm_val: Tensor = lp_norm(f, p=l, detach=detach)
+    # move to cpu
+    norm_val: Tensor = norm_val.cpu() if cpu else norm_val
+    return norm_val
 
 
 def count_number_of_parameters(model: nn.Module, only_trainable: bool = True) -> int:
@@ -1089,19 +1129,11 @@ def train_single_batch(args, agent, mdl, optimizer, acc_tolerance=1.0, train_los
     return avg_loss.item(), avg_acc.item()
 
 
-##
-
-
-##
-
 def count_nb_params(net):
     count = 0
     for p in net.parameters():
         count += p.data.nelement()
     return count
-
-
-##
 
 
 def preprocess_grad_loss(x, p=10, eps=1e-8):
@@ -2335,58 +2367,59 @@ def log_sim_to_check_presence_of_feature_reuse_mdl1_vs_mdl2(args: Namespace,
     """
     Goal is to see if similarity is small s <<< 0.9 (at least s < 0.8) since this suggests that
     """
-    import wandb
-    import uutils.torch_uu as torch_uu
-    from pprint import pprint
-    from uutils.torch_uu import summarize_similarities
-    from uutils.torch_uu.distributed import is_lead_worker
-    # - is it epoch or iteration
-    it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
-    sim_or_dist: str = 'sim'
-    if hasattr(args, 'metrics_as_dist'):
-        sim_or_dist: str = 'dist' if args.metrics_as_dist else sim_or_dist
-    total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
-
-    if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
-        #     if hasattr(args, 'metrics_as_dist'):
-        #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
-        #     else:
-        #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
-        sims = distances_btw_models(args, mdl1, mdl2, batch_x, batch_y, args.layer_names, args.metrics_as_dist)
-        print(sims)
-        # mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(args, sims)
-
-        # -- log (print)
-        args.logger.log(f' \n------ {sim_or_dist} stats: {it_or_epoch}={it} ------')
-        # - per layer
-        # if show_layerwise_sims:
-        print(f'---- Layer-Wise metrics ----')
-        # print(f'mean_layer_wise_{sim_or_dist} (per layer)')
-        # pprint(mean_layer_wise_sim)
-        # print(f'std_layer_wise_{sim_or_dist} (per layer)')
-        # pprint(std_layer_wise_sim)
-        #
-        # # - rep sim
-        # print(f'---- Representation metrics ----')
-        # print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        # pprint(mean_summarized_rep_sim)
-        # print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
-        # pprint(std_summarized_rep_sim)
-        # args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
-
-        # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
-        # - log to wandb
-        # if log_to_wandb:
-        #     if it == 0:
-        #         # have all metrics be tracked with it or epoch (custom step)
-        #         #     wandb.define_metric(f'layer average {metric}', step_metric=it_or_epoch)
-        #         for metric in mean_summarized_rep_sim.keys():
-        #             wandb.define_metric(f'rep mean {metric}', step_metric=it_or_epoch)
-        #     # wandb.log per layer
-        #     rep_summary_log = {f'rep mean {metric}': sim for metric, sim in mean_summarized_rep_sim.items()}
-        #     rep_summary_log[it_or_epoch] = it
-        #     wandb.log(rep_summary_log, commit=True)
+    # import wandb
+    # import uutils.torch_uu as torch_uu
+    # from pprint import pprint
+    # from uutils.torch_uu import summarize_similarities
+    # from uutils.torch_uu.distributed import is_lead_worker
+    # # - is it epoch or iteration
+    # it_or_epoch: str = 'epoch_num' if args.training_mode == 'epochs' else 'it'
+    # sim_or_dist: str = 'sim'
+    # if hasattr(args, 'metrics_as_dist'):
+    #     sim_or_dist: str = 'dist' if args.metrics_as_dist else sim_or_dist
+    # total_its: int = args.num_empochs if args.training_mode == 'epochs' else args.num_its
+    #
+    # if (it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+    #     # if (it % log_freq_for_detection_of_feature_reuse == 0 or it == total_its - 1 or force_log) and is_lead_worker(args.rank):
+    #     #     if hasattr(args, 'metrics_as_dist'):
+    #     #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks, metric_as_dist=args.metrics_as_dist)
+    #     #     else:
+    #     #         sims = args.meta_learner.compute_functional_similarities(spt_x, spt_y, qry_x, qry_y, args.layer_names, parallel=parallel, iter_tasks=iter_tasks)
+    #     sims = distances_btw_models(args, mdl1, mdl2, batch_x, batch_y, args.layer_names, args.metrics_as_dist)
+    #     print(sims)
+    #     # mean_layer_wise_sim, std_layer_wise_sim, mean_summarized_rep_sim, std_summarized_rep_sim = summarize_similarities(args, sims)
+    #
+    #     # -- log (print)
+    #     args.logger.log(f' \n------ {sim_or_dist} stats: {it_or_epoch}={it} ------')
+    #     # - per layer
+    #     # if show_layerwise_sims:
+    #     print(f'---- Layer-Wise metrics ----')
+    #     # print(f'mean_layer_wise_{sim_or_dist} (per layer)')
+    #     # pprint(mean_layer_wise_sim)
+    #     # print(f'std_layer_wise_{sim_or_dist} (per layer)')
+    #     # pprint(std_layer_wise_sim)
+    #     #
+    #     # # - rep sim
+    #     # print(f'---- Representation metrics ----')
+    #     # print(f'mean_summarized_rep_{sim_or_dist} (summary for rep layer)')
+    #     # pprint(mean_summarized_rep_sim)
+    #     # print(f'std_summarized_rep_{sim_or_dist} (summary for rep layer)')
+    #     # pprint(std_summarized_rep_sim)
+    #     # args.logger.log(f' -- sim stats : {it_or_epoch}={it} --')
+    #
+    #     # error bars with wandb: https://community.wandb.ai/t/how-does-one-plot-plots-with-error-bars/651
+    #     # - log to wandb
+    #     # if log_to_wandb:
+    #     #     if it == 0:
+    #     #         # have all metrics be tracked with it or epoch (custom step)
+    #     #         #     wandb.define_metric(f'layer average {metric}', step_metric=it_or_epoch)
+    #     #         for metric in mean_summarized_rep_sim.keys():
+    #     #             wandb.define_metric(f'rep mean {metric}', step_metric=it_or_epoch)
+    #     #     # wandb.log per layer
+    #     #     rep_summary_log = {f'rep mean {metric}': sim for metric, sim in mean_summarized_rep_sim.items()}
+    #     #     rep_summary_log[it_or_epoch] = it
+    #     #     wandb.log(rep_summary_log, commit=True)
+    raise NotImplementedError
 
 
 def distances_btw_models(args: Namespace,
@@ -2394,55 +2427,56 @@ def distances_btw_models(args: Namespace,
                          batch_x: torch.Tensor, batch_y: torch.Tensor,
                          layer_names: list[str],
                          metrics_as_dist: bool = True) -> dict:
-    """
-    Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
-    two batch of any type of examples).
-    """
-    L: int = len(layer_names)
-    # make into eval
-    model1.eval()
-    model2.eval()
-    # -- compute sims
-    x: torch.Tensor = batch_x
-    if torch.cuda.is_available():
-        x = x.cuda()
-    # - compute cca sims
-    cca: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='pwcca')
-    cka: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='lincka')
-    assert len(cca) == L
-    assert len(cka) == L
-    # -- get l2 sims per layer
-    # op = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='op_torch')
-    # nes = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='nes_torch')
-    # cosine = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='cosine_torch')
-
-    # y = self.base_model(qry_x_t)
-    # y_adapt = fmodel(qry_x_t)
-    # # dim=0 because we have single numbers and we are taking the NES in the batch direction
-    # nes_output = uutils.torch_uu.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+    # """
+    # Compute the distance/sim between two models give a batch of example (this assumes there are no tasks involved, just
+    # two batch of any type of examples).
+    # """
+    # L: int = len(layer_names)
+    # # make into eval
+    # model1.eval()
+    # model2.eval()
+    # # -- compute sims
+    # x: torch.Tensor = batch_x
+    # if torch.cuda.is_available():
+    #     x = x.cuda()
+    # # - compute cca sims
+    # cca: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='pwcca')
+    # cka: list[float] = get_cxa_similarities_per_layer(model1, model2, x, layer_names, sim_type='lincka')
+    # assert len(cca) == L
+    # assert len(cka) == L
+    # # -- get l2 sims per layer
+    # # op = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='op_torch')
+    # # nes = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='nes_torch')
+    # # cosine = get_l2_similarities_per_layer(model1, model2, x, layer_names, sim_type='cosine_torch')
     #
-    # query_loss = self.args.criterion(y, y_adapt).item()
-    # # sims = [cca, cka, nes, cosine, nes_output, query_loss]
-    # -- from [Tasks, Sims] -> [Sims, Tasks]
-    # sims = {'cca': [], 'cka': [], 'op': [],  # [L]
-    #         'nes': [], 'cosine': [],  # [L, K]
-    #         'nes_output': [], 'query_loss': []  # [1]
-    #         }
-    # sims = {'cca': cca, 'cka': cka, 'op': op,  # [L]
-    #         'nes': nes, 'cosine': cosine,  # [L, K]
-    #         'nes_output': nes_output, 'query_loss': query_loss  # [1]
-    #         }
-    # sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
-    out_metrics: dict = {}
-    for metric, sim in sims.items():
-        out_metrics[metric] = tensorify(sim).detach()
-        if metrics_as_dist and metric != 'query_loss':
-            out_metrics[metric] = 1.0 - out_metrics[metric]
-            if metric != 'cosine':
-                error_tolerance: float = -0.0001
-                assert (out_metrics[
-                            metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
-    return out_metrics
+    # # y = self.base_model(qry_x_t)
+    # # y_adapt = fmodel(qry_x_t)
+    # # # dim=0 because we have single numbers and we are taking the NES in the batch direction
+    # # nes_output = uutils.torch_uu.nes_torch(y.squeeze(), y_adapt.squeeze(), dim=0).item()
+    # #
+    # # query_loss = self.args.criterion(y, y_adapt).item()
+    # # # sims = [cca, cka, nes, cosine, nes_output, query_loss]
+    # # -- from [Tasks, Sims] -> [Sims, Tasks]
+    # # sims = {'cca': [], 'cka': [], 'op': [],  # [L]
+    # #         'nes': [], 'cosine': [],  # [L, K]
+    # #         'nes_output': [], 'query_loss': []  # [1]
+    # #         }
+    # # sims = {'cca': cca, 'cka': cka, 'op': op,  # [L]
+    # #         'nes': nes, 'cosine': cosine,  # [L, K]
+    # #         'nes_output': nes_output, 'query_loss': query_loss  # [1]
+    # #         }
+    # # sims = {metric: tensorify(sim).detach() for metric, sim in sims.items()}
+    # out_metrics: dict = {}
+    # for metric, sim in sims.items():
+    #     out_metrics[metric] = tensorify(sim).detach()
+    #     if metrics_as_dist and metric != 'query_loss':
+    #         out_metrics[metric] = 1.0 - out_metrics[metric]
+    #         if metric != 'cosine':
+    #             error_tolerance: float = -0.0001
+    #             assert (out_metrics[
+    #                         metric] >= error_tolerance).all(), f'Distances are positive but got a negative value somewhere for metric {metric=}.'
+    # return out_metrics
+    raise NotImplementedError
 
 
 def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
@@ -2451,13 +2485,14 @@ def get_cxa_similarities_per_layer(model1: nn.Module, model2: nn.Module,
     """
     Get [..., s_l, ...] cca sim per layer (for this data set)
     """
-    from uutils.torch_uu import cxa_sim
-    sims_per_layer = []
-    for layer_name in layer_names:
-        # sim = cxa_sim(model1, model2, x, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
-        sim = cxa_sim(model1, model2, x, layer_name, iters=1, cxa_sim_type=sim_type)
-        sims_per_layer.append(sim)
-    return sims_per_layer  # [..., s_l, ...]_l
+    # from uutils.torch_uu import cxa_sim
+    # sims_per_layer = []
+    # for layer_name in layer_names:
+    #     # sim = cxa_sim(model1, model2, x, layer_name, cca_size=self.args.cca_size, iters=1, cxa_sim_type=sim_type)
+    #     sim = cxa_sim(model1, model2, x, layer_name, iters=1, cxa_sim_type=sim_type)
+    #     sims_per_layer.append(sim)
+    # return sims_per_layer  # [..., s_l, ...]_l
+    raise NotImplementedError
 
 
 def compare_based_on_mdl1_vs_mdl2(args: Namespace, meta_dataloader):
@@ -2725,6 +2760,7 @@ def get_normal_data(B: int, Din: int, loc: float = 0.0, scale: float = 1.0) -> t
 
 # --
 
+
 # -- tests
 
 def ned_test():
@@ -2828,113 +2864,113 @@ def simple_determinism_test():
     print(f'{out.sum()}')
 
 
-def op_test():
-    from uutils.torch_uu.models import hardcoded_3_layer_model
-
-    force = True
-    # force = False
-    mdl1 = hardcoded_3_layer_model(5, 1)
-    mdl2 = hardcoded_3_layer_model(5, 1)
-    batch_size = 4
-    X = torch.randn(batch_size, 5)
-    import copy
-    from uutils.torch_uu import l2_sim_torch
-    # get [..., s_l, ...] sim per layer (for this data set)
-    modules = zip(mdl1.named_children(), mdl2.named_children())
-    sims_per_layer = []
-    out1 = X
-    out2 = X
-    for (name1, m1), (name2, m2) in modules:
-        # if name1 in layer_names:
-        if 'ReLU' in name1 or force:  # only compute on activation
-            out1 = m1(out1)
-            m2_callable = copy.deepcopy(m1)
-            m2_callable.load_state_dict(m2.state_dict())
-            out2 = m2_callable(out2)
-            sim = l2_sim_torch(out1, out2, sim_type='op_torch')
-            sims_per_layer.append((name1, sim))
-    pprint(sims_per_layer)
-
-
-def anatome_test_are_same_nets_very_similar():
-    """
-    Same model with same data even if down sampled, should show similar nets.
-    """
-    from uutils.torch_uu.models import hardcoded_3_layer_model
-    B = 1024
-    Din = 524
-    downsample_size = 4
-    Dout = Din
-    mdl1 = hardcoded_3_layer_model(Din, Dout)
-    mdl2 = mdl1
-    # - layer name
-    # layer_name = 'fc0'
-    # layer_name = 'fc1'
-    layer_name = 'fc2'
-    # - data
-    X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, Din))
-    scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
-    assert (abs(scca_full - 1.0) < 1e-5)
-    scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    assert (abs(scca_downsampled - 1.0) < 1e-5)
+# def op_test():
+#     from uutils.torch_uu.models import hardcoded_3_layer_model
+#
+#     force = True
+#     # force = False
+#     mdl1 = hardcoded_3_layer_model(5, 1)
+#     mdl2 = hardcoded_3_layer_model(5, 1)
+#     batch_size = 4
+#     X = torch.randn(batch_size, 5)
+#     import copy
+#     from uutils.torch_uu import l2_sim_torch
+#     # get [..., s_l, ...] sim per layer (for this data set)
+#     modules = zip(mdl1.named_children(), mdl2.named_children())
+#     sims_per_layer = []
+#     out1 = X
+#     out2 = X
+#     for (name1, m1), (name2, m2) in modules:
+#         # if name1 in layer_names:
+#         if 'ReLU' in name1 or force:  # only compute on activation
+#             out1 = m1(out1)
+#             m2_callable = copy.deepcopy(m1)
+#             m2_callable.load_state_dict(m2.state_dict())
+#             out2 = m2_callable(out2)
+#             sim = l2_sim_torch(out1, out2, sim_type='op_torch')
+#             sims_per_layer.append((name1, sim))
+#     pprint(sims_per_layer)
 
 
-def anatome_test_are_random_vs_pretrain_resnets_different():
-    """
-    random vs pre-trained nets should show different nets
-    - no downsample
-    - still true if downsample (but perhaps similarity increases, due to collapsing nets makes r.v.s
-    interact more btw each other, so correlation is expected to increase).
-    """
-    from torchvision.models import resnet18
-    B = 1024
-    C, H, W = 3, 64, 64
-    print(f'Din ~ {(C*H*W)=}')
-    downsample_size = 4
-    mdl1 = resnet18()
-    mdl2 = resnet18(pretrained=True)
-    # - layer name
-    # layer_name = 'bn1'
-    # layer_name = 'layer1.0.bn2'
-    # layer_name = 'layer2.1.bn2'
-    layer_name = 'layer4.1.bn2'
-    # layer_name = 'fc'
-    print(f'{layer_name=}')
+# def anatome_test_are_same_nets_very_similar():
+#     """
+#     Same model with same data even if down sampled, should show similar nets.
+#     """
+#     from uutils.torch_uu.models import hardcoded_3_layer_model
+#     B = 1024
+#     Din = 524
+#     downsample_size = 4
+#     Dout = Din
+#     mdl1 = hardcoded_3_layer_model(Din, Dout)
+#     mdl2 = mdl1
+#     # - layer name
+#     # layer_name = 'fc0'
+#     # layer_name = 'fc1'
+#     layer_name = 'fc2'
+#     # - data
+#     X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, Din))
+#     scca_full: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+#     assert (abs(scca_full - 1.0) < 1e-5)
+#     scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+#     assert (abs(scca_downsampled - 1.0) < 1e-5)
 
-    # # -- we expect low CCA/sim since random nets vs pre-trained nets are different (especially on real data)
-    # # - random data test
-    X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, C, H, W))
-    scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
-    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
-    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
-          f'-> {scca_full_random_data=} (but might be more similar than expected on random data)')
-    # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
 
-    #
-    mdl1 = resnet18()
-    mdl2 = resnet18(pretrained=True)
-    # - mini-imagenet test (the difference should be accentuated btw random net & pre-trained on real img data)
-    from uutils.torch_uu.dataloaders import get_set_of_examples_from_mini_imagenet
-    B = 512
-    k_eval: int = B  # num examples is about M = k_eval*(num_classes) = B*(num_classes)
-    X: torch.Tensor = get_set_of_examples_from_mini_imagenet(k_eval)
-    scca_full_mini_imagenet_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
-    scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
-    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
-    # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
-    print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
-          f'{scca_full_mini_imagenet_data=} (the difference should be accentuated with real data, so lowest sim)')
-    print()
-    # assert(scca_full_mini_imagenet_data < scca_full_random_data), f'Sim should decrease, because the pre-trained net' \
-    #                                                               f'was trained on real images, so the weights are' \
-    #                                                               f'tuned for it but random weights are not, which' \
-    #                                                               f'should increase the difference so the sim' \
-    #                                                               f'should be lowest here. i.e. we want ' \
-    #                                                               f'{scca_full_mini_imagenet_data}<{scca_full_random_data}'
-    # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
-    # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
+# def anatome_test_are_random_vs_pretrain_resnets_different():
+#     """
+#     random vs pre-trained nets should show different nets
+#     - no downsample
+#     - still true if downsample (but perhaps similarity increases, due to collapsing nets makes r.v.s
+#     interact more btw each other, so correlation is expected to increase).
+#     """
+#     from torchvision.models import resnet18
+#     B = 1024
+#     C, H, W = 3, 64, 64
+#     print(f'Din ~ {(C*H*W)=}')
+#     downsample_size = 4
+#     mdl1 = resnet18()
+#     mdl2 = resnet18(pretrained=True)
+#     # - layer name
+#     # layer_name = 'bn1'
+#     # layer_name = 'layer1.0.bn2'
+#     # layer_name = 'layer2.1.bn2'
+#     layer_name = 'layer4.1.bn2'
+#     # layer_name = 'fc'
+#     print(f'{layer_name=}')
+#
+#     # # -- we expect low CCA/sim since random nets vs pre-trained nets are different (especially on real data)
+#     # # - random data test
+#     X: torch.Tensor = torch.distributions.Uniform(low=-1, high=1).sample((B, C, H, W))
+#     scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
+#     # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
+#     # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
+#     print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
+#           f'-> {scca_full_random_data=} (but might be more similar than expected on random data)')
+#     # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+#     # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
+#
+#     #
+#     mdl1 = resnet18()
+#     mdl2 = resnet18(pretrained=True)
+#     # - mini-imagenet test (the difference should be accentuated btw random net & pre-trained on real img data)
+#     from uutils.torch_uu.dataloaders import get_set_of_examples_from_mini_imagenet
+#     B = 512
+#     k_eval: int = B  # num examples is about M = k_eval*(num_classes) = B*(num_classes)
+#     X: torch.Tensor = get_set_of_examples_from_mini_imagenet(k_eval)
+#     scca_full_mini_imagenet_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None)
+#     scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='pwcca')
+#     # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='lincka')
+#     # scca_full_random_data: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=None, cxa_dist_type='svcca')
+#     print(f'Are random net & pre-trained net similar? They should not (so sim should be small):\n'
+#           f'{scca_full_mini_imagenet_data=} (the difference should be accentuated with real data, so lowest sim)')
+#     print()
+#     # assert(scca_full_mini_imagenet_data < scca_full_random_data), f'Sim should decrease, because the pre-trained net' \
+#     #                                                               f'was trained on real images, so the weights are' \
+#     #                                                               f'tuned for it but random weights are not, which' \
+#     #                                                               f'should increase the difference so the sim' \
+#     #                                                               f'should be lowest here. i.e. we want ' \
+#     #                                                               f'{scca_full_mini_imagenet_data}<{scca_full_random_data}'
+#     # scca_downsampled: float = sCXA(mdl1, mdl2, X, layer_name, downsample_size=downsample_size)
+#     # print(f'Are random net & pre-trained net similar? They should not (so sim should be small): {scca_downsampled=}')
 
 
 def anatome_test_what_happens_when_downsampling_increases_do_nets_get_more_similar_or_different():
@@ -3012,30 +3048,30 @@ def grad_clipper_hook_test():
     print(clipped_resnet.fc.bias.grad[:25])
 
 
-def _resume_from_checkpoint_meta_learning_for_resnets_rfs_test():
-    import uutils
-    from uutils.torch_uu.models import reset_all_weights
-    import copy
-    # - get args to ckpt
-    args: Namespace = Namespace()
-    args.path_to_checkpoint: str = '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668'
-    args: Namespace = uutils.make_args_from_metalearning_checkpoint(args=args,
-                                                                    path2args=args.path_to_checkpoint,
-                                                                    filename='args.json',
-                                                                    precedence_to_args_checkpoint=True,
-                                                                    it=37_500)
-    args: Namespace = uutils.setup_args_for_experiment(args)
-    # - get model from ckpt
-    mdl_ckpt, outer_opt, meta_learner = get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args,
-                                                                                                    path2ckpt=args.path_to_checkpoint,
-                                                                                                    filename='ckpt_file.pt')
-    # - mdl_rand
-    mdl_rand = copy.deepcopy(mdl_ckpt)
-    reset_all_weights(mdl_rand)
-    # - print if ckpt model is different from a random model
-    print(lp_norm(mdl_ckpt))
-    print(lp_norm(mdl_rand))
-    assert (lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
+# def _resume_from_checkpoint_meta_learning_for_resnets_rfs_test():
+#     import uutils
+#     from uutils.torch_uu.models import reset_all_weights
+#     import copy
+#     # - get args to ckpt
+#     args: Namespace = Namespace()
+#     args.path_to_checkpoint: str = '~/data_folder_fall2020_spring2021/logs/nov_all_mini_imagenet_expts/logs_Nov05_15-44-03_jobid_668'
+#     args: Namespace = uutils.make_args_from_metalearning_checkpoint(args=args,
+#                                                                     path2args=args.path_to_checkpoint,
+#                                                                     filename='args.json',
+#                                                                     precedence_to_args_checkpoint=True,
+#                                                                     it=37_500)
+#     args: Namespace = uutils.setup_args_for_experiment(args)
+#     # - get model from ckpt
+#     mdl_ckpt, outer_opt, meta_learner = get_model_opt_meta_learner_to_resume_checkpoint_resnets_rfs(args,
+#                                                                                                     path2ckpt=args.path_to_checkpoint,
+#                                                                                                     filename='ckpt_file.pt')
+#     # - mdl_rand
+#     mdl_rand = copy.deepcopy(mdl_ckpt)
+#     reset_all_weights(mdl_rand)
+#     # - print if ckpt model is different from a random model
+#     print(lp_norm(mdl_ckpt))
+#     print(lp_norm(mdl_rand))
+#     assert (lp_norm(mdl_ckpt) != lp_norm(mdl_rand))
 
 
 # -- _main
@@ -3051,5 +3087,5 @@ if __name__ == '__main__':
     # anatome_test_are_random_vs_pretrain_resnets_different()
     # verbose_exec_test()
     # feature_extractor_hook_test()
-    _resume_from_checkpoint_meta_learning_for_resnets_rfs_test()
+    # _resume_from_checkpoint_meta_learning_for_resnets_rfs_test()
     print('Done\a')

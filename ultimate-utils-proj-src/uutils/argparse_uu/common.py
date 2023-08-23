@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import os
 import sys
 from argparse import Namespace
@@ -11,17 +13,27 @@ from datetime import datetime
 
 from uutils.logging_uu.wandb_logging.common import setup_wandb
 
-
 def create_default_log_root(args: Namespace):
     """
     Create the default place where we save things to.
     """
-    args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
+    import random
+    # - make sure prefix $HOME/data/logs/ is in args.log_root Path
+    print(f'{args.log_root=}')
+    # args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
+    # for now always overwrite the log_root since you need to guarantee the given log_root is on the machine this process is running on.
+    args.log_root: Path = Path('~/data/logs/').expanduser()
     args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
     args.log_root: Path = args.log_root.expanduser()
+    assert isinstance(args.log_root, Path), f'Error, it is not of type Path: {args.log_root=}'
     args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
+    # wandb_str helps to identify which wandb runs are more likely to be important (since they used wandb)
+    wandb_str: str = f'_wandb_{args.log_to_wandb}' if hasattr(args, 'log_to_wandb') else 'code_without_wandb'
+    args.PID = str(os.getpid()) if not hasattr(args, 'PID') else args.PID
+    args.jobid: int = random.randint(0, 50000) if not hasattr(args, 'jobid') else args.jobid
+    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}_pid_{args.PID}{wandb_str}'
     args.log_root.mkdir(parents=True, exist_ok=True)
+    print(f'{args.log_root=}')
 
 
 def setup_args_for_experiment(args: Namespace,
@@ -73,6 +85,7 @@ def setup_args_for_experiment(args: Namespace,
     from uutils.logger import Logger as uuLogger
 
     # - set the iteration/epoch number to start training from
+    # args.training_mode = 'iterations' if args.training_mode is None else args.training_mode
     if 'iterations' in args.training_mode:
         # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
         args.it = 0 if not hasattr(args, 'it') else args.it
@@ -128,31 +141,115 @@ def setup_args_for_experiment(args: Namespace,
     if hasattr(args, 'no_validation'):
         args.validation = not args.no_validation
 
-    # - distributed params
+    # - default "empty" distributed params, for now each dist main sets up their own dist rank e.g. ddp, l2l, etc in their main
     args.rank = -1  # should be written by each worker with their rank, if not we are running serially
     args.master_port = find_free_port()
-
-    # - determinism
-    print(f'{args.seed=}')
-    if hasattr(args, 'always_use_deterministic_algorithms'):
-        if args.always_use_deterministic_algorithms:
-            uutils.torch_uu.make_code_deterministic(args.seed)
-        logging.warning(f'Seed being ignored, seed value: {args.seed=}')
-    if args.seed != -1:
-        uutils.seed_everything(args.seed)
-
-    # - get device name
-    # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    from uutils.torch_uu.distributed import set_devices
-    set_devices(args)  # args.device = rank or .device
-    print(f'device: {args.device}')
+    # note, currently the true distributed args are set up in the main train file/func todo: perhaps move here? might have to make cases, one for ddp, pytorch mp, one serial, one l2l...worth it?
 
     # - get cluster info (including hostname)
     load_cluster_jobids_to(args)
 
+    # - save PID
+    args.PID = str(os.getpid())
+    print(f'{args.PID=}')
+    if torch.cuda.is_available():
+        args.nccl = torch.cuda.nccl.version()
+
+    # - determinism?
+    print(f'Original seed from args: {args.seed=}')
+    if hasattr(args, 'always_use_deterministic_algorithms'):
+        # this does set the seed but it also does much more e.g. tries to make convs etc deterministic if possible.
+        fully_deterministic: bool = False
+        if args.always_use_deterministic_algorithms:
+            fully_deterministic: bool = uutils.torch_uu.make_code_deterministic(args.seed)
+        # todo fix, warn only if code is not fully deterministic
+        if not fully_deterministic:
+            logging.warning(f'Seed possibly being ignored, seed value: {args.seed=}')
+    # - seed only if the user chose a seed, else set a truly different seed. Reason we decided this 1. if we set the seed & make sure it's always different we can always have the code act differently 2. by always acting randomly AND choosing a seed and saving it in args it makes our code (hopefully fully reproducible, but this details about torch might not make it but at least we are trying really hard to be reproducible)
+    if args.seed != -1:  # if seed set (-1 is not set), args.seed != -1 means seed not set
+        uutils.seed_everything(args.seed)
+    else:
+        # if seed not seed then set a truly random seed, this should be different even if python is re-ran given it uses the OS
+        args.seed = uutils.get_truly_random_seed_through_os(rand_size=3)
+    print(f'Seed after code tries to setup args: {args.seed=}')
+
+    # - get device name: Decided to not put it here since for now this function is not ran by each rank, but instead by the main process, so we can't get the device name here, we have to get it in the main train file/func
+    # args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # from uutils.torch_uu.distributed import set_devices
+    # set_devices(args)  # args.device = rank or .device
+    # print(f'device: {args.device}')
+    # get device name if possible
+    try:
+        args.gpu_name = torch.cuda.get_device_name(0)
+    except:
+        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        args.gpu_name = args.device
+    print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
+
+    # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
+    # logging.warning('uutils email is not recommended! very unreliable, especially from cluster to cluster)
+    # args.mail_user = 'brando.science@gmail.com'
+    # args.pw_path = Path('~/pw_app.config.json').expanduser()
+
+    # - try to get githash, might fail and return error string in field but whatever
+    args.githash: str = try_to_get_git_revision_hash_short()
+    args.githash_short: str = try_to_get_git_revision_hash_short()
+    args.githash_long: str = try_to_get_git_revision_hash_long()
+
+    # - get my logger, its set at the agent level
+    args.logger: uuLogger = uutils.logger.Logger(args)
+
     # - get log_root
     # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
     create_default_log_root(args)
+
+    # - get bar
+    from uutils.torch_uu.training.common import get_trainer_progress_bar
+    args.bar = get_trainer_progress_bar(args)
+
+    # - best val loss
+    args.best_val_loss: float = float('inf')
+
+    # -- wandb.  note, nice safety property of my logging when it does log to wandb it always checks rank.
+    if hasattr(args, 'log_to_wandb'):
+        if not hasattr(args, 'dist_option'):  # backwards compatibility, if no dist_option just setup wandb as "normal"
+            # read above 2 comments and one bellow
+            setup_wandb(args)
+        else:  # hasattr(args, 'dist_option')
+            # todo this might be set up cleaner if we setup args in this function and not in main train
+            # if custom dist_option needed then we might need more careful starting & setting up wandb e.g. if multiple python processes are used
+            if args.dist_option != 'l2l_dist':
+                # todo this might be set up cleaner if we setup args in this function and not in main train
+                # in this case wandb has to be setup in the train code, since it's not being ran with ddp, instead the
+                # script itself is distributed and pytorch manages it i.e. pytorch torch.distributed.run manages the
+                # mp.spawn or spwaning processes somehow.
+                pass
+            elif args.dist_option == 'l2l_dist':
+                # todo this might be set up cleaner if we setup args in this function and not in main train
+                # setup of wandb is done in main train after args.rank is set up properly,
+                pass
+        # # - set up wandb
+        # # thought this was justified to ignore above since the main (singe) python process sets up wandb once and then the spawned processes always check their rank before logging to wandb
+        # # BUT, due to multiple python process thing in the != l2l_dist it might mean this setsup wandb multiple times, so main or train code needs to check rank to avoid this
+        # ### WARNING, don't use in this func, see l2l_dist case, setup_wandb(args)  # already checks args.log_to_wandb inside of it
+
+    # - for debugging
+    # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
+
+    # - to avoid pytorch multiprocessing issues with CUDA: https://pytorch.org/docs/stable/data.html
+    args.pin_memory = False
+    args.num_workers = num_workers if num_workers is not None else args.num_workers
+
+    # - run re-auth if in stanford cluster
+    from socket import gethostname
+    if 'stanford' in gethostname():
+        # bellow commented out because this was used for nohup but we aren't doing nohup anymore
+        # print(f'In stanford hostname: {gethostname()=}, about to do stanford reauth in python')
+        # from uutils import stanford_reauth
+        # stanford_reauth()
+        # print(f'finished calling stanford reauth inside python')
+        pass
+
     # create tb in log_root
     if use_tb:
         from torch.utils.tensorboard import SummaryWriter
@@ -172,63 +269,12 @@ def setup_args_for_experiment(args: Namespace,
                 raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
                                  f'with value: {args.path_to_checkpoint=}')
 
-    # - get device name if possible
-    try:
-        args.gpu_name = torch.cuda.get_device_name(0)
-    except:
-        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        args.gpu_name = args.device
-    print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
-
-    # - save PID
-    args.PID = str(os.getpid())
-    if torch.cuda.is_available():
-        args.nccl = torch.cuda.nccl.version()
-
-    # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
-    # logging.warning('uutils email is not recommended! very unreliable, especially from cluster to cluster)
-    # args.mail_user = 'brando.science@gmail.com'
-    # args.pw_path = Path('~/pw_app.config.json').expanduser()
-
-    # - try to get githash, might fail and return error string in field but whatever
-    args.githash: str = try_to_get_git_revision_hash_short()
-    args.githash_short: str = try_to_get_git_revision_hash_short()
-    args.githash_long: str = try_to_get_git_revision_hash_long()
-
-    # - get my logger, its set at the agent level
-    args.logger: uuLogger = uutils.logger.Logger(args)
-
-    # - best val loss
-    args.best_val_loss: float = float('inf')
-
-    # - wandb
-    if hasattr(args, 'log_to_wandb'):
-        if not hasattr(args, 'dist_option'):  # backwards compatibility, if no dist_option just setup wandb as "normal"
-            setup_wandb(args)
-        elif args.dist_option != 'l2l_dist':
-            #  in this case wandb has to be setup in the train code, since it's not being ran with ddp, instead the
-            # script itself is distributed and pytorch manages it (i.e. pytorch torch.distributed.run manages the
-            # mp.spawn or spwaning processes somehow.
-            pass
-    # - for debugging
-    # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
-
-    # - to avoid pytorch multiprocessing issues with CUDA: https://pytorch.org/docs/stable/data.html
-    args.pin_memory = False
-    args.num_workers = num_workers if num_workers is not None else args.num_workers
-
-    # - run re-auth if in stanford cluster
-    from socket import gethostname
-    if 'stanford' in gethostname():
-        print(f'In stanford hostname: {gethostname()=}, about to do stanford reauth in python')
-        from uutils import stanford_reauth
-        stanford_reauth()
-        print(f'finished calling stanford reauth inside python')
+    # - save os.environ
+    # make a deep copy of os.environ
+    # args.environ = deepcopy(dict(os.environ))
+    args.CUDA_VISIBLE_DEVICES = os.environ.get('CUDA_VISIBLE_DEVICES', None)
 
     # - return
     uutils.print_args(args)
     uutils.save_args(args)
     return args
-
-
-

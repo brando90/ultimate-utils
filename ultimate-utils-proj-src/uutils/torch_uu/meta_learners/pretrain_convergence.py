@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 import torch
 import torch.nn as nn
 
@@ -24,31 +26,31 @@ from uutils.torch_uu.metrics.confidence_intervals import torch_compute_confidenc
     mean_confidence_interval
 from uutils.torch_uu.models import getattr_model
 
-# import torch
-# from sklearn import metrics
-# from sklearn.svm import SVC, LinearSVC
-# from sklearn.linear_model import LogisticRegression
-# from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.ensemble import RandomForestClassifier
-#
-# from sklearn.pipeline import make_pipeline
-# from sklearn.preprocessing import StandardScaler
-
 from pdb import set_trace as st, set_trace
 
 
 class FitFinalLayer(nn.Module):
 
     def __init__(self,
-                 args,
-                 base_model,
-                 target_type='classification',
-                 classifier='LR'):
+                 args: Namespace,
+                 model: nn.Module,
+                 target_type: str = 'classification',
+                 classifier: str = 'LR',
+                 ):
         super().__init__()
         self.args = args
-        self.base_model = base_model
+        self.model = model
         self.target_type = target_type
         self.classifier = classifier
+
+    @property
+    def base_model(self):
+        return self.model
+
+    # set field as function base_model
+    @base_model.setter
+    def base_model(self, model: nn.Module):
+        self.model = model
 
     def forward(self, batch,
                 training: bool = True,
@@ -57,6 +59,36 @@ class FitFinalLayer(nn.Module):
         """
         training true since we want BN to use batch statistics (and not cheat, etc)
         """
+        # -- Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
+        # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
+        meta_losses, meta_accs = self.get_lists_accs_losses(batch, training, is_norm)
+
+        # -- return loss, acc with CIs
+        meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
+        meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
+        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+    def eval_forward(self, batch,
+                     training: bool = True,
+                     is_norm: bool = False,
+                     ):
+        """
+        note:
+            - Does a forward pass. It's the same as forward just so that all Agents have the same interface.
+            This one looks redundant and it is, but it's here for consistency with the SL agents.
+            The eval forward is different in SL agents.
+            - training true since we want BN to use batch statistics (and not cheat, etc)
+        """
+        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training, is_norm)
+        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
+
+    def get_lists_accs_losses(self, batch,
+                              training: bool = True,
+                              is_norm: bool = False,
+                              ):
+        """
+        Get the list of accuracies and losses for each task in the meta-batch
+        """
         spt_x, spt_y, qry_x, qry_y = process_meta_batch(self.args, batch)
         # Accumulate gradient of meta-loss wrt fmodel.param(t=0)
         meta_batch_size = spt_x.size(0)
@@ -64,9 +96,9 @@ class FitFinalLayer(nn.Module):
         for t in range(meta_batch_size):
             spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
 
-            self.base_model.train() if training else self.base_model.eval()
-            spt_embeddings_t = self.get_embedding(spt_x_t, self.base_model).detach()
-            qry_embeddings_t = self.get_embedding(qry_x_t, self.base_model).detach()
+            self.model.train() if training else self.model.eval()
+            spt_embeddings_t = self.get_embedding(spt_x_t, self.model).detach()
+            qry_embeddings_t = self.get_embedding(qry_x_t, self.model).detach()
 
             if is_norm:
                 spt_embeddings_t = normalize(spt_embeddings_t)
@@ -77,7 +109,6 @@ class FitFinalLayer(nn.Module):
                 qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
                 spt_y_t = spt_y_t.view(-1).cpu().numpy()
                 qry_y_t = qry_y_t.view(-1).cpu().numpy()
-                # set_trace()
                 # print(f'{spt_embeddings_t.shape=}')
 
                 # Inner-Adapt final layer with spt set
@@ -134,27 +165,14 @@ class FitFinalLayer(nn.Module):
             else:
                 raise ValueError(f'Not implement: {self.target_type}')
 
-            # collect losses & accs for logging/debugging
+            # collect losses & accs
             meta_losses.append(qry_loss_t.item())
-            # meta_losses.append(qry_loss_t)
             meta_accs.append(qry_acc_t)
+        assert len(meta_losses) == meta_batch_size, f'Error: {len(meta_losses)=} {meta_batch_size=}'
+        return meta_losses, meta_accs
 
-        # Get average meta-loss/acc of the meta-learner i.e. 1/B sum_b Loss(qrt_i, f) = E_B E_K[loss(qrt[b,k], f)]
-        # average loss on task of size K-eval over a meta-batch of size B (so B tasks)
-        assert (len(meta_losses) == meta_batch_size)
-        meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
-        meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
-        return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
-
-    def eval_forward(self, batch, training: bool = True):
-        """
-        training true since we want BN to use batch statistics (and not cheat, etc)
-        """
-        meta_loss, meta_loss_std, meta_acc, meta_acc_std = self.forward(batch, training)
-        return meta_loss, meta_loss_std, meta_acc, meta_acc_std
-
-    def get_embedding(self, x: Tensor, base_model: nn.Module) -> Tensor:
-        return get_embedding(x=x, base_model=base_model)
+    def get_embedding(self, x: Tensor, model: nn.Module) -> Tensor:
+        return get_embedding(x=x, model=model)
 
     def regression(self):
         self.target_type = 'regression'
@@ -163,13 +181,13 @@ class FitFinalLayer(nn.Module):
         self.target_type = 'classification'
 
     def train(self):
-        self.base_model.train()
+        self.model.train()
 
     def eval(self):
-        self.base_model.eval()
+        self.model.eval()
 
 
-def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
+def get_adapted_according_to_ffl(model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
                                  layer_to_replace: str,
                                  training: bool = True,
                                  target_type: str = 'classification',
@@ -178,9 +196,9 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
     Return the adapted model such that the final layer has the LR fined tuned model.
     """
     # spt_x_t, spt_y_t, qry_x_t, qry_y_t = spt_x[t], spt_y[t], qry_x[t], qry_y[t]
-    base_model.train() if training else base_model.eval()
-    spt_embeddings_t = get_embedding(spt_x_t, base_model).detach()
-    qry_embeddings_t = get_embedding(qry_x_t, base_model).detach()
+    model.train() if training else model.eval()
+    spt_embeddings_t = get_embedding(spt_x_t, model).detach()
+    qry_embeddings_t = get_embedding(qry_x_t, model).detach()
     if target_type == 'classification':
         spt_embeddings_t = spt_embeddings_t.view(spt_embeddings_t.size(0), -1).cpu().numpy()
         qry_embeddings_t = qry_embeddings_t.view(qry_embeddings_t.size(0), -1).cpu().numpy()
@@ -203,9 +221,9 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
             query_y_probs_t = clf.predict_proba(qry_embeddings_t)
 
             # - get layer_to_replace e.g. model.cls
-            module: nn.Module = getattr_model(base_model, layer_to_replace)
+            module: nn.Module = getattr_model(model, layer_to_replace)
             assert module is not None, f'Final layer module is None instead of a pytorch module see: {module=}'
-            # assert module is base_model.model.cls
+            # assert module is model.model.cls
 
             # - replace weights into model
             # coef_ndarray of shape (1, n_features) or (n_classes, n_features)
@@ -239,27 +257,28 @@ def get_adapted_according_to_ffl(base_model, spt_x_t, spt_y_t, qry_x_t, qry_y_t,
         assert False
     else:
         raise ValueError(f'Not implement: {target_type}')
-    return base_model
+    return model
 
 
-def get_embedding(x: Tensor, base_model: nn.Module) -> Tensor:
+def get_embedding(x: Tensor, model: nn.Module) -> Tensor:
     """ apply f until the last layer, instead return that as the embedding """
     out = x
     # if it has a get embedding later
-    if hasattr(base_model, 'get_embedding'):
-        out = base_model.get_embedding(x)
+    if hasattr(model, 'get_embedding'):
+        out = model.get_embedding(x)
         return out
     # for l2l
-    if hasattr(base_model, 'features'):
-        out = base_model.features(x)
+    if hasattr(model, 'features'):
+        out = model.features(x)
         return out
-    # for handling base_models with self.model.features self.model.cls format
-    if hasattr(base_model, 'model'):
-        out = base_model.model.features(x)
-        return out
-    # for handling synthetic base base_models
+    # for handling models with self.model.features self.model.cls format
+    if hasattr(model, 'model'):
+        if hasattr(model.model, 'features'):
+            out = model.model.features(x)
+            return out
+    # for handling synthetic base models
     # https://discuss.pytorch.org/t/module-children-vs-module-modules/4551/3
-    for name, m in base_model.named_children():
+    for name, m in model.named_children():
         if 'final' in name:
             return out
         if 'l2' in name and 'final' not in name:  # cuz I forgot to write final...sorry!
@@ -295,6 +314,7 @@ def Cosine(support, support_ys, query):
     pred = [support_ys[idx] for idx in max_idx]
     return pred
 
+
 def Proto(support, support_ys, query, opt):
     """Protonet classifier"""
     nc = support.shape[-1]
@@ -307,20 +327,39 @@ def Proto(support, support_ys, query, opt):
     pred = np.reshape(pred, (-1,))
     return pred
 
+
 # - tests
 
-def setup_and_get_logger(args):
-    args.logging = True
-    args.log_root = Path('//experiments/logs/').expanduser()
-    current_logs_dir = Path(f'logs')
-    args.current_logs_path = args.log_root / current_logs_dir
-    args.current_logs_path.mkdir(parents=True, exist_ok=True)
-    # set up path + log filename
-    my_stdout_filename = Path('my_stdout.log')
-    args.my_stdout_filepath = args.current_logs_path / my_stdout_filename
-    # make logger
-    logger = Logger(args)  # logs to file & console
-    return logger
+def features_vit_pre_train():
+    # - ViT feature extractor
+    from transformers import ViTFeatureExtractor, ViTModel
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.meta_learning import get_args_vit_mdl_maml_l2l_agent_default
+    args: Namespace = get_args_vit_mdl_maml_l2l_agent_default()
+    from uutils.torch_uu.distributed import set_devices
+    set_devices(args)
+    get_and_create_model_opt_scheduler_for_run(args)
+    print(f'{type(args.model)=}')
+    x = torch.randn(25, 3, 84, 84)
+    features = get_embedding(x, args.model)
+    print(f'{features.shape=}')
+    print()
+
+    # - using my ViT cls class
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        forward_pass_with_pretrain_convergence_ffl_meta_learner
+    forward_pass_with_pretrain_convergence_ffl_meta_learner()
+    agent = FitFinalLayer(args, args.model)
+    x = torch.randn(3, 25, 3, 84, 84)
+    y = torch.randint(low=0, high=5, size=(x.size(0), x.size(1)), dtype=torch.long)
+    meta_loss, meta_loss_ci, meta_acc, meta_acc_ci = agent([x, y, x, y])
+    print(f'{meta_loss=}, {meta_loss_ci=}, {meta_acc=}, {meta_acc_ci=}')
+
+    # -
+    from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import \
+        forward_pass_with_pretrain_convergence_ffl_meta_learner
+    forward_pass_with_pretrain_convergence_ffl_meta_learner()
+    agent = FitFinalLayer(args, args.model)
 
 
 if __name__ == '__main__':
@@ -329,5 +368,6 @@ if __name__ == '__main__':
 
     start = time.time()
     # test_f_rand_is_worse_than_f_avg()
+    features_vit_pre_train()
     seconds = time.time() - start
     print(f'seconds = {seconds}, hours = {seconds / 60} \n\a')

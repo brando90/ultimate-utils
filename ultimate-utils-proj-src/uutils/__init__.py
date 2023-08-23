@@ -66,16 +66,6 @@ def hello_world():
     hello()
 
 
-def print_pids():
-    import torch.multiprocessing as mp
-
-    print('running main()')
-    print(f'current process: {mp.current_process()}')
-    print(f'pid: {os.getpid()}')
-
-
-# -
-
 def print_file(path_or_str: Union[str, Path]) -> None:
     """ prints the content of a file """
     cat_file(path2filename=path_or_str)
@@ -104,250 +94,6 @@ def print_python_version():
 
 
 # - getting args for expts
-
-def setup_args_for_experiment(args: Namespace,
-                              num_workers: int = 0,
-                              use_tb: bool = False  # not needed anymore since wandb exists
-                              ) -> Namespace:
-    """
-    Sets up programming details for experiment to run but it should not affect the machine learning results.
-    The pretty print & save the args in alphabetically sorted order.
-
-    Note:
-        - This function assume the arguments for the experiment have been given already (e.g. through the terminal
-        or manually hardcoded in the main/run script).
-
-    Example/Recommended pattern to use:
-    1. From terminal (e.g. by running a bash main.sh script that runs python main_experiment.py):
-        args = parse_basic_meta_learning_args_from_terminal()
-        args = uutils.setup_args_for_experiment(args)
-        main(args)
-        wandb.finish() if is_lead_worker(args.rank) and args.log_to_wandb else None
-        print("Done with experiment, success!\a")
-
-    2. From script (also called, manual or hardcoded)
-        args = parse_basic_meta_learning_args_from_terminal()
-        args = manual_values_for_run(args)  # e.g. args.batch_size = 64, or ckpt
-        args = uutils.setup_args_for_experiment(args)
-        main(args)
-        wandb.finish() if is_lead_worker(args.rank) and args.log_to_wandb else None
-        print("Done with experiment, success!\a")
-
-    Things it sets up:
-        - 1. makes sure it has intial index (or use the one provided by user/checkpoint
-        - gets rank, port for DDP
-        - sets determinism or not
-        - device name
-        - dirs & filenames for logging
-        - cluster job id stuff
-        - pid, githash
-        - best_val_loss as -infinity
-        - wandb be stuff based on your options
-    todo:
-        - decide where to put annealing, likely in the parse args from terminal and set the default there. Likely
-        no annealing as default, or some rate that is done 5 times during entire training time or something like
-        that is based on something that tends to work.
-    """
-    import torch
-    import logging
-    import uutils
-    from uutils.logger import Logger as uuLogger
-
-    # - 0. to make sure epochs or iterations is explicit, set it up in the argparse arguments
-    assert args.training_mode in ['epochs', 'iterations']
-    # - 1. set the iteration/epoch number to start training from
-    if args.training_mode == 'iterations':
-        # set the training iteration to start from beginning or from specified value (e.g. from ckpt iteration index).
-        args.it = 0 if not hasattr(args, 'it') else args.it
-        assert args.it >= 0, f'Iteration to train has to be start at zero or above but got: {args.it}'
-        args.epoch_num = -1
-    elif args.training_mode == 'epochs':
-        # set the training epoch number to start from beginning or from specified value e.g. from ckpt epoch_num index.
-        args.epoch_num = 0 if not hasattr(args, 'epoch_num') else args.epoch_num
-        assert args.epoch_num >= 0, f'Epoch number to train has to be start at zero or above but got: {args.epoch_num}'
-        args.it = -1
-    else:
-        raise ValueError(f'Invalid training mode: {args.training_mode}')
-    # - annealing learning rate...
-    # if (not args.no_validation) and (args.lr_reduce_steps is not None):
-    #     print('--lr_reduce_steps is applicable only when no_validation == True', 'ERROR')
-
-    # NOTE: this should be done outside cuz flags have to be declared first then parsed, args = parser.parse_args()
-    if hasattr(args, 'no_validation'):
-        args.validation = not args.no_validation
-
-    # - distributed params
-    args.rank = -1  # should be written by each worker with their rank, if not we are running serially
-    args.master_port = find_free_port()
-
-    # - determinism
-    if hasattr(args, 'always_use_deterministic_algorithms'):
-        if args.always_use_deterministic_algorithms:
-            uutils.torch_uu.make_code_deterministic(args.seed)
-            logging.warning(f'Seed being ignored, seed value: {args.seed=}')
-
-    # - get device name
-    print(f'{args.seed=}')
-    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'device: {args.device}')
-
-    # - get cluster info (including hostname)
-    load_cluster_jobids_to(args)
-
-    # - get log_root
-    # usually in options: parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-    args.log_root: Path = Path('~/data/logs/').expanduser() if not hasattr(args, 'log_root') else args.log_root
-    args.log_root: Path = Path(args.log_root).expanduser() if isinstance(args.log_root, str) else args.log_root
-    args.log_root: Path = args.log_root.expanduser()
-    args.current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    args.log_root = args.log_root / f'logs_{args.current_time}_jobid_{args.jobid}'
-    args.log_root.mkdir(parents=True, exist_ok=True)
-    # create tb in log_root
-    if use_tb:
-        from torch.utils.tensorboard import SummaryWriter
-        args.tb_dir = args.log_root / 'tb'
-        args.tb_dir.mkdir(parents=True, exist_ok=True)
-        args.tb = SummaryWriter(log_dir=args.tb_dir)
-
-    # - setup expanded path to checkpoint
-    if hasattr(args, 'path_to_checkpoint'):
-        # str -> Path(path_to_checkpoint).expand()
-        if isinstance(args.path_to_checkpoint, str):
-            args.path_to_checkpoint = Path(args.path_to_checkpoint).expanduser()
-        elif isinstance(args.path_to_checkpoint, Path):
-            args.path_to_checkpoint.expanduser()
-        elif args.path_to_checkpoint is None:  # do nothing since the args defualt is None
-            pass
-        else:
-            raise ValueError(f'Path to checkpoint is not of the right type: {type(args.path_to_checkpoint)=},'
-                             f'with value: {args.path_to_checkpoint=}')
-
-    # - get device name if possible
-    try:
-        args.gpu_name = torch.cuda.get_device_name(0)
-    except:
-        args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        args.gpu_name = args.device
-    print(f'\nargs.gpu_name = {args.gpu_name}\n')  # print gpu_name if available else cpu
-
-    # - save PID
-    args.PID = str(os.getpid())
-    if torch.cuda.is_available():
-        args.nccl = torch.cuda.nccl.version()
-
-    # - email option (warning, not recommended! very unreliable, especially from cluster to cluster)
-    # logging.warning('uutils email is not recommended! very unreliable, especially from cluster to cluster)
-    # args.mail_user = 'brando.science@gmail.com'
-    # args.pw_path = Path('~/pw_app.config.json').expanduser()
-
-    # - try to get githash, might fail and return error string in field but whatever
-    args.githash: str = try_to_get_git_revision_hash_short()
-    args.githash_short: str = try_to_get_git_revision_hash_short()
-    args.githash_long: str = try_to_get_git_revision_hash_long()
-
-    # - get my logger, its set at the agent level
-    args.logger: uuLogger = uutils.logger.Logger(args)
-
-    # - best val loss
-    args.best_val_loss: float = float('inf')
-
-    # - wandb
-    if hasattr(args, 'log_to_wandb'):
-        setup_wandb(args)
-    else:
-        pass
-
-    # - for debugging
-    # args.environ = [str(f'{env_var_name}={env_valaue}, ') for env_var_name, env_valaue in os.environ.items()]
-
-    # - to avoid pytorch multiprocessing issues with CUDA: https://pytorch.org/docs/stable/data.html
-    args.pin_memory = False
-    args.num_workers = num_workers
-
-    # - return
-    uutils.print_args(args)
-    uutils.save_args(args)
-    return args
-
-
-def _parse_basic_meta_learning_args_from_terminal() -> Namespace:
-    """
-    Parse the arguments from the terminal so that the experiment runs as the user specified there.
-    Example/Recommended pattern to use:
-        See setup_args_for_experiment(...) to avoid copy pasting example/only mantain it in one place.
-    Note:
-        - Strongly recommended to see setup_args_for_experiment(...)
-    """
-    import argparse
-    # import torch.nn as nn
-
-    parser = argparse.ArgumentParser()
-
-    # experimental setup
-    parser.add_argument('--debug', action='store_true', help='if debug')
-    parser.add_argument('--force_log', action='store_true', help='to force logging')
-    parser.add_argument('--serial', action='store_true', help='if running serially')
-    parser.add_argument('--args_hardcoded_in_script', action='store_true',
-                        help='set to true if the args will be set from the script manually'
-                             'e.g. by hardcoding them in the script.')
-
-    parser.add_argument('--split', type=str, default='train', help=' train, val, test')
-    # this is the name used in synth agent, parser.add_argument('--data_set_path', type=str, default='', help='path to data set splits')
-    parser.add_argument('--data_path', type=str, default='VALUE SET IN MAIN Meta-L SCRIPT',
-                        help='path to data set splits')
-
-    parser.add_argument('--log_root', type=str, default=Path('~/data/logs/').expanduser())
-
-    parser.add_argument('--num_epochs', type=int, default=-1)
-    parser.add_argument('--num_its', type=int, default=-1)
-    parser.add_argument('--training_mode', type=str, default='iterations')
-    # parser.add_argument('--no_validation', action='store_true', help='no validation is performed')
-    # parser.add_argument('--embed_dim', type=int, default=256)
-    # parser.add_argument('--nhead', type=int, default=8)
-    # parser.add_argument('--num_layers', type=int, default=1)
-    # parser.add_argument('--criterion', type=str, help='loss criterion', default=nn.CrossEntropyLoss())
-
-    # - optimization
-    # parser.add_argument('--optimizer', type=str, default='Adam')
-    # parser.add_argument('--learning_rate', type=float, default=1e-5)
-    # parser.add_argument('--num_warmup_steps', type=int, default=-1)
-    # parser.add_argument('--momentum', type=float, default=0.9)
-    # parser.add_argument('--batch_size', type=int, default=128)
-    # parser.add_argument('--l2', type=float, default=0.0)
-    # parser.add_argument('--lr_reduce_steps', default=3, type=int,
-    #                     help='the number of steps before reducing the learning rate \
-    #                     (only applicable when no_validation == True)')
-    # parser.add_argument('--lr_reduce_patience', type=int, default=10)
-
-    # - miscellaneous
-    parser.add_argument('--path_to_checkpoint', type=str, default=None,
-                        help='the model checkpoint path to resume from.')
-    parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--always_use_deterministic_algorithms', action='store_true',
-                        help='tries to make pytorch fully determinsitic')
-    # for now default is 4 since meta-learning code is not parallizable right now.
-    parser.add_argument('--num_workers', type=int, default=4,
-                        help='the number of data_lib-loading threads (when running serially')
-
-    # - sims/dists computations
-    parser.add_argument('--sim_compute_parallel', action='store_true', help='compute sim or dist in parallel.')
-    parser.add_argument('--metrics_as_dist', action='store_true', help='')
-    parser.add_argument('--show_layerwise_sims', action='store_true', help='show sim/dist values per layer too')
-
-    # - wandb
-    parser.add_argument('--log_to_wandb', action='store_true', help='store to weights and biases')
-    parser.add_argument('--wandb_project', type=str, default='meta-learning-playground')
-    parser.add_argument('--wandb_entity', type=str, default='brando')
-    parser.add_argument('--wandb_group', type=str, default='experiment_debug', help='helps grouping experiment runs')
-    # parser.add_argument('--wandb_log_freq', type=int, default=10)
-    # parser.add_argument('--wandb_ckpt_freq', type=int, default=100)
-    # parser.add_argument('--wanbd_mdl_watch_log_freq', type=int, default=-1)
-
-    # - parse arguments
-    args = parser.parse_args()
-    # - load cluster ids so that wandb can use it later for naming runs, experiments, etc.
-    load_cluster_jobids_to(args)
-    return args
 
 
 def parse_args() -> Namespace:
@@ -581,6 +327,7 @@ def stanford_reauth():
     out = run_bash_command(reauth_cmd)
     print('Output of reauth (/afs/cs/software/bin/reauth with password): ')
     print(f'--> {out=}')
+    raise Exception('For now we are not doing reauth within python')
 
 
 def get_nvidia_smi_output() -> str:
@@ -751,10 +498,12 @@ def timeSince(start):
     return msg, h
 
 
-def report_times(start: float) -> str:
+def report_times(start: float, verbose: bool = False) -> str:
     import time
     duration_secs = time.time() - start
     msg = f"time passed: hours:{duration_secs / (60 ** 2)}, minutes={duration_secs / 60}, seconds={duration_secs}"
+    if verbose:
+        print(msg)
     return msg
 
 
@@ -846,6 +595,52 @@ def xor(a: Any, b: Any) -> bool:
     return xor_bool
 
 
+def check_number_of_files_open_vs_allowed_open():
+    """
+    Checks if the number of files open is close to the number of files that can be open.
+
+    ref: https://stackoverflow.com/questions/12090503/listing-open-files-using-python
+    """
+    import resource
+    soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+    print(f"soft_limit={soft_limit}, hard_limit={hard_limit}")
+    # import psutil
+    # p = psutil.Process()
+    # print(f"number of files open={p.num_fds()}")
+    import psutil
+    open_files = 0
+    for process in psutil.process_iter():
+        try:
+            files = process.open_files()
+            open_files += len(files)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    print(f"Number of open files: {open_files}")
+
+
+def get_filtered_local_params(local_vars, verbose: bool = False, var_name_in_front: str = '') -> dict[str, Any]:
+    """
+    Set local_vars = locals() from parent function to print parent function input parameters & names.
+
+suggested call:
+    get_filtered_local_params(locals(), verbose=verbose, var_name_in_front='training_arguments') if verbose else None
+    """
+    # Get all local variables done outside the function
+    # e.g. local_vars = locals()
+
+    # Filter out undesired variables
+    filtered_vars = {k: v for k, v in local_vars.items() if k != 'self' and not k.startswith('__')}
+
+    # Print the variable names and their values
+    if verbose:
+        if var_name_in_front != '':
+            print(f"{var_name_in_front}:")
+        for var_name, var_value in filtered_vars.items():
+            print(f"{var_name}: {var_value}")
+    return filtered_vars
+
+
 ##
 
 def make_and_check_dir2(path):
@@ -867,35 +662,51 @@ ValueError: Seed must be between 0 and 2**32 - 1
 """
 
 
-def get_truly_random_seed_through_os():
+def get_truly_random_seed_through_os(rand_size: int = 4) -> int:
     """
     Usually the best random sample you could get in any programming language is generated through the operating system. 
     In Python, you can use the os module.
 
     source: https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch/57416967#57416967
     """
-    RAND_SIZE = 4
     random_data = os.urandom(
-        RAND_SIZE
+        rand_size
     )  # Return a string of size random bytes suitable for cryptographic use.
-    random_seed = int.from_bytes(random_data, byteorder="big")
-    return random_seed
+    random_seed: int = int.from_bytes(random_data, byteorder="big")
+    return int(random_seed)
 
 
-def seed_everything(seed: int = 42):
+def get_different_pseudo_random_seed_every_time_using_time() -> int:
+    """ Get a different pseudo random seed every time using time."""
+    import random
+    import time
+
+    # random.seed(int(time.time()))
+    seed: int = int(time.time())
+    return seed
+
+
+def seed_everything(seed: int,
+                    seed_torch: bool = True,
+                    ):
     """
     https://stackoverflow.com/questions/57416925/best-practices-for-generating-a-random-seeds-to-seed-pytorch
     """
-    import torch
     import random
+    import numpy as np
+    import os
 
     random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    # #torch.use_deterministic_algorithms(True) # do not uncomment
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    if seed_torch:
+        import torch
+        torch.manual_seed(seed)
+        # makes convs deterministic: https://stackoverflow.com/a/66647424/1601580, torch.backends.cudnn.deterministic=True only applies to CUDA convolution operations, and nothing else. Therefore, no, it will not guarantee that your training process is deterministic
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # #torch.use_deterministic_algorithms(True) # do not uncomment
+        # fully_deterministic: bool = uutils.torch_uu.make_code_deterministic(args.seed)
 
 
 def get_hostname_mit():
@@ -1048,7 +859,7 @@ def pprint_dict(dic):
     pprint_any_dict(dic)
 
 
-def pprint_any_dict(dic: dict, indent: Optional[int] = None):
+def pprint_any_dict(dic: dict, indent: Optional[int] = None, var_name_in_front: str = ''):
     """
     This pretty prints a json.
 
@@ -1060,6 +871,8 @@ def pprint_any_dict(dic: dict, indent: Optional[int] = None):
     todo: how to have pprint do indent and keep value without making it into a string.
     """
     import json
+    if var_name_in_front != '':
+        print(f'{var_name_in_front}=')
 
     if indent:
         # make all keys strings recursively with their naitve str function
@@ -1633,6 +1446,25 @@ def merge_args(starting_args: Namespace, updater_args: Namespace) -> Namespace:
     return args
 
 
+def check_dict1_is_in_dict2(dict1: dict,
+                            dict2: dict,
+                            verbose: bool = False,
+                            ) -> bool:
+    """
+    Check if dict1 is in dict2. i.e. dict1 <= dict2.
+    """
+    for k, v in dict1.items():
+        if k not in dict2:
+            print(f'--> {k=} is not in dict2 with value {dict1[k]=}')
+            return False
+        if v != dict2[k]:
+            print(f'--> {k=} is in dict2 but with different value \n{dict1[k]=} \n{dict2[k]=}')
+            return False
+        if verbose:
+            print(f"--> {k=} is in both dicts, look: \n{dict1[k]=} \n{dict2[k]=} \n")
+    return True
+
+
 def is_pos_def(x: np.ndarray) -> bool:
     """
     ref:
@@ -1996,6 +1828,42 @@ def _download_ala_l2l_their_original_code(urls, root, raw_folder, processed_fold
     print("Download finished.")
 
 
+# -- bytes for model size
+
+def calculate_bytes_for_model_size(num_params: int,
+                                   precision: str = 'float32_bytes',
+                                   ) -> int:
+    """
+    Calculates size of model in given precision ideally in bytes:
+        size = num_params * precision in bytes (number of bytes to represent float)
+
+    bits -> bytes == bits / 8 (since 1 bytes is 8 bits)
+
+    number of GigaBytes for model size = num_params * precision in bytes
+    1 Byte = 8 bits ~ 1 character = 1 addressable unit in memmory
+    FB32 = 4 bytes = 4 * 8 bits = 32 bits = 1S 8Exp 23Mantissa
+    FB16 = 2 bytes = 2 * 8 bits = 16 bits = 1S 5Exp 10Mantissa
+    BF16 = 2 bytes = 2 * 8 bits = 16 bits = 1S 8Exp 7Mantissa
+    Example:
+        num_params = 176B (bloom-176B)  # note gpt3 175B params
+        precision = 'bfloat16_bytes'  # 4 bytes
+        size = 176B * 4 = 176 * 10**8 * 2 = 352 * 10**8 = 352GB (giga bytes)
+    :param num_params:
+    :return:
+    """
+    size: int = -1
+    if precision == 'float32_bytes':
+        num_bytes: int = 4
+        size: int = num_params * num_bytes
+    if 'bytes' not in precision or 'bits' in precision:  #
+        # return in bits
+        size: int = num_params * num_bytes * 8
+        return size
+    else:
+        # return in bytes
+        return size
+
+
 # -- regex
 
 def matches_regex(regex: str, content: str) -> Optional[Match[str]]:
@@ -2083,6 +1951,78 @@ def lists_equal(l1: list, l2: list) -> bool:
     set_comp = set(l1) == set(l2)  # removes duplicates, so returns true when not sometimes :(
     multiset_comp = compare(l1, l2)  # approximates multiset
     return set_comp and multiset_comp  # set_comp is gere in case the compare function doesn't work
+
+
+def get_intersection_overlap(a, b) -> float:
+    """
+    Returns the intersection over union of two bounding boxes.
+    Note, lower and upper bounds intersect exactly, it is considered not an intersection.
+
+    ref:
+        - https://stackoverflow.com/a/2953979/1601580
+    """
+    return max(0, min(a[1], b[1]) - max(a[0], b[0]))
+
+
+def get_intersection_overlap_care_about_exact_match(a, b) -> float:
+    """
+    Return the amount of overlap, in bp
+    between a and b.
+    If >0, the number of bp of overlap
+    If 0,  they are book-ended.
+    If <0, the distance in bp between them
+
+    - positive if intersect
+    - negative if not intersect
+    - zero if exqct match
+
+    ref:
+        - https://stackoverflow.com/a/52388579/1601580
+    """
+    return min(a[1], b[1]) - max(a[0], b[0])
+
+
+# -- tests
+
+def overlap_intersection_test_():
+    """
+    want to test if two intervals intersect/overlap and return true if they do
+    """
+    print('----')
+    print(f'{get_intersection_overlap([10, 25], [20, 38])}')
+    assert get_intersection_overlap([10, 25], [20, 38]) == 5
+    print(f'{get_intersection_overlap([20, 38], [10, 25])}')
+    assert get_intersection_overlap([20, 38], [10, 25]) == 5
+
+    print(f'{get_intersection_overlap([10, 15], [20, 38])}')
+    assert get_intersection_overlap([10, 15], [20, 38]) == 0
+    print(f'{get_intersection_overlap([20, 38], [10, 15])}')
+    assert get_intersection_overlap([20, 38], [10, 15]) == 0
+
+    print(f'{get_intersection_overlap([10, 15], [15, 38])}')
+    assert get_intersection_overlap([10, 15], [15, 38]) == 0
+    print(f'{get_intersection_overlap([15, 38], [10, 15])}')
+    assert get_intersection_overlap([15, 38], [10, 15]) == 0
+
+    # -
+    print('----')
+    # positive if intersect
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 25], [20, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 25], [20, 38]) == 5
+    print(f'{get_intersection_overlap_care_about_exact_match([20, 38], [10, 25])}')
+    assert get_intersection_overlap_care_about_exact_match([20, 38], [10, 25]) == 5
+
+    # negative if not intersect
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 15], [20, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 15], [20, 38]) == -5
+    print(f'{get_intersection_overlap_care_about_exact_match([20, 38], [10, 15])}')
+    assert get_intersection_overlap_care_about_exact_match([20, 38], [10, 15]) == -5
+
+    # zero if exqct match
+    print(f'{get_intersection_overlap_care_about_exact_match([10, 15], [15, 38])}')
+    assert get_intersection_overlap_care_about_exact_match([10, 15], [15, 38]) == 0
+    print(f'{get_intersection_overlap_care_about_exact_match([15, 38], [10, 15])}')
+    assert get_intersection_overlap_care_about_exact_match([15, 38], [10, 15]) == 0
 
 
 def draw_test():
@@ -2181,6 +2121,8 @@ def _map_args_fields_from_string_to_usable_value_test():
     pprint_args(args)
 
 
+# --
+
 if __name__ == '__main__':
     print('starting __main__ at __init__')
     # test_draw()
@@ -2189,4 +2131,5 @@ if __name__ == '__main__':
     # xor_test()
     # merge_args_test()
     # _map_args_fields_from_string_to_usable_value_test()
+    overlap_intersection_test_()
     print('Done!\a')

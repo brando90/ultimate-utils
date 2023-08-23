@@ -53,3 +53,17 @@ def f(arg, hp1=None, hp2=None, hp3='default'):
     print(hp3)
 
 f('arg', **{})
+
+# %%
+"""
+what happens if some of the values in the args dict are missing? will they be filled with defaults?
+"""
+
+def f(req_arg, arg0=None, arg1=None, arg2=None):
+    print('-- in f')
+    print(req_arg)
+    print(arg0)
+    print(arg1)
+    print(arg2)
+
+f('req_arg', **{'arg0': 0, 'arg1': 1})

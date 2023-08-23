@@ -34,12 +34,15 @@ you should be aware that pinning is often an expensive operation. Thus, will lea
 ref:
     - on pin_memory: https://pytorch.org/docs/stable/data.html
 """
-from typing import Callable, Optional, Union
+from argparse import Namespace
+from typing import Callable, Optional, Union, Any
 
 import numpy as np
 import torch
 from numpy.random import RandomState
 from torch.utils.data import Dataset, SubsetRandomSampler, random_split, DataLoader, RandomSampler
+
+from pdb import set_trace as st
 
 
 def get_train_val_split_random_sampler(
@@ -189,30 +192,112 @@ def split_inidices(indices: list,
                                                                           shuffle=shuffle)
     return train_indices, val_indices
 
-# - visualization help
 
-# - tests
+# - size of data sets from data loader
 
-# def omni_locals_lambda_bug_fixer():
-#     from diversity_src.dataloaders.hdb1_mi_omniglot_l2l import get_mi_and_omniglot_list_data_set_splits
-#     root: str = '~/data/l2l_data/'
-#     data_augmentation: str = 'hdb1'
-#     # - test if data sets can be created into pytorch dataloader
-#     _, _, dataset_list = get_mi_and_omniglot_list_data_set_splits(root, data_augmentation)
-#     mi, omni = dataset_list
-#     from learn2learn.vision.datasets import FullOmniglot
-#     omni2: FullOmniglot = omni.dataset.dataset
-#     assert isinstance(omni2, FullOmniglot), f'Err: {type(omni2)=}'
-#     _loader, loader = get_serial_or_distributed_dataloaders(omni, omni, num_workers=1)
-#     next(iter(loader))
-#     next(iter(_loader))
-#
-#
-# if __name__ == '__main__':
-#     import time
-#     from uutils import report_times
-#     start = time.time()
-#     # - run experiment
-#     omni_locals_lambda_bug_fixer()
-#     # - Done
-#     print(f"\nSuccess Done!: {report_times(start)}\a")
+def get_data_set_size_from_dataloader(dataloader: DataLoader) -> int:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a dataloader
+        - todo: fix for mds and indexable data loaders
+    """
+    return len(dataloader.dataset)
+
+
+def get_data_set_size_from_taskset(taskset) -> int:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a taskset
+
+    # cases:
+        - case 0: SingleDataset
+            -
+        - case 1: IndexableDataset
+            - sum( [ len(taskset.train.dataset.dataset.datasets[i].dataset) for i in range(len(taskset.train.dataset.dataset.datasets))] )
+    """
+    # - make type explicit
+    # already did the .train .validation or .test
+    from learn2learn.data import TaskDataset
+    taskset: TaskDataset = taskset
+
+    # -- Get size of data set
+    # - case 1: IndexableDataset
+    try:
+        # its easier to just fail this and try to do single than to do them "in order"
+        from diversity_src.dataloaders.common import IndexableDataSet
+        assert isinstance(taskset.dataset.dataset, IndexableDataSet)
+        # return sum([len(taskset.dataset.dataset.datasets[i].dataset) for i in range(len(taskset.dataset.dataset.datasets))])
+        datasets = taskset.dataset.dataset.datasets
+        size: int = 0
+        for metadataset in datasets:  # for i in range(len(taskset.dataset.dataset.datasets)
+            # print(metadataset)
+            # print(dataset)
+            # print(type(metadataset))
+            # print(type(dataset)
+            dataset = metadataset.dataset
+            size += len(dataset)
+        return size
+    except Exception as e:
+        # - case 0: SingleDataset
+        # do return len(metadataset.dataset)
+        dataset = metadataset.dataset
+        return len(dataset)
+
+
+def get_data_set_sizes_from_dataloaders(dataloaders: dict[str, DataLoader]) -> dict[str, int]:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a dataloader
+    """
+    return {k: get_data_set_size_from_dataloader(v) for k, v in dataloaders.items()}
+
+
+def get_data_set_sizes_from_tasksets(tasksets: dict[str, Any]) -> dict[str, int]:
+    """
+    Note:
+        - this is a hacky way to get the size of a dataset from a taskset
+    """
+    splits = ['train', 'validation', 'test']
+    # return {k: get_data_set_size_from_taskset(v) for k, v in tasksets.items()}
+    return {split: get_data_set_size_from_taskset(getattr(tasksets, split)) for split in splits}
+
+
+def get_dataset_size(args: Namespace) -> dict[str, int]:
+    split_2_size: dict[str, int] = None
+
+    # - special case for meta-dataset dataloaders
+    if (args.data_option == 'mds'):
+        from diversity_src.dataloaders.metadataset_batch_loader import mds_split_2_size
+        return mds_split_2_size(args)
+
+    try:
+        dataloaders = args.dataloaders
+        split_2_size = get_data_set_sizes_from_dataloader(dataloaders)
+    except Exception as e:
+        # print(f'{e=}')
+        tasksets = args.tasksets
+        split_2_size = get_data_set_sizes_from_tasksets(tasksets)
+    return split_2_size
+
+
+# - get num classes
+
+def get_num_classes_l2l_list_meta_dataset(dataset_list: list, verbose: bool = False) -> dict:
+    """ Get the number of classes in a list of l2l meta dataset"""
+    from learn2learn.data import MetaDataset
+    dataset_list: list[MetaDataset] = dataset_list
+    # - get num classes for each data set & total, total is one we really need
+    results: dict = dict(total=0)
+    for dataset in dataset_list:
+        num_classes = len(dataset.labels)
+        if hasattr(dataset, 'name'):
+            results[dataset.name] = num_classes
+        else:
+            results[str(type(dataset))] = num_classes
+        results['total'] += num_classes
+    if verbose:
+        print(f'Number of classes: \n {results=}')
+        from pprint import pprint
+        print(f'Number of classes:')
+        pprint(results)
+    return results

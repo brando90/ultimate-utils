@@ -1,0 +1,23 @@
+program: train.py             # (required) Training script to run.
+method: bayes                 # (required) Specify the search strategy: grid, random, bayes.
+parameters:                   # (required) Specify parameters bounds to search.
+  learning_rate:
+    min: 0.0001
+    max: 0.1
+  batch_size:
+    values: [16, 32, 64, 128]
+name: my_sweep                # The name of the sweep, displayed in the W&B UI.
+description: My first sweep   # Text description of the sweep.
+metric:                       # Specify the metric to optimize (only used by certain search strategies and stopping criteria).
+  name: loss
+  goal: minimize
+early_terminate:              # Specify any early stopping criteria.
+  type: hyperband
+  s: 2
+  eta: 3
+  max_iter: 1000
+command:                      # Specify command structure for invoking and passing arguments to the training script.
+  - ${program}
+project: my_project           # Specify the project for this sweep.
+entity: my_username           # Specify the entity for this sweep.
+run_cap: 100                  # Specify a maximum number of runs in a sweep.

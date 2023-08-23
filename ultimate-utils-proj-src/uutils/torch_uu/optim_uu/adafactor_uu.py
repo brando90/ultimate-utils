@@ -71,11 +71,6 @@ def get_uutils_default_adafactor_from_torch_optimizer_and_scheduler_default(mdl:
     """
     Gets adafactor with uutils default parameters.
 
-    e.g.:
-    >>> import torch_optimizer as optim
-    # model = ...
-    >>> optimizer = optim.DiffGrad(model.parameters(), lr=0.001)
-    >>> optimizer.step()
     refs:
         - https://github.com/jettify/pytorch-optimizer/issues/405
         - https://github.com/huggingface/transformers/issues/14574
@@ -194,6 +189,9 @@ def get_default_adafactor_opt_fairseq_and_hps_dict(mdl: nn.Module,
                                                    ) -> tuple[Optimizer, dict]:
     """
     Get the optimizer and scheduler objects for the current model and the hyperparameters (hps) that created it.
+
+    note:
+        - set when "AdafactorDefaultFair" is on.
     """
     # - hps
     opt_hps: dict = dict(
@@ -209,6 +207,7 @@ def get_default_adafactor_opt_fairseq_and_hps_dict(mdl: nn.Module,
     )
 
     # - get opt & scheduler from hps
+    # if import throws bug you likely need:  pip install setuptools==59.5.0 ref: https://stackoverflow.com/questions/70520120/attributeerror-module-setuptools-distutils-has-no-attribute-version
     from fairseq import optim
     optimizer: Optimizer = optim.adafactor.Adafactor(params=mdl.parameters(), **opt_hps)
     return optimizer, opt_hps

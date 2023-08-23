@@ -3,14 +3,14 @@
 from collections import defaultdict
 from pathlib import Path
 from pprint import pprint
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import torch
 import torchvision
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from uutils import report_times, get_duplicates
+from uutils import report_times, get_duplicates, expanduser, pprint_dict
 
 
 # int2tensor: Callable = lambda data: torch.tensor(data, dtype=torch.int)
@@ -31,13 +31,15 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         - https://discuss.pytorch.org/t/concat-image-datasets-with-different-size-and-number-of-channels/36362/12
     """
 
-    def __init__(self, datasets: list[Dataset],
+    def __init__(self,
+                 datasets: list[Dataset],
+                 root: str,  # suggested value: Path('~/data/l2l_data/').expanduser(),
+                 relabel_filename: str,  # e.g. f'hdb4_micod_{split}_relabel_usl.pt'
                  transform: Optional[Callable] = None,
                  target_transform: Optional[Callable] = None,
                  compare_imgs_directly: bool = False,
                  verify_xs_align: bool = False,
-                 picke_usl_relabling: bool = False,
-                 load_usl_relabels: bool = False,
+                 pickle_usl_relabling: bool = True,
                  ):
         """
         Concatenates different data sets assuming the labels are mutually exclusive in the data sets.
@@ -45,6 +47,9 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
 
         compare_imgs_directly: adds the additional test that imgs compare at the PIL imgage level.
         """
+        self.root = root
+        self.pickle_usl_relabling = pickle_usl_relabling
+        # more essental inits
         self.datasets = datasets
         self.transform = transform
         self.target_transform = target_transform
@@ -54,11 +59,20 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.labels_to_indices = defaultdict(list)
         # maps a sample index to its corresponding class label.
         self.indices_to_labels = defaultdict(None)
+        # other
+        self.compare_imgs_directly = compare_imgs_directly
+        self.verify_xs_align = verify_xs_align
+        self.img2tensor: Callable = torchvision.transforms.ToTensor()
+        self.labels = None  # re-labaling not done yet
         # - do the relabeling
-        self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align, picke_usl_relabling)
-        if load_usl_relabels:
-            # just pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels
-            raise NotImplementedError
+        if self.need_to_relabel(root, relabel_filename):
+            # load pickle-load from the location of where the data is the array/maps global_idx <-> global_new_labels, since relabling is expensive. I feel my relabling is dumb, but it works and not going back to improve it.
+            self._re_label_all_dataset(datasets, compare_imgs_directly, verify_xs_align, pickle_usl_relabling, root,
+                                       relabel_filename)
+        else:
+            self.get_relabeling_data_from_file_(root, relabel_filename)
+            # relabling file already exists so no need to save it again
+        print(f'Set up of ConcatDatasetMutuallyExclusiveLabels done. {self.__repr__()}, {self.__len__()}, {self}')
 
     def __len__(self):
         return len(self.concat_datasets)
@@ -66,7 +80,9 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
     def _re_label_all_dataset(self, datasets: list[Dataset],
                               compare_imgs_directly: bool = False,
                               verify_xs_align: bool = False,
-                              picke_usl_relabling: bool = False,
+                              pickle_usl_relabling: bool = False,
+                              root: Optional[Path] = Path('~/data/l2l_data/'),
+                              relabel_filename: Optional[str] = 'relabeling_data.pt',
                               ):
         """
         Relabels by treating all labels as unique/different. Thus, even if you have labels of cats on two data sets
@@ -174,10 +190,14 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         self.labels = range(total_num_labels_so_far)
         labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
         assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
-        if picke_usl_relabling:
-            # just pickle in the location of where the data is the array/maps global_idx <-> global_new_labels
-            raise NotImplementedError
         print(f'-> done data preprocessing for relabel... {self._re_label_all_dataset=}, took: {report_times(start)}')
+        # - save all the data to file
+        if pickle_usl_relabling:
+            relabeled_data: dict = dict()
+            relabeled_data['labels'] = labels
+            relabeled_data['labels_to_indices'] = self.labels_to_indices
+            relabeled_data['indices_to_labels'] = self.indices_to_labels
+            self.save_relabeling_data_to_file(relabeled_data, root, relabel_filename)
 
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         """
@@ -204,6 +224,75 @@ class ConcatDatasetMutuallyExclusiveLabels(Dataset):
         if self.target_transform is not None:
             y = self.target_transform(y)
         return x, y
+
+    def get_relabeling_data_from_file_(self, root: Path, relabel_filename: str = 'relabeling_data.pt') -> dict:
+        # - load re-labling from file using torch.load
+        root: Path = Path(root).expanduser()
+        relabeled_data: dict = torch.load(root / relabel_filename)
+        # - mutation assignments from ._re_label_all_dataset for consistency in case they are needed later for the correct function of this class
+        self.img2tensor: Callable = torchvision.transforms.ToTensor()
+        # - load relabeled data
+        self.labels = relabeled_data['labels']
+        self.labels_to_indices = relabeled_data['labels_to_indices']
+        self.indices_to_labels = relabeled_data['indices_to_labels']
+        # - asserts
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: ' \
+                                                                                f'\n{len(self.indices_to_labels.keys())=}' \
+                                                                                f'\n {len(self.concat_datasets)=}'
+        labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
+        assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
+        # - print number of classes
+        num_classes_results: dict = relabeled_data['num_classes_results']
+        print(f'{num_classes_results=}')
+        # - done
+        print(f'-> Loading relabeling data from file {root / relabel_filename} Success!')
+        return relabeled_data
+
+    def save_relabeling_data_to_file(self,
+                                     relabeled_data: dict,
+                                     root: Union[Path, str],
+                                     relabel_filename: str,
+                                     verbose_n_cls_datasets: bool = True,
+                                     ) -> None:
+        # - also save num classes per split
+        from uutils.torch_uu.dataloaders.common import get_num_classes_l2l_list_meta_dataset
+        num_classes_results: dict = get_num_classes_l2l_list_meta_dataset(self.datasets, verbose=verbose_n_cls_datasets)
+        relabeled_data['num_classes_results'] = num_classes_results
+        # - save relabeling data to pt file specified by relabel_filename and root using torch.save
+        root: Path = expanduser(root)
+        torch.save(relabeled_data, root / relabel_filename)
+        # - asserts
+        assert len(self.indices_to_labels.keys()) == len(self.concat_datasets), f'Err: ' \
+                                                                                f'\n{len(self.indices_to_labels.keys())=}' \
+                                                                                f'\n {len(self.concat_datasets)=}'
+        labels: list[int] = list(sorted(list(self.labels_to_indices.keys())))
+        assert labels == list(labels), f'labels should match and be consecutive, but got: \n{labels=}, \n{self.labels=}'
+        # - done
+        print(f'-> Saving relabeling data to file {root / relabel_filename} Success!')
+
+    def need_to_relabel(self, root: Path, relabel_filename: str = 'relabeling_data.pt') -> bool:
+        # - load re-labling from file using torch.load
+        try:
+            root: Path = Path(root).expanduser()
+            # if the torch.load fails then def relabel and overwrite file
+            relabeled_data: dict = torch.load(root / relabel_filename)
+            # - mutation assignments from ._re_label_all_dataset for consistency in case they are needed later for the correct function of this class
+            self.img2tensor: Callable = torchvision.transforms.ToTensor()
+            # - load relabeled data
+            self.labels = relabeled_data['labels']
+            self.labels_to_indices = relabeled_data['labels_to_indices']
+            self.indices_to_labels = relabeled_data['indices_to_labels']
+            if len(self.labels) == 0 or self.labels is None:
+                return True
+            if len(self.labels_to_indices.keys()) == 0 or self.labels_to_indices is None:
+                return True
+            if len(self.indices_to_labels.keys()) == 0 or self.indices_to_labels is None:
+                return True
+            return False
+        except Exception as e:
+            print(f'need_to_relabel says we need to relabel and happened to throw this exception to detect that '
+                  f'decision: {e=}')
+            return True
 
 
 def assert_dataset_is_pytorch_dataset(datasets: list, verbose: bool = False):
@@ -438,6 +527,63 @@ def hdb1_mio_check_dataloader():
     print('-- done hdb1 tests')
 
 
+def hdb4_micod_relabling_test_through_loaders():
+    # - for determinism
+    import random
+    random.seed(0)
+    import torch
+    torch.manual_seed(0)
+    import numpy as np
+    np.random.seed(0)
+
+    # - args
+    from argparse import Namespace
+    args = Namespace(batch_size=8, batch_size_eval=2, rank=-1, world_size=1)
+
+    # - get data loaders
+    # dataloaders: dict = hdb1_mi_omniglot_usl_all_splits_dataloaders(args)
+    from uutils.torch_uu.dataloaders.usl.usl_dataloaders import hdb4_micod_usl_all_splits_dataloaders
+    dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)
+
+    print(dataloaders['train'].dataset.labels)
+    print(dataloaders['val'].dataset.labels)
+    print(dataloaders['test'].dataset.labels)
+    n_train_cls: int = len(dataloaders['train'].dataset.labels)
+    print('-- got the usl hdb data loaders --')
+
+    # - loop through tasks
+    import torch
+    device = torch.device(f"cuda:{0}" if torch.cuda.is_available() else "cpu")
+    # model = get_model('resnet18', pretrained=False, num_classes=n_train_cls).to(device)
+    # model = get_model('resnet18', pretrained=True, num_classes=n_train_cls).to(device)
+    # from uutils.torch_uu.models.resnet_rfs import get_resnet_rfs_model_mi
+    # model, _ = get_resnet_rfs_model_mi('resnet12_rfs', num_classes=n_train_cls)
+    from uutils.torch_uu.models.learner_from_opt_as_few_shot_paper import get_default_learner_and_hps_dict
+    args.model, args.model_hps = get_default_learner_and_hps_dict()
+    # - get model
+    model = args.model
+    model.to(device)
+    from torch import nn
+    criterion = nn.CrossEntropyLoss()
+    for split, dataloader in dataloaders.items():
+        print(f'-- {split=}')
+        # next(iter(dataloaders[split]))
+        for it, batch in enumerate(dataloaders[split]):
+            print(f'{it=}')
+
+            X, y = batch
+            print(f'{X.size()=}')
+            print(f'{y.size()=}')
+            print(f'{y=}')
+
+            y_pred = model(X)
+            print(f'{y_pred.size()=}')
+            # loss = criterion(y_pred, y)
+            print()
+            break
+    print('-- end of test --')
+
+
 if __name__ == '__main__':
     import time
 
@@ -446,6 +592,7 @@ if __name__ == '__main__':
     # check_xs_align_mnist()
     # check_xs_align_cifar100()
     # concat_data_set_mi()
-    hdb1_mio_check_dataloader()
+    # hdb1_mio_check_dataloader()
+    hdb4_micod_relabling_test_through_loaders()
     # - Done
     print(f"\nSuccess Done!: {report_times(start)}\a")

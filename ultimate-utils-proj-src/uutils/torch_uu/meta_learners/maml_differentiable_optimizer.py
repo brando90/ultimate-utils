@@ -466,16 +466,37 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
     """
     Returns the acc & loss on the meta-batch of query sets.
 
+    For important details see:
+        get_list_losses_accs_meta_learner_forward_adapt_batch_of_tasks(...)
+
+    """
+    meta_losses, meta_accs = get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner,
+                                                                                             spt_x, spt_y, qry_x, qry_y,
+                                                                                             training, call_backward)
+    meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
+    meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
+    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+
+
+def get_lists_losses_accs_meta_learner_forward_adapt_batch_of_tasks(meta_learner,
+                                                                    spt_x, spt_y, qry_x, qry_y,
+                                                                    training: bool = True,
+                                                                    # always true to avoid .eval()
+                                                                    call_backward: bool = False,
+                                                                    # not needed during testing/inference
+                                                                    ) -> tuple[list[float], list[float]]:
+    """
+    Returns the accs & losses on the meta-batch of query sets.
+
     Note:
         - training true ensures .eval() is never called (due to BN, we always want batch stats)
         - call_backward collects gradients for outer_opt. Due to optimization of calling it here, we have the option
         to call it or not.
         - crucially, this code uses the code that does not use the context manager from higher. This is so to
         test that code that is later use to compare models using ultimate-anatome.
-
     """
     # - get inner opt
-    inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.lr_inner)
+    inner_opt = get_maml_inner_optimizer(meta_learner.base_model, meta_learner.inner_lr)
 
     # - adapt
     meta_learner.base_model.train() if training else meta_learner.base_model.eval()
@@ -494,7 +515,7 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
                                                                         copy_initial_weights=meta_learner.args.copy_initial_weights,
                                                                         track_higher_grads=meta_learner.args.track_higher_grads,
                                                                         fo=meta_learner.fo,
-                                                                        nb_inner_train_steps=meta_learner.args.nb_inner_train_steps,
+                                                                        nb_inner_train_steps=meta_learner.nb_inner_train_steps,
                                                                         criterion=meta_learner.args.criterion)
 
         # Evaluate on query set for current task
@@ -521,8 +542,7 @@ def meta_learner_forward_adapt_batch_of_tasks(meta_learner, spt_x, spt_y, qry_x,
         # collect losses & accs
         meta_losses.append(qry_loss_t.item())
         meta_accs.append(qry_acc_t)
-
     assert len(meta_losses) == meta_batch_size
-    meta_loss, meta_loss_ci = mean_confidence_interval(meta_losses)
-    meta_acc, meta_acc_ci = mean_confidence_interval(meta_accs)
-    return meta_loss, meta_loss_ci, meta_acc, meta_acc_ci
+    assert isinstance(meta_losses[0], float)
+    assert isinstance(meta_accs[0], float)
+    return meta_losses, meta_accs

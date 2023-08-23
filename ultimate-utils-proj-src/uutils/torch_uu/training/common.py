@@ -8,8 +8,9 @@ ref:
     - https://forums.pytorchlightning.ai/t/what-is-the-recommended-or-most-common-practices-to-using-a-scheduler/1416
 
 """
+import logging
 from argparse import Namespace
-from typing import Any
+from typing import Any, Optional
 
 import progressbar
 from progressbar import ProgressBar
@@ -17,6 +18,77 @@ from torch import nn, Tensor, optim
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import ReduceLROnPlateau, _LRScheduler
 
+
+# - get data
+
+def get_data(dataloaders,
+             split: str = 'val',
+             agent: Optional = None,
+             ) -> Any:
+    """
+    Get data according to the different data loader/taskset api's we've encountered. Cases "documented" by the if
+    statements in the code.
+
+    Notes:
+        - for now we need the agent because are making the agent compatible with any loader. Therefore, we need to make
+        sure we get the data in the right format for the agent for it to work.
+            - e.g. given a L2L benchmark we can get its data in the torchmeta format so that the (ffl) agent's eval
+            forward works.
+
+    return: either a normal batch (tensor) or a l2l taskdataset.
+    """
+    if isinstance(dataloaders, dict):
+        batch = None
+        # - torchmeta data loader for l2l
+        from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
+        if isinstance(dataloaders[split], TorchMetaDLforL2L):
+            # dl needs to be in "torchmeta format"
+            batch: Any = next(iter(dataloaders[split]))
+        # - rfs meta-loader
+        from uutils.torch_uu.dataset.rfs_mini_imagenet import MetaImageNet
+        if isinstance(dataloaders[split].dataset, MetaImageNet):  # isinstance(dataloaders['val'].dataset, MetaImageNet)
+            eval_loader = dataloaders[split]
+            if eval_loader is None:  # split is train, rfs code doesn't support that annoying :/
+                raise NotImplementedError
+            batch: tuple[Tensor, Tensor, Tensor, Tensor] = get_meta_batch_from_rfs_metaloader(eval_loader)
+        # - else normal data loader (so torchmeta, or normal pytorch data loaders)
+        if isinstance(dataloaders, dict):
+            batch: Any = next(iter(dataloaders[split]))
+        # - if all attempts failed raise error that dataloader is weird
+        if batch is None:
+            raise ValueError(f'Unexpected error, dataloaders is of type {dataloaders=} but expected '
+                             f'dict or something else (perhaps train, val, test loader type objects).')
+    else:
+        # it is here at the end so that we are not forced to import l2l unless we really are using it, checking earlier forces ppl to install l2l when they might not need it
+        from learn2learn.data import TaskDataset
+        from learn2learn.vision.benchmarks import BenchmarkTasksets
+        from uutils.torch_uu.meta_learners.pretrain_convergence import FitFinalLayer
+        if isinstance(dataloaders, BenchmarkTasksets) and isinstance(agent, FitFinalLayer):
+            # - convert l2l taskdataset to episodic batch, then get torchmeta batch, the process_meta_batch makes it into [spt_x, spt_y, qry_x, qry_y]
+            from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import TorchMetaDLforL2L
+            loaders = TorchMetaDLforL2L(agent.args, split, dataloaders)  # returns torchmeta data from L2L format
+            batch: dict = next(iter(loaders))  # batch = {'train': (spt_x, spt_y), 'test': (qry_x, qry_y)}
+            return batch
+        if isinstance(dataloaders, BenchmarkTasksets):
+            split: str = 'validation' if split == 'val' else split
+            task_dataset: TaskDataset = getattr(dataloaders, split)
+            batch = task_dataset
+        else:
+            raise ValueError(f'Unexpected error, dataloaders is {dataloaders=}.')
+        return batch
+    # - convert episodic batch to TaskDataset: note: we do need the above to get the batch if to do conversion
+    from torch.utils.data import DataLoader
+    loader: DataLoader = dataloaders[split]
+    if hasattr(loader, 'episodic_batch_2_task_dataset'):
+        from learn2learn.data import TaskDataset
+        from uutils.torch_uu.dataloaders.meta_learning.l2l_to_torchmeta_dataloader import episodic_batch_2_task_dataset
+        batch: TaskDataset = episodic_batch_2_task_dataset(batch, loader, agent)
+        # print(f'{get_data=}')
+        # print(f'task_batch_2_task_dataset: {batch=}')
+    return batch
+
+
+# - progress bars
 
 def get_trainer_progress_bar(args: Namespace) -> ProgressBar:
     import uutils
@@ -56,6 +128,15 @@ def check_halt(args: Namespace) -> bool:
         halt: bool = args.convg_meter.check_converged()
     elif args.training_mode == 'epochs_train_convergence':
         halt: bool = args.convg_meter.check_converged()
+    # - my hunch is that convergence is better
+    elif args.training_mode == 'iterations_train_target_train_acc':
+        raise NotImplementedError
+    elif args.training_mode == 'epochs_train_target_train_acc':
+        raise NotImplementedError
+    elif args.training_mode == 'iterations_train_target_train_loss':
+        raise NotImplementedError
+    elif args.training_mode == 'epochs_train_target_train_loss':
+        raise NotImplementedError
     else:
         raise ValueError(f'Invalid training_mode value, got: {args.training_mode}')
     return halt
@@ -86,6 +167,7 @@ def gradient_clip(args, meta_opt):
         else:
             raise ValueError(f'Invalid, args.grad_clip_mode = {args.grad_clip_mode}')
 
+
 def optimizer_step(args: Namespace, optimizer, meta_batch_size: int = None):
     raise NotImplementedError
     import cherry
@@ -97,7 +179,7 @@ def optimizer_step(args: Namespace, optimizer, meta_batch_size: int = None):
             p.grad.data.mul_(1.0 / meta_batch_size)
         optimizer.step()  # averages gradients across all workers
     else:
-        raise  ValueError(f'Optimizer {optimizer=} is not supported when trying to do its optimizer step.')
+        raise ValueError(f'Optimizer {optimizer=} is not supported when trying to do its optimizer step.')
 
 
 def scheduler_step(args: Namespace, scheduler: _LRScheduler):
@@ -198,3 +280,58 @@ class ConvergenceMeter:
         :return:
         """
         return f'ConvergenceMeter({vars(self)}'
+
+
+# -- some extra rfs code
+
+def get_meta_batch_from_rfs_metaloader(loader) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """
+    notes:
+    - you don't need to call cuda here cuz the agents/meta-learners should be doing that on their own.
+    """
+    # return [B, n*k, C, H, W]
+    spt_xs, spt_ys, qry_xs, qry_ys = [], [], [], []
+    for idx, data in enumerate(loader):
+        support_xs, support_ys, query_xs, query_ys = data
+        # not needed, this is like a dataloader op, so the code outside is suppose to do it, in particular
+        # the metalearner/agent should be doing it.
+        # if torch.cuda.is_available():
+        #     support_xs = support_xs.cuda()
+        #     query_xs = query_xs.cuda()
+        batch_size, _, channel, height, width = support_xs.size()
+        # - the -1 infers the size of that dimension. Operationally [k, n, C,H,W] -> [n*k, C, H, W]
+        support_xs = support_xs.view(-1, channel, height, width)
+        query_xs = query_xs.view(-1, channel, height, width)
+        # - flatten the target tensors
+        # support_ys = support_ys.view(-1).numpy()
+        # query_ys = query_ys.view(-1).numpy()
+        support_ys = support_ys.view(-1)
+        query_ys = query_ys.view(-1)
+        # - collect to later stack
+        spt_xs.append(support_xs)
+        spt_ys.append(support_ys)
+        qry_xs.append(query_xs)
+        qry_ys.append(query_ys)
+    # - stack in the first (new) dimension
+    from torch import stack
+    spt_xs, spt_ys, qry_xs, qry_ys = stack(spt_xs), stack(spt_ys), stack(qry_xs), stack(qry_ys)
+    # spt_ys, qry_ys = spt_ys.squeeze(), qry_ys.squeeze()
+    assert len(spt_xs.size()) == 5, f'Error, should be [B, n*k, C, H, W] but got {len(spt_xs.size())=}'
+    assert len(qry_xs.size()) == 5, f'Error, should be [B, n*k, C, H, W] but got {len(qry_xs.size())=}'
+    assert len(spt_ys.size()) == 2, f'Error, should be [B, n*k] but got {len(spt_ys.size())=}'
+    assert len(qry_ys.size()) == 2, f'Error, should be [B, n*k] but got {len(qry_ys.size())=}'
+    return spt_xs, spt_ys, qry_xs, qry_ys
+
+
+# - tutorials tests
+
+# - run main
+
+if __name__ == '__main__':
+    import time
+    from uutils import report_times
+
+    start = time.time()
+    # - run experiment
+    # train_test_()
+    print(f"\nSuccess Done!: {report_times(start)}\a\n")

@@ -60,7 +60,8 @@ def plot(x: Array, y: Array,
          label: Optional[str] = None,
          y_hline: Optional[float] = None, y_hline_label: Optional[str] = None,
          x_hline: Optional[float] = None, x_hline_label: Optional[str] = None,
-         new_plot: bool = False, marker: Optional = None, color: Optional = None,
+         new_plot: bool = False,
+         marker: Optional = None, color: Optional = None,
          tight_layout: bool = False
          ):
     """

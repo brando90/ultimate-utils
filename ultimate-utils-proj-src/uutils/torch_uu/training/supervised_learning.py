@@ -54,7 +54,7 @@ def train_agent_fit_single_batch(args: Namespace,
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
     # - train in epochs
-    args.convg_meter: ConvergenceMeter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
+    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
     log_zeroth_step(args, model)
     halt: bool = False
     while not halt:
@@ -97,6 +97,7 @@ def train_agent_iterations(args: Namespace,
     Trains models wrt to number of iterations given. Should halt once the number of iterations desired is reached. 
     """
     print_dist('Starting training...', args.rank)
+    print_dist(f'{train_agent_iterations=}', args.rank)
 
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
@@ -108,7 +109,7 @@ def train_agent_iterations(args: Namespace,
         args.convg_meter = ConvergenceMeter(name='val loss', convergence_patience=args.train_convergence_patience, target_lowest = target_loss)
     log_zeroth_step(args, model)
     halt: bool = False
-    # -- continually try to train accross the an entire epoch but stop once the number of iterations desired is reached
+    # - continually try to train accross the entire epoch but stop once the number of iterations desired is reached
     while not halt:
         # -- train for one epoch
         for i, batch in enumerate(dataloaders['train']):
@@ -155,8 +156,12 @@ def train_agent_iterations(args: Namespace,
 
             # - log full stats
             # when logging after +=1, log idx will be wrt real idx i.e. 0 doesn't mean first it means true 0
+<<<<<<< HEAD
             print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}, {args.convg_meter.counts_above_current_lowest=}', rank=args.rank, flush=True)
             if i % args.log_freq == 0 or args.debug:
+=======
+            if args.it % args.log_freq == 0 or halt or args.debug:
+>>>>>>> master
                 step_name: str = 'epoch_num' if 'epochs' in args.training_mode else 'it'
                 log_train_val_stats(args, args.it, step_name, train_loss, train_acc, get_loss_half = True)
                 # print_dist(msg=f'[{args.epoch_num=}, {i=}] {train_loss=}, {train_acc=}', rank=args.rank, flush=True)
@@ -189,15 +194,16 @@ def train_agent_epochs(args: Namespace,
     Trains model one epoch at a time - i.e. it's epochs based rather than iteration based.
     """
     print_dist('Starting training...', args.rank)
+    print_dist(f'{train_agent_epochs=}', args.rank)
     B: int = args.batch_size
 
     # - create progress bar
     args.bar: ProgressBar = get_trainer_progress_bar(args)
 
-    # - train in epochs
-    args.convg_meter = ConvergenceMeter(name='train loss', convergence_patience=args.train_convergence_patience)
-    #log_zeroth_step(args, model)
+    # - train
+    log_zeroth_step(args, model)
     halt: bool = False
+<<<<<<< HEAD
 
     # # ----added - 0th iter---#
     # args.epochs_num = 0
@@ -220,13 +226,15 @@ def train_agent_epochs(args: Namespace,
     # log_train_val_stats(args, args.epoch_num, step_name, avg_loss.item(), avg_acc.item())
     args.epochs_num = 0
     # --------#
+=======
+    # - continually train but one epoch at a time
+>>>>>>> master
     while not halt:
         print("training starting........")
         # -- train for one epoch
         avg_loss = AverageMeter('train loss')
         avg_acc = AverageMeter('train accuracy')
         for i, batch in enumerate(dataloaders['train']):
-            #print("batch usl", batch)
             opt.zero_grad()
             train_loss, train_acc = model(batch, training=True)
             train_loss.backward()  # each process synchronizes its gradients in the backward pass
@@ -259,3 +267,27 @@ def train_agent_epochs(args: Namespace,
     return avg_loss.item(), avg_acc.item()
 
 
+# -- run __main__
+
+def training_test_():
+    # - usl
+    from uutils.torch_uu.mains.common import get_and_create_model_opt_scheduler_for_run
+    from uutils.argparse_uu.supervised_learning import get_args_mi_usl_default
+    from uutils.torch_uu.agents.supervised_learning import ClassificationSLAgent
+    args: Namespace = get_args_mi_usl_default()
+    get_and_create_model_opt_scheduler_for_run(args)
+    args.agent = ClassificationSLAgent(args, args.model)
+    from uutils.torch_uu.dataloaders.helpers import get_sl_dataloader
+    args.dataloaders = get_sl_dataloader(args)
+    train_loss, train_acc = train_agent_iterations(args, args.agent, args.dataloaders, args.opt, args.scheduler)
+    print(f'{train_loss, train_acc=}')
+
+
+# - run __main__
+
+if __name__ == '__main__':
+    import time
+
+    start = time.time()
+    training_test_()
+    print(f'Done in {time.time() - start} seconds.')
