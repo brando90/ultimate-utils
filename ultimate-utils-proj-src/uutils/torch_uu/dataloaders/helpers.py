@@ -161,34 +161,34 @@ def get_sl_dataloader(args: Namespace) -> dict:
         dataloaders: dict = hdb11_usl_all_splits_dataloaders(args)
     elif args.data_option == 'hdb12':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb12_usl_all_splits_dataloaders
-        dataloaders: dict = hdb12_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb12_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb13':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb13_usl_all_splits_dataloaders
-        dataloaders: dict = hdb13_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb13_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb14':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb14_usl_all_splits_dataloaders
-        dataloaders: dict = hdb14_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb14_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb15':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb15_usl_all_splits_dataloaders
-        dataloaders: dict = hdb15_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb15_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb16':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb16_usl_all_splits_dataloaders
-        dataloaders: dict = hdb16_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb16_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb17':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb17_usl_all_splits_dataloaders
-        dataloaders: dict = hdb17_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb17_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb18':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb18_usl_all_splits_dataloaders
-        dataloaders: dict = hdb18_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb18_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb19':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb19_usl_all_splits_dataloaders
-        dataloaders: dict = hdb19_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb19_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb20':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb20_usl_all_splits_dataloaders
-        dataloaders: dict = hdb20_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb20_usl_all_splits_dataloaders(args, root = args.data_path)
     elif args.data_option == 'hdb21':
         from uutils.torch_uu.dataloaders.usl.usl_patricks_l2l import hdb21_usl_all_splits_dataloaders
-        dataloaders: dict = hdb21_usl_all_splits_dataloaders(args)
+        dataloaders: dict = hdb21_usl_all_splits_dataloaders(args, root = args.data_path)
     elif 'mnist' in args.data_path:
         from uutils.torch_uu.dataloaders.mnist import get_train_valid_test_data_loader_helper_for_mnist
         dataloaders: dict = get_train_valid_test_data_loader_helper_for_mnist(args)
