@@ -74,7 +74,7 @@ def get_sl_dataloader(args: Namespace) -> dict:
                                                          f'\nfor model {type(args.model)=}'  # hdb1
     elif args.data_option == 'webtext':
         from uutils.torch_uu.dataloaders.webtext import get_dataloaders_for_webtext
-        args.dataloaders: dict = get_dataloaders_for_webtext(args)
+        dataloaders: dict = get_dataloaders_for_webtext(args)
     elif args.data_option == 'hdb4_micod':
         from uutils.torch_uu.dataloaders.usl.usl_dataloaders import hdb4_micod_usl_all_splits_dataloaders
         dataloaders: dict = hdb4_micod_usl_all_splits_dataloaders(args)

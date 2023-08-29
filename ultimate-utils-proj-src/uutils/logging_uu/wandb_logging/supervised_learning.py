@@ -6,11 +6,11 @@ from typing import Callable, Any
 from progressbar import ProgressBar
 
 import uutils
-from uutils.logging_uu.wandb_logging.common import log_2_wanbd, log_2_wanbd_half_loss, hook_wandb_watch_model
+from uutils.logging_uu.wandb_logging.common import log_2_wandb, log_2_wanbd_half_loss, hook_wandb_watch_model
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.supervised_learning import save_for_supervised_learning
 from uutils.torch_uu.distributed import is_lead_worker, print_dist
-from uutils.torch_uu.eval.eval import eval_sl, eval_sl_gpt2_half_loss, do_eval
+from uutils.torch_uu.eval.eval import eval_sl_gpt2_half_loss, do_eval
 
 from pdb import set_trace as st
 
@@ -161,7 +161,7 @@ def _log_train_val_stats(args: Namespace,
             if get_loss_half:
                 log_2_wanbd_half_loss(step, train_loss, train_acc, val_loss, val_acc, val_loss_h, val_acc_h, step_name)
             else:
-                log_2_wanbd(step, train_loss, train_acc, val_loss, val_acc, step_name)
+                log_2_wandb(step, train_loss, train_acc, val_loss, val_acc, step_name)
             model = args.agent if hasattr(args, 'agent') else args.model
             hook_wandb_watch_model(args, model) if step == 0 else None
 

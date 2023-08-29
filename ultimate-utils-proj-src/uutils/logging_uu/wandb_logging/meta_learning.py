@@ -6,7 +6,6 @@ from torch.nn.functional import mse_loss
 from torch.optim import Optimizer
 
 import uutils
-from uutils.logging_uu.wandb_logging.common import log_2_wanbd
 from uutils.torch_uu import r2_score_from_torch
 from uutils.torch_uu.agents.common import Agent
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning

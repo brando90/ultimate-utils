@@ -13,7 +13,8 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.data import DataLoader
 
 import uutils
-from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats, log_zeroth_step
+from uutils.logging_uu.wandb_logging.meta_learning import log_zeroth_step
+from uutils.logging_uu.wandb_logging.supervised_learning import log_train_val_stats
 from uutils.torch_uu.checkpointing_uu.meta_learning import save_for_meta_learning
 from uutils.torch_uu.training.common import gradient_clip, scheduler_step, check_halt, get_trainer_progress_bar, \
     ConvergenceMeter
