@@ -76,4 +76,6 @@ Distinguishable/interesting question:
 what draws you to a country, culture, food, music, etc.?
 ```
 
+> Witty: possessing a quick and clever intellect, often used to deliver humor or insights in a playful manner; also, what one aspires to be when trying to impress at a dinner party.
+
 https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
