@@ -16,6 +16,11 @@ Also consider my ideas or current attempted openers or ideas:
 ```markdown
 [//]: # (My attempted openers or ideas)
 Hi Ala, I'm reading altered-trait, a science meditation book and thought about you. Do you ever take mindfulness walks in the forest/nature? What is your favorite way to recharge?
+# Another attempt by me 
+Hi Angela!
+I read the blurb about "the untethered soul", I really like the premise! I am in the process of reading "Altered Traits", a book about "Transformative Changes to the mind and body" through meditation.
+Curious, what lessons do you think have been most pertinent in the text?
+My priority in life is to live a meaningful, intentional life, so I am always curious about books in the genre.
 ```
 The message should engage the women, especially start the conversation positively. 
 It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
@@ -29,7 +34,15 @@ This latter part is done because we wrote something connected to her profile yet
 Also respect my guidelines and use my current attempts and ideas 
 -- since that would ideally connect to things we might have in common. 
 Connecting at a values level and having fun being lightweight or lighthearted or relaxed tone.
+Look for parts in her profile that mention "brownie points for X" or "I geek out for Books/Travel".
+It means she is likely to respond and talk about that topic. 
+Make sure that topic is an inceberg so you can develop a connection with her.
+Reference things that she might know and relevant e.g.,
+"Would it be similar like when Gandi said/did X".
+Be nuanced and notice little things or what is going on e.g., in what she likes, her profile, etc (why?).
 Do not compliment her in ways that sounds needy, be casual and relaxed, grounded.
+If there is something about books choose it, most guys don't read.
+You do read, so try to connect with her in that topic.
 It is also important that it's not too long, ideally concise and short, yet good.
 It has to be 1 or 2 sentences -- max 3 sentences. 
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
