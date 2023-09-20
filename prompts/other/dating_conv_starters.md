@@ -62,6 +62,7 @@ Examples:
 > instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
 ```
 Don't ask her basic question, follow the technique above where you raise her interest, and have her have fun.
+To saise her interest have her associate her with things about me that we have in common, ideally values.
 Tbis is my current question:
 ```
 > instead of: X --> insterad ask --> Y
