@@ -135,3 +135,5 @@ associating me with things we have in common
 Always raise the interest, what did you learn from this person how can you raise the interest (after each interaction). 
 Write message with that in mind. 
 My coaches messages was written so that she (the girl we are messaging) would be curious about me. Mystery in a good way.
+
+Make sure you don't ignore her previous response.
