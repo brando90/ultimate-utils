@@ -30,7 +30,7 @@ But most important is that it follow the iceberg or triangle approach to getting
 i.e. the message I write to her is connected to something about her in her profile, and ideally
 invites us to get to know each other more -- especially making her feel implicitly that we like 
 each other more and more as we get to know each other more.
-This latter part is done because we wrote something connected to her profile yet. 
+This latter part is done because we wrote something connected to her profile. 
 Also respect my guidelines and use my current attempts and ideas 
 -- since that would ideally connect to things we might have in common. 
 Connecting at a values level and having fun being lightweight or lighthearted or relaxed tone.
@@ -47,6 +47,26 @@ It is also important that it's not too long, ideally concise and short, yet good
 It has to be 1 or 2 sentences -- max 3 sentences. 
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
 Give me 7 options:
+
+# Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest.
+I want to translate a mundane question into a deep question, that raises the interest in me from the person receiving my message.
+To make it enticing and motivate her for a response it should help her realize or learn something about herself or about you -- ideally about common values or interests.
+Example translations:
+```
+General Format:
+> instead of: mudane question --> instead ask --> deep question that raises her interest in you
+Examples:
+> instead of: what's your favorite book -->  instead ask --> what traits do your top 5 books have in common
+> instead of: what is your favorite place to travel -->  instead ask --> what draws you to nations around the world
+> instead of: what is your favorite colour --> instead ask --> what is unique about the feeling that you get about your favorite colour
+> instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
+```
+Don't ask her basic question, follow the technique above where you raise her interest, and have her have fun.
+Tbis is my current question:
+```
+> instead of: X --> insterad ask --> Y
+```
+Help me translate it to make raise her interest and entice a reponse:
 
 # -- Notes --
 
@@ -89,6 +109,24 @@ Distinguishable/interesting question:
 what draws you to a country, culture, food, music, etc.?
 ```
 
+When deciding what prompt to answer, ask yourself, why is she asking?
+What do you do in your free time? It's a filtering question. This questions is probably getting a lot of action. There is no point to be a person in the pile to be compared. 
+What would be most unique, that aligns with the data that algins with that person. 
+
 > Witty: possessing a quick and clever intellect, often used to deliver humor or insights in a playful manner; also, what one aspires to be when trying to impress at a dinner party.
 
 https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
+
+whats your fav book (don't ask her basic question), instead what are the 5 traits 
+help her realize something about herself or you
+what draws you to nations around the world
+what is your favorite colour, what is unique about the feeling that you get about your favorite colour
+what's your favorite food, when you think about the foods you like to eat, what does it tell you about your pallette, what is the story about your pallette, what is it about the way the way you feel when eating your favorite food that is different from other foods
+
+---
+
+pick a date about something she already likes. e.g., she says she geek outs (entice) about books
+there is an event that connects us in some way  that entices her/raises her interest so she wants go on a date
+
+Q: how do you raise her interest
+associating me with things we have in common
