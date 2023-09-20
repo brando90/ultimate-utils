@@ -63,6 +63,7 @@ Examples:
 ```
 Don't ask her basic question, follow the technique above where you raise her interest, and have her have fun.
 To saise her interest have her associate her with things about me that we have in common, ideally values.
+Write a message so that she is curious about me -- (good) mystery is good.
 Tbis is my current question:
 ```
 > instead of: X --> insterad ask --> Y
@@ -131,3 +132,6 @@ there is an event that connects us in some way  that entices her/raises her inte
 
 Q: how do you raise her interest
 associating me with things we have in common
+Always raise the interest, what did you learn from this person how can you raise the interest (after each interaction). 
+Write message with that in mind. 
+My coaches messages was written so that she (the girl we are messaging) would be curious about me. Mystery in a good way.
