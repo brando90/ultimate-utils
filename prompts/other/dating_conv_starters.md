@@ -48,9 +48,9 @@ It has to be 1 or 2 sentences -- max 3 sentences.
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
 Give me 7 options:
 
-# Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest.
+# Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest
 I want to translate a mundane question into a deep question, that raises the interest in me from the person receiving my message.
-To make it enticing and motivate her for a response it should help her realize or learn something about herself or about you -- ideally about common values or interests.
+To make it enticing and motivate her for a response, it should help her realize or learn something about herself or about you -- ideally about common values or interests.
 Example translations:
 ```
 General Format:
@@ -61,14 +61,14 @@ Examples:
 > instead of: what is your favorite colour --> instead ask --> what is unique about the feeling that you get about your favorite colour
 > instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
 ```
-Don't ask her basic question, follow the technique above where you raise her interest, and have her have fun.
-To saise her interest have her associate her with things about me that we have in common, ideally values.
+Don't ask her a basic question, follow the technique above where you raise her interest, and have her have fun.
+To raise her interest, have her associate her with things about me that we have in common, ideally values.
 Write a message so that she is curious about me -- (good) mystery is good.
-Tbis is my current question:
+This is my current question:
 ```
-> instead of: X --> insterad ask --> Y
+> instead of: How do you spend time with your friends and family? --> insterad ask --> ?
 ```
-Help me translate it to make raise her interest and entice a reponse:
+Help me translate it to make raise her interest and entice a response:
 
 # -- Notes --
 
