@@ -66,9 +66,15 @@ To raise her interest, have her associate her with things about me that we have 
 Write a message so that she is curious about me -- (good) mystery is good.
 This is my current question:
 ```
+Context: 
+I wanted to start by saying, I truly appreciated how you phrased your response! I just got back from a trip to Japan with my family and there was something about us all being together that really put things in perspective, loved that you connected with that! How do you spend time with your friends and family?
+
 > instead of: How do you spend time with your friends and family? --> insterad ask --> ?
 ```
-Help me translate it to make raise her interest and entice a response:
+Help me translate it to make raise her interest and entice a response, give me 5 top quality options:
+
+examples:
+- https://chat.openai.com/c/448c2a52-585c-4dbb-b36d-d3e4fce89b0f , https://claude.ai/chat/98b091d4-ed14-478a-9ec5-937e1b38becb
 
 # -- Notes --
 
