@@ -91,7 +91,7 @@ This is the idea to convert to a proposal like Example 4 (Brando Miranda will be
 ```text
 # My project
 Title
-A systematic study of the role of data quality and alignment for fine-tuning LLMs for Autoformalization
+A Systematic Study of the Role of Data Quality via Diveristy for training LLMs for Enhanced Test Performance
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
@@ -99,28 +99,31 @@ Aut_win_spr, 2023-2024 Academic Year
 Course credit
 Up to 5 students
 Project description
-Goal: Explore systematically what type of data improves most the test performance for a given task.
-In this case, the task is Autoformalization, translating natural language informal statments into formal verifable statmenets (e.g., Python, Lean, Coq, Isabelle, etc).
-The idea will be to use concrete computable metrics for data alignment and test the hypothesis that the most aligned data for the task leads to the most improvement.
-We will use the Task2Vec data alginment coefficient to score how much a source task is alinged for the target task.
-Then once we have the top M batches of algined data sorted we can choose the K to fine-tune our model and show that as we fine-tune (or use few shots) on examples lower down the list, we get less test improvement.
-We will also test it in terms of conceptual categories to see which improve AF most e.g.,
-- fine-tune on exactly algined data i.e., on x=(informal_smtmt, formal_stmt) pairs
-- fine-tune on seperate unpaired data i.e., trained on both informal and formal statmenets but the data isn't paired (i.e. don't correspond to each other)
-- on formal data alone of different alignment scores e.g., python code, pytoch + docs, lean, lean + docs, Coq, cvc4, z3, fol, Isabelle, metamath, mizar, proof terms, proof states, etc.
-- on informal data alone, irrelevant data to mathematics, relevant but informal, mathematics textbooks 
-
-The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
+Goal:
+Explore systematically the role of data diversity is in improving most the test performance for
+1. benchmarks for specific tasks (e.g, reasoning, writing technical articles, autoformalization, writing informal mathematics, theorem proving, coding, etc.)
+2. benchmarks that are general (e.g., union of different data sets, data sets on the HF leader board, etc) -- "general benchmarks"
+However, we won't be using real NLP benchmarks like reasoning.
+Instead we will use a controlled synthetic data set that mimic NLP data sets called GINC (Generative In-Context learning Dataset).
+With this we will create the
+1. Synthetic Specific Benchmarks (using a specific synthetic concept)
+2. General Benchmarks (using a collection of synthetic conepts)
+The hypothesis is that diversity most likely improves general benchmark.
+Perhaps some degree of alignment might matter for but the hypothesis is that a large diverse set of tasks increases the convex hull and thus the chances that the model has benefits of transfer learning.
+What is the role of formal quantitative measures of diversiersy (like the Task2Vec diversity coefficient) on test performance?
 
 Also, the vast success of data in the ML theorem through LLMs like GPT4, suggest that the role of data is huge for the current landscape of LLMs. Therefore, data centric tools that automate the pipeline of data selection for improved data efficiency -- that might be able to break scaling laws -- are paramount.
 
 Recommended Background
 Please share your background when reaching out.
-Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential, and knowledge in theorem proving using Lean, Coq, or Isabelle is preferred but not mandatory. A passion or intense curiosity about mathematics, formalization/verification of mathematics, AI safety/alignment, or software verification & verified program synthesis would be ideal.
+Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential.
 
 Prerequisites / Preparation
-Participants will be expected to make direct contributions to the project and should be comfortable coding in Python. Familiarity with theorem proving and a keen interest in mathematics or software verification would be advantageous.
+Participants will be expected to make direct contributions to the project and should be comfortable coding in Python.
+The believe that the role of the data is paramount/most essential is a plus. Data centric ML. 
 ```
 Convert my project into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
 Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. 
-It is ok the improve the title given the project Brando gave:
+It is ok the improve the title given the project Brando gave. 
+The main content of your propsal should come from the `# My Project` section.
+Write the proposal: 
