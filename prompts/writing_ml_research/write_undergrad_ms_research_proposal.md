@@ -91,21 +91,28 @@ This is the idea to convert to a proposal like Example 4 (Brando Miranda will be
 ```text
 # My project
 Title
-Sketching: a Cognitively inspired Compositional Theorem Prover that Learns in Lean
+A systematic study of the role of data quality and alignment for fine-tuning LLMs for Autoformalization
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
 Aut_win_spr, 2023-2024 Academic Year
 Course credit
 Up to 5 students
-The idea is to implement a LLM based theorem prover that is able to reason at a high level using sketching.
-The idea will be to implement "Draft, Sketch, and Prove: Guiding Formal Theorem Provers with Informal Proofs" in Lean using Lean Dojo.
-We will benchmark our prover in MiniF2F in Lean.
-We will augment the capabilities of this model my further training it using autoformalization i.e., extracting formal theorem from natural langauge (e.g., mathematics textbooks).
-Ideally both on informal proofs and formal proofs.
-We will also explore pruning technique to increase the quality of the data extracted
-e.g., using Lean, data alignment metrics to task, etc.
+Project description
+Goal: Explore systematically what type of data improves most the test performance for a given task.
+In this case, the task is Autoformalization, translating natural language informal statments into formal verifable statmenets (e.g., Python, Lean, Coq, Isabelle, etc).
+The idea will be to use concrete computable metrics for data alignment and test the hypothesis that the most aligned data for the task leads to the most improvement.
+We will use the Task2Vec data alginment coefficient to score how much a source task is alinged for the target task.
+Then once we have the top M batches of algined data sorted we can choose the K to fine-tune our model and show that as we fine-tune (or use few shots) on examples lower down the list, we get less test improvement.
+We will also test it in terms of conceptual categories to see which improve AF most e.g.,
+- fine-tune on exactly algined data i.e., on x=(informal_smtmt, formal_stmt) pairs
+- fine-tune on seperate unpaired data i.e., trained on both informal and formal statmenets but the data isn't paired (i.e. don't correspond to each other)
+- on formal data alone of different alignment scores e.g., python code, pytoch + docs, lean, lean + docs, Coq, cvc4, z3, fol, Isabelle, metamath, mizar, proof terms, proof states, etc.
+- on informal data alone, irrelevant data to mathematics, relevant but informal, mathematics textbooks 
+
 The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
+
+Also, the vast success of data in the ML theorem through LLMs like GPT4, suggest that the role of data is huge for the current landscape of LLMs. Therefore, data centric tools that automate the pipeline of data selection for improved data efficiency -- that might be able to break scaling laws -- are paramount.
 
 Recommended Background
 Please share your background when reaching out.
