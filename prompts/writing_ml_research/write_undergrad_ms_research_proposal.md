@@ -81,6 +81,7 @@ Autoformalization is crucial for converting informal statements, typically in na
 Recommended Background
 Please share your background when reaching out.
 Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential, and knowledge in theorem proving using Lean, Coq, or Isabelle is preferred but not mandatory. A passion or intense curiosity about mathematics, formalization/verification of mathematics, AI safety/alignment, or software verification & verified program synthesis would be ideal.
+
 Prerequisites / Preparation
 Participants will be expected to make direct contributions to the project and should be comfortable coding in Python. Familiarity with theorem proving and a keen interest in mathematics or software verification would be advantageous.
 
@@ -90,61 +91,29 @@ This is the idea to convert to a proposal like Example 4 (Brando Miranda will be
 ```text
 # My project
 Title
-Static benchmark evaluation for Theorem Proving (TP) for an LLM based Prover using Lean Dojo 
+Sketching: a Cognitively inspired Compositional Theorem Prover that Learns in Lean
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
 Aut_win_spr, 2023-2024 Academic Year
 Course credit
 Up to 5 students
-
-Autoformalization is the task of converting informal statements (e.g., Natural language) to formal (verifiable) statements (.e.g, Python, Lean, Coq, Isabelle).
-
-# Static eval for Proving Accuracy (PfAc) using Lean Dojo with a Prover
-
-# Goal
-Create a trust worthy eval benchmark evaluates a LLM models capabilities of proving theorems on a benchmark using Lean Dojo.
-Eventually, getting Autoformalization as the main technique for high quality data augmentation for improving number of theorems prooved (i.e., what we call proof accuracy).
-
-# Idea
-The idea is to create an eval benchmark where we can measure reliably if a model + prover/search method is capable of proving theorems in an standard ML for theorem proving eval benchmarks.
-
-ML4TP eval Benchmarks options:
-1. MiniF2F: https://github.com/openai/miniF2F
-2. Autoformalization (AF): https://arxiv.org/abs/2205.12615
-3. AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
-4. DSP (Draft Sketch Prove): https://openreview.net/forum?id=SMa9EAovKMC
-5. ProofNet: https://arxiv.org/abs/2302.12433
-6. LeanDojo: https://github.com/lean-dojo
-7. Parsel: https://github.com/ezelikman/parsel
-
-The components we need are:
-1. Eval data set for benchmarking ML4TP (e.g., MiniF2F)
-2. Prover + Model (e.g., DSP + LLM, Parsel + LLM, DSP2 + LLM, ReProver + LLM, DSP2 + LLM)
-3. Thus given:
-  a. Eval ds (minif2f)
-  b. Prover for TP &
-  c. LLM as ML model
-  d. Env (LeanDojo) to evaluate proof accuracy (number of theorems prover)
-4. Autoformalization as way for high quality data augmentation 
-
-# Plan Experiment 1: Implement evaluation benchmark with MiniF2F/ProofNet + ReProver + LLM + LeanDojo
-
-# Plan Experiment 2: Implement evaluation benchmark with MiniF2F/ProofNet + DSP + LLM + LeanDojo
-
-# Plan Experiment 3: Implement evaluation benchmark with MiniF2F/ProofNet + Parsel + LLM + LeanDojo
-
-# Plan Experiment 4: Use Autoformalization to get more proofs/theoms to train model, perhaps filter for quality e.g., which parse etc.
+The idea is to implement a LLM based theorem prover that is able to reason at a high level using sketching.
+The idea will be to implement "Draft, Sketch, and Prove: Guiding Formal Theorem Provers with Informal Proofs" in Lean using Lean Dojo.
+We will benchmark our prover in MiniF2F in Lean.
+We will augment the capabilities of this model my further training it using autoformalization i.e., extracting formal theorem from natural langauge (e.g., mathematics textbooks).
+Ideally both on informal proofs and formal proofs.
+We will also explore pruning technique to increase the quality of the data extracted
+e.g., using Lean, data alignment metrics to task, etc.
+This endeavor is motivated by the aspiration to build an automated mathematician capable of unlocking the vast knowledge encapsulated in mathematical textbooks written in natural language, contributing to advancements in mathematics, scientific discovery, and AI safety.
 
 Recommended Background
 Please share your background when reaching out.
+Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential, and knowledge in theorem proving using Lean, Coq, or Isabelle is preferred but not mandatory. A passion or intense curiosity about mathematics, formalization/verification of mathematics, AI safety/alignment, or software verification & verified program synthesis would be ideal.
+
 Prerequisites / Preparation
-You will be expected to make direct contributions to the project. 
-Need to be comfortable coding in python.
-Knowledge in Lean/Coq/Isabelle (Theorem Proving) is prefered but not required.
-Ideally, you are passionate/intensely curious about mathematics or/and the formalization/verification of mathematics or AI safety/alighment.
-Or software verification & verified program synthesis.
+Participants will be expected to make direct contributions to the project and should be comfortable coding in Python. Familiarity with theorem proving and a keen interest in mathematics or software verification would be advantageous.
 ```
-into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
+Convert my project into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
 Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. 
 It is ok the improve the title given the project Brando gave:
