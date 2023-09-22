@@ -69,7 +69,8 @@ Please share your background when reaching out.
 Prerequisites / Preparation
 Most contributors to this project will need to be comfortable coding in React Native, to make direct contributions to the project. We also have a small capacity for contributors interested in user research or design.
 ```
-now convert this idea:
+Example 4 has fields that have to be included when you convert my idea to a proposal. 
+This is the idea to convert to a proposal like Example 4:
 ```text
 Autoformalization is the task of converting informal statements (e.g., Natural language) to formal (verifiable) statements (.e.g, Python, Lean, Coq, Isabelle).
 Create a benchmark for autoformalization from Lean's Mathlib library.
@@ -87,4 +88,4 @@ AF: https://arxiv.org/abs/2205.12615
 AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
 LIMA Less is More For Alignment: https://arxiv.org/abs/2305.11206
 ```
-into a research proposal with the given specifications:
+into a research proposal with the given specifications, make sure it has the fields as in example 4:
