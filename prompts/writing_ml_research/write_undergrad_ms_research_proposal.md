@@ -39,7 +39,7 @@ Project Proposal: In the contemporary realm of GPT-4, the development of large-s
 Supervisors:
 Brando https://brando90.github.io/brandomiranda/prospective-collaborations.html 
 
-# ExMple 3
+# Example 3
 Pretraining Language Models from Human Preferences
 Recent work showed that language models can be pretrained using human preference data [1] in a manner that minimizes misalignment without sacrificing task performance (To experiment, the authors used GPT-2 sized models, which are relatively easily trained on the compute we have available to us). The paper explored several methods for utilizing human preference data and found that only one performed well. However, one of the methods that did not work is called Reward Weighted Regression:
 $$
@@ -54,6 +54,20 @@ Supervisors:
 Rylan
 Zach?
 
+# Example 4
+Burst: A Social Media Design in Layers
+Michael Bernstein, contact email: msb@cs.stanford.edu
+HCI
+Aut_win_spr, 2023-2024 Academic Year
+Course credit
+Up to 5 students
+Project Description
+It would be no understatement to claim that social media such as Facebook, TikTok, and X are beset by challenges. And while we have developed many tools to help—secondary accounts such as finstas, moderation tools, AI, deplatforming rules, prosocial nudges—these are all ultimately band-aids that patch these problem rather than addressing the design decisions that cause it. In this project, we ask: can we change some of the fundamental core design decisions of social media to come up with an alternative that’s enjoyable and more pro-social?
+The current project direction focuses on creating a For You-style feed of content, where your posts get shared with concentric “rings” of followers, and your content bursts from smaller to larger and larger rings. So, when you first post, your content might only be visible to 10 trusted friends. If they react positively, it might burst out to a group of 100, then 1000, and so on. We are developing this idea into a working React Native application to deploy and test its effect on how comfortable people are sharing content, as well as how effectively it can mitigate anti-social behavior such as harassment.
+Recommended Background
+Please share your background when reaching out.
+Prerequisites / Preparation
+Most contributors to this project will need to be comfortable coding in React Native, to make direct contributions to the project. We also have a small capacity for contributors interested in user research or design.
 ```
 now convert this idea:
 ```text
