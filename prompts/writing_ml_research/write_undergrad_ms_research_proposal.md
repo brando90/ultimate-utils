@@ -70,8 +70,10 @@ Prerequisites / Preparation
 Most contributors to this project will need to be comfortable coding in React Native, to make direct contributions to the project. We also have a small capacity for contributors interested in user research or design.
 ```
 Example 4 has fields that have to be included when you convert my idea to a proposal. 
-This is the idea to convert to a proposal like Example 4:
+This is the idea to convert to a proposal like Example 4 (Brando Miranda will be the supervisor):
 ```text
+# My project
+
 Brando Miranda: brando9@stanford.edu
 AI/ML
 Aut_win_spr, 2023-2024 Academic Year
@@ -88,6 +90,8 @@ Once we get at least 500 examples labeled we can train a reward model
 Read the LIMA paper to see how they managed to get such a good model with 1000 examples
 Then we will train a reward model, evaluate how good at is/algined with human preferences is
 and then use it to label all the paired data (informal statement, formal statment) with two scores for evlauation and training.
+Motivation: The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
+With this in mind, there is tremendous amount of information that hasn't been unlocked in mathematical textbooks written in natural language (informal langauge), hence the paramount importance of autoformalization in line with the LLM's success trained at scale. 
 refs:
 AF: https://arxiv.org/abs/2205.12615
 AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
