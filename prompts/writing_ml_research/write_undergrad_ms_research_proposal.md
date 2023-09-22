@@ -72,6 +72,12 @@ Most contributors to this project will need to be comfortable coding in React Na
 Example 4 has fields that have to be included when you convert my idea to a proposal. 
 This is the idea to convert to a proposal like Example 4:
 ```text
+Brando Miranda: brando9@stanford.edu
+AI/ML
+Aut_win_spr, 2023-2024 Academic Year
+Course credit
+Up to 5 students
+
 Autoformalization is the task of converting informal statements (e.g., Natural language) to formal (verifiable) statements (.e.g, Python, Lean, Coq, Isabelle).
 Create a benchmark for autoformalization from Lean's Mathlib library.
 The library will have human judgements/scores of how good a formalization or informalization is.
@@ -82,10 +88,18 @@ Once we get at least 500 examples labeled we can train a reward model
 Read the LIMA paper to see how they managed to get such a good model with 1000 examples
 Then we will train a reward model, evaluate how good at is/algined with human preferences is
 and then use it to label all the paired data (informal statement, formal statment) with two scores for evlauation and training.
-
 refs:
 AF: https://arxiv.org/abs/2205.12615
 AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
 LIMA Less is More For Alignment: https://arxiv.org/abs/2305.11206
+ProofNet: https://arxiv.org/abs/2302.12433
+ProoNet data set: https://huggingface.co/datasets/hoskinson-center/proofnet
+ProofNet github: https://github.com/zhangir-azerbayev/ProofNet
+LeanDojo: https://github.com/lean-dojo
+Recommended Background
+Please share your background when reaching out.
+Prerequisites / Preparation
+You will be expected to make direct contributions to the project. 
+Need to be comfortable coding in python.
 ```
 into a research proposal with the given specifications, make sure it has the fields as in example 4:
