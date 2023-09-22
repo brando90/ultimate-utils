@@ -73,6 +73,8 @@ Example 4 has fields that have to be included when you convert my idea to a prop
 This is the idea to convert to a proposal like Example 4 (Brando Miranda will be the supervisor):
 ```text
 # My project
+Title
+Static benchmark evaluation for AutoFormalization (AF) using Lean Dojo with a Theorem Prover for Equivalences
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
@@ -81,21 +83,24 @@ Course credit
 Up to 5 students
 
 Autoformalization is the task of converting informal statements (e.g., Natural language) to formal (verifiable) statements (.e.g, Python, Lean, Coq, Isabelle).
-Create a benchmark for autoformalization from Lean's Mathlib library.
-The library will have human judgements/scores of how good a formalization or informalization is.
-We will create some data manually similar to the debug1_af data https://huggingface.co/datasets/brando/debug1_af
-i.e., we will do the formalizaiton using GPT4 or Claude, then have us (human experts) label how good the
-formalization, informalization is.
-Once we get at least 500 examples labeled we can train a reward model
-Read the LIMA paper to see how they managed to get such a good model with 1000 examples
-Then we will train a reward model, evaluate how good at is/algined with human preferences is
-and then use it to label all the paired data (informal statement, formal statment) with two scores for evlauation and training.
+The idea is to create a eval benchmark where we can measure reliably if a model is capable of translating natural language specificiations to formally verifiable specificiations (in the ITP Lean).
+Thus the task is:
+
+> Task = AF (AutoFormalization) =: can a ml model create a formalization (from an informal statement) that is (formally) semantically equivalent to the target formalization? `AF == i_stmt -> f_stmt`
+
+The main components we will need are:
+1. A benchmark with ground truth pairs of informal statements to formal statements (specifying Task AF via examples) see my current public hf data set [debug1](https://huggingface.co/datasets/brando/debug1_af) or [ProofNet](https://huggingface.co/datasets/hoskinson-center/proofnet)
+2. An **equivalence** function to be used as a score/loss function. It tells us (ideally) **perfectly** if a traslated/autoformalize informal statement is equivalent to the target formal statement.
+3. Full pipeline code that runs eval given:
+   - a. (AF) LLM model
+   - b. Equivalence score/loss function with a prover capable of proving true equivalences e.g., `fs1 === fs2 ? | Prover, ITP`
+   - c. An ITP (Interactive Theorem Prover, Lean). In this case LeanDojo.
+
 Motivation: The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
 With this in mind, there is tremendous amount of information that hasn't been unlocked in mathematical textbooks written in natural language (informal langauge), hence the paramount importance of autoformalization in line with the LLM's success trained at scale. 
 refs:
 AF: https://arxiv.org/abs/2205.12615
 AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
-LIMA Less is More For Alignment: https://arxiv.org/abs/2305.11206
 ProofNet: https://arxiv.org/abs/2302.12433
 ProoNet data set: https://huggingface.co/datasets/hoskinson-center/proofnet
 ProofNet github: https://github.com/zhangir-azerbayev/ProofNet
@@ -105,5 +110,9 @@ Please share your background when reaching out.
 Prerequisites / Preparation
 You will be expected to make direct contributions to the project. 
 Need to be comfortable coding in python.
+Knowledge in Lean/Coq/Isabelle (Theorem Proving) is prefered but not required.
+Ideally, you are passionate/intensely curious about mathematics or/and the formalization/verification of mathematics or AI safety/alighment.
+Or software verification & verified program synthesis.
 ```
-into a research proposal with the given specifications, make sure it has the fields as in example 4:
+into a research proposal with the given specifications, make sure it has the fields as in example 4. 
+It is ok the improve the title given the project Brando gave:
