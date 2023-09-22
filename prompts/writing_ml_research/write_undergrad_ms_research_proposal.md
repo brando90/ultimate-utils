@@ -68,13 +68,29 @@ Recommended Background
 Please share your background when reaching out.
 Prerequisites / Preparation
 Most contributors to this project will need to be comfortable coding in React Native, to make direct contributions to the project. We also have a small capacity for contributors interested in user research or design.
+
+# Example 5
+Brando Miranda, contact email: brando9@stanford.edu
+AI/ML
+Aut_win_spr, 2023-2024 Academic Year
+Course credit
+Up to 5 students
+Project Description
+Autoformalization is crucial for converting informal statements, typically in natural language, into formal, verifiable statements, such as those in Python, Lean, Coq, or Isabelle. This project aims to develop a reliable evaluation benchmark to measure the capability of machine learning models in translating natural language specifications to formally verifiable specifications using the Interactive Theorem Prover, Lean. The task to evaluate, termed as AF (AutoFormalization), will assess whether a model can create a formalization from an informal statement that is semantically equivalent to the target formalization. The project will involve creating a benchmark with ground truth pairs of informal and formal statements, developing an equivalence function as a score/loss function, and coding a full pipeline that runs evaluations, integrating an AF LLM model, equivalence score/loss function, and LeanDojo. This endeavor is motivated by the aspiration to build an automated mathematician capable of unlocking the vast knowledge encapsulated in mathematical textbooks written in natural language, contributing to advancements in mathematics, scientific discovery, and AI safety.
+
+Recommended Background
+Please share your background when reaching out.
+Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential, and knowledge in theorem proving using Lean, Coq, or Isabelle is preferred but not mandatory. A passion or intense curiosity about mathematics, formalization/verification of mathematics, AI safety/alignment, or software verification & verified program synthesis would be ideal.
+Prerequisites / Preparation
+Participants will be expected to make direct contributions to the project and should be comfortable coding in Python. Familiarity with theorem proving and a keen interest in mathematics or software verification would be advantageous.
+
 ```
 Example 4 has fields that have to be included when you convert my idea to a proposal. 
 This is the idea to convert to a proposal like Example 4 (Brando Miranda will be the supervisor):
 ```text
 # My project
 Title
-Static benchmark evaluation for AutoFormalization (AF) using Lean Dojo with a Theorem Prover for Equivalences
+Static benchmark evaluation for Theorem Proving (TP) for an LLM based Prover using Lean Dojo 
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
@@ -83,28 +99,43 @@ Course credit
 Up to 5 students
 
 Autoformalization is the task of converting informal statements (e.g., Natural language) to formal (verifiable) statements (.e.g, Python, Lean, Coq, Isabelle).
-The idea is to create a eval benchmark where we can measure reliably if a model is capable of translating natural language specificiations to formally verifiable specificiations (in the ITP Lean).
-Thus the task is:
 
-> Task = AF (AutoFormalization) =: can a ml model create a formalization (from an informal statement) that is (formally) semantically equivalent to the target formalization? `AF == i_stmt -> f_stmt`
+# Static eval for Proving Accuracy (PfAc) using Lean Dojo with a Prover
 
-The main components we will need are:
-1. A benchmark with ground truth pairs of informal statements to formal statements (specifying Task AF via examples) see my current public hf data set [debug1](https://huggingface.co/datasets/brando/debug1_af) or [ProofNet](https://huggingface.co/datasets/hoskinson-center/proofnet)
-2. An **equivalence** function to be used as a score/loss function. It tells us (ideally) **perfectly** if a traslated/autoformalize informal statement is equivalent to the target formal statement.
-3. Full pipeline code that runs eval given:
-   - a. (AF) LLM model
-   - b. Equivalence score/loss function with a prover capable of proving true equivalences e.g., `fs1 === fs2 ? | Prover, ITP`
-   - c. An ITP (Interactive Theorem Prover, Lean). In this case LeanDojo.
+# Goal
+Create a trust worthy eval benchmark evaluates a LLM models capabilities of proving theorems on a benchmark using Lean Dojo.
+Eventually, getting Autoformalization as the main technique for high quality data augmentation for improving number of theorems prooved (i.e., what we call proof accuracy).
 
-Motivation: The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
-With this in mind, there is tremendous amount of information that hasn't been unlocked in mathematical textbooks written in natural language (informal langauge), hence the paramount importance of autoformalization in line with the LLM's success trained at scale. 
-refs:
-AF: https://arxiv.org/abs/2205.12615
-AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
-ProofNet: https://arxiv.org/abs/2302.12433
-ProoNet data set: https://huggingface.co/datasets/hoskinson-center/proofnet
-ProofNet github: https://github.com/zhangir-azerbayev/ProofNet
-LeanDojo: https://github.com/lean-dojo
+# Idea
+The idea is to create an eval benchmark where we can measure reliably if a model + prover/search method is capable of proving theorems in an standard ML for theorem proving eval benchmarks.
+
+ML4TP eval Benchmarks options:
+1. MiniF2F: https://github.com/openai/miniF2F
+2. Autoformalization (AF): https://arxiv.org/abs/2205.12615
+3. AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
+4. DSP (Draft Sketch Prove): https://openreview.net/forum?id=SMa9EAovKMC
+5. ProofNet: https://arxiv.org/abs/2302.12433
+6. LeanDojo: https://github.com/lean-dojo
+7. Parsel: https://github.com/ezelikman/parsel
+
+The components we need are:
+1. Eval data set for benchmarking ML4TP (e.g., MiniF2F)
+2. Prover + Model (e.g., DSP + LLM, Parsel + LLM, DSP2 + LLM, ReProver + LLM, DSP2 + LLM)
+3. Thus given:
+  a. Eval ds (minif2f)
+  b. Prover for TP &
+  c. LLM as ML model
+  d. Env (LeanDojo) to evaluate proof accuracy (number of theorems prover)
+4. Autoformalization as way for high quality data augmentation 
+
+# Plan Experiment 1: Implement evaluation benchmark with MiniF2F/ProofNet + ReProver + LLM + LeanDojo
+
+# Plan Experiment 2: Implement evaluation benchmark with MiniF2F/ProofNet + DSP + LLM + LeanDojo
+
+# Plan Experiment 3: Implement evaluation benchmark with MiniF2F/ProofNet + Parsel + LLM + LeanDojo
+
+# Plan Experiment 4: Use Autoformalization to get more proofs/theoms to train model, perhaps filter for quality e.g., which parse etc.
+
 Recommended Background
 Please share your background when reaching out.
 Prerequisites / Preparation
