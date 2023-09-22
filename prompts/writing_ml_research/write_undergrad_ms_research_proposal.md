@@ -80,6 +80,11 @@ formalization, informalization is.
 Once we get at least 500 examples labeled we can train a reward model
 Read the LIMA paper to see how they managed to get such a good model with 1000 examples
 Then we will train a reward model, evaluate how good at is/algined with human preferences is
-and then use it to label all the paired data (informal statement, formal statment) with two scores for evlauation and training. 
+and then use it to label all the paired data (informal statement, formal statment) with two scores for evlauation and training.
+
+refs:
+AF: https://arxiv.org/abs/2205.12615
+AF video: https://youtu.be/_pqJYnQua58?si=jVliUTqqXTjpeods&t=1
+LIMA Less is More For Alignment: https://arxiv.org/abs/2305.11206
 ```
 into a research proposal with the given specifications:
