@@ -85,7 +85,7 @@ Prerequisites / Preparation
 Participants will be expected to make direct contributions to the project and should be comfortable coding in Python. Familiarity with theorem proving and a keen interest in mathematics or software verification would be advantageous.
 
 ```
-Example 4 has fields that have to be included when you convert my idea to a proposal. 
+Example 4 & 5 has fields that have to be included when you convert my idea to a proposal. 
 This is the idea to convert to a proposal like Example 4 (Brando Miranda will be the supervisor):
 ```text
 # My project
@@ -145,5 +145,5 @@ Knowledge in Lean/Coq/Isabelle (Theorem Proving) is prefered but not required.
 Ideally, you are passionate/intensely curious about mathematics or/and the formalization/verification of mathematics or AI safety/alighment.
 Or software verification & verified program synthesis.
 ```
-into a research proposal with the given specifications, make sure it has the fields as in example 4. 
+into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
 It is ok the improve the title given the project Brando gave:
