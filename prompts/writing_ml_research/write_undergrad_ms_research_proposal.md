@@ -105,7 +105,7 @@ We will augment the capabilities of this model my further training it using auto
 Ideally both on informal proofs and formal proofs.
 We will also explore pruning technique to increase the quality of the data extracted
 e.g., using Lean, data alignment metrics to task, etc.
-This endeavor is motivated by the aspiration to build an automated mathematician capable of unlocking the vast knowledge encapsulated in mathematical textbooks written in natural language, contributing to advancements in mathematics, scientific discovery, and AI safety.
+The dream is to build an automated mathematician that is powerful enough to automate mathematics, sciencific discovery, and AI safety with an automated mathematician. I conjecture formal maths is the only way to create safe AGI because safety requires a "for all" quantifier saying "there is no way AGI will kill humanity". That type of statement are impossible to guarantee empirically and only a mathematical formal proof can guarantee it. Hence why I think building an automated mathematician is the only way for safe AGI.
 
 Recommended Background
 Please share your background when reaching out.
