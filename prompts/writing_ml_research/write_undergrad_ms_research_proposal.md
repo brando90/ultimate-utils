@@ -146,4 +146,5 @@ Ideally, you are passionate/intensely curious about mathematics or/and the forma
 Or software verification & verified program synthesis.
 ```
 into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
+Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. 
 It is ok the improve the title given the project Brando gave:
