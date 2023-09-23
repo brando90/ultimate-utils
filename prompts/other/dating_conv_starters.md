@@ -9,8 +9,26 @@ Provide me with different options for a high quality first message to a woman in
 (e.g. Hinge Bumble Coffee and Beagles) using her profile prompts that I will provide:
 ```markdown
 [//]: # (Her profile)
-About Ala wang
+-- About Ala wang
 Hi, I am a positive person who like to explore the things that I have not done before. 🧚‍♀️I like to explore my inner self, so I have doing meditation🧘‍♀️.And,I love the ocean 🌊and the forest, 🌳where I can relax and recharge in nature. I also like to explore various foods 🥟🍤and enjoy be with my pets🐰
+-- About Fay
+Film Directory, Cambrdige University
+Active, Graduate Degree, Women
+
+I studied Medicine in the UK, now working in the Creative world in the US.
+-- About Yaren
+Yaren
+Interior Designer/Architect at Architecture firm
+Graduate Degree, Atheist, Women
+
+I’m known for...
+Always having a smiley face
+
+My zombie apocalypse plan is...
+Designing cool housing complexes with zombie traps inside
+
+Swipe right if...
+You wanna meet your love of your life
 ```
 Also consider my ideas or current attempted openers or ideas:
 ```markdown
