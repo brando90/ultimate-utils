@@ -82,16 +82,19 @@ Examples:
 > instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
 ```
 Don't ask her a basic question, follow the technique above where you raise her interest, and have her have fun.
-To raise her interest, have her associate her with things about me that we have in common, ideally values.
+To raise her interest, have her associate her with things about me that we have in common, ideally values. 
 Write a message so that she is curious about me -- (good) mystery is good.
 This is my current question:
 ```
 Context: 
 I wanted to start by saying, I truly appreciated how you phrased your response! I just got back from a trip to Japan with my family and there was something about us all being together that really put things in perspective, loved that you connected with that! How do you spend time with your friends and family?
 
-> instead of: What feelings does creative film making make you feel that medicine did not? --> insterad ask --> ?
+> instead of: What is your favorite trait of the power of sleep masks? --> insterad ask --> ?
 ```
-Help me translate it to make raise her interest and entice a response, give me 5 top quality options:
+Help me translate it to make raise her interest and entice a response.
+It shouldn't be pompous, exagerated.
+If the translated message can be witty make it witty.
+Give me 5 top quality options:
 
 
 
