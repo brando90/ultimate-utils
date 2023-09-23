@@ -66,9 +66,11 @@ It has to be 1 or 2 sentences -- max 3 sentences.
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
 Give me 7 options:
 
+
+
 # Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest
-I want to translate a mundane question into a deep question, that raises the interest in me from the person receiving my message.
-To make it enticing and motivate her for a response, it should help her realize or learn something about herself or about you -- ideally about common values or interests.
+I want to translate a mundane question into a deep question, that raises the interest in me from the person (women) receiving my message.
+To make it enticing and motivate a reponse from her -- it should help her realize or learn something about herself or about you, ideally about common values or interests.
 Example translations:
 ```
 General Format:
@@ -87,12 +89,16 @@ This is my current question:
 Context: 
 I wanted to start by saying, I truly appreciated how you phrased your response! I just got back from a trip to Japan with my family and there was something about us all being together that really put things in perspective, loved that you connected with that! How do you spend time with your friends and family?
 
-> instead of: How do you spend time with your friends and family? --> insterad ask --> ?
+> instead of: What feelings does creative film making make you feel that medicine did not? --> insterad ask --> ?
 ```
 Help me translate it to make raise her interest and entice a response, give me 5 top quality options:
 
+
+
 examples:
 - https://chat.openai.com/c/448c2a52-585c-4dbb-b36d-d3e4fce89b0f , https://claude.ai/chat/98b091d4-ed14-478a-9ec5-937e1b38becb
+- Yaren: https://chat.openai.com/c/fdcfaf45-8074-43fa-bec6-c83e919e71f6
+- fay: https://chat.openai.com/c/a2af917f-84d3-4e87-b018-1d875098fca6
 
 # -- Notes --
 
