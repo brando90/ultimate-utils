@@ -23,7 +23,7 @@ conda update conda
 conda update --all
 
 # - create conda env
-conda create -n my_env python=3.9
+conda create -n my_env python=3.10
 conda activate my_env
 ## conda remove --name my_env --all
 
