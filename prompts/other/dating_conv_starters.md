@@ -29,6 +29,8 @@ Designing cool housing complexes with zombie traps inside
 
 Swipe right if...
 You wanna meet your love of your life
+--- About Jane
+Music and dance, photography and writing, outdoors and inner peace
 ```
 Also consider my ideas or current attempted openers or ideas:
 ```markdown
@@ -86,17 +88,11 @@ To raise her interest, have her associate her with things about me that we have 
 Write a message so that she is curious about me -- (good) mystery is good.
 This is my current question:
 ```
-Context:
-I am messaging Allana.
+Current Conversation and response:
 
-I wanted to start by saying, I truly appreciated how you phrased your response! I just got back from a trip to Japan with my family and there was something about us all being together that really put things in perspective, loved that you connected with that! How do you spend time with your friends and family?
+...
 
-Current draft:
-My week has been awesome! I worked remotely in Mexico City and got to see my family and my best friend. I got to do work I love AND be with those I love. I was counting with my bf and we've been friends like 20 years! Now I'm getting ready to get back to campus tomorrow.🙂
-How was your week? Curious, does your family live in the bay?
-
-but want to know how to phrase the last two questions better.
-
+Question to rephrase
 > instead of: How was your week? Curious, does your family live in the bay? --> insterad ask --> ?
 ```
 Help me translate it to make raise her interest and entice a response.
