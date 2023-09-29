@@ -37,15 +37,17 @@ All implementations were done in PyTorch \citep{pytorch}.
 These are my notes:
 ```
 <example_to_convert_to_excellent_hp_paragraph>
+high diversity 5CNN fo-MAML vs pre-training (pt)
+5CNN varying filter size 5CNN_opt_as_model_for_few_shot
 adam optimizer
 lr = 1e-3
 batch_size 256
-resnet12 as in rfs
-no scheduler
+scheduler cosine
+scheduler freq 2000
+1e-5 similar to maml++
 no weight decay
-pt iterations ~ at least 600k
-fo maml iterations ~ at least 160k
-ho maml iterations ~ at least 130K
+pt iterations ~ at least 200K
+maml iterations ~ at least 100K
 </example_to_convert_to_excellent_hp_paragraph>
 ```
 My improved discussion section be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication. 
