@@ -60,6 +60,19 @@ All models were trained to convergence on a single NVIDIA GPU with at least 48GB
 Training took approximately 1-2 week to converge for both pre-training and MAML.
 All implementations were done in PyTorch \citep{pytorch}.
 </excellent_example_of_hp_paragraph>
+
+<excellent_example_of_hp_paragraph>
+\textbf{Hyperparameter Details for ResNet50 on High Diversity Meta-Dataset Benchmarks:}
+We utilized the ResNet50 architecture from \citet{rfs} in our experiments on the high diversity meta-dataset benchmarks.
+The Adafactor optimizer \citep{adafactor} was used with default settings and no learning rate decay.
+For pre-training, we trained for 300,000 iterations with a batch size of 256.
+For first-order MAML \citep{maml}, we trained for 140,000 iterations also with a batch size of 256.
+The MAML outer loop consisted of 5 inner update steps with Adafactor's default inner learning rate.
+We used Adafactor default annealing scheduler in seqfair.
+Due to computational constraints, we limited the number of random seeds to 5 -- especially given that MDS combined 10 large scale vision data sets that includes ImageNet.
+Pre-training and MAML training took approximately 1 month each to converge on NVIDIA GPUs with 48GB memory allocated automatically by the cluster scheduler.
+All implementations were done in PyTorch \citep{pytorch}.
+</excellent_example_of_hp_paragraph>
 ```
 These are my notes:
 ```
