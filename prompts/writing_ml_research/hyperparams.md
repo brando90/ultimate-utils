@@ -18,6 +18,21 @@ It took 1 day 17 hours 2 minutes 41 seconds to train USL to convergence with a s
 The MAML model was trained with Torchmeta \citep{torchmeta} which didn't support multi gpu training when we ran this experiment, so we estimate it took 1-2 weeks to train on a single GPU.
 In addition, it was ran with an earlier version of our code, so we unfortunately did not record the type of GPU but suspect it was either an A100, A40 or Quadro RTX 6000.
 </excellent_example_of_hp_paragraph>
+
+<excellent_example_of_hp_paragraph>
+\textbf{Experimental hyperparameter details for Resnet12 on on low diversity data sets for Pre-training and fo/ho-MAML:}
+We used the Resnet12 architecture provided by \citep{rfs}. 
+The Adam optimizer \citep{adam} was utilized with a constant learning rate of 1e-3. 
+No learning rate scheduler was used. 
+Training was performed for 600,000 iterations for pre-training 
+and 160,000 first-order MAML iterations, with a batch size of 256. 
+The outer loop consisted of 130,000MAML iterations. 
+Inner learning rate 0.1 and 5 inner steps.
+No weight decay was applied. 
+Training was performed on a single NVIDIA PU with at most 48GB memory select by a HPC automatically.
+All experiments were trained to convergence (less than 0.01 loss) and took on average at most 1 week. 
+All implementations were done in PyTorch \citep{pytorch}.
+</excellent_example_of_hp_paragraph>
 ```
 These are my notes:
 ```
