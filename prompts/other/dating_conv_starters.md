@@ -91,9 +91,20 @@ This is my current question:
 Current Conversation and response:
 
 ...
+She said
+Hey! How long have u been at Stanford?
 
 Question to rephrase
-> instead of: How was your week? Curious, does your family live in the bay? --> insterad ask --> ?
+> instead of:
+
+Hi Zhixuan!
+
+I've been 1 year here at Stanford. What about you?
+
+Have you found any start up idea that inspires you enough to pitch it for a multiverse Rick and Morty adventure episode?
+Maybe that can also be your constant here at Stanford ;)
+
+--> insterad ask --> ?
 ```
 Help me translate it to make raise her interest and entice a response.
 It shouldn't be pompous, exagerated.
