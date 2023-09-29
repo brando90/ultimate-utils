@@ -33,21 +33,48 @@ Training was performed on a single NVIDIA PU with at most 48GB memory select by 
 All experiments were trained to convergence (less than 0.01 loss) and took on average at most 1 week. 
 All implementations were done in PyTorch \citep{pytorch}.
 </excellent_example_of_hp_paragraph>
+
+<excellent_example_of_hp_paragraph>
+\textbf{Experimental Details for 5CNN on High Diversity Datasets:}
+We utilized the 5CNN architecture proposed in \cite{rfs} with varying filter sizes. 
+The Adam optimizer \cite{adam} was used with a learning rate of 1e-3 without any learning rate decay. 
+A batch size of 256 was used for both pre-training and MAML training. 
+No weight decay was applied. 
+For pre-training, we trained for 200,000 iterations. 
+For first-order MAML, we trained for 100,000 iterations with an inner loop of 5 steps and an inner learning rate of 0.1. 
+We annealed the learning rate with a cosine scheduler with scheduler freq 2000 with minimum learning rate 1e-5 (similar to MAML++).
+All models were trained to convergence, which took approximately 1 week on a single NVIDIA GPU with at least 48GB of memory allocated by the HPC scheduler. 
+All implementations were done in PyTorch \cite{pytorch}.
+</excellent_example_of_hp_paragraph>
+
+<excellent_example_of_hp_paragraph>
+\textbf{Hyperparameter Details for ResNet12 on High Diversity Benchmarks:}
+We utilized the ResNet12 architecture from \citet{rfs} for our experiments.
+The Adam optimizer \citep{adam} was used with a learning rate of 1e-3 without any learning rate decay.
+For pre-training, we trained for 1 million iterations with a batch size of 256.
+For first-order MAML \citep{maml}, we trained for 300,000 iterations also with a batch size of 256.
+The MAML outer loop consisted of 5 inner update steps with an inner learning rate of 0.1.
+No weight decay was applied.
+We annealed the learning rate with a cosine scheduler with scheduler freq 2000 with minimum learning rate 1e-5 (similar to MAML++).
+All models were trained to convergence on a single NVIDIA GPU with at least 48GB of memory allocated by the cluster scheduler.
+Training took approximately 1-2 week to converge for both pre-training and MAML.
+All implementations were done in PyTorch \citep{pytorch}.
+</excellent_example_of_hp_paragraph>
 ```
 These are my notes:
 ```
 <example_to_convert_to_excellent_hp_paragraph>
-high diversity 5CNN fo-MAML vs pre-training (pt)
-5CNN varying filter size 5CNN_opt_as_model_for_few_shot
-adam optimizer
-lr = 1e-3
+meta-data set (MDS) high div
+adafactor
+resnet50 as in RFS, reused their code
 batch_size 256
-scheduler cosine
-scheduler freq 2000
-1e-5 similar to maml++
+pt iterations ~ at least 300K
+maml iterations ~ at least 140K 
 no weight decay
-pt iterations ~ at least 200K
-maml iterations ~ at least 100K
+adafactor scheduler
+these took ~1 month to run, hence the limitation of seeds
+we used adafactor from seqfair because the it required no hyperparameter choices and there is previous work that showed the training was stable.
+In addition adafactor uses less memory and this needed due to our GPU memory availability since 48GHs were not always available or easy to get for 1 month.
 </example_to_convert_to_excellent_hp_paragraph>
 ```
 My improved discussion section be of top quality for a NeurIPS NIPs ICML ICLR machine learning publication. 
