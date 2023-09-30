@@ -88,27 +88,17 @@ To raise her interest, have her associate her with things about me that we have 
 Write a message so that she is curious about me -- (good) mystery is good.
 This is my current question:
 ```
-Current Conversation and response:
-
-...
-She said
-Hey! How long have u been at Stanford?
+Current conversation & response, or context:
+Have you read the misborn series? It's a fantasy novel inspired by Harry Potter  set in a world where the "dark lord" triumphed. 
 
 Question to rephrase
 > instead of:
-
-Hi Zhixuan!
-
-I've been 1 year here at Stanford. What about you?
-
-Have you found any start up idea that inspires you enough to pitch it for a multiverse Rick and Morty adventure episode?
-Maybe that can also be your constant here at Stanford ;)
-
+Have you read it or a book similar to it? What are your favorite feelings novels make you feel in the journeys they take us in?
 --> insterad ask --> ?
 ```
 Help me translate it to make raise her interest and entice a response.
-It shouldn't be pompous, exagerated.
-If the translated message can be witty make it witty.
+It shouldn't be pompous, exaggerated.
+If the translated message can be witty, make it witty.
 Give me 5 top quality options:
 
 
