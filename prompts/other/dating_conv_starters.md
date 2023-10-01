@@ -82,6 +82,21 @@ Examples:
 > instead of: what is your favorite place to travel -->  instead ask --> what draws you to nations around the world
 > instead of: what is your favorite colour --> instead ask --> what is unique about the feeling that you get about your favorite colour
 > instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
+> instead of: Who is your favorite artist? --> instead ask: What emotions or memories do your favorite artists' music evoke for you?
+> instead of: What are your values? --> instead ask: How have your values shaped your decisions and life experiences, and have they evolved over time?
+
+Instead of: Do you like spicy food?
+Instead ask: How does experiencing different flavors and cuisines influence your appreciation for food and culture?
+Instead of: Have you traveled much?
+Instead ask: How have your travel experiences broadened your perspectives on cultures and societies?
+Instead of: Do you work out?
+Instead ask: How does maintaining physical health contribute to your sense of well-being and overall lifestyle?
+Instead of: What are your goals?
+Instead ask: How do your goals reflect what you value most in life, and what motivates you to achieve them?
+Instead of: What do you usually do on the weekends?
+Instead ask: How do your weekend activities reflect your priorities and values?
+Instead of: What’s your favorite movie?
+Instead ask: What is it about your favorite movie that resonates with you on a personal level?
 ```
 Don't ask her a basic question, follow the technique above where you raise her interest, and have her have fun.
 To raise her interest, have her associate her with things about me that we have in common, ideally values. 
