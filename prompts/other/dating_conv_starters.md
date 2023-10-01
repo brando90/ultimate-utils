@@ -89,16 +89,17 @@ Write a message so that she is curious about me -- (good) mystery is good.
 This is my current question:
 ```
 Current conversation & response, or context:
-Have you read the misborn series? It's a fantasy novel inspired by Harry Potter  set in a world where the "dark lord" triumphed. 
+nothing... 
 
 Question to rephrase
 > instead of:
-Have you read it or a book similar to it? What are your favorite feelings novels make you feel in the journeys they take us in?
+Is the reason you also love sleeping at 10 pm, despite being called a grandpa/ma by friends, cuz you prioritize taking advantage of your day to push yourself to grow daily?
 --> insterad ask --> ?
 ```
 Help me translate it to make raise her interest and entice a response.
 It shouldn't be pompous, exaggerated.
 If the translated message can be witty, make it witty.
+The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
 Give me 5 top quality options:
 
 
