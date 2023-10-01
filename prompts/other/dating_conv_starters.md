@@ -75,15 +75,23 @@ I want to translate a mundane question into a deep question, that raises the int
 To make it enticing and motivate a reponse from her -- it should help her realize or learn something about herself or about you, ideally about common values or interests.
 Example translations:
 ```
-General Format:
-> instead of: mudane question --> instead ask --> deep question that raises her interest in you
-Examples:
-> instead of: what's your favorite book -->  instead ask --> what traits do your top 5 books have in common
-> instead of: what is your favorite place to travel -->  instead ask --> what draws you to nations around the world
-> instead of: what is your favorite colour --> instead ask --> what is unique about the feeling that you get about your favorite colour
-> instead of: what's your favorite food --> instead ask --> what is the way that you feel when eating your favorite food that is different from other foods
-> instead of: Who is your favorite artist? --> instead ask: What emotions or memories do your favorite artists' music evoke for you?
-> instead of: What are your values? --> instead ask: How have your values shaped your decisions and life experiences, and have they evolved over time?
+-- General Format:
+> instead of: mudane question,
+instead ask: 
+deep question that raises her interest in you
+-- Examples:
+> instead of: what's your favorite book,
+instead ask: what traits do your top 5 books have in common
+> instead of: what is your favorite place to travel,
+instead ask: what draws you to nations around the world
+> instead of: what is your favorite colour -->
+instead ask: what is unique about the feeling that you get about your favorite colour
+> instead of: what's your favorite food,
+instead ask: what is the way that you feel when eating your favorite food that is different from other foods
+> instead of: Who is your favorite artist?
+instead ask: What emotions or memories do your favorite artists' music evoke for you?
+> instead of: What are your values?
+instead ask: How have your values shaped your decisions and life experiences, and have they evolved over time?
 
 Instead of: Do you like spicy food?
 Instead ask: How does experiencing different flavors and cuisines influence your appreciation for food and culture?
@@ -108,11 +116,12 @@ nothing...
 
 Question to rephrase
 > instead of:
-Is the reason you also love sleeping at 10 pm, despite being called a grandpa/ma by friends, cuz you prioritize taking advantage of your day to push yourself to grow daily?
---> insterad ask --> ?
+to be fluent in at least 3 languages, 
+instead ask:
 ```
 Help me translate it to make raise her interest and entice a response.
-It shouldn't be pompous, exaggerated.
+It shouldn't be pompous, exaggerated. 
+The answers can elicit a deeper conversation but writing in simple language is good. 
 If the translated message can be witty, make it witty.
 The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
 Give me 5 top quality options:
