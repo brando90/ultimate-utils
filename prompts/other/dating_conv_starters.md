@@ -71,6 +71,7 @@ Give me 7 options:
 
 
 # Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest
+How to ask simple questions into unique deeper enticing questions that raise interest.
 I want to translate a mundane question into a deep question, that raises the interest in me from the person (women) receiving my message.
 To make it enticing and motivate a reponse from her -- it should help her realize or learn something about herself or about you, ideally about common values or interests.
 Example translations:
