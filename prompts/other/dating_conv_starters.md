@@ -9,13 +9,38 @@ Provide me with different options for a high quality first message to a woman in
 (e.g. Hinge Bumble Coffee and Beagles) using her profile prompts that I will provide:
 ```markdown
 [//]: # (Her profile)
-About Ala wang
+-- About Ala wang
 Hi, I am a positive person who like to explore the things that I have not done before. 🧚‍♀️I like to explore my inner self, so I have doing meditation🧘‍♀️.And,I love the ocean 🌊and the forest, 🌳where I can relax and recharge in nature. I also like to explore various foods 🥟🍤and enjoy be with my pets🐰
+-- About Fay
+Film Directory, Cambrdige University
+Active, Graduate Degree, Women
+
+I studied Medicine in the UK, now working in the Creative world in the US.
+-- About Yaren
+Yaren
+Interior Designer/Architect at Architecture firm
+Graduate Degree, Atheist, Women
+
+I’m known for...
+Always having a smiley face
+
+My zombie apocalypse plan is...
+Designing cool housing complexes with zombie traps inside
+
+Swipe right if...
+You wanna meet your love of your life
+--- About Jane
+Music and dance, photography and writing, outdoors and inner peace
 ```
 Also consider my ideas or current attempted openers or ideas:
 ```markdown
 [//]: # (My attempted openers or ideas)
 Hi Ala, I'm reading altered-trait, a science meditation book and thought about you. Do you ever take mindfulness walks in the forest/nature? What is your favorite way to recharge?
+# Another attempt by me 
+Hi Angela!
+I read the blurb about "the untethered soul", I really like the premise! I am in the process of reading "Altered Traits", a book about "Transformative Changes to the mind and body" through meditation.
+Curious, what lessons do you think have been most pertinent in the text?
+My priority in life is to live a meaningful, intentional life, so I am always curious about books in the genre.
 ```
 The message should engage the women, especially start the conversation positively. 
 It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
@@ -25,15 +50,89 @@ But most important is that it follow the iceberg or triangle approach to getting
 i.e. the message I write to her is connected to something about her in her profile, and ideally
 invites us to get to know each other more -- especially making her feel implicitly that we like 
 each other more and more as we get to know each other more.
-This latter part is done because we wrote something connected to her profile yet. 
+This latter part is done because we wrote something connected to her profile. 
 Also respect my guidelines and use my current attempts and ideas 
 -- since that would ideally connect to things we might have in common. 
 Connecting at a values level and having fun being lightweight or lighthearted or relaxed tone.
+Look for parts in her profile that mention "brownie points for X" or "I geek out for Books/Travel".
+It means she is likely to respond and talk about that topic. 
+Make sure that topic is an inceberg so you can develop a connection with her.
+Reference things that she might know and relevant e.g.,
+"Would it be similar like when Gandi said/did X".
+Be nuanced and notice little things or what is going on e.g., in what she likes, her profile, etc (why?).
 Do not compliment her in ways that sounds needy, be casual and relaxed, grounded.
+If there is something about books choose it, most guys don't read.
+You do read, so try to connect with her in that topic.
 It is also important that it's not too long, ideally concise and short, yet good.
 It has to be 1 or 2 sentences -- max 3 sentences. 
 Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
 Give me 7 options:
+
+
+
+# Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest
+How to ask simple questions into unique deeper enticing questions that raise interest.
+I want to translate a mundane question into a deep question, that raises the interest in me from the person (women) receiving my message.
+To make it enticing and motivate a reponse from her -- it should help her realize or learn something about herself or about you, ideally about common values or interests.
+Example translations:
+```
+-- General Format:
+> instead of: mudane question,
+instead ask: 
+deep question that raises her interest in you
+-- Examples:
+> instead of: what's your favorite book,
+instead ask: what traits do your top 5 books have in common
+> instead of: what is your favorite place to travel,
+instead ask: what draws you to nations around the world
+> instead of: what is your favorite colour -->
+instead ask: what is unique about the feeling that you get about your favorite colour
+> instead of: what's your favorite food,
+instead ask: what is the way that you feel when eating your favorite food that is different from other foods
+> instead of: Who is your favorite artist?
+instead ask: What emotions or memories do your favorite artists' music evoke for you?
+> instead of: What are your values?
+instead ask: How have your values shaped your decisions and life experiences, and have they evolved over time?
+
+Instead of: Do you like spicy food?
+Instead ask: How does experiencing different flavors and cuisines influence your appreciation for food and culture?
+Instead of: Have you traveled much?
+Instead ask: How have your travel experiences broadened your perspectives on cultures and societies?
+Instead of: Do you work out?
+Instead ask: How does maintaining physical health contribute to your sense of well-being and overall lifestyle?
+Instead of: What are your goals?
+Instead ask: How do your goals reflect what you value most in life, and what motivates you to achieve them?
+Instead of: What do you usually do on the weekends?
+Instead ask: How do your weekend activities reflect your priorities and values?
+Instead of: What’s your favorite movie?
+Instead ask: What is it about your favorite movie that resonates with you on a personal level?
+```
+Don't ask her a basic question, follow the technique above where you raise her interest, and have her have fun.
+To raise her interest, have her associate her with things about me that we have in common, ideally values. 
+Write a message so that she is curious about me -- (good) mystery is good.
+This is my current question:
+```
+Current conversation & response, or context:
+nothing... 
+
+Question to rephrase
+> instead of:
+to be fluent in at least 3 languages, 
+instead ask:
+```
+Help me translate it to make raise her interest and entice a response.
+It shouldn't be pompous, exaggerated. 
+The answers can elicit a deeper conversation but writing in simple language is good. 
+If the translated message can be witty, make it witty.
+The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
+Give me 5 top quality options:
+
+
+
+examples:
+- https://chat.openai.com/c/448c2a52-585c-4dbb-b36d-d3e4fce89b0f , https://claude.ai/chat/98b091d4-ed14-478a-9ec5-937e1b38becb
+- Yaren: https://chat.openai.com/c/fdcfaf45-8074-43fa-bec6-c83e919e71f6
+- fay: https://chat.openai.com/c/a2af917f-84d3-4e87-b018-1d875098fca6
 
 # -- Notes --
 
@@ -76,6 +175,7 @@ Distinguishable/interesting question:
 what draws you to a country, culture, food, music, etc.?
 ```
 
+<<<<<<< HEAD
 https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
 
 # -- Sim's msg --
@@ -100,3 +200,31 @@ I then go on to show appreciation and give a deeper response as to why I feel th
 This does one of two things, 
 I it shows her that you are a deep thinker, but also that **should you end up together you are able to notice her value**. 
 II end with the question as to why it is her greatest goal as you had given her insight into the impact. 
+=======
+When deciding what prompt to answer, ask yourself, why is she asking?
+What do you do in your free time? It's a filtering question. This questions is probably getting a lot of action. There is no point to be a person in the pile to be compared. 
+What would be most unique, that aligns with the data that algins with that person. 
+
+> Witty: possessing a quick and clever intellect, often used to deliver humor or insights in a playful manner; also, what one aspires to be when trying to impress at a dinner party.
+
+https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
+
+whats your fav book (don't ask her basic question), instead what are the 5 traits 
+help her realize something about herself or you
+what draws you to nations around the world
+what is your favorite colour, what is unique about the feeling that you get about your favorite colour
+what's your favorite food, when you think about the foods you like to eat, what does it tell you about your pallette, what is the story about your pallette, what is it about the way the way you feel when eating your favorite food that is different from other foods
+
+---
+
+pick a date about something she already likes. e.g., she says she geek outs (entice) about books
+there is an event that connects us in some way  that entices her/raises her interest so she wants go on a date
+
+Q: how do you raise her interest
+associating me with things we have in common
+Always raise the interest, what did you learn from this person how can you raise the interest (after each interaction). 
+Write message with that in mind. 
+My coaches messages was written so that she (the girl we are messaging) would be curious about me. Mystery in a good way.
+
+Make sure you don't ignore her previous response.
+>>>>>>> 5506229198f4cd1a0b5debb32061d48b0e9cc1f7
