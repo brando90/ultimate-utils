@@ -12,7 +12,6 @@ conda init bash
 conda install conda-build
 conda update -n base -c defaults conda
 conda update conda
-conda update --all
 # - Create conda env
 conda create -n my_env python=3.10
 conda activate my_env
