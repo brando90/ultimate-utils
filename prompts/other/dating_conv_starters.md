@@ -77,3 +77,26 @@ what draws you to a country, culture, food, music, etc.?
 ```
 
 https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
+
+# -- Sim's msg --
+```text
+Here is a break down of the strategy:  
+
+So here is the general thought process I use when working on messaging people. 
+1. The first and most important is **what is this message going to tell her about you**, is it a **favorable to your end goal or not**?
+2. With this in mind I then go through the profile. If possible**I will try and use any context clues about her**. So for instance, what is she wearing, what shoes, hair, what does her style tell me about her. 
+    i. Where is she in the photos, does what’s in the photos match what is going on in the bio. Who else is in the pictures. What is she emphasizing in here bio? Are there things she is speaking about that I also am interested in? 
+3. After going through the bio this is when I start plotting out the iceburgh. This is how I set my pace from one convo to another. I will normally try and formulate anchor points to help keep the conversation moving as I go through questions in order. 
+4. The goal is to try and cover my anchors over 3 days and if things are going well and the stream of communication is consistent, that is when I ask for the date. I also try and use poetic language if I can. Important to note, you want the messages **to come off as conversational and not an interview**. I always try and position as the **safe place to come chat**. 
+
+Example form sim
+```
+Hey Naz, it’s great to chat with you. I must say reading your greatest life goal reminded me of one of my favorite Dumbledore quotes  "Happiness can be found, even in the darkest of times, if one only remembers to turn on the light” In ways darkness represents regret to me, so that truly spoke to me, its nice to be reminded that the goal is to keep the light of your soul on and make it through this life without regrets so thank you for that! Was there any turning point where you realized that was the greatest goal for you? 
+```
+
+So here I am doing two things at once, introducing the fact that you do read and have done so since childhood **using a book you have read as the anchor**. 
+This also opens us up to the Hunger games quote as the follow up. 
+I then go on to show appreciation and give a deeper response as to why I feel that gratitude. 
+This does one of two things, 
+I it shows her that you are a deep thinker, but also that **should you end up together you are able to notice her value**. 
+II end with the question as to why it is her greatest goal as you had given her insight into the impact. 
