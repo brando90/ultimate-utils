@@ -17,11 +17,18 @@ Soft considerations:
     - Acknowledge their efforts
     - Be grateful
 
+Heuristics
+- Stick to respectfully but firmly to your total compensation
+
 - TODO: understand IP and limitations after leaving morph is.
 
 Common Counters from Recruiters/Hiring Managers:
 - Economy is bad
 - This is the best we can offer, since this is a fairly junior role
+
+Typical right now
+    - 4 year vesting, 1 year cliff to give you 1/4 of your equity
+    - 0.5 - 1% typical equity for founding/1st software engineer/applied scientist
 
 TODOs:
 - phrase, I'd like to clarify/understand/help why the offer is so low
@@ -49,13 +56,29 @@ esp since the space is specialized and narrower than the rest of the field
     - what is my role and what is the median
     - no point in doing a 180k counter offer when their lower offer is already super low (1/2 of the lowest band for the role you think matches your skills)
     - (not sure if this is true, need to read contract + non-compete laws but I have this on my notes from yesterday: First, thank you for the offer and I'm excited for the project, enjoyed meeting the team & company's vision. In terms of total compensation I'm looking for something closer to at least the median 340K, though I consider myself a top perfomer (median, but you should always negotiate upper band but in my case the offer is so low that perhaps upper band is too aggressive or perhaps just saying a straight no, but actually discussing & understanding hap is a better step but for the sake of writing something here we go). Would you be open for a base salary of 160K -- note this is still median and I am a top performer (still median, not upper band, not condor's advice))? I know this might seem high, especially given the initial offer, but these are the median numbers in the tech industry. 
-    - 
+        - Given RS non compete, do you think you're actually losing a lot of freedom?
+            - already know I can do whatever I want in free time. Div/Dq/Alg (ok) is not a problem
+            - but what about projects already in ML4Maths/Autoform
+                - MAF, AF ft
+                - other similar projs that might arise
+            - am I really losing freedom given non compete RS sent
+                - don't understand how trade secret interacts with above
+                - I'd assume Ari's research is a trade secret but he is at a start up...?!
+        - TODO: rephrase, tot comp is not enough to value I'd be bringing + market values 
+        - TODO what impact would you bring? (unique skills, great software eng, data pipeline unique + expesnive)
 
 - IP & thesis interaction
     - SK
         - TODO
     - Jesse
         - can't put it on paper, but it's in his benefit to publish. He has high standard (good!). 
+
+- Numbers
+    - divs: 120-180K base, 0.5%-1% equity range software engineer/applied scientists. 
+        - median:
+            - 150k (but aipaygrades says 160K is base for big tech https://aipaygrad.es/) 
+            - 0.5% equity (4 year vesting 1 year cliff)
+            - it's full time, not contractor. 
 
 Process:
 - First, delay salary conversations until **both** of you are convinced this is the right job. 
@@ -79,6 +102,26 @@ Tips:
 - They are legally required to give salary band if asked
 
 TODO: read poker face theorem, https://en.wikipedia.org/wiki/Fundamental_theorem_of_poker
+
+- CS Stanford has 1 year limit of sabatial leave of absence
+- friends that are VC their thoughts can help guage value of start up comapnies you join
+    - e.g., crash mentioned to always have it clear what their revenue plan is
+- help them help you, be creative e.g., more frequent performance evals, helping them get seed funding, producing business models, revenue ideas
+- who's compute (premises, resources) we use determines IP
+- why does it matter who owns IP? (TODO)
+- you can always put in the acknowledgment + first page "work done with at morph/ibm/google etc"
+
+- fellowship (?)
+
+- 50% CA/RA stanford (20h/w)
+    - Jay wasn't clear but I assume the reamining 40% is whatever I want e.g., I am a student
+    - I assume never 100% to avoid benefits/tax issues? (university wide hack/loop hole, doesn't seem nice)
+- summer
+    - 50 - 90
+- total
+    - 50k tuition
+    - 5k health insurance
+    - 30k stipend (36-40/h)
 
 ## Exploding Offer, Tight Deadlines
 
