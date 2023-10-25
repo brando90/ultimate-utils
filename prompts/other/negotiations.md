@@ -1,6 +1,21 @@
 # ---- Negotiations ---- 
 Note: current notes are very rough. Need to do some heavy organizing. Take everything written witha grain of salt. 
 
+# Do not engage in Salary conversation if you do not know your Role/Level
+Always be:
+```
+- Be Respectful
+- non-defensive not accusatory (e.g., )
+- Do not be judgmental e.g., X is a bad offer
+- Do not argue or make your case
+- Keep the relationship warm
+- Do not make assuptions
+- Treat negotiations as a common hurdle/challenge to resolve as a team
+- Help me overcome your limitation, let me help you
+- Whenever appropriate ( )
+```
+The following conversation is a sample script of how to respectfully yet firmly decline to negotiate a salary when both of you are not ready:
+
 # -- Collection of nice phrases
 It's important to carry on the positive relationship that you built in the interview phase (or collaboration phase), to negotiation phase. 
 
@@ -100,6 +115,8 @@ Tips:
 - do not be defensive
 - do not acuse them or make assumptions if you do not like the offer
 - They are legally required to give salary band if asked
+- if you do say a number, always use objective market values e.g.,
+    - X is half the median base salary for level Y
 
 TODO: read poker face theorem, https://en.wikipedia.org/wiki/Fundamental_theorem_of_poker
 
