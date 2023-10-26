@@ -120,6 +120,61 @@ If you still have reservations about the company (or the level), you are not rea
 **The most reliable way to get more comp is through competing offers.** Consider interviewing with your 2nd and 3rd choice.
 It's possible to get offers above the higher end of your band, but only strong candidates with strong competing offers get that and it requires extra levels of approval.
 Do not back down on total compensation. If you cannot get the total comp you want, be creative e.g, remember how Ramit Sethi did not back down, tried to get other forms of compensation and even suggested an accelerated performance review process for promotion.
+If you can't get what you want then shift between different compensations components, but do not back down total comp. 
+In order of difficulty:
+1. base salary
+2. equity
+3. signing bonus
+Offer to switch some base salary to equity first and as a last measure, ask for a larger signing bonus (or annual bonus).
+E-mail the recuiter you've had time to think through the offer and would love to discuss. They'll schedule a phone call.
+Never negotiate over email. Why?
+```markdown
+- touch subjects (like money) are better discussed in person when positive emotions can be retained and therefore tone can be felt & heard
+- never bluff (e.g., about competing offers), obviously, its unethical but also, they know the hiring market better than you
+```
+The playbook (e.g., how to respond):
+```markdown
+- Open by emphasizing how excited you are about the team, the company, the vision, etc.
+- It's very important that you communicate that you're a serious buyer
+- **Then set a clear total compensation**
+    - when you get push back on a specific compensation mix -- always come back to the total comp.
+- **Good salary negotiations aren't an adverserial game. Make it clear that you are a team trying to overcome a common hurdle.**
+- move from base salary, equity, sign bonus, annual bonus, accelerated performance reviews, be creative!
+- If you can't be ready to walk away and continue interviewing, and follow up over the next few days. (Time can help you get more leverage...? how? if one gets competing offers?)
+    - Mention that you have other options or other interviews lined up but that they are your first option.
+- **Make it clear that if the recruiter can get your total comp number, you're in.**
+- If they meet your tot comp number, be ready to sign.
+```
+Here is a sample script negotiating a different mix to get the total compensation:
+```
+Candidate: Hi Mike! Really excited abou the team, it was really nice to go to the office and loved meeting everyone! 
+In terms of total comp. I'm looking something closer to 250K. Would you be open to a base salary of 150K? 
+Employer: Well, this is the most we can offer for this position, it's a fairly junior role.  
+Candidate: I don't think I can do it at the current level - 250K is what I'd need to be able to sign.  
+Can you be more flexible on equity? 
+Employer: hmmm... 
+Candiate: How about 20K more on equity and the rest in signing bonus. That would get us to $250K tot comp. 
+Employer: That is going to be tough, but I will see what I can do. 
+Candidate: Ok, I understand. I'm ready to sign if we can get to that number. 
+```
+Follow up with an e-mail (sometimes?):
+```markdown
+Hi Mike,
+
+Incredibly excited about the role. 
+Summing up our chat, you mentioned you'd look into additional equity and a singing bonus. 
+Would love to be able to get us to $250K total comp. 
+
+I have an onsite with Facebook next week but would love to be able to commit to this.
+Let me know when you hear back.
+```
+If you don't hear back after a couple of days, follow with the recruiter and make sure to keep the relationship warm. 
+```markdown
+Employer: Hi Erica, I had a chance to speak with my compensation analyst. We can do $15K more on equity a year. 
+Candidate: Can you do $50K signing bonus? That would get us to $250K. 
+Employer: I think that is doable...
+Candiate: Awesome. I'm in. Can't wait to start. Please send me the offer in writing, I will sign it immediately.
+```
 
 # -- Collection of nice phrases
 It's important to carry on the positive relationship that you built in the interview phase (or collaboration phase), to negotiation phase. 
@@ -130,6 +185,7 @@ Phrases:
 - word/phrase switch: `adjust offer` 
 - word/phrase switch: `I'm sorry I can't accept 80K base salary --> I'm excited for the team and enjoyed meeting everyone. In terms of total compensation, I'm looking for something closer to 250k. Would you be open to a base salary of $160K? (or whatever the # is for your uppoer band for your role, if you identify yourself as a top performer).`
 - word/phrase switch: `I can't do X --> I don't think I can do at the current level -- 250k tot comp is what I need to be able to sign. Can you be more flexible somewhere else, e.g., Equity? What about 20K for equiaty and the rest signing bonus -- that would get us to $250K. ... reply tough but I will see what I can do ... -> Ok I understand. I'm ready to sign if we can get to that number.`
+- word/phrase switch: `target tot comp --> the total compensation needed for me to sign is $250K.`
 
 Soft considerations:
 - Keep relationship warm
@@ -232,6 +288,11 @@ Tips:
 - do I know how they hire? (TODO: why does this matter?) https://claude.ai/chat/b2ef4bb9-d58a-4cd5-896c-dec263aedd91
 -
 - If they are hard to work with it might be ego. If it's ego, then affirm him. e.g., compliment him e.g., his start up, the vision of the company. 
+-
+- It does seem that it might not be hard to put company work on my thesis because
+    - Mara said Google allows them
+    - Jesse said it's not in his interest, though, he does have high expectations
+    - (could be nice to ask Sanmi explicitly)
 
 - ask similar question, even about things that have already been said (e.g., comments in passing). To really get the truth out/test for deceit. Is he being consistent. If it has changed, what details has changed. This the tactics the police/FBI etc. uses to ensure truth/consistency. 
 
