@@ -1,5 +1,6 @@
 # RUN ALL THE INSTRUCTIONS! PLEASE!
 echo $HOME
+cd $HOME
 # -- Install miniconda
 #wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O ~/miniconda.sh
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
@@ -12,10 +13,12 @@ conda init bash
 conda install conda-build
 conda update -n base -c defaults conda
 conda update conda
+
 # - Create conda env
 conda create -n my_env python=3.10
 conda activate my_env
 ## conda remove --name my_env --all
+
 # - Make sure pip is up to date
 which python
 pip install --upgrade pip
