@@ -179,7 +179,7 @@ what draws you to a country, culture, food, music, etc.?
 https://www.evernote.com/shard/s410/sh/77f12ba4-7275-aaf3-1816-0514b3dbaf4c/uC9KFbCvXlppEVj9iP3cwFRJtdPxuPIKgN7DiktwBX2xkc7S7lemQULZZQ
 
 # -- Sim's msg --
-```text
+```markdown
 Here is a break down of the strategy:  
 
 So here is the general thought process I use when working on messaging people. 
@@ -192,7 +192,7 @@ So here is the general thought process I use when working on messaging people.
 Example form sim
 ```
 Hey Naz, it’s great to chat with you. I must say reading your greatest life goal reminded me of one of my favorite Dumbledore quotes  "Happiness can be found, even in the darkest of times, if one only remembers to turn on the light” In ways darkness represents regret to me, so that truly spoke to me, its nice to be reminded that the goal is to keep the light of your soul on and make it through this life without regrets so thank you for that! Was there any turning point where you realized that was the greatest goal for you? 
-```
+```markdown
 
 So here I am doing two things at once, introducing the fact that you do read and have done so since childhood **using a book you have read as the anchor**. 
 This also opens us up to the Hunger games quote as the follow up. 
