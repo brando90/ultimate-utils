@@ -5,7 +5,19 @@ Note: seems you really have to come up with good messges yourself first unfortua
 See the ones I have, are all based on my or sim's insights first. 
 
 
+# Protocol:
+Identiy the anchor points the connect you and the person you want to message from her profile.
+Use the info on her bio, pics and things you connect with her and can develop.
+After 3 days ask her for a date & get her out of the app.
 
+Anchor points about sarit:
+- start up health
+- big brother advice
+- sculpting
+- in her pictures she is at home with very casual cloths. She has one picture playing with her brother.
+Sample first good message:
+Shalom Sarit!
+What made you choose the path of sculpting the path your start up?
 
 
 # How to ask simple questions into unique deeper enticing questions that raise interest.
@@ -35,12 +47,16 @@ Instead of: Do you like spicy food?
 Instead ask: How does experiencing different flavors and cuisines influence your appreciation for food and culture?
 Instead of: Have you traveled much?
 Instead ask: How have your travel experiences broadened your perspectives on cultures and societies?
+
 Instead of: Do you work out?
 Instead ask: How does maintaining physical health contribute to your sense of well-being and overall lifestyle?
+
 Instead of: What are your goals?
 Instead ask: How do your goals reflect what you value most in life, and what motivates you to achieve them?
+
 Instead of: What do you usually do on the weekends?
 Instead ask: How do your weekend activities reflect your priorities and values?
+
 Instead of: What’s your favorite movie?
 Instead ask: What is it about your favorite movie that resonates with you on a personal level?
 ```
@@ -66,9 +82,20 @@ The answers can elicit a deeper conversation but writing in simple language is g
 Be nuanced and notice little things or what is going on e.g., in what she likes, her profile, etc (why?).
 You do read, so try to connect with her in that topic.
 If the translated message can be witty, make it witty.
-
 The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
-So here is the general thought process I use when working on messaging people. The first and most important is what is this message going to tell her about you, is it a favorable to your end goal or not (goal is to get her interested in you and have a fun conversation). With this in mind I then go through the profile. If possible I will try and use any context clues about her. So for instance, what is she wearing, what shoes, hair, what does her style tell me about her. Where is she in the photos, does what’s in the photos match what is going on  in the bio. Who else is in the pictures. What is she emphasizing in here bio? Are there things she is speaking about that I also am interested in? After going through the bio this is when I start plotting out the iceburgh. This is how I set my pace from one convo to another. I will normally try and formulate anchor points to help keep the conversation moving as I go through questions in order. The goal is to try and cover my anchors over 3 days and if things are going well and the stream of communication is consistent, that is when I ask for the date. I also try and use poetic language if I can. Important to note, you want the messages to come off as conversational and not an interview. I always try and position as the safe place to come chat. 
+
+So here is the general thought process I use when working on messaging people. 
+The first and most important is what is this message going to tell her about you, is it a favorable to your end goal or not (goal is to get her interested in you and have a fun conversation). 
+With this in mind I then go through the profile. 
+If possible I will try and use any context clues about her. 
+So for instance, what is she wearing, what shoes, hair, what does her style tell me about her. 
+Where is she in the photos, does what’s in the photos match what is going on in the bio. 
+Who else is in the pictures. 
+What is she emphasizing in here bio? 
+Are there things she is speaking about that I also am interested in? 
+After going through the bio this is when I start plotting out the iceburgh. 
+This is how I set my pace from one convo to another. 
+I will normally try and formulate anchor points to help keep the conversation moving as I go through questions in order. The goal is to try and cover my anchors over 3 days and if things are going well and the stream of communication is consistent, that is when I ask for the date. I also try and use poetic language if I can. Important to note, you want the messages to come off as conversational and not an interview. I always try and position as the safe place to come chat. 
 
 This is my current question:
 ```
@@ -80,6 +107,23 @@ Question to rephrase
 ...
 instead ask:
 ...
+Or suggestions for this:
+
+Shallom Sarit! 
+
+
+Anchor points about sarit:
+- start up health
+- big brother advice
+- sculpting
+- in her pictures she is at home with very casual cloths. She has one picture playing with her brother.
+
+
+Shalom Sarit!
+What made you choose the path of sculpting the path your start up?
+
+Shalom Sarit!
+How does it feel to get to sculpt the path of a start up you founded?
 ```
 Give me 5 top quality options given the requirements I gave:
 
