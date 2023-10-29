@@ -4,74 +4,11 @@
 Note: seems you really have to come up with good messges yourself first unfortuantely.
 See the ones I have, are all based on my or sim's insights first. 
 
-#  Prompt: 
-Provide me with different options for a high quality first message to a woman in a dating app
-(e.g. Hinge Bumble Coffee and Beagles) using her profile prompts that I will provide:
-```markdown
-[//]: # (Her profile)
--- About Ala wang
-Hi, I am a positive person who like to explore the things that I have not done before. 🧚‍♀️I like to explore my inner self, so I have doing meditation🧘‍♀️.And,I love the ocean 🌊and the forest, 🌳where I can relax and recharge in nature. I also like to explore various foods 🥟🍤and enjoy be with my pets🐰
--- About Fay
-Film Directory, Cambrdige University
-Active, Graduate Degree, Women
-
-I studied Medicine in the UK, now working in the Creative world in the US.
--- About Yaren
-Yaren
-Interior Designer/Architect at Architecture firm
-Graduate Degree, Atheist, Women
-
-I’m known for...
-Always having a smiley face
-
-My zombie apocalypse plan is...
-Designing cool housing complexes with zombie traps inside
-
-Swipe right if...
-You wanna meet your love of your life
---- About Jane
-Music and dance, photography and writing, outdoors and inner peace
-```
-Also consider my ideas or current attempted openers or ideas:
-```markdown
-[//]: # (My attempted openers or ideas)
-Hi Ala, I'm reading altered-trait, a science meditation book and thought about you. Do you ever take mindfulness walks in the forest/nature? What is your favorite way to recharge?
-# Another attempt by me 
-Hi Angela!
-I read the blurb about "the untethered soul", I really like the premise! I am in the process of reading "Altered Traits", a book about "Transformative Changes to the mind and body" through meditation.
-Curious, what lessons do you think have been most pertinent in the text?
-My priority in life is to live a meaningful, intentional life, so I am always curious about books in the genre.
-```
-The message should engage the women, especially start the conversation positively. 
-It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
-It is fine if it's funny, witty, flirty (without overdoing it) yet mature and shows I'm a
-stable independent man that is high value.
-But most important is that it follow the iceberg or triangle approach to getting to know someone,
-i.e. the message I write to her is connected to something about her in her profile, and ideally
-invites us to get to know each other more -- especially making her feel implicitly that we like 
-each other more and more as we get to know each other more.
-This latter part is done because we wrote something connected to her profile. 
-Also respect my guidelines and use my current attempts and ideas 
--- since that would ideally connect to things we might have in common. 
-Connecting at a values level and having fun being lightweight or lighthearted or relaxed tone.
-Look for parts in her profile that mention "brownie points for X" or "I geek out for Books/Travel".
-It means she is likely to respond and talk about that topic. 
-Make sure that topic is an inceberg so you can develop a connection with her.
-Reference things that she might know and relevant e.g.,
-"Would it be similar like when Gandi said/did X".
-Be nuanced and notice little things or what is going on e.g., in what she likes, her profile, etc (why?).
-Do not compliment her in ways that sounds needy, be casual and relaxed, grounded.
-If there is something about books choose it, most guys don't read.
-You do read, so try to connect with her in that topic.
-It is also important that it's not too long, ideally concise and short, yet good.
-It has to be 1 or 2 sentences -- max 3 sentences. 
-Write my an interesting opener for her in Hinge, Bumble, Coffee and Beagles.
-Give me 7 options:
 
 
 
-# Prompt2: How to ask simple questions into unique deeper enticing questions that raise interest
-How to ask simple questions into unique deeper enticing questions that raise interest.
+
+# How to ask simple questions into unique deeper enticing questions that raise interest.
 I want to translate a mundane question into a deep question, that raises the interest in me from the person (women) receiving my message.
 To make it enticing and motivate a reponse from her -- it should help her realize or learn something about herself or about you, ideally about common values or interests.
 Example translations:
@@ -109,23 +46,42 @@ Instead ask: What is it about your favorite movie that resonates with you on a p
 ```
 Don't ask her a basic question, follow the technique above where you raise her interest, and have her have fun.
 To raise her interest, have her associate her with things about me that we have in common, ideally values. 
-Write a message so that she is curious about me -- (good) mystery is good.
+Write a message so that she is curious about me -- mystery is good.
+
+The message should engage the women, and increase her interest in me
+e.g., through shared values, curiosity, etc.
+It should lead to a positive safe conversation.
+It should not be: needy, overly exaggerated, pompous, confrontational or shallow.
+It is fine if it's funny, witty, flirty (without overdoing it) yet mature and shows I'm a stable independent man that is high value.
+Help me translate it to make raise her interest and entice a response.
+It shouldn't be pompous, exaggerated. 
+But most important is that it follow the iceberg or triangle approach to getting to know someone,
+i.e. the message I write to her is connected to something about her in her profile, and ideally
+invites us to get to know each other more -- especially making her feel implicitly that we like 
+each other more and more as we get to know each other more.
+This latter part is done because we wrote something connected to her profile. 
+Look for parts in her profile that mention "brownie points for X" or "I geek out for Books/Travel". 
+The answers can elicit a deeper conversation but writing in simple language is good. 
+"Would it be similar like when Gandi said/did X".
+Be nuanced and notice little things or what is going on e.g., in what she likes, her profile, etc (why?).
+You do read, so try to connect with her in that topic.
+If the translated message can be witty, make it witty.
+
+The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
+So here is the general thought process I use when working on messaging people. The first and most important is what is this message going to tell her about you, is it a favorable to your end goal or not (goal is to get her interested in you and have a fun conversation). With this in mind I then go through the profile. If possible I will try and use any context clues about her. So for instance, what is she wearing, what shoes, hair, what does her style tell me about her. Where is she in the photos, does what’s in the photos match what is going on  in the bio. Who else is in the pictures. What is she emphasizing in here bio? Are there things she is speaking about that I also am interested in? After going through the bio this is when I start plotting out the iceburgh. This is how I set my pace from one convo to another. I will normally try and formulate anchor points to help keep the conversation moving as I go through questions in order. The goal is to try and cover my anchors over 3 days and if things are going well and the stream of communication is consistent, that is when I ask for the date. I also try and use poetic language if I can. Important to note, you want the messages to come off as conversational and not an interview. I always try and position as the safe place to come chat. 
+
 This is my current question:
 ```
 Current conversation & response, or context:
-nothing... 
+...
 
 Question to rephrase
 > instead of:
-to be fluent in at least 3 languages, 
+...
 instead ask:
+...
 ```
-Help me translate it to make raise her interest and entice a response.
-It shouldn't be pompous, exaggerated. 
-The answers can elicit a deeper conversation but writing in simple language is good. 
-If the translated message can be witty, make it witty.
-The translated message, can be laced with good-humored banter, to lightened the mood and be fun. 
-Give me 5 top quality options:
+Give me 5 top quality options given the requirements I gave:
 
 
 
