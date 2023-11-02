@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # RUN ALL THE INSTRUCTIONS! PLEASE!
 echo $HOME
 cd $HOME
