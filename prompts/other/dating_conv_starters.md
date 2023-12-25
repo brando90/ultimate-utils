@@ -6,8 +6,8 @@ See the ones I have, are all based on my or sim's insights first.
 
 
 # Protocol:
-Identiy the anchor points the connect you and the person you want to message from her profile.
-Use the info on her bio, pics and things you connect with her and can develop.
+Identify the anchor points that connect you and the women you want to message based on her profile.
+Use the infomation on her bio, aboout, pictures and the topics you connect with her and can develop.
 After 3 days ask her for a date & get her out of the app.
 
 Anchor points about sarit:
