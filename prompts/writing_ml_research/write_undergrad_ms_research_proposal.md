@@ -91,7 +91,7 @@ This is the idea to convert to a proposal like Example 4 (Brando Miranda will be
 ```text
 # My project
 Title
-A Systematic Study of the Role of Data Quality via Diveristy for training LLMs for Enhanced Test Performance
+Can Formal Mathemtics Improve Informal Mathematical Reasoning in Large Language Models (LLMs)?
 
 Brando Miranda: brando9@stanford.edu
 AI/ML
@@ -99,24 +99,20 @@ Aut_win_spr, 2023-2024 Academic Year
 Course credit
 Up to 5 students
 Project description
-Goal:
-Explore systematically the role of data diversity is in improving most the test performance for
-1. benchmarks for specific tasks (e.g, reasoning, writing technical articles, autoformalization, writing informal mathematics, theorem proving, coding, etc.)
-2. benchmarks that are general (e.g., union of different data sets, data sets on the HF leader board, etc) -- "general benchmarks"
-However, we won't be using real NLP benchmarks like reasoning.
-Instead we will use a controlled synthetic data set that mimic NLP data sets called GINC (Generative In-Context learning Dataset).
-With this we will create the
-1. Synthetic Specific Benchmarks (using a specific synthetic concept)
-2. General Benchmarks (using a collection of synthetic conepts)
-The hypothesis is that diversity most likely improves general benchmark.
-Perhaps some degree of alignment might matter for but the hypothesis is that a large diverse set of tasks increases the convex hull and thus the chances that the model has benefits of transfer learning.
-What is the role of formal quantitative measures of diversiersy (like the Task2Vec diversity coefficient) on test performance?
-
-Also, the vast success of data in the ML theorem through LLMs like GPT4, suggest that the role of data is huge for the current landscape of LLMs. Therefore, data centric tools that automate the pipeline of data selection for improved data efficiency -- that might be able to break scaling laws -- are paramount.
+- idea: Interactive Theorem Provers (ITPs) like Lean, Coq, Isabelle, have libraries of verified proofs for mathematics and programming languages. Therefore, one can mine the step by step proofs from these formal languages.
+- Can these formal verified proofs that we mine be used to improve LLMs abiility to reasoning "informally" (i.e. reasoning/mathematics in natural language e.g., English)
+- e.g., can we used these mined proofs as is and fine-tune a SOTA model like Mistral to improve the informal reasoning abilities of large language models?
+- e.g., 
+can we used these mined proofs, "informalize them" (i.e. translate them to informal/natural language mathematics) and fine-tune a SOTA model like Mistral to 
+to improve the informal reasoning abilities of large language models on important data set's like the MATH data set?
+- the MATH data set is a standard and an important evaluation data set/benchmark for the evaluation of the reasoning capabilities of LLMs.
 
 Recommended Background
 Please share your background when reaching out.
-Interested candidates are encouraged to share their background when reaching out. A strong foundation in Python is essential.
+Interested candidates are encouraged to share their background when reaching out.
+A strong foundation in Python is essential. 
+Knowledge in Machine Learning (ML) is recommended.
+An interest in LLMs is also recommended. 
 
 Prerequisites / Preparation
 Participants will be expected to make direct contributions to the project and should be comfortable coding in Python.
@@ -125,5 +121,6 @@ The believe that the role of the data is paramount/most essential is a plus. Dat
 Convert my project into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
 Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. 
 It is ok the improve the title given the project Brando gave. 
+Make sure to include every bullet point in the project proposal.   
 The main content of your propsal should come from the `# My Project` section.
 Write the proposal: 
