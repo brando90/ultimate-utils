@@ -108,15 +108,15 @@ to improve the informal reasoning abilities of large language models on importan
 - the MATH data set is a standard and an important evaluation data set/benchmark for the evaluation of the reasoning capabilities of LLMs.
 
 Recommended Background
-Please share your background when reaching out.
-Interested candidates are encouraged to share their background when reaching out.
+Please share your background when reaching out. 
+Interested candidates are encouraged to share their background when reaching out. 
 A strong foundation in Python is essential. 
-Knowledge in Machine Learning (ML) is recommended.
+Knowledge in Machine Learning (ML) is recommended. 
 An interest in LLMs is also recommended. 
 
 Prerequisites / Preparation
-Participants will be expected to make direct contributions to the project and should be comfortable coding in Python.
-The believe that the role of the data is paramount/most essential is a plus. Data centric ML. 
+Participants will be expected to make direct contributions to the project and should be comfortable coding in Python, Git, basic Linux and related standard CS experience.
+Experience in Machine Learning (ML) is strongly recommended.
 ```
 Convert my project into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
 Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. The motivation must be in the project description section.  
