@@ -119,7 +119,7 @@ Participants will be expected to make direct contributions to the project and sh
 The believe that the role of the data is paramount/most essential is a plus. Data centric ML. 
 ```
 Convert my project into a research proposal with the given specifications, make sure it has the fields as in example 4 & 5. 
-Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. 
+Don't forget have at least 1 sentence about the motivation at the end, written in an inspiring yet not exagerated manner. The motivation must be in the project description section.  
 It is ok the improve the title given the project Brando gave. 
 Make sure to include every bullet point in the project proposal.   
 The main content of your propsal should come from the `# My Project` section.
