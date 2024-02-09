@@ -58,7 +58,7 @@ setup(
     author='Brando Miranda',
     author_email='brandojazz@gmail.com',
     python_requires='>=3.9.0',
-    license='MIT',
+    license='Apache-2.0',
 
     # currently
     package_dir={'': 'ultimate-utils-proj-src'},
