@@ -90,6 +90,7 @@ def remove_dupilcates_with_tmp_buffer_ll(link_list: Link_List) -> None:
                 prev_node = curr_node
                 curr_node = curr_node.next
 
+
 # def remove_dupilcates_no_tmp_buffer_ll(link_list: Link_List ) -> Link_List:
 #     """ 
 
@@ -159,6 +160,61 @@ def remove_duplicates_test_():
     remove_dupilcates_with_tmp_buffer_ll(ll)
     print(f'{ll=}')  
 
+# Return Kth to Last: Implement an algorithm to find the kth to last element of a singly linked list.
+
+def return_kth_to_last(link_list: Link_List, kth_last: int) -> Any:
+    """ 
+    
+    algorithm
+    - search to extend start_n to end_n s.t. it's length k by traversing until the end until
+        - if end_n.next === None and k > 1 ==> return None/Fail
+        - halt if => k == 1 or end.next === None
+    - now move both start and end refs until end.next is None
+    """
+    # assert kth_last >= 1, f'Err: we are indexing from 1, so 1st to last is the last element.'
+    if kth_last < 1:
+        return None
+    if link_list.head is None:
+        return None  # way to distiguish with geuinuine None could be having value being wrapped ina Val object (or type restrict the ll)
+    elif link_list.tail is link_list.head:
+        return link_list.head.val
+    else:
+        start_node: Node = link_list.head
+        end_node = start_node
+        counter_k: int = kth_last
+        while counter_k > 1 and end_node.next is not None:
+            counter_k -= 1
+            end_node = end_node.next
+        # 1 0 --> we wanted to keep searching but it's the end! kth element form end doesn't exist --> return None/Fail
+        if counter_k > 1 and end_node.next is None:
+            return None  # we can wrap values in Val() object to distinguish returning None vs Val(None)
+        # 0 0 --> found kth element! we can catch this, bellow because it will see it's None and not enter loop and return current end_node.val
+        # 0 1 --> continue searching for until the end!
+        while end_node.next is not None:
+            end_node = end_node.next
+            start_node = start_node.next
+        return start_node.val
+            
+def kth_to_last():
+    # 
+    print()
+    ll = Link_List()
+    ll.append_end('a3');ll.append_end('a2');ll.append_end('a1')
+    print(f'{ll=}')
+    kth = return_kth_to_last(ll, 3)
+    assert kth == 'a3'
+    kth = return_kth_to_last(ll, 2)
+    assert kth == 'a2'
+    kth = return_kth_to_last(ll, 1)
+    assert kth == 'a1'
+    kth = return_kth_to_last(ll, 4)
+    assert kth == None
+    kth = return_kth_to_last(ll, 5)
+    assert kth == None
+    kth = return_kth_to_last(ll, 0)
+    assert kth == None
+
 if __name__ == '__main__':
-    remove_duplicates_test_()
+    # remove_duplicates_test_()
+    kth_to_last()
     print(f'Done!\a')
