@@ -1,7 +1,3 @@
-# Define the argument for the base image of the final stage at the beginning
-ARG BASE_IMAGE=local/shibboleth-sp:3.0.4
-
-# First stage: "builder" for preparing your application
 FROM alpine:3.10 AS preparer
 
 RUN apk add bash curl
@@ -23,7 +19,7 @@ RUN ./mo sp.conf > out/sp.conf
 RUN ./mo idp-metadata.xml > out/idp-metadata.xml
 RUN ./mo local.shibboleth2.xml > out/shibboleth2.xml
 
-# Second stage: Use the local image as the base for the final image
+ARG BASE_IMAGE=local/shibboleth-sp:3.0.4
 FROM ${BASE_IMAGE} AS final-stage
 
 RUN yum -y update \
