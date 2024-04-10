@@ -1674,7 +1674,7 @@ def download_and_extract(url: str,
     print(f'{path2file=}')
     print(f'{filename=}')
     if clean_old_zip_file:
-        path2file.unlink(missing_ok=True)
+        path2file.unlink(missing_ok=True)  # removes the file if it exists, doesn't work for dir for that use use rmdir() instead.
     if filename.endswith('.zip') or filename.endswith('.pkl'):
         # if path to file does not exist or force to write down the data
         if not path2file.exists() or force_rewrite_data_from_url_to_file:
