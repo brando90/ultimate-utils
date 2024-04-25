@@ -1,6 +1,7 @@
 # ---- Prompts for Assessing & Rubber Ducking discussions on your research plan according to Vectoring  ----
 references: 
-    - https://web.stanford.edu/class/cs197/slides/04-vectoring.pdf 
+    - https://web.stanford.edu/class/cs197/slides/04-vectoring.pdf
+    - my public gist: https://gist.github.com/brando90/00e5e3c66f5349a0c3cbc62ef2501904
 
 We should have three prompts. One tackling a different way to mitigate risks and uncertainties in projects with 
 uncertainties -- especially in computer science and machine learning research.
