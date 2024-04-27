@@ -21,9 +21,9 @@ pip install -e .
 git submodule add -f -b hdb --name meta-dataset git@github.com:brando90/meta-dataset.git meta-dataset/
 git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/pytorch-meta-dataset.git pytorch-meta-dataset/
 
-# - init local config & try to pull (from remote/branch or initializes your local configuration file and clones the submodules for you, using the commit specified in the main repository.)
-#   ref: https://youtu.be/wTGIDDg0tK8?t=119, https://stackoverflow.com/questions/44366417/what-is-the-point-of-git-submodule-init
+# - initialize the git submodules by preparing the git repository, but it does not clone or fetch them, just init's git's internal configs
 git submodule init
+# - initialize the git submodules so that git can track them and then the update clone/fetches & updates the submodules
 git submodule update --init
 #git submodule update --init --recursive --remote
 
