@@ -17,7 +17,7 @@ pip install -e .
 # https://stackoverflow.com/questions/74988223/why-do-i-need-to-add-the-remote-to-gits-submodule-when-i-specify-the-branch
 # https://git-scm.com/docs/git-submodule/#Documentation/git-submodule.txt-foreach--recursiveltcommandgt
 
-# -- pretend you've add the submodules so far
+# -- add the following modules to your .gitsubmodule file
 git submodule add -f -b hdb --name meta-dataset git@github.com:brando90/meta-dataset.git meta-dataset/
 git submodule add -f -b hdb --name pytorch-meta-dataset git@github.com:brando90/pytorch-meta-dataset.git pytorch-meta-dataset/
 
