@@ -1,9 +1,0 @@
-# https://github.mit.edu/atacchet/nv-dgx1/wiki/Cookbook
-
-# Andrea's suggestion
-#nvidia-docker run --rm -v ~/work/:/work -v ~/data/:/data -ti dgx1_torch th /work/test.lua
-
-# My way of running the test
-nvidia-docker run -it --rm -v /raid/poggio/home/brando90/home_simulation_research/hbf_tensorflow_code/docker_files/dgx1_torch/:/dgx1_torch dgx1_torch th /dgx1_torch/test.lua
-
-srun -c 1 --pty --gres=gpu:1 --mem=500M nvidia-docker run -it --rm -v /raid/poggio/home/brando90/home_simulation_research/hbf_tensorflow_code/docker_files/dgx1_torch/:/dgx1_torch dgx1_torch th /dgx1_torch/test.lua

@@ -1,1 +1,0 @@
-# Finds the index of the first unique character in a string.
