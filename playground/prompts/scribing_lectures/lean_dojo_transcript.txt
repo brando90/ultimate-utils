@@ -1,0 +1,1346 @@
+WEBVTT
+
+1
+00:00:00.310 --> 00:00:01.060
+Sorry.
+
+2
+00:00:01.950 --> 00:00:27.719
+Anjiang Wei: Is that your computer? Okay, cool, awesome. Hello, everyone. How are you? I'm brando. Yeah. we are organizing a a talking. We invited Kai, you, K. You is a postdoctoral researcher at Caltech, and in computing and mathematical science. He's working with Amica and then Co. And then Kun Kumar. Sorry if I pronounce her wrong. I'm sure most people know who she is. If not, she's like
+
+3
+00:00:27.720 --> 00:00:49.779
+Anjiang Wei: a great Ml researcher. She works, I think, has been affiliated with Amazon. Here, Kay, you, the current speaker, received this peach near Princeton, and where he was advised by Gia and joding and has also worked with Olga Roosevelt and Danny Chen. We are today gonna hear about Link Dojo, which is a method for M
+
+4
+00:00:49.780 --> 00:01:07.479
+Anjiang Wei: interacting nicely with lean they link to your approval, and also his model the reprover which uses, I believe, premise, selection ex very well, or something like that right. But, Kai, you will tell you more about it. Let's give him a round of applause and thank you for coming. Hope, viewpoint, value.
+
+5
+00:01:08.630 --> 00:01:29.690
+Kaiyu Yang: Thank you, Brando, for the really nice introduction, and thanks everyone for coming. So so so I work on using machine learning for serial, proving as Brando introduced like in proof assistance, such as talk and link. And today I'm really excited to talk about our recent work in this direction. Lin Dojo serial, proving with retrieval augmented language models.
+
+6
+00:01:29.910 --> 00:01:54.360
+Kaiyu Yang: So just ensure everyone can see the screen right? The screen is is showing. Okay, so automated reasoning is, as we know, are important task for formal mathematics and verified computer systems, including software, hardware and psychophysical systems. And because these applications have very high stakes, so we really want to formally verify their correctness and safety.
+
+7
+00:01:54.610 --> 00:02:06.470
+Kaiyu Yang: And this is done using various tools for the admitted. For automated reasoning. They can be loosely divided into 2 camps by the level of human intervention required to prove theorems.
+
+8
+00:02:07.000 --> 00:02:24.740
+Kaiyu Yang: On the right are smt solvers, such as and Cbc. 5 and solver aided programming languages, such as Stephanie and F. Star model checkers, such as Tla plus and automated provers in first order, logic, such as the E prover.
+
+9
+00:02:24.770 --> 00:02:36.029
+Kaiyu Yang: these tools are automated in the sense that humans only write the specification. And ideally, they just push a button. And then the proof Scriptures come out
+
+10
+00:02:36.040 --> 00:02:58.430
+Kaiyu Yang: although in practice they may still require some level of human guidance. For example, in smt solvers you may have to manually enter some triggers to help to solve or instantiate quantifiers. So, despite it, they are not 100% automatic. They require minimal human efforts. During the proof search
+
+11
+00:02:59.160 --> 00:03:03.419
+Kaiyu Yang: however, these tools have limited expressiveness.
+
+12
+00:03:03.460 --> 00:03:32.560
+Kaiyu Yang: Each of them is very good at solving a particular kind of problem, but it would be very difficult to say, formalize undergrad or graduate level mathematics in first order, logic in in principle. You could do that. You could formalize CFC set theory. But you wouldn't expect you can just throw any non trivial math problem to first order prover, and it will just give you the results. Because otherwise mathematicians can be put out of their jobs.
+
+13
+00:03:33.190 --> 00:03:40.089
+Kaiyu Yang: The other camp of tools is interactive. There, improver or proof assistance
+
+14
+00:03:40.110 --> 00:03:43.700
+Kaiyu Yang: examples include cock, Isabel and Ling.
+
+15
+00:03:43.870 --> 00:03:51.609
+Kaiyu Yang: F. Star is somewhat in the middle, because similar to Daphne. It has very strong proof automation based on Smt solvers.
+
+16
+00:03:51.780 --> 00:03:55.450
+Kaiyu Yang: but it can also be used by humans as a proof assistant.
+
+17
+00:03:56.150 --> 00:04:07.160
+Kaiyu Yang: So these tools are in general very expressive. Isabelle is based on higher order. Logic, cockling, and F. Star are based on dependent type series
+
+18
+00:04:07.450 --> 00:04:17.959
+Kaiyu Yang: and they have been successfully used in very large scale. Formalization projects. such as the former proof of the Kepler conjecture in Isabel
+
+19
+00:04:17.990 --> 00:04:32.710
+Kaiyu Yang: As well as the verified compiler concert in cock. This approach requires a lot of human at label to formalize the definition, formalize the theorems, and then to prove the theorems.
+
+20
+00:04:32.810 --> 00:04:40.270
+Kaiyu Yang: As a result, these very large projects are multi year efforts from very big research teams.
+
+21
+00:04:42.590 --> 00:04:50.569
+Kaiyu Yang: This has become a major obstacle for formalized mathematics and verification to be more widely adopted.
+
+22
+00:04:50.670 --> 00:05:01.509
+Kaiyu Yang: and to mitigate this problem proof. Automation is critical. That is, we want to make the process of writing proofs more automatic and easier for humans.
+
+23
+00:05:01.990 --> 00:05:12.760
+Kaiyu Yang: Note that here we focus on writing the proof, not formalizing the definition or formalizing the theorem. Although in practice that part is also variable, intensive.
+
+24
+00:05:16.160 --> 00:05:27.659
+Kaiyu Yang: Here we show a simple example of proving a theorem in proof assistant. So, starting from the theorem as the original goal, humans proved that it, by entering tactics.
+
+25
+00:05:27.670 --> 00:05:35.179
+Kaiyu Yang: each tactic transforms the goal, possibly decomposing it into sub goals that are easier to solve.
+
+26
+00:05:35.490 --> 00:05:39.799
+Kaiyu Yang: And this process is repeated until all goals are solved.
+
+27
+00:05:41.010 --> 00:05:48.220
+Kaiyu Yang: So the former method community has done a lot of great work to automate this process.
+
+28
+00:05:48.520 --> 00:05:56.719
+Kaiyu Yang: There are efficient decision procedures for very specific domains, such as proving the equalities in rings
+
+29
+00:05:56.860 --> 00:06:02.939
+Kaiyu Yang: and people have also tried to outsource the proof. Obligations improve assistance
+
+30
+00:06:02.960 --> 00:06:06.620
+Kaiyu Yang: to external progress in first order logic.
+
+31
+00:06:06.640 --> 00:06:12.380
+Kaiyu Yang: So this kind of tools are called hammers, and they are widely used in Isabel.
+
+32
+00:06:12.770 --> 00:06:18.220
+Kaiyu Yang: Furthermore, there are generic search algorithms such as best first search
+
+33
+00:06:18.340 --> 00:06:22.329
+that are implemented as tactics within the proof assistance.
+
+34
+00:06:22.620 --> 00:06:27.830
+Kaiyu Yang: For example, the auto tactic in Cork and the isop tactic in Ling.
+
+35
+00:06:29.290 --> 00:06:46.500
+Kaiyu Yang: In this work, we focus on machine learning using machine learning to automate proof search. So we argue that machine learning is very is a very promising approach that is complementary to formal methods for for proof automation.
+
+36
+00:06:46.660 --> 00:06:53.850
+Kaiyu Yang: This is because machine learning. First, it offers the opportunity to learn from human written proofs.
+
+37
+00:06:54.030 --> 00:07:04.909
+Kaiyu Yang: For example, in Lean, the proof assistant we focus on, there are about 100,000 proofs written by human that's just available on Github that everyone can use it as data
+
+38
+00:07:04.960 --> 00:07:12.070
+Kaiyu Yang: and for Cock and Isabelle, the number is even greater, although they are on the same order of magnitude.
+
+39
+00:07:12.370 --> 00:07:20.470
+Kaiyu Yang: So that's not now of the formal methods. Proof, automation can leverage this kind of
+
+40
+00:07:20.610 --> 00:07:27.030
+Kaiyu Yang: existing proofs written by humans. And that's one unique opportunity provided by machine learning.
+
+41
+00:07:27.380 --> 00:07:42.639
+Kaiyu Yang: And another opportunity is machine learning, especially large language models such as they seem to already learn a lot of mathematical knowledge from from the large scale pre-training on the Intel Internet.
+
+42
+00:07:42.860 --> 00:07:50.189
+Kaiyu Yang: And so here we are talking about mathematics. But the same reasoning more or less applies to formal verification.
+
+43
+00:07:50.600 --> 00:08:03.949
+Kaiyu Yang: For example, it has performed exceptionally well in standard exams, like in sat mass, it has achieved the 89 percentile among human test takers.
+
+44
+00:08:04.910 --> 00:08:15.469
+Kaiyu Yang: And another example is Google's Minerva model. So given this inequality, this is very simple inequality. It can produce this proof.
+
+45
+00:08:16.260 --> 00:08:24.610
+Kaiyu Yang: So given. An erm like language models can also be useful for more advanced mathematics
+
+46
+00:08:24.720 --> 00:08:32.869
+Kaiyu Yang: like in this June terrace, Tau, a Fields medalist, posted his experience interacting with Gpt. 4.
+
+47
+00:08:32.929 --> 00:08:41.080
+Kaiyu Yang: And he believes models like GPD. 4 can potentially be collaborators that offer suggestions to mathematicians
+
+48
+00:08:42.760 --> 00:08:52.649
+Kaiyu Yang: and a more recent study from Cambridge investigates how large language models can help us prove undergrad level mathematics.
+
+49
+00:08:52.950 --> 00:09:04.900
+Kaiyu Yang: So given all these results, there are still controversies regarding whether the model truly understands mathematics, or whether it just memorizes some correlation in the data set.
+
+50
+00:09:05.060 --> 00:09:09.859
+Kaiyu Yang: Or maybe what does it even mean to understand the mathematics?
+
+51
+00:09:10.800 --> 00:09:16.550
+Kaiyu Yang: But putting aside all these philosophical debates, we still have reasons to believe that
+
+52
+00:09:16.580 --> 00:09:25.360
+Kaiyu Yang: the mathematical knowledge in large language models can potentially be useful for guiding interactive theory improvements such as link.
+
+53
+00:09:27.740 --> 00:09:36.999
+Kaiyu Yang: So here, is the list of existing work on large language models for fear improving in in improve assistance.
+
+54
+00:09:37.190 --> 00:09:43.219
+Kaiyu Yang: So this this area has been around for one or 2 years, and despite all this great works.
+
+55
+00:09:43.360 --> 00:09:47.429
+I believe the area is facing a significant barrier
+
+56
+00:09:47.650 --> 00:09:53.949
+Kaiyu Yang: that is, none of the existing methods can be reproduced with a reasonable amount of effort.
+
+57
+00:09:55.020 --> 00:10:02.560
+Kaiyu Yang: First, many of them rely on private data sets. Here a check mark means the data set is publicly available.
+
+58
+00:10:02.630 --> 00:10:14.859
+Kaiyu Yang: and a cross mark means unavailable. And some, some, some some data test says, are partially available. For example, this paper. From from first
+
+59
+00:10:15.040 --> 00:10:27.500
+Kaiyu Yang: here the data set for fine-tuning. The model is available, but they based the more their model is based on a pre-training model checkpoint that's internal to Google. So the pre-training data set is not available.
+
+60
+00:10:29.150 --> 00:10:38.140
+Kaiyu Yang: So that's the data set. And second, none of this existing work have released the model. The model checkpoint they trained.
+
+61
+00:10:38.240 --> 00:10:41.719
+Kaiyu Yang: or the or their code base for training. The model.
+
+62
+00:10:43.480 --> 00:10:56.229
+Kaiyu Yang: And third. theorem proving requires a tool for the model to interact with the proof assistant. but only a handoff of existing work has released this tool.
+
+63
+00:10:58.040 --> 00:11:09.059
+Kaiyu Yang: And finally, it's a computer requirement in this prior work. Ranges from 1,000 Gpu hours to 48 Gpu. 48,000 Gpu hours.
+
+64
+00:11:09.300 --> 00:11:15.129
+Kaiyu Yang: which is quite exclusive to industry labs with extensive resources.
+
+65
+00:11:15.800 --> 00:11:26.000
+Kaiyu Yang: So it is a bit unfortunate that although this area has been around for a few years, there is surprisingly, very, very little for the new commerce to build up.
+
+66
+00:11:26.260 --> 00:11:40.090
+Kaiyu Yang: and I see this as one of the most important barriers in large language, models for Zoom proving and in this work we tried to address this barrier we introduced in Dojo to address all these aspects.
+
+67
+00:11:40.260 --> 00:11:53.199
+Kaiyu Yang: Indoor provides tools, datasets, and models that are completely open, sourced and also our model is very inexpensive. It needs only one week of training on a single Gpu.
+
+68
+00:11:54.310 --> 00:12:06.119
+Kaiyu Yang: So the goal of Lindojo is basically to give researchers access to state of the art, large language, model-based provers and with modest computational costs.
+
+69
+00:12:07.940 --> 00:12:25.699
+Kaiyu Yang: So before we move on dive into the details of indojo because we focus on Link. So I'd like to briefly, talk about the link proof assistant, and why we choose link compared to other alternatives like Cog or Isabel.
+
+70
+00:12:26.280 --> 00:12:31.380
+Kaiyu Yang: So? The ling proof assistant is very similar to cock.
+
+71
+00:12:31.630 --> 00:12:40.500
+Kaiyu Yang: It. It is also based on dependent type theory, and in particular a type theory called calculus of inductive constructions.
+
+72
+00:12:40.700 --> 00:13:01.289
+Kaiyu Yang: Although there are some minor differences between link and cock. For example, link has proved irrelevance, whereas cock by default does not have proof irrelevance and also link use in link has more liberal use of classical axioms, whereas cock tends to be more constructive.
+
+73
+00:13:01.480 --> 00:13:14.950
+Kaiyu Yang: So wh. Whether those differences are important really depends on who you are and what you want to work on. For the kind of work I do. Machine learning for the improving work. Those differences are not important at all.
+
+74
+00:13:15.150 --> 00:13:24.009
+Kaiyu Yang: And also for mathematicians who want to formalize math in proof assistance, they usually don't care about those differences.
+
+75
+00:13:24.240 --> 00:13:42.400
+Kaiyu Yang: But if for some pro for programming language researchers who want to develop say, proof automation or algorithms for code extraction. What does the logic is constructive or classic can make a big difference.
+
+76
+00:13:43.330 --> 00:13:50.199
+Kaiyu Yang: so that's the type theoretical foundation for link. And the other difference with cork is the ecosystem.
+
+77
+00:13:50.530 --> 00:14:08.150
+Kaiyu Yang: So Link has a strong ecosystem in mathematics. So it has a lot of formalized mathematics in in mass leap which is links centralized mathematical library. It includes a lot of very advanced mathematics like grade level mathematics, such as algebraic geometry.
+
+78
+00:14:09.060 --> 00:14:23.789
+Kaiyu Yang: However, the ecosystem is relatively lacking in formal verification. For example, in clock there are libraries for reasoning about floating point. But in link we don't have such libraries.
+
+79
+00:14:25.250 --> 00:14:30.560
+Kaiyu Yang: And what makes Link appealing for machine learning is that
+
+80
+00:14:30.740 --> 00:14:41.319
+Kaiyu Yang: Ling is not only a proof assistant, but also a general purpose. Programming language. Actually, link is very similar to Hasker, but with dependent types.
+
+81
+00:14:41.650 --> 00:14:49.660
+Kaiyu Yang: and the the environments and local contacts, as well as the proof goals in ring.
+
+82
+00:14:49.820 --> 00:15:01.339
+Kaiyu Yang: They they are not implemented in a metal language like O camel, but they are implemented in link itself. And they're implemented as a hierarchy of State monets.
+
+83
+00:15:01.450 --> 00:15:13.819
+Kaiyu Yang: So here on the screen, you you see a hierarchy of stable. Not on the left is the core monad. It provides you access to the environment
+
+84
+00:15:13.840 --> 00:15:20.360
+Kaiyu Yang: and the environment includes existing definitions, lemmas existing theorems, etc.
+
+85
+00:15:20.600 --> 00:15:28.850
+Kaiyu Yang: And then this this monad goes through a monart transformer which gives it another state.
+
+86
+00:15:29.080 --> 00:15:35.250
+Kaiyu Yang: That is the local context. So here, in the middle, the in the metal monad
+
+87
+00:15:35.280 --> 00:15:46.130
+Kaiyu Yang: you. In addition to the environment, you have also access to the local context, like what local hypotheses are there, and also what goals are there that you have to prove.
+
+88
+00:15:46.860 --> 00:15:51.859
+Kaiyu Yang: And again, if you apply another mono transformer, you get the tactic. Monet.
+
+89
+00:15:51.930 --> 00:15:59.729
+Kaiyu Yang: So Texas monad, in addition to everything we talked about, it also has access to to the current goal.
+
+90
+00:16:00.190 --> 00:16:04.300
+Kaiyu Yang: So this set of monas are all implemented within link itself.
+
+91
+00:16:04.350 --> 00:16:26.930
+Kaiyu Yang: This is important for machinery, because it makes it really easy. If we want to extract some data from you, just write any link program that like you, you just access those more. The state of those small app. And then you can serialize this into your data set, and then you can train a machinery model. We'll talk about that in more detail later.
+
+92
+00:16:30.280 --> 00:16:31.040
+Kaiyu Yang: And
+
+93
+00:16:31.380 --> 00:16:38.260
+Kaiyu Yang: another Perk of Ling. That's important for machine learning is, it has very strong support for Meta program.
+
+94
+00:16:39.330 --> 00:16:43.650
+Kaiyu Yang: So you you can, you can write tactics directly in Ling.
+
+95
+00:16:43.740 --> 00:16:55.150
+Kaiyu Yang: whereas in cock you, you need to write the tactic in another language. Either it's L. Tech like the Dsl for writing tactics, or it's O camel.
+
+96
+00:16:55.210 --> 00:16:58.319
+Kaiyu Yang: but it's not nearly as convenient as in wing.
+
+97
+00:16:59.310 --> 00:17:10.589
+Kaiyu Yang: And also in link. You have access to the language front front end. so you can call the pastors the pastor of Link directly in link.
+
+98
+00:17:10.869 --> 00:17:14.690
+Kaiyu Yang: which will turn out to be very important for us later.
+
+99
+00:17:16.319 --> 00:17:25.430
+Kaiyu Yang: So that's with why we choose link instead of talk. And then in the rest of talk, I will dive into more details of the indoor project
+
+100
+00:17:25.650 --> 00:17:31.119
+Kaiyu Yang: our work focuses on Link, for which is the latest major version of Link.
+
+101
+00:17:31.290 --> 00:17:40.310
+Kaiyu Yang: And we begin by showing like a overall machine learning pipeline for theory improving in any improved assistant.
+
+102
+00:17:41.580 --> 00:17:50.210
+Kaiyu Yang: So basically, first you have link, and the first step is to extend the extraction you need to extract a data set from link.
+
+103
+00:17:50.500 --> 00:17:54.900
+Kaiyu Yang: And then you use this data set to train the machinery model.
+
+104
+00:17:55.350 --> 00:18:03.690
+Kaiyu Yang: And after the model is trend, the model can prove serums by interacting with the with link programmatically.
+
+105
+00:18:04.730 --> 00:18:19.079
+Kaiyu Yang: And Lindojo provides this entire pipeline and I will first explain the tools for data extraction and then to the tools for interacting with link. And finally, to the specific model we trend
+
+106
+00:18:20.220 --> 00:18:41.629
+Kaiyu Yang: so great, let's start with data extraction. As we will see that data extraction in link is basically building a program. An building, a program analyzer for Link, although this is May may not be a very general programming, an program analyzer, it's very specific to the purpose. We want that. That is data extraction.
+
+107
+00:18:42.240 --> 00:19:01.710
+Kaiyu Yang: So here on the right, you see a file in link, you have some definitions. Here's a definition of greatest common divisor. And then you have 2 theorems. Each serum has a proof so we want to. So this is the raw code we want to. Analyze this code and extract our data set.
+
+108
+00:19:01.750 --> 00:19:08.519
+Kaiyu Yang: So because first, we extract the abstract syntax trees, asts, and also the tactics
+
+109
+00:19:08.820 --> 00:19:17.169
+Kaiyu Yang: as we mentioned, you can access links past within link. So it would be very easy to get the ast.
+
+110
+00:19:17.460 --> 00:19:27.620
+Kaiyu Yang: and once you get the ast it would be very easy to to get the tactic, because you can just look at which nodes corresponds to the tactics.
+
+111
+00:19:27.690 --> 00:19:35.810
+Kaiyu Yang: So that's easy. But what's more difficult is how do you get the proof? Goals between those tactics?
+
+112
+00:19:36.040 --> 00:19:43.020
+Kaiyu Yang: Because that's not directly visible in the source code. But it's very important for the machinery model.
+
+113
+00:19:43.060 --> 00:19:50.550
+Kaiyu Yang: It turns out the proof goals are available in A, in a data structure called info tree in link.
+
+114
+00:19:51.360 --> 00:20:02.279
+Kaiyu Yang: Here, info tree is actually for supporting the Vs code extension of link. Say, this is a screenshot of using code.
+
+115
+00:20:02.410 --> 00:20:17.600
+Kaiyu Yang: On the right hand side, you see a panel in the panel. There are goals, current goes displaying in the panel and for for building this, we as code extension link, basically dump all the data into infantry.
+
+116
+00:20:17.660 --> 00:20:21.509
+Kaiyu Yang: And then the Vs code extension can read this data.
+
+117
+00:20:21.770 --> 00:20:33.570
+Kaiyu Yang: So if the code extension can read this data, we can also read this data. So we ndotto just gets the info tree and gets the proof goes from the info tree.
+
+118
+00:20:36.630 --> 00:20:40.310
+Kaiyu Yang: And finally, we also want to extract premises
+
+119
+00:20:40.450 --> 00:20:47.200
+Kaiyu Yang: premises are basically existing definitions. And the lamas that you use in the current zoom.
+
+120
+00:20:47.340 --> 00:20:52.350
+Kaiyu Yang: So in this figure everything in color, is a premise.
+
+121
+00:20:53.010 --> 00:21:01.839
+Kaiyu Yang: and for each premise, for example, the Gcd. Here we want to record where it is used and where it is defined.
+
+122
+00:21:04.470 --> 00:21:11.979
+Kaiyu Yang: and some some premises are defined in the same file, but there are also premises that are imported from other files.
+
+123
+00:21:13.050 --> 00:21:20.639
+Kaiyu Yang: So it turns out, premises are the information we want about premises are also available in the infantry.
+
+124
+00:21:20.700 --> 00:21:40.250
+Kaiyu Yang: because here in Vs code, if you put your mouse on premise and you, you click right? And then you have this go to definition menu. So if you click on, go to definition, it will jump to the definition of this premise. So that is to say, the info tree. The data structure behind the Vs code
+
+125
+00:21:40.290 --> 00:21:43.469
+Kaiyu Yang: also have this information inside.
+
+126
+00:21:43.690 --> 00:21:50.469
+Kaiyu Yang: So then we can we also try to read this information from infantry and put them into our data set.
+
+127
+00:21:51.860 --> 00:22:00.179
+Kaiyu Yang: So I'm going to run a simple demo for data extraction. Going to share the screen again once.
+
+128
+00:22:08.920 --> 00:22:13.269
+Kaiyu Yang: okay, are you able? Are you able to see the Jupiter notebook.
+
+129
+00:22:13.660 --> 00:22:14.470
+Anjiang Wei: Yes.
+
+130
+00:22:15.050 --> 00:22:18.139
+Kaiyu Yang: is, is it large enough? Or should I zoom in?
+
+131
+00:22:19.630 --> 00:22:22.390
+Kaiyu Yang: It's good, it seems. Thank you.
+
+132
+00:22:22.680 --> 00:22:35.030
+Kaiyu Yang: Okay, so this is how we extract data from any link report. So Lindojo is a python package. So assume you have already installed it. You just import from Lindo. Import everything.
+
+133
+00:22:35.050 --> 00:22:42.569
+Kaiyu Yang: And you can use Lindo to extract data from any link repo on Github as long as it's public.
+
+134
+00:22:42.660 --> 00:22:48.439
+Kaiyu Yang: But here for demonstration we use this repo. Oh, we give it the URL,
+
+135
+00:22:48.520 --> 00:22:53.359
+Kaiyu Yang: and also the the commit hash of of a specific version of this report.
+
+136
+00:22:53.450 --> 00:22:56.530
+Kaiyu Yang: So you create a link. It ripple here.
+
+137
+00:22:57.260 --> 00:23:10.970
+Kaiyu Yang: Here, linked repo. Actually, it's just it. It has only metadata. So because we haven't extracted the data yet. Then, to extract the data we call the trace function.
+
+138
+00:23:11.030 --> 00:23:16.169
+Kaiyu Yang: So you call trace, and you give it a repo. It will return a traced repo.
+
+139
+00:23:16.230 --> 00:23:30.550
+Kaiyu Yang: So this step can take some time, so I'm going to skip this step. But I have already rounded in the back end. So I'm going after you have the trace, the repo, the trace. The repo has all the data you want, so you can query a lot of things.
+
+140
+00:23:30.600 --> 00:23:42.699
+Kaiyu Yang: So first in this repo, you have many files, and the files are deck. They have dependencies. A file can pull out the files so you can access the file dependency graph.
+
+141
+00:23:43.220 --> 00:23:52.789
+Kaiyu Yang: And you can see there are more than 4,000 files here. and then say, let's say we want to go to a specific file.
+
+142
+00:23:52.940 --> 00:23:57.940
+Kaiyu Yang: So we call trace repo, and we give it a file name.
+
+143
+00:23:58.120 --> 00:24:00.599
+Kaiyu Yang: then it gives us a trace file.
+
+144
+00:24:01.850 --> 00:24:07.169
+Kaiyu Yang: So first we want to know in this what what premises are defined in this file.
+
+145
+00:24:07.390 --> 00:24:10.450
+Kaiyu Yang: So we call get premise definitions.
+
+146
+00:24:11.970 --> 00:24:17.890
+Kaiyu Yang: It gives you a list of premises in this file. Say, if you look at the first one.
+
+147
+00:24:18.190 --> 00:24:30.890
+Kaiyu Yang: it says it has a name, and you have the code in the file. and you have the starting position and the ending position. The low numbers and column numbers. So that's a definition in the file.
+
+148
+00:24:32.070 --> 00:24:42.289
+Kaiyu Yang: And then say, I want to get the list of theorems in this file. You call it sketchtrace theorems. You get 266 theorems.
+
+149
+00:24:42.600 --> 00:24:48.500
+Kaiyu Yang: and then I care about a particular theorem with this name, so I gave it a serum name.
+
+150
+00:24:48.950 --> 00:24:52.000
+Kaiyu Yang: Then you get a particular trace theorem.
+
+151
+00:24:52.360 --> 00:24:57.119
+Kaiyu Yang: and if you can look at what theorem it is you call show
+
+152
+00:24:57.440 --> 00:25:09.570
+Kaiyu Yang:  So if we are open the theorem here. So this is the theorem we are looking at. It has a serum statement, and it has 2 tactics.
+
+153
+00:25:10.390 --> 00:25:19.410
+Kaiyu Yang: So let's go back. So you know, the starting and ending position of this theorem. and you know when it was created.
+
+154
+00:25:19.830 --> 00:25:29.290
+Kaiyu Yang: and you also know whether the theorem has a tactic proof here is true. and you can get the number of tactics in the theorem. Here is 2 2 tactics.
+
+155
+00:25:29.370 --> 00:25:32.520
+Kaiyu Yang: And you can print the proof.
+
+156
+00:25:33.030 --> 00:25:40.279
+Kaiyu Yang: So here is is the proof of this theorem, 2 tactics. and then we can go to a particular tactic.
+
+157
+00:25:40.670 --> 00:25:43.550
+Kaiyu Yang: We call this jet trace tactic.
+
+158
+00:25:43.920 --> 00:25:46.649
+Kaiyu Yang: So the result has 2 tactics.
+
+159
+00:25:47.030 --> 00:25:53.160
+Kaiyu Yang: So let's say, we go to the second one. and this is a traced tactic.
+
+160
+00:25:53.620 --> 00:25:58.460
+Kaiyu Yang: Here you have the tactic itself. It's a simplified tactic.
+
+161
+00:25:58.710 --> 00:26:05.229
+Kaiyu Yang: and you have the state before the tactic. So everything here is the state before the tactic
+
+162
+00:26:05.620 --> 00:26:13.110
+Kaiyu Yang: and you have the state after the tactic, because this is the final tactic. So after the tactics, it's no goals.
+
+163
+00:26:14.470 --> 00:26:22.679
+Kaiyu Yang: So that's everything you can extract from this data set. And you can share machinery models on those tactics.
+
+164
+00:26:23.060 --> 00:26:27.560
+Kaiyu Yang: So I'm going to going back on to the slides.
+
+165
+00:26:34.360 --> 00:26:36.090
+Kaiyu Yang: You can see the slides. Right?
+
+166
+00:26:36.580 --> 00:26:37.480
+Anjiang Wei: Yes.
+
+167
+00:26:41.330 --> 00:26:50.840
+Kaiyu Yang: Okay. So that's data extraction. and then we will talk about. If we have a model, we have a machine learning model, say in Python.
+
+168
+00:26:50.970 --> 00:26:54.410
+Kaiyu Yang: how can we use this model to interact with Link?
+
+169
+00:26:54.600 --> 00:27:02.740
+Kaiyu Yang: Because we cannot do it manually, we have to do it programmatically. So the key point is the tactic monad in vain.
+
+170
+00:27:03.350 --> 00:27:11.779
+Kaiyu Yang: So tacticm is tactic, Monet, and it can actually perform. I/O to interact with the outside world.
+
+171
+00:27:12.000 --> 00:27:26.389
+Kaiyu Yang: So here we see the the monad hierarchy. We have already seen. Technic monad is here. It's the final monad. Actually, it also inherits some functions from from the I/O Monnat.
+
+172
+00:27:26.590 --> 00:27:37.300
+Kaiyu Yang: So in tactic monad you can perform I/O. So then here is how we do it. So say you have a, you have this link file. You have a serum here.
+
+173
+00:27:37.400 --> 00:27:41.060
+Kaiyu Yang: and you want your model to interact with this theorem.
+
+174
+00:27:41.150 --> 00:27:49.860
+Kaiyu Yang: So first we replace the human return proof with a tactic that we write, it's called report tactic.
+
+175
+00:27:50.030 --> 00:27:51.700
+Kaiyu Yang: So then it becomes that.
+
+176
+00:27:51.760 --> 00:28:03.200
+Kaiyu Yang: And because, reporter can you can perform? I/O so we can wrap the report tactic into a command line interface for interacting with Link.
+
+177
+00:28:03.780 --> 00:28:09.990
+Kaiyu Yang: And then once we have a command line interface. We can wrap it in any language. For example, in Python.
+
+178
+00:28:10.120 --> 00:28:16.120
+Kaiyu Yang: So your model lives here in Python, and here is how it interacts with this student.
+
+179
+00:28:16.970 --> 00:28:22.330
+Kaiyu Yang: Okay, we are also going to see a simple demo here.
+
+180
+00:28:25.390 --> 00:28:27.310
+Kaiyu Yang: So you can see the screen right?
+
+181
+00:28:27.440 --> 00:28:33.040
+Kaiyu Yang: Here, say, we have, we want to interact with this zoom
+
+182
+00:28:33.350 --> 00:28:35.799
+Kaiyu Yang: so first we initialize it.
+
+183
+00:28:36.070 --> 00:28:39.809
+Kaiyu Yang: we it will give us a state 0.
+
+184
+00:28:39.930 --> 00:28:41.799
+Kaiyu Yang: So we can look at step 0.
+
+185
+00:28:42.370 --> 00:28:44.380
+Kaiyu Yang: So this is state 0,
+
+186
+00:28:44.650 --> 00:28:50.609
+Kaiyu Yang: it's basically a proof goal. And we can print it. So now it looks nicer.
+
+187
+00:28:50.860 --> 00:28:57.049
+Kaiyu Yang: And then so so this final line is the goal and everything else. Hypothesis.
+
+188
+00:28:57.790 --> 00:29:03.030
+Kaiyu Yang: Say, we want to run a tactic convert X on State 0,
+
+189
+00:29:03.110 --> 00:29:06.509
+Kaiyu Yang: which gives us state one. Let's print state one.
+
+190
+00:29:07.120 --> 00:29:23.169
+Kaiyu Yang: Okay, here is State one. You see the X in the hypothesis. It has been reverted into the goal with the universal quantifier, and then say, we want to run a invalid tactic. Hello, world on State 0.
+
+191
+00:29:24.710 --> 00:29:29.159
+Kaiyu Yang: It will return a link arrow which says, unknown tactic.
+
+192
+00:29:29.600 --> 00:29:36.579
+Kaiyu Yang: So here, state 2 is an invalid state. If you run anything on an invalid state, it will throw a Runtime arrow.
+
+193
+00:29:36.970 --> 00:29:42.069
+Kaiyu Yang: and you can run a sorry tactic which is to give up the proof.
+
+194
+00:29:42.390 --> 00:29:44.949
+Kaiyu Yang: so it will return a proof given up.
+
+195
+00:29:46.520 --> 00:29:53.849
+Kaiyu Yang: and then let's try the tactic in the human return proof. So the first tactic is the ext tactic
+
+196
+00:29:54.670 --> 00:29:56.500
+Kaiyu Yang: which gives you State 3,
+
+197
+00:29:56.610 --> 00:30:09.310
+Kaiyu Yang: and on stage 3, you can try to run the simple tactic which gives you State 4. And here, you see, state 4 is a proof finished. So now you know, the serum has been successfully proved.
+
+198
+00:30:11.820 --> 00:30:14.690
+Kaiyu Yang: So let me go back to the slides.
+
+199
+00:30:20.620 --> 00:30:27.939
+Kaiyu Yang: Okay, you can see the slides. Right? So that's how you you have a model, how you want to interact with links.
+
+200
+00:30:27.990 --> 00:30:38.230
+Kaiyu Yang: And then, so I would talk about the specific data set and specific model we trend in this we collected. And we trended in this work.
+
+201
+00:30:38.330 --> 00:30:44.160
+Kaiyu Yang: So first, we use Lindo to extract a data set that we call Lindo Benchmark.
+
+202
+00:30:44.220 --> 00:30:48.150
+Kaiyu Yang: It has about 100,000 serums, and approves
+
+203
+00:30:48.470 --> 00:30:52.280
+Kaiyu Yang: extracted from massless. and
+
+204
+00:30:52.540 --> 00:30:57.079
+Kaiyu Yang: among those proofs it has about 200,000 tactics
+
+205
+00:30:57.140 --> 00:31:01.330
+Kaiyu Yang: and about 130,000 premises.
+
+206
+00:31:01.500 --> 00:31:13.549
+Kaiyu Yang: I want to emphasize that. Lindo is not tied to mass leap. You can actually use it to to to extract data from any report or just your own report as long as it's on Github
+
+207
+00:31:13.770 --> 00:31:22.109
+Kaiyu Yang:  And then, having this data set, we train a model to to to prove zooms.
+
+208
+00:31:22.230 --> 00:31:25.920
+Kaiyu Yang: That we call retriever augmented language model.
+
+209
+00:31:26.640 --> 00:31:29.280
+Kaiyu Yang: So here, here's the idea.
+
+210
+00:31:29.290 --> 00:31:36.770
+Kaiyu Yang: So when you use the large language models to prove theorems. You basically, you are trying to generate the tactic
+
+211
+00:31:36.790 --> 00:31:39.399
+Kaiyu Yang: from the from the proof goal
+
+212
+00:31:39.850 --> 00:31:51.580
+Kaiyu Yang: and existing methods. You basically have the proof state here. That's the goal you want to prove. And you train a transformer that gives you the tactic. So it's very simple.
+
+213
+00:31:51.860 --> 00:31:58.720
+Kaiyu Yang: And the problem is the transformer, the model. Here it it has no knowledge of what
+
+214
+00:31:58.780 --> 00:32:02.709
+Kaiyu Yang: premises are available, like what what existing lemurs it can use.
+
+215
+00:32:02.730 --> 00:32:10.029
+Kaiyu Yang: and it can still output premises, but the way it is do that is.
+
+216
+00:32:10.080 --> 00:32:28.260
+Kaiyu Yang: it tries to memorize the name of the premises. So if if this model has seen this name a lot in training, and then it can memorize it and use it in testing. But this is not very efficient, and may not generalize. If you have a very different project. Then the training data.
+
+217
+00:32:29.130 --> 00:32:38.780
+Kaiyu Yang: So what what we do is that, given the State the proof go. We also consider the set of all accessible premises in the mass library.
+
+218
+00:32:38.910 --> 00:32:52.869
+Kaiyu Yang: So say, here you have all premises, and in all data sets. It's about 33,000 on average. So first you use this state as a query to retrieve relevant premises.
+
+219
+00:32:53.350 --> 00:33:05.140
+Kaiyu Yang: And this is done by embedding the State and each premise into a vector and then you can calculate their cosine similarity, and then you can retrieve the most similar ones.
+
+220
+00:33:05.490 --> 00:33:09.299
+Kaiyu Yang: So here we have a few premises that are most similar.
+
+221
+00:33:09.480 --> 00:33:15.579
+Kaiyu Yang: and then the retrieved premises are concatenated with the State.
+
+222
+00:33:15.760 --> 00:33:28.910
+Kaiyu Yang: and then used for generating the tactic. So in this way the model can explicitly consider what premises are available, and what premises might be useful? Which hopefully can generalize better.
+
+223
+00:33:31.160 --> 00:33:40.529
+Kaiyu Yang: And here are the experimental results. And the x-axis are 2 data sets, actually 2 random splits, 2 splits of the data sets
+
+224
+00:33:40.760 --> 00:33:46.609
+Kaiyu Yang: and the y-axis is the percentage of theorem you can prove. So hire is better.
+
+225
+00:33:46.890 --> 00:33:58.850
+Kaiyu Yang: And you have 4 different colors. There are 4 different models. The gray one is our approval model without retrieval, and that yellow one is our final model with retrieval.
+
+226
+00:33:58.910 --> 00:34:07.179
+Kaiyu Yang: and the other 2 are baselines like like tidy is a building tactic in Ling and a Gp 4 waistline.
+
+227
+00:34:07.810 --> 00:34:18.500
+Kaiyu Yang: So as a result, we see our model is much better than the baseline, and also adding the retrieval leads to a a modest amount of improvement.
+
+228
+00:34:21.350 --> 00:34:46.310
+Kaiyu Yang: And finally, after we train our model, we also, try to use the model to discover new proofs in 2 data sets. One is Mini f, 2 f, and the other is proof net. So in in this 2 repos many theorems do not come with proofs, so we try to see if our model can add more proof to their report. And here are some examples of proofs discovered by our model.
+
+229
+00:34:50.590 --> 00:35:04.220
+Kaiyu Yang: So that's model. And here we have finished everything about Spindo in particular. And I want to emphasize that we have a website of everything open source in this project.
+
+230
+00:35:04.270 --> 00:35:26.389
+Kaiyu Yang: And you're welcome to check it out. And also we are co-organizing a tutorial at this year, machine learning for improving proof assistance. And finally, I want to talk about some future work and phone applications. So here we use Chatbot to prove theorem.
+
+231
+00:35:26.410 --> 00:35:36.760
+Kaiyu Yang: So because Lindo Joe gives you a tool for interacting with Link, you can just wrap this interface as the plugin for chat. Pt, so let's look at it.
+
+232
+00:35:37.740 --> 00:35:41.109
+Kaiyu Yang: So you tell Chatty, bt what theorem I want to prove.
+
+233
+00:35:42.140 --> 00:35:47.050
+Kaiyu Yang: and where you can find the theorem. so it will call individual, it will
+
+234
+00:35:47.120 --> 00:35:51.710
+Kaiyu Yang: give it the name and try to initialize the proof. Search
+
+235
+00:35:53.140 --> 00:35:56.289
+Kaiyu Yang: and Bindojo tells it's a proof goal.
+
+236
+00:35:56.500 --> 00:36:04.550
+Kaiyu Yang: So Chat Gbt tries to interpret the proof goal and lay out a high level plan for proving this student.
+
+237
+00:36:09.280 --> 00:36:14.839
+Kaiyu Yang: But this is just a very toy example. The theorem is just. addition is associative.
+
+238
+00:36:16.810 --> 00:36:26.619
+Kaiyu Yang: And then Chachi Bt runs a tactic and get the results back from Ling. and it tries to interpret the results
+
+239
+00:36:30.960 --> 00:36:32.689
+Kaiyu Yang: and run another tactic
+
+240
+00:36:34.930 --> 00:36:35.950
+Kaiyu Yang: again.
+
+241
+00:36:42.170 --> 00:36:44.180
+Kaiyu Yang: and then run the final tactic.
+
+242
+00:36:45.480 --> 00:36:51.319
+Kaiyu Yang: So now, Lindojo says the theorem has been proved. so tragedy will know that.
+
+243
+00:36:56.910 --> 00:37:03.630
+Kaiyu Yang: And I can ask Chatbot to give me the final proof, so can you show me the final proof you find.
+
+244
+00:37:09.920 --> 00:37:14.909
+Kaiyu Yang: So this is actually the proof found by tragedy.
+
+245
+00:37:15.600 --> 00:37:27.789
+Kaiyu Yang: Although this is a very simple example. We actually tried more non-trivial serums. I would say currently, Chargbts. Not good at this task. It. It cannot prove non-trivial. Seems
+
+246
+00:37:27.830 --> 00:37:36.809
+Kaiyu Yang: but I think in the future there are more research to be done on how we can leverage this very, very large language models for your improvement.
+
+247
+00:37:37.750 --> 00:37:39.490
+Kaiyu Yang: Other questions.
+
+248
+00:37:40.920 --> 00:37:46.779
+Kaiyu Yang: No, I I'll go forward. Okay, and finally, we
+
+249
+00:37:46.930 --> 00:37:59.790
+Kaiyu Yang: So so far we've been talking about more like from a machinery researcher perspective like you train the model in python, and you evaluate the model on a lot of theorems. You look at how many theorem is it can prove?
+
+250
+00:37:59.830 --> 00:38:19.580
+Kaiyu Yang: But you know, from the perspective of link users, they actually just don't care or what they care more is whether your large language models can can give them a practical tool that they can use directly in link and whether that tool can help them prove series. So
+
+251
+00:38:19.580 --> 00:38:33.309
+Kaiyu Yang: here we have have only one direction of this bridge, but we are have. We have also some ongoing projects trying to build the other direct direction like, how can we use AI to assist human users in being directly?
+
+252
+00:38:34.180 --> 00:38:47.340
+Kaiyu Yang: So this is a work under submission. Done by undergrad students working with me. And so here we use a large language model for generating tactics suggestions directly in Ling.
+
+253
+00:38:47.770 --> 00:39:01.969
+Kaiyu Yang: Say, we have a human user here and they are trying to prove a serum. They manually enter some tactics 2 tactics here and then, they call this tactic called suggest tactics.
+
+254
+00:39:02.000 --> 00:39:10.540
+Kaiyu Yang: So the suggest tactics will call our large language models under the hood, and it will display the suggestions here.
+
+255
+00:39:10.620 --> 00:39:17.050
+Kaiyu Yang: So here, actually, the first suggestion can solve this goal. Although this this goal is very simple.
+
+256
+00:39:17.310 --> 00:39:29.170
+Kaiyu Yang: and what happens under the hood is that we we takes the large language model, and we convert it into a platform independent format the own X format.
+
+257
+00:39:29.600 --> 00:39:33.490
+Kaiyu Yang: and then we can wrap it into a shell library.
+
+258
+00:39:33.910 --> 00:39:42.990
+Kaiyu Yang: So after we have this shared library, we can use the following function, interface in ring, to to link to this, to link to this library directly.
+
+259
+00:39:43.270 --> 00:39:52.109
+Kaiyu Yang: so that the model is actually running locally on the user's desktop or laptop. And it actually doesn't require a Gpu.
+
+260
+00:39:52.600 --> 00:40:09.340
+Kaiyu Yang: And we we take a lot of effort to to make this package really easy to install. So any link user can basically add a dependency to their package, and it will automatically figure out the dependencies and try to download the model and then run everything locally.
+
+261
+00:40:10.620 --> 00:40:13.930
+Kaiyu Yang: So that's for generating tactics suggestions.
+
+262
+00:40:13.980 --> 00:40:19.899
+Kaiyu Yang: But that does not give you a proof unless the serum can be solved by a single tactic.
+
+263
+00:40:20.010 --> 00:40:29.440
+Kaiyu Yang: So in another work we try to incorporate proof, search into into this large language model generated tactics, suggestions.
+
+264
+00:40:29.600 --> 00:40:39.550
+Kaiyu Yang: So here we develop a tool called mesop. So first, Ethop is, is a best first search implemented in ven
+
+265
+00:40:39.640 --> 00:40:45.680
+Kaiyu Yang: basically, the user can config. The rules used to expand the nodes in the search tree.
+
+266
+00:40:45.840 --> 00:41:08.819
+Kaiyu Yang: So it's not like. It's not completely a block a black box. It's it's actually a white box. However, the rules are config before the proof search, but once the proof search begins, they're fixed. So for for all those in the search tree you apply the same set of rules. You you you, you do not consider the current proof. Go. So it's independent of the proof. Go.
+
+267
+00:41:09.490 --> 00:41:17.919
+Kaiyu Yang: And so that's ease of what we do is we try to combine Esop with the tactics suggestions generated by our model.
+
+268
+00:41:17.990 --> 00:41:22.460
+Kaiyu Yang: So in that way we Esop can apply different tactics depending on the goal.
+
+269
+00:41:23.540 --> 00:41:29.910
+Kaiyu Yang: and we evaluate this tool on 50 serums selected from a book called Mathematics in Link
+
+270
+00:41:30.150 --> 00:41:41.440
+Kaiyu Yang: and we met it in 2 settings. One is the we call autonomous setting, that is, we apply this tool to the zoom without any human intervention.
+
+271
+00:41:41.530 --> 00:41:46.060
+Kaiyu Yang: And the second setting is, we use this tool to assist humans.
+
+272
+00:41:46.090 --> 00:41:56.180
+Kaiyu Yang: So here humans have to enter the tactics one by one. and after each tactic they try to call this tool and see if this tool can solve the problem.
+
+273
+00:41:56.400 --> 00:41:58.220
+Kaiyu Yang: So if
+
+274
+00:41:58.230 --> 00:42:04.119
+Kaiyu Yang: if they have to enter only a small number of tactics, then we know this tool is useful for them.
+
+275
+00:42:05.380 --> 00:42:13.340
+Kaiyu Yang: And so here are the results. The the first column is the average number of tactics humans have to enter.
+
+276
+00:42:13.450 --> 00:42:20.539
+Kaiyu Yang: You see, our tool require only one tactic, which is smaller than than Esop and other base lines.
+
+277
+00:42:20.970 --> 00:42:32.870
+Kaiyu Yang: And the second column is the number of Se, the percentage, the percentage of serums. You can prove fully, autonomously. So our series. Our tools can also prove more serious in that setting
+
+278
+00:42:36.610 --> 00:42:48.930
+Kaiyu Yang: cool. And finally, this work wouldn't be possible without a team of wonderful collaborators. And I'd like to thank all of you for coming to this talk, and I'm happy to take questions. Thank you.
+
+279
+00:42:56.000 --> 00:42:58.929
+Anjiang Wei: Cool. So any questions. Yes.
+
+280
+00:42:59.210 --> 00:43:13.839
+Anjiang Wei: I don't know. Can you? Can you hear us? I'm happy to repeat questions, though II can't hear you, but I cannot hear other people. Very well. sounds good. Just say it. And I'll repeat, yeah.
+
+281
+00:43:14.170 --> 00:43:16.530
+Anjiang Wei: fireworks automated program
+
+282
+00:43:16.950 --> 00:43:19.920
+is that the pumpkin costs are very high?
+
+283
+00:43:20.120 --> 00:43:40.659
+Anjiang Wei: Yeah. So the question for you is you mentioned earlier that the compute cost for lean and doing proof is high. So we're curious about wh in me, Dojo, what are the specific techniques, tactics. Wh, what? How do you make it more efficient in lean dojo?
+
+284
+00:43:41.040 --> 00:43:54.909
+Kaiyu Yang: So there are multiple factors contributing to this. So first, if you compare the model size. Our model is smaller than most of them, and smaller models usually faster.
+
+285
+00:43:55.030 --> 00:44:12.129
+Kaiyu Yang: We. We try the larger models, but it's it doesn't improve the results significantly, presumably because the data set, it's not that large and also we, our model, is built on publicly available model checkpoints
+
+286
+00:44:12.370 --> 00:44:15.730
+Kaiyu Yang: so we do not do pre training. We do only fine-tuning.
+
+287
+00:44:15.840 --> 00:44:34.689
+Kaiyu Yang: but some of the prior work. They also do pre-training. They pretend on data sets that are specific to mathematics. So they they cross on articles from archive, and they pre train model on that. So that's another factor, and also our model is trained using supervised learning only.
+
+288
+00:44:34.730 --> 00:44:40.739
+Kaiyu Yang: whereas some prior work also has reinforcement learning. And that part is very, very expensive.
+
+289
+00:44:42.980 --> 00:44:46.510
+Anjiang Wei: awesome. So does that answer your question, yeah, cool.
+
+290
+00:44:46.650 --> 00:44:50.540
+Anjiang Wei: awesome. any other questions?
+
+291
+00:44:51.350 --> 00:44:59.739
+Anjiang Wei: How did you run your experiments with? Gpt, 4. Yeah. So the question is, Kai you, how did you run your experiments with Gpt, 4.
+
+292
+00:44:59.760 --> 00:45:03.600
+Kaiyu Yang: Yeah. That's a good question. Let me go to
+
+293
+00:45:04.130 --> 00:45:18.080
+Kaiyu Yang: a sly. So it's very similar to this one. So here you. You have a it's a prior method. You you have the goal, and you use the model to use a fine-tuning model to generate the tactic.
+
+294
+00:45:18.170 --> 00:45:35.370
+Kaiyu Yang: We just replace the function model here with Gpt, 4, we, we just do like either 0 short or one shot. For example, in 0 shot. We just told. Gp, 4. So this is the goal I want to prove. Can you give me a number of tactics?
+
+295
+00:45:35.390 --> 00:45:39.420
+Kaiyu Yang: And in the one short setting. We also provide a few examples.
+
+296
+00:45:39.650 --> 00:45:45.190
+Kaiyu Yang: Although in our experiments we don't see a significant difference between these 2
+
+297
+00:45:46.230 --> 00:46:05.320
+Anjiang Wei: cool, awesome, follow up question. Yeah. So I guess the question is that
+
+298
+00:46:05.350 --> 00:46:09.279
+Anjiang Wei: there, there's previous work that shows if you have vectoring,
+
+299
+00:46:09.460 --> 00:46:18.509
+Anjiang Wei: basically rag, retrieval augmented ways to use. Gpt 4, you see significant improvements. So is so. The question is, how does
+
+300
+00:46:18.830 --> 00:46:25.650
+Anjiang Wei: if you're using rag? Or how do you use rack to improve your results? Or how is it different to reprover? Is that the question more or less?
+
+301
+00:46:26.530 --> 00:46:47.279
+Anjiang Wei: Api's Api?
+
+302
+00:46:47.370 --> 00:47:09.340
+Kaiyu Yang: I see. We. We haven't tried that in this work. We have only tried this very basic method for using jet. We, we do have some ongoing work trying to explore. Ho! How like most of this is prompting with or also using premise retrieval with with the embeddings.
+
+303
+00:47:09.350 --> 00:47:26.649
+Kaiyu Yang: Currently, we don't have a conclusive results yet, but I think it would be very impressive if you can make work a as good as function model. Because currently for this, for everything in this task not not limited to our work.
+
+304
+00:47:26.780 --> 00:47:34.899
+Kaiyu Yang: We don't see we we're still trying to use fine tune model, and we don't see Gpt. 4 can beat fine tune model.
+
+305
+00:47:35.060 --> 00:47:36.990
+Kaiyu Yang: So it's still an open question.
+
+306
+00:47:37.470 --> 00:47:51.279
+Anjiang Wei: cool? Thank you for question, more questions. So question, why do other people not publish their code? And why did you do it?
+
+307
+00:47:51.480 --> 00:48:20.920
+Kaiyu Yang: Ii think there are a lot of reasons. One one reason is this, through improving pipelines are actually very complex. Like, here we we only do supervisory. But we still need data extraction and interacting with link and if you want to add reinforcement learning, then you you have some distributed infrastructure for for the model to interact with the environment in parallel and
+
+308
+00:48:20.920 --> 00:48:36.080
+Kaiyu Yang: you often, especially in in industry. This kind of infrastructure is internal. So you. You are not based your work on open source libraries, but you will use your internal infrastructure which makes your code essentially impossible to open source.
+
+309
+00:48:36.150 --> 00:48:44.469
+Kaiyu Yang: And also if your model is based on, say, if you work in Google and you based a model on Manoba, then there's no way to open source.
+
+310
+00:48:44.560 --> 00:49:07.669
+Kaiyu Yang: So that's one reason the pipeline is too complex. And also, I think there are some like personnel issues with this prior work, because most of them were down in industry. And then, after some time, people, just because there are reorganizations in the industry, people just move on to other projects or to another company, and then just no one will resource
+
+311
+00:49:08.760 --> 00:49:18.849
+Kaiyu Yang: cool. And why did you open source it? Maybe that part of the question is cool to hear? Because I just as as mentioned in this slide. I see this.
+
+312
+00:49:18.920 --> 00:49:36.520
+Kaiyu Yang: We don't have open source we don't have fail comparison we cannot reproduce existing results is actually the most important barrier in in this area. Actually, at at the beginning of this project, we we try to the focus was to explore retrieval
+
+313
+00:49:36.590 --> 00:49:52.730
+Kaiyu Yang: to explore some like method side of all this task. But as we as this project goes on, we find the real botanic is not. It's not. We want a novel method. It's more like we. We need the infrastructure.
+
+314
+00:49:53.000 --> 00:50:01.429
+Kaiyu Yang: So that's we. Why we switch the focus to infrastructures. But by the end, in the paper we actually include both contributions
+
+315
+00:50:01.900 --> 00:50:07.999
+Anjiang Wei: awesome. So for the sake of science, awesome, any other questions. Scott has a question.
+
+316
+00:50:08.010 --> 00:50:18.410
+Anjiang Wei: Hi, thanks for the talk. So I know that esot provides the user with the ability to add a wait like a penalty to each premise that they provide.
+
+317
+00:50:18.430 --> 00:50:29.389
+Anjiang Wei: And that's what drives the best first search priority order. So I'm wondering if in Llm. Esop, whether you use that. Maybe you use like a neural
+
+318
+00:50:29.870 --> 00:50:40.529
+Kaiyu Yang: pretty recent. It's still ongoing. So currently in our code base, we are not doing that. We are using a fixed number for everything.
+
+319
+00:50:40.570 --> 00:50:54.819
+Kaiyu Yang: But what we we I would imagine it's straightforward. If I want to give you a confidence score for each generation. II can just use this confidence confidence. Score a as the score for for you. So.
+
+320
+00:50:54.910 --> 00:50:56.499
+Kaiyu Yang: But we haven't done that yet.
+
+321
+00:50:57.350 --> 00:51:01.000
+Anjiang Wei: I see, and in Llm Asop.
+
+322
+00:51:01.440 --> 00:51:07.230
+Anjiang Wei: that's just a modified version of Esop. It doesn't do anything else like call induction, for instance.
+
+323
+00:51:07.800 --> 00:51:11.039
+Kaiyu Yang: No, yeah, it's it's a modification. Fees up.
+
+324
+00:51:11.240 --> 00:51:12.610
+Anjiang Wei: Okay, cool.
+
+325
+00:51:12.770 --> 00:51:39.069
+Anjiang Wei: awesome. So I'll get one question. So one of my questions from the chat is, I saw your plot where you have a big jump from Gpt. 4 to reprover without augmentation. So the second one is actually from reprover to augmentation. So obviously, the source is sort of obvious. It's a retrieval that is making this second jump. But why is the Gpt. 4. To reprover without augmentation happening? So the orange to the gray? Why is what is the secret sauce there.
+
+326
+00:51:39.480 --> 00:52:08.159
+Kaiyu Yang: because the Grey One is a fine tune model, and the the only one is just. And it's not because Link is also a relatively new language, maybe on the Internet, on the training date of there is not that a lot of data on Link, and also because there's a mix between Link 3 and link 4. Ii think. Gp, 4 tends to struggle with that, so it will. Sometimes it outputs a mix of link 3, and link 4.
+
+327
+00:52:08.510 --> 00:52:12.290
+Anjiang Wei: Cool, awesome, and quick question, what is the base model for reprover?
+
+328
+00:52:12.750 --> 00:52:27.859
+Kaiyu Yang: It's a. By T. 5. So it's a modification of T. 5 that operates directly on bytes. So you don't have tokenization. You just have a stream of bytes and you map it to the output string of bytes.
+
+329
+00:52:28.230 --> 00:52:30.740
+Anjiang Wei: Awesome. Any more questions, guys?
+
+330
+00:52:32.170 --> 00:52:33.710
+Anjiang Wei: No. Yeah.
+
+331
+00:52:33.770 --> 00:52:45.129
+Anjiang Wei: Cool. Okay. Last question for brando. He has it on the chat. So when you say sic w the the size of of Balldure. Is it 64, 62 billion? Or is that a typo? Because you wrote
+
+332
+00:52:45.220 --> 00:53:00.369
+Kaiyu Yang: they have a range of MoD model size. The largest one is, I believe, is 6, 2 billion 7 billion or or other sizes.
+
+333
+00:53:00.550 --> 00:53:07.640
+Anjiang Wei: Excellent. That was it. Cool? Well, thank you so much for coming, Kay, you yeah, let's give him a round of applause.
+
+334
+00:53:07.770 --> 00:53:22.979
+Kaiyu Yang: Thank you for inviting me and for for the introduction for everything. No worries. Thank you for sharing your knowledge and making it open source to everyone to build on science.
+
+335
+00:53:23.210 --> 00:53:25.200
+Kaiyu Yang: Bye, bye.
+
+336
+00:53:26.790 --> 00:53:29.320
+Anjiang Wei: anyone by ever going to the bird we leap up.
+
