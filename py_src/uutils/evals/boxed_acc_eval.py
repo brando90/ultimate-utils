@@ -12,7 +12,10 @@ from evals.data_eval_utils import get_iter_for_eval_data_set, save_completions
 from evals.prompts_evals import STOP_TOKENS, extract_answer_from_list_completion_strings_mv
 from evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt_ala_helm_8shot_cot2, get_math_problem_prompt_ala_0shot_cot, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
 from evals.utils import extract_model_answers, eval_boxed_accuracy_results, extract_gold_answers, get_dtype_for_vllm, load_model
-from evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator
+from evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator, Generator
+
+import torch
+import torch.nn
 
 import sys
 MAX_INT = sys.maxsize
@@ -94,11 +97,28 @@ def seed_everything(seed: int, hf_timeout: float = 5):
 
 # -- tests
 
+def eval_on_four_math_benchmarks(
+        model,
+        gen_type='vllm',
+):
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+    path_2_eval_dataset: str = '~/putnam-math/data/MATH/test'
+    gen = main(model=model, gen_type='vllm', path_2_eval_dataset=path_2_eval_dataset, end=500, n=1, shuffle=True, mode='dryrun')
+    # doing this hack so that oom doesn't happen, re-using loaded model (even though I did try clearing up)
+    path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2'
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json'
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json'
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+
 def main(
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final',
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final/Putnam_MATH_boxed_problems.json',
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static2/test',
-        # path_2_eval_dataset: str = '~/gold-ai-olympiad/data/MATH/test',
+        # path_2_eval_dataset: str = '~/putnam-math/data/MATH/test',
         # path_2_eval_dataset: str = '~/snap-cluster-setup/data/MATH/test',
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json',
         # path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2',
@@ -123,17 +143,21 @@ def main(
         # batch_size: int = 348,  
         n: int = 1, # num seqs to return for given prompt
         # max_tokens: int = 2048,
-        max_tokens: int = 4096,
+        # max_tokens: int = 4096,
+        max_tokens: int = 8192,
         top_p: float = 0.95, 
         temperature: float = 0.8,
         # num_beams: int = 5,
         num_beams: Optional[int] = None,
         max_length: Optional[int] = None, # max input for HF/vllm models
         # gen_type: Optional[str] = None,
-        # gen_type: Optional[str] = 'vllm',
-        gen_type: Optional[str] = 'end_point',
+        # gen_type: Optional[str] = 'openai_end_point',
+        # gen_type: Optional[str] = 'anthropic_end_point',
+        gen_type: Optional[str] = 'vllm',
+        # gen_type: Optional[str] = 'end_point',
         # gen_type: Optional[str] = 'pipeline',
-        # gen_type: Optional[str] = 'hf_direct_model_gen',i
+        # gen_type: Optional[str] = 'hf_direct_model_gen',
+        # gen_type: Optional[str] = 'our_gen_engine',
         verbose_eval: bool = True,
         # boxed_acc_probs_only: bool = False,
         boxed_acc_probs_only: bool = True,
@@ -145,6 +169,8 @@ def main(
         seed: int =42, 
         ):
     """ """
+    import torch
+    torch.cuda.empty_cache()
     # print(f'{os.environ["CKPT_COPY"]=}')
     assert isinstance(path_2_eval_dataset, str), f'Err: {path_2_eval_dataset=} wrong type should be str but is {type(path_2_eval_dataset)=}.'
     print(f'---> main() starting (with {seed=})')
@@ -203,10 +229,10 @@ def main(
     sampling_params = SamplingParams(n=n, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop, use_beam_search=use_beam_search, best_of=best_of, max_length=max_length, num_beams=num_beams)
     print(f'{sampling_params=}')
     print(f'--> {model=} {gen_type=}')
-    if 'gpt-4-' in model or 'gpt-3.5-' in model or 'gpt-4o' in model:
+    if gen_type == 'openai_end_point':
         api_key = os.environ.get("OPENAI_KEY").strip()
         gen: OpenAIGenerator = OpenAIGenerator(model, sampling_params, api_key)
-    elif 'claude' in model: 
+    elif gen_type == 'anthropic_end_point': 
         api_key = os.environ.get("ANTHROPIC_API_KEY").strip()
         gen: AnthropicGenerator = AnthropicGenerator(model, sampling_params, api_key=api_key)
     elif 'vllm' in str(gen_type).lower():
@@ -218,14 +244,12 @@ def main(
         sampling_params = SamplingParams(**(_sampling_params))
         gen: VllmGenerator = VllmGenerator(llm, sampling_params)
     elif gen_type == 'pipeline':
-        print(f'{gen_type=}')
         from transformers import pipeline, Pipeline
         mdl, tok = load_model(pretrained_model_name_or_path=model, max_length=sampling_params.max_length)
         llm: Pipeline = pipeline("text-generation", model=mdl, tokenizer=tok)
         gen: HFPipelineGenerator = HFPipelineGenerator(llm, sampling_params)
         print(f'{llm.device=}')
     elif gen_type == 'hf_direct_model_gen':
-        print(f'{gen_type=}')
         from transformers import pipeline, Pipeline
         mdl, tok = load_model(pretrained_model_name_or_path=model, max_length=sampling_params.max_length)
         llm: Pipeline = pipeline("text-generation", model=mdl, tokenizer=tok)
@@ -233,8 +257,16 @@ def main(
         print(f'{llm.device=}')
         assert ValueError(f'Don\'t use {gen_type=} for now, odd bug, see: https://discuss.huggingface.co/t/how-to-generate-multiple-text-completions-per-prompt-like-vllm-using-huggingface-transformers-pipeline-without-triggering-an-error/86297/4')
     elif gen_type == 'end_point':
-        print(f'{gen_type=}')
         gen: EndPointGenerator = EndPointGenerator(model=model, sampling_params=sampling_params)
+    elif gen_type == 'hf_model':
+        from transformers import pipeline, Pipeline
+        mdl, tok = model
+        llm: Pipeline = pipeline("text-generation", model=mdl, tokenizer=tok)
+        gen: HFPipelineGenerator = HFPipelineGenerator(llm, sampling_params)
+        print(f'{llm.device=}') 
+    elif gen_type == 'our_gen_engine':
+        assert isinstance(model, Generator)
+        gen: Generator = model
     else:
         raise ValueError(f'Not support {gen_type=}')
     print(f'sampling_params:\n{sampling_params}\n{sampling_params=}')
@@ -267,6 +299,19 @@ def main(
     print(f'{wandb.config=}')
     run.finish()
     print_crucial_run_info(path_2_eval_dataset, model)
+    # # try clearing gpu mem at all costs
+    # try:
+    #     import gc
+    #     import torch
+    #     del gen; del llm
+    #     gc.collect()
+    #     torch.cuda.empty_cache()
+    #     del mdl; del tok
+    #     gc.collect()
+    #     torch.cuda.empty_cache()
+    # except:
+    #     ...
+    return gen
 
 if __name__ == '__main__':
     import fire

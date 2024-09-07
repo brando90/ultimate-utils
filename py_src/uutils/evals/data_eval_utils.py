@@ -35,8 +35,8 @@ def get_iter_single_file_per_data_point(path : Path = Path('~/gold-ai-olympiad/d
     path: Path = path.expanduser()
     # recursively get all files and yield them
     for dirpath, dirnames, filenames in os.walk(path):
-        print(f'{dirpath=}')
-        print(f'{len(filenames)=}')
+        # print(f'{dirpath=}')
+        # print(f'{len(filenames)=}')
         for filename in filenames:
             if filename.endswith('.json'):
                 file_path: Path = Path(dirpath, filename).expanduser()
