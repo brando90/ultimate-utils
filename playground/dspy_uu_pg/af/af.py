@@ -72,3 +72,4 @@ pred = compiled_formalizer(description)
 # Output the result
 print(f"Description: {description}")
 print(f"Formalized in Lean: {pred.formalization}")
+
