@@ -24,9 +24,12 @@ from pdb import set_trace as st
 
 def print_crucial_run_info(path_2_eval_dataset, model):
     print()
+    print('---- print_crucial_run_info ----')
     print(f'----> {path_2_eval_dataset=}')
     print(f'----> {model=}')
     print(f'----> {os.environ.get("CUDA_VISIBLE_DEVICES", None)=}')
+    print(f'----> {os.environ.get("CKPT_COPY", None)=}')
+    print('---- print_crucial_run_info ----')
     print()
 
 def seed_everything(seed: int, hf_timeout: float = 5):
@@ -97,33 +100,47 @@ def seed_everything(seed: int, hf_timeout: float = 5):
 
 # -- tests
 
-def eval_on_four_math_benchmarks(
+def eval_on_four_math_benchmarks_passing_gen_engine_obj(
         model,
         gen_type='vllm',
+        end: int = 500,
 ):
     import gc
     gc.collect()
     torch.cuda.empty_cache()
     path_2_eval_dataset: str = '~/putnam-math/data/MATH/test'
-    gen = main(model=model, gen_type='vllm', path_2_eval_dataset=path_2_eval_dataset, end=500, n=1, shuffle=True, mode='dryrun')
+    gen = main(model=model, gen_type='vllm', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
     # doing this hack so that oom doesn't happen, re-using loaded model (even though I did try clearing up)
     path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
     path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
     path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=sys.maxsize, n=1, shuffle=True, mode='dryrun')
+    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
+
+def eval_on_four_math_benchmarks(
+        model,  # str or mdl
+        gen_type: str = 'hf_model',
+        batch_size: int = 10,
+        end: int = 263,
+):
+    path_2_eval_dataset: str = '~/putnam-math/data/MATH/test'
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
+    path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2'
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
+    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json'
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
+    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json'
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
 
 def main(
-        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final',
-        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final/Putnam_MATH_boxed_problems.json',
-        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static2/test',
         # path_2_eval_dataset: str = '~/putnam-math/data/MATH/test',
-        # path_2_eval_dataset: str = '~/snap-cluster-setup/data/MATH/test',
-        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json',
         # path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2',
+        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json',
         path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json',
+        # -
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/original.json',
+        # -
         # model: str = 'mistralai/Mistral-7B-v0.1',
         # model: str = 'mistralai/Mistral-7B-Instruct-v0.1',
         # model: str = 'deepseek-ai/deepseek-math-7b-instruct',
@@ -165,15 +182,17 @@ def main(
         best_of: Optional[int] = None,
         mode: str = 'dryrun',  # 'dryrun' or 'online'
         # mode: str = 'online',  # 'dryrun' or 'online'
-        shuffle: bool = False, 
-        seed: int =42, 
+        shuffle: bool = True, 
+        seed: int = 42, 
         ):
     """ """
+    import time
+    start_time = time.time()
+    # print(f'{model=}')
     import torch
     torch.cuda.empty_cache()
-    # print(f'{os.environ["CKPT_COPY"]=}')
     assert isinstance(path_2_eval_dataset, str), f'Err: {path_2_eval_dataset=} wrong type should be str but is {type(path_2_eval_dataset)=}.'
-    print(f'---> main() starting (with {seed=})')
+    print(f'\n\n-------------------------> boxed accuracy eval main() starting (with {seed=}) for {path_2_eval_dataset=}')
     seed_everything(seed)
     print_crucial_run_info(path_2_eval_dataset, model)
     # - Start wandb run
@@ -186,24 +205,6 @@ def main(
     output_dir = Path(f'~/data/results_{today}/').expanduser() 
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f'{output_dir=}')
-
-    # - Get eval data set
-    print('Get eval data set')
-    path_2_eval_dataset: Path = Path(path_2_eval_dataset).expanduser()
-    math_gold_probs_solns: list[dict] = list(get_iter_for_eval_data_set(path_2_eval_dataset))
-    print(f'{len(math_gold_probs_solns)=}')
-    math_gold_probs_solns: list[dict] = math_gold_probs_solns[start:end]
-    random.shuffle(math_gold_probs_solns) if shuffle else None
-    print(f'{len(math_gold_probs_solns)=}')
-    
-    # filter out all dicts that don't have a latex box 
-    if boxed_acc_probs_only:
-        math_gold_probs_solns: list[dict] = [dict_dpt for dict_dpt in math_gold_probs_solns if isinstance(dict_dpt, dict)] 
-        print(f'{len(math_gold_probs_solns)=}')
-        math_gold_probs_solns: list[dict] = [dict_dpt for dict_dpt in math_gold_probs_solns if '\\boxed' in dict_dpt['solution'] or '\\fbox' in dict_dpt['solution']] 
-        print(f'{len(math_gold_probs_solns)=}')
-    print(f'{path_2_eval_dataset=} \n {len(math_gold_probs_solns)=}')
-    assert len(math_gold_probs_solns) > 0, f'No math problems found in {path_2_eval_dataset=}'
 
     # - Get vllm generator
     prompt_template: str = HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE
@@ -219,7 +220,7 @@ def main(
     # stop_tokens = ["Question:", "Question", "USER:", "USER", "ASSISTANT:", "ASSISTANT", "Instruction:", "Instruction", "Response:", "Response"]
     stop: list[str] = STOP_TOKENS
     # push to config before loading model to avoid any common llm issues
-    wandb.config.update(dict(prompt_template=prompt_template, prompt_gen_func=str(prompt_gen_func), model=model, path_2_eval_dataset=path_2_eval_dataset, output_dir=output_dir, stop_tokens=stop, extract_answer_func=extract_answer_func))
+    wandb.config.update(dict(prompt_template=prompt_template, prompt_gen_func=str(prompt_gen_func), model=model, path_2_eval_dataset=path_2_eval_dataset, output_dir=output_dir, stop_tokens=stop, extract_answer_func=extract_answer_func), allow_val_change=True)
     dtype  = get_dtype_for_vllm()
     print(f'{dtype=}')
     # sampling_params: SamplingParams = SamplingParams(n=n, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop, use_beam_search=use_beam_search, best_of=best_of)
@@ -228,7 +229,9 @@ def main(
     SamplingParams = namedtuple('SamplingParams', ['n', 'max_tokens', 'top_p', 'temperature', 'stop', 'use_beam_search', 'best_of', 'max_length', 'num_beams'])
     sampling_params = SamplingParams(n=n, max_tokens=max_tokens, top_p=top_p, temperature=temperature, stop=stop, use_beam_search=use_beam_search, best_of=best_of, max_length=max_length, num_beams=num_beams)
     print(f'{sampling_params=}')
-    print(f'--> {model=} {gen_type=}')
+    print(f'{model=}')
+    # st()
+    print(f'--> {model=} {gen_type=} {os.environ.get("CKPT_COPT", None)=}')
     if gen_type == 'openai_end_point':
         api_key = os.environ.get("OPENAI_KEY").strip()
         gen: OpenAIGenerator = OpenAIGenerator(model, sampling_params, api_key)
@@ -236,6 +239,7 @@ def main(
         api_key = os.environ.get("ANTHROPIC_API_KEY").strip()
         gen: AnthropicGenerator = AnthropicGenerator(model, sampling_params, api_key=api_key)
     elif 'vllm' in str(gen_type).lower():
+        # st()
         from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
         llm: LLM = LLM(model=model, dtype=dtype, trust_remote_code=True)
         # remove any field not in vllm's SamplingParams code e.g., max_length is mostly a HF model concept
@@ -271,6 +275,25 @@ def main(
         raise ValueError(f'Not support {gen_type=}')
     print(f'sampling_params:\n{sampling_params}\n{sampling_params=}')
 
+    # - Get eval data set
+    print('Get eval data set')
+    path_2_eval_dataset: Path = Path(path_2_eval_dataset).expanduser()
+    math_gold_probs_solns: list[dict] = list(get_iter_for_eval_data_set(path_2_eval_dataset))
+    print(f'{len(math_gold_probs_solns)=}')
+    # st()
+    math_gold_probs_solns: list[dict] = math_gold_probs_solns[start:end]
+    random.shuffle(math_gold_probs_solns) if shuffle else None
+    print(f'{len(math_gold_probs_solns)=}')
+    
+    # filter out all dicts that don't have a latex box 
+    if boxed_acc_probs_only:
+        math_gold_probs_solns: list[dict] = [dict_dpt for dict_dpt in math_gold_probs_solns if isinstance(dict_dpt, dict)] 
+        print(f'{len(math_gold_probs_solns)=}')
+        math_gold_probs_solns: list[dict] = [dict_dpt for dict_dpt in math_gold_probs_solns if '\\boxed' in dict_dpt['solution'] or '\\fbox' in dict_dpt['solution']] 
+        print(f'{len(math_gold_probs_solns)=}')
+    print(f'{path_2_eval_dataset=} \n {len(math_gold_probs_solns)=}')
+    assert len(math_gold_probs_solns) > 0, f'No math problems found in {path_2_eval_dataset=}'
+
     # - Gen completions - completions are list of lists because completions can be multiple for a single prompt, for single response completions inside are length 1
     results: dict = inference_vllm_prompt_only(gen, math_gold_probs_solns, prompt_template, prompt_gen_func, batch_size, start, end) 
     completions_strs: list[list[str]] = results['completions_strs']  # completions strs per prompt
@@ -295,7 +318,7 @@ def main(
         sampling_params: dict = dict(sampling_params) 
     except:
         sampling_params: str = str(sampling_params) # if this fails I want to know
-    wandb.config.update(dict(prompt_gen_func=str(prompt_gen_func), prompt_template=prompt_template, model=str(model), path_2_eval_dataset=path_2_eval_dataset, output_dir=output_dir, sampling_params=sampling_params))
+    wandb.config.update(dict(prompt_gen_func=str(prompt_gen_func), prompt_template=prompt_template, model=str(model), path_2_eval_dataset=path_2_eval_dataset, output_dir=output_dir, sampling_params=sampling_params), allow_val_change=True)
     print(f'{wandb.config=}')
     run.finish()
     print_crucial_run_info(path_2_eval_dataset, model)
@@ -311,14 +334,16 @@ def main(
     #     torch.cuda.empty_cache()
     # except:
     #     ...
-    return gen
+    # return gen
+    print(f"Done!\a Time: {time.time()-start_time:.2f} sec, {(time.time()-start_time)/60:.2f} min, {(time.time()-start_time)/3600:.2f} hr\a")
+    return results_d
 
 if __name__ == '__main__':
     import fire
     import time
-    start = time.time()
+    start_time = time.time()
     print('Running __main__')
     # main()
     fire.Fire(main)
     # pyton boxed_acc_eval.py --model meta-llama/Meta-Llama-3-8B-Instruct
-    print(f"Done!\a Time: {time.time()-start:.2f} sec, {(time.time()-start)/60:.2f} min, {(time.time()-start)/3600:.2f} hr\a")
+    print(f"Done!\a Time: {time.time()-start_time:.2f} sec, {(time.time()-start_time)/60:.2f} min, {(time.time()-start_time)/3600:.2f} hr\a")
