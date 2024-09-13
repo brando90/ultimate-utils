@@ -1,26 +1,10 @@
 import dspy
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from colbert.infra import ColBERT
-
-# Step 1: Initialize the LLaMA language model using Hugging Face (LLM)
-class HuggingFaceLM(dspy.HuggingFace):
-    def __init__(self):
-        model_name = "meta-llama/Llama-2-7b-hf"  # Replace with a relevant LLaMA model
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        super().__init__(model=model, tokenizer=tokenizer)
-
-# Step 2: Initialize ColBERT as the retrieval model (RM)
-class ColbertRM(dspy.ColBERTv2):
-    def __init__(self):
-        colbert_model = ColBERT.from_pretrained("colbert/colbert-v2.0")
-        index_url = "http://20.102.90.50:2017/wiki17_abstracts"  # Example index (adjust as needed)
-        super().__init__(colbert_model=colbert_model, index_url=index_url)
 
 # Step 3: Configure the DSPy environment with the LM and RM
 llama_model = HuggingFaceLM()
-colbert_model = ColbertRM()
-dspy.settings.configure(lm=llama_model, rm=colbert_model)
+colbertv2_wiki17_abstracts = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')
+dspy.settings.configure(lm=llama_model, rm=colbertv2_wiki17_abstracts)
 
 # Step 4: Define the DSPy Signature for generating answers
 class GenerateAnswer(dspy.Signature):

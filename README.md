@@ -13,7 +13,7 @@ To install with code do:
 ```bash
 conda create -n uutils python=3.11 -y
 conda activate uutils
-conda remove --all --name uutils
+# conda remove --all --name uutils
 
 pip install -e ~/ultimate-utils
 ```
