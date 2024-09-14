@@ -30,3 +30,4 @@ Then we can create a large offline data set targeted for the specific model and 
 
 ref: 
     - https://chatgpt.com/share/66e4bb8c-56c4-8001-b9e8-9155e98b3cb3
+    - https://chatgpt.com/g/g-cH94JC5NP-dspy-guide-v2024-2-7/c/66e4bdb7-8154-8001-9056-1bc21d31fc5d
