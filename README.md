@@ -37,6 +37,14 @@ To test (any) pytorch do:
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 ```
 
+Installing vLLM:
+```bash
+pip install torch==2.4.0
+pip install vllm==0.5.4
+pip install flash-attn==2.6.3
+pip install vllm-flash-attn==2.6.3
+```
+
 ## Pushing to pypi
 For full details see
 ```bash

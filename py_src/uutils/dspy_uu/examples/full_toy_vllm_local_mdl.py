@@ -1,9 +1,12 @@
 """
+TODO: fix server running.
+ask tom: https://github.com/stanfordnlp/dspy/issues/1002
+ref: gpt and me https://chatgpt.com/c/66e4d31b-20e0-8001-a10f-7835d3b17182
+
 ref: https://chatgpt.com/g/g-cH94JC5NP-dspy-guide-v2024-2-7
 
 python -m vllm.entrypoints.api_server --model meta-llama/Llama-2-7b-hf --port 8080
 """
-
 import dspy
 from dspy.teleprompt import BootstrapFewShot
 from dspy.evaluate.evaluate import Evaluate
