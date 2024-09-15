@@ -93,7 +93,8 @@ def main(
 
     # Set up the optimizer: we want to "bootstrap" (i.e., self-generate) 8-shot examples of your program's steps.
     # The optimizer will repeat this 10 times (plus some initial attempts) before selecting its best attempt on the devset.
-    config = dict(max_bootstrapped_demos=4, max_labeled_demos=4, num_candidate_programs=10, num_threads=cpu_count())
+    # config = dict(max_bootstrapped_demos=4, max_labeled_demos=4, num_candidate_programs=10, num_threads=cpu_count())
+    config = dict(max_bootstrapped_demos=2, max_labeled_demos=2, num_candidate_programs=2, num_threads=cpu_count())
     metric = CrossEntropyStringMetric(model=hf_lm.model, tokenizer=hf_lm.tokenizer)
     teleprompter = BootstrapFewShotWithRandomSearch(metric=metric, **config)
     complied_autoformalizer = teleprompter.compile(autoformalizer, trainset=trainset)
