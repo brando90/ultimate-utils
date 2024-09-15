@@ -1,7 +1,9 @@
 """
 ref: https://chatgpt.com/c/66e45ebd-26b0-8001-963d-0d2cc57e62cc
 
-- extract prompt template
+- extract prompt template (+ feed to my vllm fast data synth code [curious to compare to speed of dspy doing the gen, include in inference code later])
+- add hf eval beginning end (later incorproate with dspy eval?)
+- how to control to get the 0 shot prompt temp, 4 shot prompt temp, 8 shot prompt temp
 """
 from pathlib import Path
 import dspy
