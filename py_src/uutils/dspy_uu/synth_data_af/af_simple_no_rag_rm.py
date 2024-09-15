@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import os
 from datasets import load_dataset
 
-# from dspy.teleprompt import BootstrapFewShot
+from dspy.teleprompt import BootstrapFewShot
 from dspy.teleprompt import BootstrapFewShotWithRandomSearch
 
 from multiprocessing import cpu_count
@@ -47,8 +47,8 @@ class CrossEntropyStringMetric:
         # Return the average cross-entropy loss for the sequence
         return loss.mean().item()
 
-    def __call__(self, example, pred, trace=None):
-        reference = example['formal_statement']  # Adjust based on dataset structure
+    def __call__(self, example, pred):
+        reference = example['formalization'] 
         prediction = pred.formalization
         return self.compute_cross_entropy(reference, prediction)
 
@@ -88,6 +88,7 @@ def main(
 
     # load dataset
     dataset = load_dataset(ds_trainset, split='validation')
+    dataset = dataset.select(range(5))
     trainset = [dspy.Example(informal_math_statement=dpt['nl_statement'], formalization=dpt['formal_statement']).with_inputs('informal_math_statement') for dpt in dataset]
     eval_dataset = load_dataset(ds_trainset, split='test')
 
