@@ -1,14 +1,15 @@
+"""
+This example is nice.
+TODO:
+- put in HF data sets proof net val, mini-f2f
+- to optimizer & use mipro 
+- put HF data set test proof net, mini-f2f .test with CE (& tfa) for eval
+- use RM model that would actually work for this case (not just ColBERT, likely FTed or RAGatouille)
+
+"""
 import dspy
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from colbert.infra import ColBERT
-
-# Step 1: Initialize the LLaMA language model using Hugging Face (LLM)
-class HuggingFaceLM(dspy.HuggingFace):
-    def __init__(self):
-        model_name = "meta-llama/Llama-2-7b-hf"  # Replace with a relevant LLaMA model
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        super().__init__(model=model, tokenizer=tokenizer)
 
 # Step 2: Initialize ColBERT as the retrieval model (RM)
 class ColbertRM(dspy.ColBERTv2):
@@ -18,7 +19,6 @@ class ColbertRM(dspy.ColBERTv2):
         super().__init__(colbert_model=colbert_model, index_url=index_url)
 
 # Step 3: Configure the DSPy environment with the LM and RM
-llama_model = HuggingFaceLM()
 colbert_model = ColbertRM()
 dspy.settings.configure(lm=llama_model, rm=colbert_model)
 
