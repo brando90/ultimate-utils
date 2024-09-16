@@ -1,3 +1,7 @@
+"""
+ref: https://chatgpt.com/g/g-cH94JC5NP-dspy-guide-v2024-2-7/c/66e7ba95-399c-8001-91a4-a1a26b8fbed5
+paper that icl can predict if ft will work: https://arxiv.org/abs/2405.00200
+"""
 import os
 import dspy
 from dspy.datasets import HotPotQA
@@ -117,9 +121,21 @@ pred = compiled_math_pipeline(math_contexts, sample_math_question)
 # Print the results: synthetic question-answer pairs and ICL-generated answer
 print(f"Math Contexts: {math_contexts}")
 print(f"Synthetic Question-Answer Pairs: {pred.synthetic_qa_pairs}")
-print(f"ICL Answer: {pred.icl_answer}")
+print(f"ICL Answer: {pred.answer}")
 
 # 6. Evaluate the pipeline on the dev set using the exact match metric
+metric = dspy.evaluate.answer_exact_match
+
+# Evaluate the uncompiled pipeline
+uncompiled_pipeline = MathPipeline()
+
+# Evaluate the uncompiled pipeline on the dev set
+evaluation_result_uncompiled = evaluate_on_hotpotqa(uncompiled_pipeline, metric=metric)
+
+# Print the evaluation results for uncompiled pipeline
+print("Evaluation result for uncompiled pipeline:", evaluation_result_uncompiled)
+
+# Evaluate compiled pipeline
 metric = dspy.evaluate.answer_exact_match
 evaluation_result = evaluate_on_hotpotqa(compiled_math_pipeline, metric=metric)
 
@@ -131,4 +147,4 @@ for example in devset[:5]:
     pred = compiled_math_pipeline(example['context'], example['question'])
     print(f"Math Context: {example['context']}")
     print(f"Synthetic Question-Answer Pairs: {pred.synthetic_qa_pairs}")
-    print(f"ICL Answer: {pred.icl_answer}")
+    print(f"ICL Answer: {pred.answer}")
