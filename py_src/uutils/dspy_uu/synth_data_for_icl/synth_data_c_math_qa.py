@@ -78,8 +78,8 @@ class MathPipeline(dspy.Module):
         icl_answer = icl_result.answer
 
         return dspy.Prediction(
-            synthetic_qa_pairs=generated_qa_pairs,
-            icl_answer=icl_answer
+            synthetic_qa_pairs=generated_qa_pairs, # we don't need to return it but I will leave it there...?
+            answer=icl_answer
         )
 
 # 4. Teleprompter setup with BootstrapFewShot
