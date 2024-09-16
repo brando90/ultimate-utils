@@ -3,8 +3,7 @@ ref: https://chatgpt.com/c/66e45ebd-26b0-8001-963d-0d2cc57e62cc
 
 - extract prompt template (+ feed to my vllm fast data synth code [curious to compare to speed of dspy doing the gen, include in inference code later])
 - add hf eval beginning end (later incorproate with dspy eval?)
-- how to control to get the 0 shot prompt temp, 4 shot prompt temp, 8 shot prompt temp
-"""
+- how to control to get the 0 shot prompt temp, 4 shot prompt temp, 8 shot prompt temp """
 from pathlib import Path
 import dspy
 from transformers import TrainingArguments, Trainer
@@ -75,13 +74,11 @@ class AutoFormalizer2Lean4(dspy.Module):
 def main(
     ds_trainset: str = 'hoskinson-center/proofnet'
     ):
-    # Load the local HF model and tokenizer
+    # Configure DSPy to use the local HF model as the LM.
     # export CUDA_VISIBLE_DEVICES=5
     os.environ['CUDA_VISIBLE_DEVICES'] = '5'
     model_name = "meta-llama/Llama-2-7b-hf"  # Adjust model name as necessary
     # model_name = "gpt2"  # Adjust model name as necessary
-
-    # Configure DSPy to use the local HF model as the LM.
     hf_lm = dspy.HFModel(model=model_name)
     dspy.settings.configure(lm=hf_lm) 
     
@@ -92,7 +89,7 @@ def main(
     dataset = load_dataset(ds_trainset, split='validation')
     dataset = dataset.select(range(5))
     trainset = [dspy.Example(informal_math_statement=dpt['nl_statement'], formalization=dpt['formal_statement']).with_inputs('informal_math_statement') for dpt in dataset]
-    eval_dataset = load_dataset(ds_trainset, split='test')
+    # eval_dataset = load_dataset(ds_trainset, split='test')
 
     # Set up the optimizer: we want to "bootstrap" (i.e., self-generate) 8-shot examples of your program's steps.
     # The optimizer will repeat this 10 times (plus some initial attempts) before selecting its best attempt on the devset.
