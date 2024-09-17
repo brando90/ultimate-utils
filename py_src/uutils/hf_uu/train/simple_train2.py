@@ -47,9 +47,9 @@ def main(
         # pretrained_model_name_or_path: str = "meta-llama/Meta-Llama-3.1-8B", # note: if you get RoPE error upgrade your transformers pip install --upgrade transformers lib, https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/15
         pretrained_model_name_or_path: str = "internlm/internlm2-1_8b", # note: if you get RoPE error upgrade your transformers pip install --upgrade transformers lib, https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/15
         path: str = "hoskinson-center/proofnet",
-        output_dir_train: str = '~/runs/run_{date}/train',
+        output_dir_train: str = '~/data/runs/run_{date}/train',
         output_dir_val: Optional[str] = None,  # we are training on the val set so no val set
-        output_dir_test: str = '~/runs/run_{date}/test',
+        output_dir_test: str = '~/data/runs/run_{date}/test',
         path_to_save_model: Optional[str] = None,  # suggested path: '~/tmp/proofnet/model' then expanduser in py code
         num_train_epochs: int = 3,
         per_device_train_batch_size: Optional[int] = 1,
