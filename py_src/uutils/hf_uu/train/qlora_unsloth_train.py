@@ -11,6 +11,7 @@ from tqdm import tqdm
 from pathlib import Path
 from typing import Optional
 import fire
+from pathlib import Path
 
 def formatting_informalization(example, tokenizer, EOS_TOKEN):
     # Must add EOS_TOKEN, otherwise your generation will go on forever!
@@ -71,6 +72,8 @@ def main(
     )
 
     # Training arguments
+    output_dir: Path = Path(output_dir).expanduser()
+    output_dir.mkdir(parents=True, exist_ok=True)
     training_args = TrainingArguments(
         per_device_train_batch_size=per_device_train_batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
