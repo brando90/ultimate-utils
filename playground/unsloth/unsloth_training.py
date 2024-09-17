@@ -1,3 +1,6 @@
+"""
+ref: https://chatgpt.com/c/66e9c6cb-cfb0-8001-8c77-bec486e00a6b
+"""
 # %%
 # Installs Unsloth, Xformers (Flash Attention) and all other packages!
 !pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
