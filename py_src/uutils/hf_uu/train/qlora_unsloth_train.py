@@ -1,5 +1,33 @@
 """
 ref: https://chatgpt.com/c/66e9c6cb-cfb0-8001-8c77-bec486e00a6b
+
+Install unsloth
+```bash
+# create it's own env in case it interferes with say vllm etc.
+conda create -n uutils_unsloth python=3.11 -y
+conda activate uutils_unsloth
+# conda remove --all --name uutils
+pip install -e ~/ultimate-utils
+
+# Iddah's
+# pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+# pip install --no-deps "xformers<0.0.26" trl peft accelerate bitsandbytes
+# pip install datasets
+
+# Unsloth
+# RTX 3090, 4090 Ampere GPUs:
+pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+pip install --no-deps packaging ninja einops flash-attn xformers trl peft accelerate bitsandbytes
+
+# # Pre Ampere RTX 2080, T4, GTX 1080 GPUs:
+# pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
+# pip install --no-deps xformers "trl<0.9.0" peft accelerate bitsandbytes
+```
+
+
+```bash
+python /lfs/skampere1/0/brando9/ultimate-utils/py_src/uutils/hf_uu/train/qlora_unsloth_train.py
+```
 """
 import os
 import torch
