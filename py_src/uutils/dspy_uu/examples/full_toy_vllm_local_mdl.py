@@ -13,7 +13,10 @@ from dspy.evaluate.evaluate import Evaluate
 
 # Step 1: Configure DSPy to use the local LLaMA model running on a vLLM server.
 # The server is hosted locally at port 8080.
-vllm_llama2 = dspy.HFClientVLLM(model="meta-llama/Llama-2-7b-hf", port=8080, url="http://localhost")
+# vllm_llama2 = dspy.HFClientVLLM(model="meta-llama/Llama-2-7b-hf", port=8080, url="http://localhost")
+# dspy.settings.configure(lm=vllm_llama2)
+# dspy.HFClientTGI(model=model_id, port=port, url=url, max_tokens=TGI_MAX_TOKENS, stop=stop, temperature=temperature)
+dspy.HFClientTGI(model='mistralai/Mistral-7B-Instruct-v0.2', port=1880, url='http://localhost', max_tokens=4096)
 dspy.settings.configure(lm=vllm_llama2)
 
 # Step 2: Define a small, high-quality hardcoded dataset (3-5 examples).
