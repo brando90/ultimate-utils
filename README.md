@@ -37,12 +37,21 @@ To test (any) pytorch do:
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 ```
 
-Installing vLLM:
+## Install vLLM
+
+To install vllm:
 ```bash
-# pip install torch==2.4.0
-# pip install vllm==0.5.4
+# - Install vllm
+# FAILED: bellow failed to install vllm with uutils first installing it with default setup.py then 
+# pip install --upgrade pip
+# pip install torch==2.2.1
+# pip install vllm==0.4.1
+# - Installed vllm on skampere1
+pip install --upgrade pip
+pip uninstall torchvision vllm vllm-flash-attn flash-attn xformers
+pip install torch==2.2.1 vllm==0.4.1 
+# fails install
 # pip install flash-attn==2.6.3
-# pip install vllm-flash-attn==2.6.3
 ```
 
 ## Pushing to pypi
