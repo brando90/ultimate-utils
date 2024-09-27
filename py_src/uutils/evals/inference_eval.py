@@ -9,8 +9,10 @@ from tqdm import tqdm
 from tenacity import retry, stop_after_attempt, wait_exponential
 from collections import namedtuple
 
-from evals.utils import batch_data
-from evals.prompts_evals import SYSTEM_PROMPT_DEFAULT
+from uutils.evals.utils import batch_data
+from uutils.evals.prompts_evals import SYSTEM_PROMPT_DEFAULT
+
+from pdb import set_trace as st
 
 # -- Generator (Inference) Classes
 
@@ -56,6 +58,34 @@ class AnthropicGenerator(Generator):
         self.system_prompt = system_prompt
         self.prompt_template = prompt_template
         self.invalid_outputs = []
+
+class UnslothGenerator(Generator):
+    def __init__(
+            self, 
+            model: str, 
+            sampling_params, 
+            system_prompt: str = SYSTEM_PROMPT_DEFAULT,
+            prompt_template: Optional[str] = None, 
+            use_4bit: bool = False, 
+            ):
+        super().__init__()
+        from unsloth import FastLanguageModel
+        print(f'{use_4bit=}')
+        mdl, tok = FastLanguageModel.from_pretrained(
+            model_name=model,
+            max_seq_length=sampling_params.max_length,
+            dtype=None,  # Auto-detection for Float16/BFloat16
+            load_in_4bit=use_4bit,
+        )
+        mdl: FastLanguageModel 
+        self.llm = mdl
+        self.tok = tok
+        FastLanguageModel.for_inference(self.llm) # Enable native 2x faster inference
+        self.model = model
+        self.sampling_params = sampling_params
+        self.system_prompt = system_prompt
+        self.prompt_template = prompt_template
+        self.use_4bit = use_4bit
 
 def before_sleep(retry_state):
     print(f"(Tenacity) Retry, error that caused it: {retry_state.outcome.exception()}")
@@ -260,6 +290,7 @@ def inference_vllm_prompt_only(
             Note: in meta-math, ins = instruction = math problem 
             Note: return completions can be multiple strings for a single prompt e.g., useful for maj@4 voting.
         """
+        # TODO: refactor to have all the objects call their own generation code internally, in an object oriented way. Abandon the attempt to do functional programming. 
         print(f'{batch_size=}')
         assert batched, f'batched should be True but got: {batched=} always batching for vllm'
 
@@ -408,9 +439,28 @@ def inference_vllm_prompt_only(
                     outputs.append(responses)
                     completions.append(responses)
                     completions_strs.append(responses_text)
+        elif isinstance(gen, UnslothGenerator):
+            assert gen.sampling_params.n == 1, f'Err: Unsloth fast model only allows n=1 but it was {gen.sampling_params.n=}'
+            max_tokens: int = gen.sampling_params.max_tokens
+            from unsloth import FastLanguageModel
+            model: FastLanguageModel = gen.llm
+            tokenizer = gen.tok 
+            completions: list[list[str]] = []  # list when completions is a list (of objs/strs)
+            completions_strs: list[list[str]] = []  # list when completions is a list (of strs)
+            outputs: list = []  # list of outputs, 1 output per llm req
+            for batch_idx in range(num_batches):
+                batch_prompts: list[str] = all_batched_prompts[batch_idx]
+                for prompt in tqdm(batch_prompts, total=len(batch_prompts), desc='Unsloth per prompt gen loop'):
+                    msg = [{"role": "system", "content": gen.system_prompt}, {"role": "user", "content": prompt}]
+                    inputs = tokenizer.apply_chat_template(msg, tokenize=True, add_generation_prompt=True, return_tensors='pt').to(model.device)
+                    res = model.generate(inputs, max_new_tokens=max_tokens)
+                    completion: str = tokenizer.decode(res[0])
+                    # append completion per prompt
+                    completions.append([completion])
+                    completions_strs.append([completion])
+                    outputs.append(completion) 
         else:
             raise ValueError(f'Unknown generator type: {gen=}')
-
         # - Return completions (list comp) per prompt
         assert len(completions) == len(prompts), f'Length of completions and prompts should be equal but got: {len(completions)=}, {len(prompts)=}'
         assert len(completions_strs) == len(prompts), f'Length of completions_strs and prompts should be equal but got: {len(completions_strs)=}, {len(prompts)=}'

@@ -8,11 +8,12 @@ import datetime
 import wandb
 import fire
 
-from evals.data_eval_utils import get_iter_for_eval_data_set, save_completions
-from evals.prompts_evals import STOP_TOKENS, extract_answer_from_list_completion_strings_mv
-from evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt_ala_helm_8shot_cot2, get_math_problem_prompt_ala_0shot_cot, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
-from evals.utils import extract_model_answers, eval_boxed_accuracy_results, extract_gold_answers, get_dtype_for_vllm, load_model
-from evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator, Generator
+from uutils.evals.data_eval_utils import get_iter_for_eval_data_set, save_completions
+from uutils.evals.prompts_evals import STOP_TOKENS, extract_answer_from_list_completion_strings_mv
+from uutils.evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt_ala_helm_8shot_cot2, get_math_problem_prompt_ala_0shot_cot, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
+from uutils.evals.utils import extract_model_answers, eval_boxed_accuracy_results, extract_gold_answers, get_dtype_for_vllm, load_model
+from uutils.evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator, Generator
+from uutils.evals.inference_eval import UnslothGenerator
 
 import torch
 import torch.nn
@@ -98,40 +99,33 @@ def seed_everything(seed: int, hf_timeout: float = 5):
     except ImportError:
         print("vLLM not installed or vllm set seed has a bug, skipping vLLM seed setting.")
 
-# -- tests
+# -- Helper function for running evals
 
-def eval_on_four_math_benchmarks_passing_gen_engine_obj(
-        model,
-        gen_type='vllm',
-        end: int = 500,
+def get_latest_checkpoint(output_dir) -> str:
+    checkpoints: list[str] = [d for d in os.listdir(output_dir) if d.startswith("checkpoint")]
+    latest_checkpoint: str = max(checkpoints, key=lambda x: int(x.split("-")[-1]))  # Get the checkpoint with the highest number
+    return os.path.join(output_dir, latest_checkpoint)
+
+def eval_on_four_math_benchmarks(
+        model,  
+        gen_type: str,
+        batch_size: int = 10,
+        end: int = 100,
 ):
+    print(f'{type(model)=}')
     import gc
     gc.collect()
     torch.cuda.empty_cache()
     path_2_eval_dataset: str = '~/putnam-math/data/MATH/test'
-    gen = main(model=model, gen_type='vllm', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
-    # doing this hack so that oom doesn't happen, re-using loaded model (even though I did try clearing up)
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
     path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
     path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
     path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json'
-    main(model=gen, gen_type='our_gen_engine', path_2_eval_dataset=path_2_eval_dataset, end=end, n=1, shuffle=True, mode='dryrun')
+    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
 
-def eval_on_four_math_benchmarks(
-        model,  # str or mdl
-        gen_type: str = 'hf_model',
-        batch_size: int = 10,
-        end: int = 263,
-):
-    path_2_eval_dataset: str = '~/putnam-math/data/MATH/test'
-    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
-    path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2'
-    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
-    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json'
-    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
-    path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json'
-    main(model=model, gen_type=gen_type, path_2_eval_dataset=path_2_eval_dataset, end=end, batch_size=batch_size, n=1, shuffle=True, mode='dryrun')
+# -- Main
 
 def main(
         # path_2_eval_dataset: str = '~/putnam-math/data/MATH/test',
@@ -175,6 +169,7 @@ def main(
         # gen_type: Optional[str] = 'pipeline',
         # gen_type: Optional[str] = 'hf_direct_model_gen',
         # gen_type: Optional[str] = 'our_gen_engine',
+        # gen_type: Optional[str] = 'unsloth_fast_model',
         verbose_eval: bool = True,
         # boxed_acc_probs_only: bool = False,
         boxed_acc_probs_only: bool = True,
@@ -184,6 +179,7 @@ def main(
         # mode: str = 'online',  # 'dryrun' or 'online'
         shuffle: bool = True, 
         seed: int = 42, 
+        use_4bit: bool = False,
         ):
     """ """
     import time
@@ -271,6 +267,8 @@ def main(
     elif gen_type == 'our_gen_engine':
         assert isinstance(model, Generator)
         gen: Generator = model
+    elif gen_type == 'unsloth_fast_model':
+        gen: UnslothGenerator = UnslothGenerator(model, sampling_params, prompt_template=prompt_template, use_4bit=use_4bit)
     else:
         raise ValueError(f'Not support {gen_type=}')
     print(f'sampling_params:\n{sampling_params}\n{sampling_params=}')

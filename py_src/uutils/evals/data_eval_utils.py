@@ -5,7 +5,7 @@ import os
 
 import tenacity
 
-from concurrent.futures import ProcessPoolExecutor, cpu_count
+from concurrent.futures import ProcessPoolExecutor
 
 def get_iter_for_eval_data_set(path: Path, 
                                ) -> Iterator[dict]:
@@ -47,7 +47,7 @@ def get_iter_single_file_per_data_point(path : Path = Path('~/gold-ai-olympiad/d
                     data: dict = json.load(file)
                     yield data
 
-def process_files_multiprocessing(path: Path, max_workers: int = cpu_count()):
+def process_files_multiprocessing(path: Path, max_workers: int = os.cpu_count()):
     """Recursively collects and processes JSON files with multiprocessing."""
     path = path.expanduser()
 

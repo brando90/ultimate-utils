@@ -61,7 +61,7 @@ def extract_answer_minerva_prompt(completion: str) -> Union[None, str]:
             $$-\frac{3}{2}a=b\Rightarrow\frac{a}{b}=\boxed{-\frac{2}{3}}.$$ -> "-\frac{2}{3}"
             $$hello world$$ -> None  # no boxed answer
     """
-    from evals.utils import last_boxed_only_string, remove_boxed
+    from uutils.evals.utils import last_boxed_only_string, remove_boxed
     boxed_answer: str = last_boxed_only_string(completion)
     extracted_answer: str = remove_boxed(boxed_answer)
     extracted_answer = extracted_answer.strip() if extracted_answer is not None else None
@@ -118,7 +118,7 @@ def get_prob_str_minerva_prompt_cot(data_pt: dict, prompt_template: str = H_MATH
 
 def extract_answer_from_list_completion_strings_mv(completions_strs_per_prompt: list[str]) -> Union[str, None]:
     """ Extract a single answer str from a list of completions strings for a single prompt via majority voting (mv). """
-    from evals.utils import last_boxed_only_string, remove_boxed
+    from uutils.evals.utils import last_boxed_only_string, remove_boxed
     model_answers: list[Union[str, None]] = []
     for completion_str_per_prompt in completions_strs_per_prompt:  # for each completion string for a single prompt
         if isinstance(completion_str_per_prompt, list):
