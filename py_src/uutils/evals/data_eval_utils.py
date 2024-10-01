@@ -27,8 +27,8 @@ def get_iter_for_eval_data_set(path: Path,
     elif 'Putnam_MATH_variation_static2' in str(path):
         raise NotImplemented
     elif 'MATH' in str(path):
-        # return get_iter_single_file_per_data_point(path=path)
-        return process_files_multiprocessing(path=path)
+        return get_iter_single_file_per_data_point(path=path)
+        # return process_files_multiprocessing(path=path)
     else:
         raise NotImplementedError
     
@@ -49,28 +49,35 @@ def get_iter_single_file_per_data_point(path : Path = Path('~/gold-ai-olympiad/d
 
 def process_files_multiprocessing(path: Path, max_workers: int = os.cpu_count()):
     """Recursively collects and processes JSON files with multiprocessing."""
-    path = path.expanduser()
+    try:
+        path = path.expanduser()
 
-    def process_file(file_path: Path) -> dict:
-        """Helper function to process each file."""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data: dict = json.load(file)
-        return data
+        def process_file(file_path: Path) -> dict:
+            """Helper function to process each file."""
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data: dict = json.load(file)
+            return data
 
-    def collect_files(path: Path):
-        """Collect all JSON files recursively."""
-        for dirpath, dirnames, filenames in os.walk(path):
-            for filename in filenames:
-                if filename.endswith('.json'):
-                    yield Path(dirpath) / filename
+        def collect_files(path: Path):
+            """Collect all JSON files recursively."""
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    if filename.endswith('.json'):
+                        yield Path(dirpath) / filename
 
-    # Collect files and use multiprocessing to process them
-    files = list(collect_files(path))
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        results = executor.map(process_file, files)
+        # Collect files and use multiprocessing to process them
+        files = list(collect_files(path))
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            results = executor.map(process_file, files)
 
-    for result in results:
-        yield result
+        for result in results:
+            yield result
+    except Exception as e:
+        print('Doing get files serially')
+        print(f'Err: {e}')
+        # import traceback
+        # traceback.print_exc()
+        return get_iter_single_file_per_data_point(path=path)
 
 def get_iter_multiple_files_with_multiple_data_points(path: Path = Path('~/putnam-math/data/Putnam_MATH_original_static2/test'),
                                                       ) -> Iterator[dict]:

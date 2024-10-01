@@ -112,7 +112,7 @@ def eval_on_four_math_benchmarks(
         batch_size: int = 10,
         end: int = 100,
 ):
-    print(f'{type(model)=}')
+    print(f'{type(model)=} {gen_type=}')
     import gc
     gc.collect()
     torch.cuda.empty_cache()
@@ -130,8 +130,8 @@ def eval_on_four_math_benchmarks(
 def main(
         # path_2_eval_dataset: str = '~/putnam-math/data/MATH/test',
         # path_2_eval_dataset: str = '~/putnam-math/data/OlympiadBench_Dataset/data_math_boxed_21_08_2024_v2',
-        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json',
-        path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json',
+        path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_original_static_final_21_08_2024/Putnam_MATH_boxed_problems_full.json',
+        # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/test.json',
         # -
         # path_2_eval_dataset: str = '~/putnam-math/data/Putnam_MATH_variations_static_constant/original.json',
         # -
