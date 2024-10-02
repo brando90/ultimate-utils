@@ -13,7 +13,7 @@ from uutils.evals.prompts_evals import STOP_TOKENS, extract_answer_from_list_com
 from uutils.evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt_ala_helm_8shot_cot2, get_math_problem_prompt_ala_0shot_cot, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
 from uutils.evals.utils import extract_model_answers, eval_boxed_accuracy_results, extract_gold_answers, get_dtype_for_vllm, load_model
 from uutils.evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator, Generator
-from uutils.evals.inference_eval import UnslothGenerator
+from uutils.evals.inference_eval import UnslothGenerator, VllmLoraGenerator
 
 import torch
 import torch.nn
@@ -143,7 +143,9 @@ def main(
         # model: str = 'gpt2',
         # model: str = 'gpt-3.5-turbo',
         # model: str = 'gpt-4-turbo',
-        model: str = 'claude-3-5-sonnet-20240620',
+        # model: str = 'claude-3-5-sonnet-20240620',
+        model: str = 'Qwen/Qwen2-1.5B',
+        lora_adapter_path: str = '~/data/runs/09302024_11h37m55s_run/train/checkpoint-2594',
         # https://docs.anthropic.com/en/api/claude-on-amazon-bedrock#api-model-names
         output_dir: Optional[str] = '~/data/results_{today}/',  # e.g., where to save completions
         completion_filename: str = 'completions.json',
@@ -165,6 +167,7 @@ def main(
         # gen_type: Optional[str] = 'openai_end_point',
         # gen_type: Optional[str] = 'anthropic_end_point',
         gen_type: Optional[str] = 'vllm',
+        # gen_type: Optional[str] = 'vllm_lora',
         # gen_type: Optional[str] = 'end_point',
         # gen_type: Optional[str] = 'pipeline',
         # gen_type: Optional[str] = 'hf_direct_model_gen',
@@ -243,6 +246,17 @@ def main(
         _sampling_params = {key: field for key, field in sampling_params._asdict().items() if key in default_vllm_sp_keys}
         sampling_params = SamplingParams(**(_sampling_params))
         gen: VllmGenerator = VllmGenerator(llm, sampling_params)
+    elif 'vllm_lora' in str(gen_type).lower():
+        from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
+        llm: LLM = LLM(model=model, dtype=dtype, trust_remote_code=True, enable_lora=True)
+        # remove any field not in vllm's SamplingParams code e.g., max_length is mostly a HF model concept
+        default_vllm_sp_keys = vars(SamplingParams()).keys()
+        _sampling_params = {key: field for key, field in sampling_params._asdict().items() if key in default_vllm_sp_keys}
+        sampling_params = SamplingParams(**(_sampling_params))
+        # removed
+        lora_adapter_path: str = os.path.expanduser(lora_adapter_path)
+        lora_request = LoRARequest("lora_adaptor_name", 1, lora_adapter_path)
+        gen: VllmLoraGenerator = VllmLoraGenerator(llm, sampling_params, lora_request, lora_adapter_path)
     elif gen_type == 'pipeline':
         from transformers import pipeline, Pipeline
         mdl, tok = load_model(pretrained_model_name_or_path=model, max_length=sampling_params.max_length)

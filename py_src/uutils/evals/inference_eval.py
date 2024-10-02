@@ -184,10 +184,21 @@ class OpenAIGenerator(Generator):
         self.invalid_outputs = []
     
 class VllmGenerator(Generator):
-    def __init__(self, llm, sampling_params):
+    def __init__(self, llm, sampling_params, lora_request=None, self.lora_adapter_path=None):
         super().__init__()
         self.llm = llm
         self.sampling_params = sampling_params
+        self.lora_request = lora_request # same as bellow but defaults to None
+        self.lora_adapter_path = lora_adapter_path # same as bellow but defaults to None
+        self.invalid_outputs = []
+
+class VllmLoraGenerator(Generator):
+    def __init__(self, llm, sampling_params, lora_request, lora_adapter_path):
+        super().__init__()
+        self.llm = llm
+        self.sampling_params = sampling_params
+        self.lora_request = lora_request
+        self.lora_adapter_path = lora_adapter_path
         self.invalid_outputs = []
 
 class EndPointGenerator(Generator):
@@ -308,7 +319,7 @@ def inference_vllm_prompt_only(
             print(f'{num_batches=}')
 
         # - Return completions per prompt
-        if isinstance(gen, VllmGenerator):
+        if isinstance(gen, VllmGenerator) or sinstance(gen, VllmLoraGenerator):
             from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
             # - Generate all request outputs with completions (model solutions) for each (math) prompts
             completions: list[list[CompletionOutput]] = []
@@ -316,7 +327,7 @@ def inference_vllm_prompt_only(
             outputs: list[RequestOutput] = [] 
             for batch_idx in range(num_batches):
                 batch_prompts: list[str] = all_batched_prompts[batch_idx]
-                batch_outputs: list[RequestOutput] = gen.llm.generate(batch_prompts, gen.sampling_params)
+                batch_outputs: list[RequestOutput] = gen.llm.generate(batch_prompts, gen.sampling_params, lora_request=self.lora_request)
                 # for each output per prompt in batch of responses (let's flatten the batch)
                 output: RequestOutput
                 for output in batch_outputs:  

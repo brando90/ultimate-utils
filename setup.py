@@ -143,6 +143,8 @@ setup(
         # pip install vllm==0.4.1
         # 'torch==2.2.1',
         # 'vllm==0.4.1', 
+        # 'torch==2.4.0',
+        # 'vllm==0.5.5', 
         # # --
 
         # # mercury: https://github.com/vllm-project/vllm/issues/2747
