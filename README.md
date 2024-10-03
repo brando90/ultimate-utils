@@ -41,17 +41,35 @@ python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 
 To install vllm:
 ```bash
-# - Install vllm
-# FAILED: bellow failed to install vllm with uutils first installing it with default setup.py then 
+# - Recommended vllm (it works with lora adapters)
+# install all deps first
+pip install -e ~/ultimate-utils
+# right version for vllm lora 
+pip install torch==2.4.0
+pip install vllm==0.5.5 
+# make sure the local lib is installed
+pip install -e ~/ultimate-utils --no-deps
+# [Optional] make sure you really have the right torch and vllm version
+pip list | grep vllm
+pip list | grep torch
+pip install torch==2.4.0
+pip install vllm==0.5.5 
+# test vllm lora (for unsloth to work since merge save doesn't seem to work)
+python ~/ultimate-utils/experiments/experiments/2024/september/vllm_lora_test.py
+# save env now (given how fragile it can be if it works)
+pip freeze > ~/ultimate-utils/requirements.txt
+
+# # - Install vllm
+# # FAILED: bellow failed to install vllm with uutils first installing it with default setup.py then 
+# # pip install --upgrade pip
+# # pip install torch==2.2.1
+# # pip install vllm==0.4.1
+# # - Installed vllm on skampere1
 # pip install --upgrade pip
-# pip install torch==2.2.1
-# pip install vllm==0.4.1
-# - Installed vllm on skampere1
-pip install --upgrade pip
-pip uninstall torchvision vllm vllm-flash-attn flash-attn xformers
-pip install torch==2.2.1 vllm==0.4.1 
-# fails install
-# pip install flash-attn==2.6.3
+# pip uninstall torchvision vllm vllm-flash-attn flash-attn xformers
+# pip install torch==2.2.1 vllm==0.4.1 
+# # fails install
+# # pip install flash-attn==2.6.3
 ```
 
 ## Pushing to pypi
