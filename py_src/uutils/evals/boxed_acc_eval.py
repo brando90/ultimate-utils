@@ -10,7 +10,7 @@ import fire
 
 from uutils.evals.data_eval_utils import get_iter_for_eval_data_set, save_completions
 from uutils.evals.prompts_evals import STOP_TOKENS, extract_answer_from_list_completion_strings_mv
-from uutils.evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt_ala_helm_8shot_cot2, get_math_problem_prompt_ala_0shot_cot, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
+from uutils.evals.prompts_evals import HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE, MATH_PROMPT_0SHOT_COT_TEMPLATE, get_math_problem_prompt, HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1, MATH_PROMPT_0SHOT_COT_TEMPLATE_MISTRAL7B_INS_V1
 from uutils.evals.utils import extract_model_answers, eval_boxed_accuracy_results, extract_gold_answers, get_dtype_for_vllm, load_model
 from uutils.evals.inference_eval import VllmGenerator, inference_vllm_prompt_only, OpenAIGenerator, HFPipelineGenerator, HFDirectModelGenerator, AnthropicGenerator, EndPointGenerator, Generator
 from uutils.evals.inference_eval import UnslothGenerator, VllmLoraGenerator
@@ -145,7 +145,8 @@ def main(
         # model: str = 'gpt-4-turbo',
         # model: str = 'claude-3-5-sonnet-20240620',
         model: str = 'Qwen/Qwen2-1.5B',
-        lora_adapter_path: str = '~/data/runs/09302024_11h37m55s_run/train/checkpoint-2594',
+        # lora_adapter_path: str = '~/data/runs/09302024_11h37m55s_run/train/checkpoint-2594',
+        lora_adapter_path: str = '',
         # https://docs.anthropic.com/en/api/claude-on-amazon-bedrock#api-model-names
         output_dir: Optional[str] = '~/data/results_{today}/',  # e.g., where to save completions
         completion_filename: str = 'completions.json',
@@ -211,7 +212,7 @@ def main(
     # prompt_template: str = HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE_MISTRAL7B_INS_V1
     print(f'--> {prompt_template=}')
     # prompt_gen_func: Callable = get_math_problem_prompt_ala_helm_8shot_cot2
-    prompt_gen_func: Callable = get_math_problem_prompt_ala_0shot_cot
+    prompt_gen_func: Callable = get_math_problem_prompt
     print(f'{prompt_gen_func=}')
     # extract_answer_func: Callable = extract_answer_minerva_prompt
     extract_answer_func: Callable = extract_answer_from_list_completion_strings_mv
@@ -237,7 +238,7 @@ def main(
     elif gen_type == 'anthropic_end_point': 
         api_key = os.environ.get("ANTHROPIC_API_KEY").strip()
         gen: AnthropicGenerator = AnthropicGenerator(model, sampling_params, api_key=api_key)
-    elif 'vllm' in str(gen_type).lower():
+    elif 'vllm' == str(gen_type).lower():
         # st()
         from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
         llm: LLM = LLM(model=model, dtype=dtype, trust_remote_code=True)
@@ -246,8 +247,10 @@ def main(
         _sampling_params = {key: field for key, field in sampling_params._asdict().items() if key in default_vllm_sp_keys}
         sampling_params = SamplingParams(**(_sampling_params))
         gen: VllmGenerator = VllmGenerator(llm, sampling_params)
-    elif 'vllm_lora' in str(gen_type).lower():
+    elif 'vllm_lora' == str(gen_type).lower():
+        # Note: this can be merged with above with small modifications
         from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
+        from vllm.lora.request import LoRARequest      # For creating a LoRA request to use in text generation
         llm: LLM = LLM(model=model, dtype=dtype, trust_remote_code=True, enable_lora=True)
         # remove any field not in vllm's SamplingParams code e.g., max_length is mostly a HF model concept
         default_vllm_sp_keys = vars(SamplingParams()).keys()
@@ -255,6 +258,7 @@ def main(
         sampling_params = SamplingParams(**(_sampling_params))
         # removed
         lora_adapter_path: str = os.path.expanduser(lora_adapter_path)
+        print(f'=> {lora_adapter_path=}')
         lora_request = LoRARequest("lora_adaptor_name", 1, lora_adapter_path)
         gen: VllmLoraGenerator = VllmLoraGenerator(llm, sampling_params, lora_request, lora_adapter_path)
     elif gen_type == 'pipeline':
@@ -331,7 +335,7 @@ def main(
     except:
         sampling_params: str = str(sampling_params) # if this fails I want to know
     wandb.config.update(dict(prompt_gen_func=str(prompt_gen_func), prompt_template=prompt_template, model=str(model), path_2_eval_dataset=path_2_eval_dataset, output_dir=output_dir, sampling_params=sampling_params), allow_val_change=True)
-    print(f'{wandb.config=}')
+    # print(f'{wandb.config=}')
     run.finish()
     print_crucial_run_info(path_2_eval_dataset, model)
     # # try clearing gpu mem at all costs

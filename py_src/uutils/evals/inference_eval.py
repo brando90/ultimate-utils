@@ -184,12 +184,12 @@ class OpenAIGenerator(Generator):
         self.invalid_outputs = []
     
 class VllmGenerator(Generator):
-    def __init__(self, llm, sampling_params, lora_request=None, self.lora_adapter_path=None):
+    def __init__(self, llm, sampling_params, lora_request=None, lora_adapter_path=None):
         super().__init__()
         self.llm = llm
         self.sampling_params = sampling_params
-        self.lora_request = lora_request # same as bellow but defaults to None
-        self.lora_adapter_path = lora_adapter_path # same as bellow but defaults to None
+        # self.lora_request = lora_request # same as bellow but defaults to None
+        # self.lora_adapter_path = lora_adapter_path # same as bellow but defaults to None
         self.invalid_outputs = []
 
 class VllmLoraGenerator(Generator):
@@ -319,7 +319,7 @@ def inference_vllm_prompt_only(
             print(f'{num_batches=}')
 
         # - Return completions per prompt
-        if isinstance(gen, VllmGenerator) or sinstance(gen, VllmLoraGenerator):
+        if isinstance(gen, VllmGenerator):
             from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
             # - Generate all request outputs with completions (model solutions) for each (math) prompts
             completions: list[list[CompletionOutput]] = []
@@ -327,7 +327,7 @@ def inference_vllm_prompt_only(
             outputs: list[RequestOutput] = [] 
             for batch_idx in range(num_batches):
                 batch_prompts: list[str] = all_batched_prompts[batch_idx]
-                batch_outputs: list[RequestOutput] = gen.llm.generate(batch_prompts, gen.sampling_params, lora_request=self.lora_request)
+                batch_outputs: list[RequestOutput] = gen.llm.generate(batch_prompts, gen.sampling_params)
                 # for each output per prompt in batch of responses (let's flatten the batch)
                 output: RequestOutput
                 for output in batch_outputs:  
@@ -338,6 +338,25 @@ def inference_vllm_prompt_only(
                     completions_strs.append(completions_strs_per_prompt)
                     outputs.append(output)
             assert len(outputs) == len(prompts), f'Length of outputs and prompts should be equal but got: {len(outputs)=}, {len(prompts)=}'
+        # elif isinstance(gen, VllmLoraGenerator):
+        #     from vllm import LLM, SamplingParams, RequestOutput, CompletionOutput # here otherwise warning when doing api calls in cpu laptop, vllm only works for linux 100% ref: https://github.com/vllm-project/vllm/issues/2747
+        #     # - Generate all request outputs with completions (model solutions) for each (math) prompts
+        #     completions: list[list[CompletionOutput]] = []
+        #     completions_strs: list[list[str]] = []  # one completion list str per (math) prompt
+        #     outputs: list[RequestOutput] = [] 
+        #     for batch_idx in range(num_batches):
+        #         batch_prompts: list[str] = all_batched_prompts[batch_idx]
+        #         batch_outputs: list[RequestOutput] = gen.llm.generate(batch_prompts, gen.sampling_params, lora_request=gen.lora_request)
+        #         # for each output per prompt in batch of responses (let's flatten the batch)
+        #         output: RequestOutput
+        #         for output in batch_outputs:  
+        #             completions_per_prompt: list[CompletionOutput] = output.outputs
+        #             completions_strs_per_prompt: list[str] = [completion.text for completion in output.outputs]
+        #             # append completion per prompt
+        #             completions.append(completions_per_prompt)
+        #             completions_strs.append(completions_strs_per_prompt)
+        #             outputs.append(output)
+        #     assert len(outputs) == len(prompts), f'Length of outputs and prompts should be equal but got: {len(outputs)=}, {len(prompts)=}'
         elif isinstance(gen, OpenAIGenerator):
             # ref: https://platform.openai.com/docs/guides/chat-completions/response-format
             # example: https://platform.openai.com/docs/guides/text-generation

@@ -265,15 +265,12 @@ Problem: If $2^8=16^x$, find $x$.
 Solution: Let's think step by step. We can write $16$ as $2^4$. Therefore, we can write our equation as $2^8 = 2^{4 \\cdot x}$. Solving, we get that $x = \\boxed{2}$. The final answer is: \\boxed{2}.###
 Problem: {problem}
 Solution: Let's think step by step.""")
-def get_math_problem_prompt_ala_helm_8shot_cot2(data_pt: dict, prompt_template: str = HELM_MATH_PROMPT_8SHOT_COT2_TEMPLATE) -> Union[str, None]:
-    # Note: instead of using .format(name=value) we are using the exact string for the placeholder so that the .format function doesn't get confused with curly braces.
-    return prompt_template.replace("{problem}", data_pt['problem'])
 
 MATH_PROMPT_0SHOT_COT_TEMPLATE: str = (
 """Given a mathematics problem, determine the answer. Simplify your answer as much as possible. Think step by step, then always give the final answer inside a \\boxed{answer}
 Problem: {problem}
 Solution: Let's think step by step.""")
-def get_math_problem_prompt_ala_0shot_cot(data_pt: dict, prompt_template: str = MATH_PROMPT_0SHOT_COT_TEMPLATE) -> Union[str, None]:
+def get_math_problem_prompt(data_pt: dict, prompt_template: str) -> Union[str, None]:
     # Note: instead of using .format(name=value) we are using the exact string for the placeholder so that the .format function doesn't get confused with curly braces.
     # inspired from the requirement for Claude 3.5 Sonnet: https://www.anthropic.com/news/claude-3-5-sonnet
     return prompt_template.replace("{problem}", data_pt['problem'])
