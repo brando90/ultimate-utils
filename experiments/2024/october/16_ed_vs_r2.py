@@ -2,6 +2,8 @@
 # https://discord.com/channels/@me/1063613968087797830/1296292231527010367
 # Running the code to show the updated plot
 
+# Full code with imports, confidence intervals, and tighter noise settings
+
 # Import necessary libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,9 +27,9 @@ def generate_spectral_target_with_cov(n_samples, variances):
 
 # Parameters
 n_samples = 50  # Number of samples
-n_features = 50  # Number of features
-n_trials = 20  # Number of trials to smooth out noise
-noise_level = 0.01  # Noise added to the target data Y'
+n_features = 200  # Number of features
+n_trials = 10  # Increase number of trials to tighten confidence intervals
+noise_level = 1.0  # Reduce noise level to minimize variation
 
 # Generate a list of variances to control the effective dimensionality
 variance_sets = []
@@ -76,16 +78,20 @@ for trial in range(n_trials):
 effective_dims_all_trials = np.array(effective_dims_all_trials)
 r2_values_all_trials = np.array(r2_values_all_trials)
 
-# Compute mean values for effective dimensionality and R^2
+# Compute mean values and confidence intervals for effective dimensionality and R^2
 effective_dim_means = np.mean(effective_dims_all_trials, axis=0)
 r2_means = np.mean(r2_values_all_trials, axis=0)
+r2_stds = np.std(r2_values_all_trials, axis=0)
+r2_cis = 1.96 * r2_stds / np.sqrt(n_trials)  # 95% confidence interval
 
-# Plot the results
+# Plot the results with confidence intervals
 plt.figure(figsize=(8, 6))
-plt.plot(effective_dim_means, r2_means, marker='o', label='Mean R^2', color='orange')
-plt.title('Effect of Effective Dimensionality on R^2 Score (Averaged Over Trials)')
+plt.plot(effective_dim_means, r2_means, marker='o', label='Mean R^2')
+plt.fill_between(effective_dim_means, r2_means - r2_cis, r2_means + r2_cis, color='b', alpha=0.2, label='95% CI')
+plt.title('Effect of Effective Dimensionality on R^2 Score with 95% CI (Averaged Over Trials)')
 plt.xlabel('Effective Dimensionality (ED)')
 plt.ylabel('R^2 Score')
 plt.legend()
 plt.grid(True)
+plt.savefig('r2_vs_ed_plot.png')
 plt.show()
