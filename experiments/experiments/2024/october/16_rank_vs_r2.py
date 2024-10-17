@@ -43,8 +43,8 @@ def generate_structured_Y_Y_prime(n_samples, n_features, rank, noise_level=0.1):
     return Y, Y_prime
 
 # Parameters
-n_samples = 100
-n_features = 40  # Increase number of features and ranks
+n_samples = 50
+n_features = n_samples # Increase number of features and ranks
 rank_values = range(1, n_features + 1)
 n_trials = 20  # Number of trials for averaging to smooth out noise
 noise_level = 0.01  # Reduce noise for clearer signal
@@ -79,4 +79,5 @@ plt.xlabel('Rank of X')
 plt.ylabel('R^2')
 plt.legend()
 plt.grid(True)
+plt.savefig('r2_vs_rank_plot.png')
 plt.show()
