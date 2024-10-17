@@ -2,6 +2,8 @@
 # https://discord.com/channels/@me/1063613968087797830/1296292231527010367
 # Running the code to show the updated plot
 
+# TODO: curious if this is the only way to do it without the 1, 1e-8 trick
+
 # Full code with imports, confidence intervals, and tighter noise settings
 
 # Import necessary libraries
