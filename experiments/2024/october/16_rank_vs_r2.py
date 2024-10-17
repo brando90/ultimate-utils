@@ -16,6 +16,8 @@ As the rank (or effective dimensionality) of the feature matrix increases, the m
 This aligns with findings from the paper, which show that models with higher effective dimensionality yield better predictions, 
 even if they may not perfectly represent the underlying system. Both cases demonstrate that richer representations improve performance, 
 though they may introduce biases from the underlying regression methodology​
+
+ref: https://chatgpt.com/c/67106106-5ba0-8001-90fd-131e34da0af0
 """
 import numpy as np
 import matplotlib.pyplot as plt
