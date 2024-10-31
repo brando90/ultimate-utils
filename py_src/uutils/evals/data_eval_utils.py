@@ -7,9 +7,11 @@ import tenacity
 
 from concurrent.futures import ProcessPoolExecutor
 
-def get_iter_for_eval_data_set(path: Path, 
+def get_iter_for_eval_data_set(path: Union[Path, str], 
                                ) -> Iterator[dict]:
     """ Get an iterator for the evaluation data set. """
+    if isinstance(path, str):
+        path: Path = Path(path)
     path: Path = path.expanduser()
     if path.is_file() and path.suffix == '.json':
         with open(path, 'r') as file:
