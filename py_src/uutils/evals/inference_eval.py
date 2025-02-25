@@ -253,22 +253,6 @@ def generate_with_end_point(
     return responses
 
 @retry(stop=stop_after_attempt(15), wait=wait_exponential(multiplier=2, max=128))
-def call_to_openai_api_with_retry(gen: OpenAIGenerator, prompt: str) -> dict:
-    response: dict = gen.llm.chat.completions.create(
-        model=gen.model,
-        messages=[
-            {"role": "system", "content": gen.system_prompt},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=gen.sampling_params.temperature,
-        top_p=gen.sampling_params.top_p,
-        n=gen.sampling_params.n,
-        stop=gen.sampling_params.stop[:3],
-        max_tokens=gen.sampling_params.max_tokens,
-        )
-    return response
-
-@retry(stop=stop_after_attempt(15), wait=wait_exponential(multiplier=2, max=128))
 def call_to_openai_client_api_with_retry(gen: OpenAIGenerator, prompt: str) -> dict:
     response: dict = gen.llm.chat.completions.create(
         model=gen.model,

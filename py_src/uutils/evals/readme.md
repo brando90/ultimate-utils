@@ -139,6 +139,11 @@ python boxed_acc_eval.py --model deepseek-ai/deepseek-math-7b-rl --path_2_eval_d
 
 ```
 
+Putnam-AXIOM evaluations using the huggingface data:
+```bash
+python boxed_acc_eval.py --model deepseek-ai/deepseek-math-7b-rl --path_2_eval_dataset  --end 348 --batch_size 1 --mode online 
+```
+
 ## Quickstart - Proprietry Model Putnam Evaluations
 The instructions here are for reproducing our Prioprietry Source model evaluations based on [this version of the early manuscript](https://openreview.net/forum?id=1720vDqiBK#discussion) 
 and [the results form this table](py_src/evals/eval_images/first_results_putnam_math.png).

@@ -6,7 +6,7 @@ TODO: lots of things to fix...
 import dspy
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, Trainer, TrainingArguments
 from datasets import Dataset, load_dataset
-from uutils.dspy_uu.hf_models import load_mdl_and_tok
+# from uutils.dspy_uu.hf_models import load_mdl_and_tok
 import torch
 
 # Step 1: Synthetic Data Generation (Python -> Lean4)

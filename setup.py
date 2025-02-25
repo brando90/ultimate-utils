@@ -114,6 +114,7 @@ setup(
         'openai',
         'anthropic',
         'jsonlines',
+        'sglang',
         # 'statsmodels'
         # 'statsmodels==0.12.2'
         # 'statsmodels==0.13.5'

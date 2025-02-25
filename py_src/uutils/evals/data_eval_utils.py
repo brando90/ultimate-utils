@@ -29,6 +29,8 @@ def get_iter_for_eval_data_set(path: Path,
     elif 'MATH' in str(path):
         return get_iter_single_file_per_data_point(path=path)
         # return process_files_multiprocessing(path=path)
+    elif 'Putnam-AXIOM/putnam-axiom-dataset' in str(path):
+        raise NotImplemented # TODO
     else:
         raise NotImplementedError
     
@@ -186,6 +188,33 @@ def get_model_answer_correct(path: str) -> None:
     path_2_data_with_correct: Path = Path(path.parent / 'completions_with_correct.json') 
     with open(path_2_data_with_correct, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
+
+def load_math_style_dataset(
+        ds_path: str, 
+        # num_proc: Optional[int] = None, # for .map
+        num_proc: Optional[int] = os.cpu_count()//4, # for .map
+        # num_proc: Optional[int] = 10, # for .map
+        shuffle: bool = False, # but slows things down
+        truncation: bool = True, 
+        seed: int = 0,
+        end: Optional[int] = None, 
+        split: Optional[str] = None,
+        batched: bool = True
+        ):
+    from transformers import load_dataset
+    import sys
+    print(f'{num_proc=}')
+    end: int = end if end is not None else sys.maxsize
+    ds = load_dataset(ds_path, split=split)
+    ds = ds.shuffle(seed=seed) if shuffle else ds
+    try:
+        ds = ds.select(range(end)) if end is not None else ds
+    except Exception as e:
+        ds = ds.take(end) if end is not None else ds
+    # - Step1: to train str
+    raw_str_2_train_str = lambda examples : {'text': [f'Problem:\n{prob}\n\nSolution:\n{sol}' for prob, sol in zip(examples['problem'], examples['solution'])]}
+    train_str_ds = ds.map(raw_str_2_train_str, batched=batched, num_proc=num_proc)
+    return train_str_ds
 
 # -- Folder Folder Rec -> Jsonlines file
 
