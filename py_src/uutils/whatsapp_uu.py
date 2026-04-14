@@ -48,6 +48,7 @@ import requests
 log = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_FILE = "~/keys/whatsapp_api_config.json"
+_PHONE_SEPARATORS = {" ", "-", "(", ")", "."}
 
 
 def _load_config(config_file: str = "") -> dict:
@@ -68,12 +69,29 @@ def _load_config(config_file: str = "") -> dict:
 def _normalize_phone(phone: str) -> str:
     """Ensure phone number has country code prefix (digits only, leading +)."""
     phone = phone.strip()
-    # Extract only digits from the number
-    digits = "".join(c for c in phone if c.isdigit())
+    if phone.lower().startswith("whatsapp:"):
+        phone = phone.split(":", 1)[1].strip()
+    if not phone:
+        raise ValueError("Phone number is empty — provide a number with country code (e.g., '+14155551234')")
+
+    digits: list[str] = []
+    seen_plus = False
+    for idx, char in enumerate(phone):
+        if char.isdigit():
+            digits.append(char)
+            continue
+        if char == "+":
+            if idx != 0 or seen_plus:
+                raise ValueError(f"Invalid phone number: {phone!r}")
+            seen_plus = True
+            continue
+        if char in _PHONE_SEPARATORS:
+            continue
+        raise ValueError(f"Invalid phone number: {phone!r}")
+
     if not digits:
         raise ValueError("Phone number is empty — provide a number with country code (e.g., '+14155551234')")
-    # Always return with leading + for a canonical representation
-    return "+" + digits
+    return "+" + "".join(digits)
 
 
 # ── Meta Business Cloud API ──────────────────────────────────────────
@@ -239,6 +257,7 @@ if __name__ == "__main__":
     assert _normalize_phone("14155551234") == "+14155551234"
     assert _normalize_phone("+14155551234") == "+14155551234"
     assert _normalize_phone("  +44 20 1234 5678  ") == "+442012345678"
+    assert _normalize_phone("whatsapp:+14155551234") == "+14155551234"
     print("Phone normalization tests passed ✓")
 
     print("All dry-run smoke tests passed!")

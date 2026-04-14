@@ -48,6 +48,33 @@ from socket import gethostname
 
 log = logging.getLogger(__name__)
 
+_OUTLOOK_SEND_SCRIPT = """
+on run argv
+    if (count of argv) < 4 then error "Expected recipient, subject, body, and sender arguments."
+
+    set recipientAddress to item 1 of argv
+    set messageSubject to item 2 of argv
+    set messageBody to item 3 of argv
+    set senderAddress to item 4 of argv
+    set attachmentPaths to {}
+    if (count of argv) > 4 then set attachmentPaths to items 5 thru -1 of argv
+
+    tell application "Microsoft Outlook"
+        if senderAddress is not "" then
+            set newMsg to make new outgoing message with properties {subject:messageSubject, content:messageBody, sender:{address:senderAddress}}
+        else
+            set newMsg to make new outgoing message with properties {subject:messageSubject, content:messageBody}
+        end if
+
+        make new to recipient at newMsg with properties {email address:{address:recipientAddress}}
+        repeat with attachmentPath in attachmentPaths
+            make new attachment at newMsg with properties {file:(POSIX file (contents of attachmentPath))}
+        end repeat
+        send newMsg
+    end tell
+end run
+"""
+
 
 # ── Secret reading ─────────────────────────────────────────────────────
 
@@ -83,6 +110,17 @@ def _message_with_hostname(message: str) -> str:
 
 def _normalize_attachments(attachments: list[Path | str]) -> list[Path]:
     return [Path(path).expanduser() for path in attachments]
+
+
+def _existing_attachment_paths(attachments: list[Path | str] | None) -> list[str]:
+    existing_paths: list[str] = []
+    for path in _normalize_attachments(attachments or []):
+        resolved_path = path.resolve()
+        if not resolved_path.is_file():
+            log.warning("Attachment not found, skipping: %s", resolved_path)
+            continue
+        existing_paths.append(str(resolved_path))
+    return existing_paths
 
 
 def _read_legacy_password(password_path: str | Path | None) -> str:
@@ -145,7 +183,7 @@ class Notifier:
 
     def notify_with_attachments(
         self, to_email: str, subject: str, body: str,
-        attachments: list[Path],
+        attachments: list[Path | str],
     ) -> None:
         raise NotImplementedError
 
@@ -158,7 +196,7 @@ class DryRunNotifier(Notifier):
         self.outbox.mkdir(parents=True, exist_ok=True)
 
     def _save(self, to_email: str, subject: str, body: str,
-              attachments: list[Path] | None = None) -> Path:
+              attachments: list[Path | str] | None = None) -> Path:
         import time
         ts = int(time.time())
         safe = to_email.replace("@", "_at_")
@@ -179,7 +217,7 @@ class DryRunNotifier(Notifier):
 
     def notify_with_attachments(
         self, to_email: str, subject: str, body: str,
-        attachments: list[Path],
+        attachments: list[Path | str],
     ) -> None:
         self._save(to_email, subject, body, attachments)
 
@@ -360,38 +398,9 @@ def send_email_via_outlook(
         print(f"[DRY-RUN] Outlook email to {to} from {sender or '(default)'}: {subject}")
         return
 
-    # Escape strings for AppleScript
-    def esc(s: str) -> str:
-        """Escape backslashes and quotes, and convert newlines for AppleScript."""
-        s = s.replace("\\", "\\\\").replace('"', '\\"')
-        s = s.replace("\r\n", "\n").replace("\r", "\n")
-        return s.replace("\n", '" & return & "')
-
-    # Build attachment lines
-    attach_lines = ""
-    if attachments:
-        for att in attachments:
-            p = Path(att).expanduser().resolve()
-            if not p.is_file():
-                log.warning("Attachment not found, skipping: %s", p)
-                continue
-            # Outlook AppleScript needs POSIX path
-            attach_lines += f'\n    make new attachment at newMsg with properties {{file:POSIX file "{esc(str(p))}"}}'
-
-    sender_line = ""
-    if sender:
-        sender_line = f'\n    set sender of newMsg to {{address:"{esc(sender)}"}}'
-
-    script = f'''
-tell application "Microsoft Outlook"
-    set newMsg to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}"}}{sender_line}
-    make new to recipient at newMsg with properties {{email address:{{address:"{esc(to)}"}}}}
-    {attach_lines}
-    send newMsg
-end tell
-'''
+    attachment_paths = _existing_attachment_paths(attachments)
     result = subprocess.run(
-        ["osascript", "-e", script],
+        ["osascript", "-e", _OUTLOOK_SEND_SCRIPT, to, subject, body, sender, *attachment_paths],
         capture_output=True, text=True, timeout=30,
     )
     if result.returncode != 0:

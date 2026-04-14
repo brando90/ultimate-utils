@@ -42,6 +42,24 @@ MAX_MESSAGE_LENGTH = 2000
 RATE_LIMIT_RETRY_ATTEMPTS = 3
 
 
+def _retry_after_seconds(resp: requests.Response) -> float:
+    try:
+        retry_after = resp.json().get("retry_after", 1.0)
+    except ValueError:
+        retry_after = resp.headers.get("Retry-After", 1.0)
+    try:
+        return max(float(retry_after), 0.0)
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def _rewind_request_files(files: dict) -> None:
+    for value in files.values():
+        file_obj = value[1] if isinstance(value, tuple) else value
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
+
+
 def _resolve_webhook_url(
     webhook_url: str = "",
     webhook_url_file: str = "",
@@ -62,10 +80,13 @@ def _resolve_webhook_url(
 
 def _post_with_retry(url: str, **kwargs) -> requests.Response:
     """POST to Discord with rate-limit retry."""
+    files = kwargs.get("files")
     for attempt in range(RATE_LIMIT_RETRY_ATTEMPTS):
+        if files:
+            _rewind_request_files(files)
         resp = requests.post(url, timeout=30, **kwargs)
         if resp.status_code == 429:
-            retry_after = resp.json().get("retry_after", 1.0)
+            retry_after = _retry_after_seconds(resp)
             log.warning("Discord rate limited, retrying in %.1fs (attempt %d/%d)",
                         retry_after, attempt + 1, RATE_LIMIT_RETRY_ATTEMPTS)
             time.sleep(retry_after)
@@ -87,7 +108,7 @@ def _split_message(message: str) -> list[str]:
             break
         # Try to split at a newline
         split_at = message.rfind("\n", 0, MAX_MESSAGE_LENGTH)
-        if split_at == -1:
+        if split_at <= 0:
             split_at = MAX_MESSAGE_LENGTH
         chunks.append(message[:split_at])
         message = message[split_at:].lstrip("\n")
