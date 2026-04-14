@@ -34,14 +34,18 @@ Refs:
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import smtplib
+import ssl
+from contextlib import contextmanager
+from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Union
+from socket import gethostname
 
 log = logging.getLogger(__name__)
 
@@ -72,6 +76,64 @@ def read_secret(env_var: str, file_env_var: str = "", default: str = "") -> str:
             if p.is_file():
                 return p.read_text().strip()
     return default
+
+
+def _message_with_hostname(message: str) -> str:
+    return f"{message}\nSent from Hostname: {gethostname()}"
+
+
+def _normalize_attachments(attachments: list[Path | str]) -> list[Path]:
+    return [Path(path).expanduser() for path in attachments]
+
+
+def _read_legacy_password(password_path: str | Path | None) -> str:
+    if not password_path:
+        raise ValueError("password_path is required for legacy email helpers")
+    config = json.loads(Path(password_path).expanduser().read_text())
+    password = str(config.get("password", "")).strip()
+    if not password:
+        raise ValueError("password_path must contain a JSON object with a non-empty 'password'")
+    return password
+
+
+def _attach_files(msg: MIMEMultipart, attachments: list[Path | str]) -> int:
+    attached_count = 0
+    for file_path in _normalize_attachments(attachments):
+        if not file_path.is_file():
+            log.warning("Attachment not found, skipping: %s", file_path)
+            continue
+        part = MIMEApplication(file_path.read_bytes(), Name=file_path.name)
+        part["Content-Disposition"] = f'attachment; filename="{file_path.name}"'
+        msg.attach(part)
+        attached_count += 1
+    return attached_count
+
+
+def _send_legacy_relay(
+    subject: str,
+    message: str,
+    destination: str,
+    attachment: Path | None = None,
+) -> None:
+    from_address = "miranda9@intel-research.net."
+    with smtplib.SMTP("smtp.intel-research.net", 25, timeout=30) as server:
+        if attachment is None:
+            full_message = (
+                f"From: {from_address}\n"
+                f"To: {destination}\n"
+                f"Subject: {subject}\n"
+                f"{message}"
+            )
+            server.sendmail(from_address, destination, full_message)
+            return
+
+        msg = MIMEMultipart()
+        msg["Subject"] = subject
+        msg["From"] = from_address
+        msg["To"] = destination
+        msg.attach(MIMEText(message, "plain"))
+        _attach_files(msg, [attachment])
+        server.send_message(msg)
 
 
 # ── Notifier classes ───────────────────────────────────────────────────
@@ -146,14 +208,33 @@ class SMTPNotifier(Notifier):
         self.from_addr = from_addr
         self.bcc = bcc
 
-    def _send(self, msg: Union[MIMEText, MIMEMultipart], to_email: str) -> None:
+    @contextmanager
+    def _smtp_client(self):
+        context = ssl.create_default_context()
+        if self.port == 465:
+            with smtplib.SMTP_SSL(
+                self.host,
+                self.port,
+                timeout=30,
+                context=context,
+            ) as server:
+                server.login(self.user, self.password)
+                yield server
+                return
+
+        with smtplib.SMTP(self.host, self.port, timeout=30) as server:
+            server.starttls(context=context)
+            server.login(self.user, self.password)
+            yield server
+
+    def _send(self, msg: Message, to_email: str) -> None:
         """Send a message, adding BCC recipient if configured."""
+        if not self.user or not self.password or not self.from_addr:
+            raise ValueError("SMTPNotifier requires non-empty user, password, and from_addr")
         recipients = [to_email]
         if self.bcc and self.bcc != to_email:
             recipients.append(self.bcc)
-        with smtplib.SMTP(self.host, self.port, timeout=30) as server:
-            server.starttls()
-            server.login(self.user, self.password)
+        with self._smtp_client() as server:
             server.sendmail(self.from_addr, recipients, msg.as_string())
 
     def notify(self, to_email: str, subject: str, body: str) -> None:
@@ -167,24 +248,17 @@ class SMTPNotifier(Notifier):
 
     def notify_with_attachments(
         self, to_email: str, subject: str, body: str,
-        attachments: list[Path],
+        attachments: list[Path | str],
     ) -> None:
         msg = MIMEMultipart()
         msg["Subject"] = subject
         msg["From"] = self.from_addr
         msg["To"] = to_email
         msg.attach(MIMEText(body))
-        for file_path in attachments:
-            if not file_path.exists():
-                log.warning("Attachment not found, skipping: %s", file_path)
-                continue
-            data = file_path.read_bytes()
-            part = MIMEApplication(data, Name=file_path.name)
-            part["Content-Disposition"] = f'attachment; filename="{file_path.name}"'
-            msg.attach(part)
+        attached_count = _attach_files(msg, attachments)
         self._send(msg, to_email)
         log.info("Email with %d attachment(s) sent to %s (bcc: %s): %s",
-                 len(attachments), to_email, self.bcc or "none", subject)
+                 attached_count, to_email, self.bcc or "none", subject)
 
 
 def get_notifier(
@@ -216,7 +290,7 @@ def send_email_smtp(
     smtp_port: int = 587,
     from_addr: str = "",
     bcc: str = "",
-    attachments: list[Path] | None = None,
+    attachments: list[Path | str] | None = None,
 ) -> None:
     """Send an email via SMTP (Gmail by default). Simple one-shot function.
 
@@ -247,12 +321,96 @@ def send_email_smtp(
         smtp_user = from_addr
     if not from_addr:
         from_addr = smtp_user
+    if not smtp_user or not from_addr:
+        raise ValueError("SMTP sender requires smtp_user and/or from_addr")
 
     notifier = SMTPNotifier(smtp_host, smtp_port, smtp_user, password, from_addr, bcc=bcc)
     if attachments:
         notifier.notify_with_attachments(to, subject, body, attachments)
     else:
         notifier.notify(to, subject, body)
+
+
+# ── Stanford email presets ─────────────────────────────────────────────
+
+# Stanford uses Office 365 for email
+STANFORD_SMTP = {
+    "host": "smtp.office365.com",
+    "port": 587,
+    "user": "brando9@stanford.edu",
+    "from_addr": "brando9@stanford.edu",
+    "pass_file": "~/keys/stanford_smtp_password.txt",
+}
+
+STANFORD_CS_SMTP = {
+    "host": "smtp.office365.com",
+    "port": 587,
+    "user": "brando9@cs.stanford.edu",
+    "from_addr": "brando9@cs.stanford.edu",
+    "pass_file": "~/keys/stanford_cs_smtp_password.txt",
+}
+
+
+def send_stanford_email(
+    to: str,
+    subject: str,
+    body: str,
+    sender: str = "brando9@stanford.edu",
+    bcc: str = "",
+    attachments: list[Path | str] | None = None,
+    dry_run: bool = False,
+) -> None:
+    """Send an email from a Stanford address.
+
+    Args:
+        to: Recipient email address.
+        subject: Email subject line.
+        body: Plain text email body.
+        sender: Stanford sender address. Use "brando9@stanford.edu" (default)
+                or "brando9@cs.stanford.edu".
+        bcc: Optional BCC address.
+        attachments: Optional list of file paths to attach.
+        dry_run: If True, use DryRunNotifier instead of sending.
+
+    Setup:
+        1. Get your Stanford/Office365 app password or OAuth token
+        2. Save it: echo 'YOUR_PASSWORD' > ~/keys/stanford_smtp_password.txt && chmod 600 ~/keys/stanford_smtp_password.txt
+        3. For CS: echo 'YOUR_PASSWORD' > ~/keys/stanford_cs_smtp_password.txt && chmod 600 ~/keys/stanford_cs_smtp_password.txt
+    """
+    if dry_run:
+        notifier = DryRunNotifier()
+        if attachments:
+            notifier.notify_with_attachments(to, subject, body, [Path(a) for a in attachments])
+        else:
+            notifier.notify(to, subject, body)
+        return
+
+    # Select preset based on sender
+    if "cs.stanford" in sender:
+        preset = STANFORD_CS_SMTP
+    else:
+        preset = STANFORD_SMTP
+
+    pass_file = Path(preset["pass_file"]).expanduser()
+    if not pass_file.is_file():
+        raise FileNotFoundError(
+            f"Stanford SMTP password not found at {pass_file}\n"
+            f"Save your password: echo 'YOUR_PASSWORD' > {preset['pass_file']} && chmod 600 {preset['pass_file']}"
+        )
+    password = pass_file.read_text().strip()
+
+    send_email_smtp(
+        to=to,
+        subject=subject,
+        body=body,
+        smtp_user=preset["user"],
+        smtp_pass=password,
+        smtp_host=preset["host"],
+        smtp_port=preset["port"],
+        from_addr=sender,
+        bcc=bcc,
+        attachments=attachments,
+    )
 
 
 # ── Legacy functions (backward compatible) ─────────────────────────────
@@ -262,35 +420,20 @@ def send_email(subject, message, destination, password_path=None):
 
     Prefer send_email_smtp() for new code.
     """
-    from socket import gethostname
-    from email.message import EmailMessage
-    import json
-
-    message = f'{message}\nSent from Hostname: {gethostname()}'
+    message = _message_with_hostname(message)
+    password = _read_legacy_password(password_path)
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        with open(password_path) as f:
-            config = json.load(f)
-            server.login('slurm.miranda@gmail.com', config['password'])
-            msg = EmailMessage()
-            msg.set_content(message)
-            msg['Subject'] = subject
-            msg['From'] = 'slurm.miranda@gmail.com'
-            msg['To'] = destination
-            server.send_message(msg)
-            server.quit()
-    except Exception:
-        server = smtplib.SMTP('smtp.intel-research.net', 25)
-        from_address = 'miranda9@intel-research.net.'
-        full_message = (
-            f'From: {from_address}\n'
-            f'To: {destination}\n'
-            f'Subject: {subject}\n'
-            f'{message}'
+        send_email_smtp(
+            to=destination,
+            subject=subject,
+            body=message,
+            smtp_user="slurm.miranda@gmail.com",
+            smtp_pass=password,
+            from_addr="slurm.miranda@gmail.com",
         )
-        server.sendmail(from_address, destination, full_message)
-        server.quit()
+    except (OSError, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected) as exc:
+        log.warning("Falling back to intel relay after Gmail SMTP connection failure: %s", exc)
+        _send_legacy_relay(subject, message, destination)
 
 
 def send_email_pdf_figs(path_to_pdf, subject, message, destination, password_path=None):
@@ -298,44 +441,22 @@ def send_email_pdf_figs(path_to_pdf, subject, message, destination, password_pat
 
     Prefer send_email_smtp(attachments=[...]) for new code.
     """
-    from socket import gethostname
-    import json
-
-    message = f'{message}\nSent from Hostname: {gethostname()}'
+    pdf_path = Path(path_to_pdf).expanduser()
+    message = _message_with_hostname(message)
+    password = _read_legacy_password(password_path)
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        with open(password_path) as f:
-            config = json.load(f)
-            server.login('slurm.miranda@gmail.com', config['password'])
-            msg = MIMEMultipart()
-            msg['Subject'] = subject
-            msg['From'] = 'slurm.miranda@gmail.com'
-            msg['To'] = destination
-            msg.attach(MIMEText(message, "plain"))
-            if path_to_pdf.exists():
-                with open(path_to_pdf, "rb") as pdf:
-                    attach = MIMEApplication(pdf.read(), _subtype="pdf")
-                attach.add_header('Content-Disposition', 'attachment',
-                                  filename=str(path_to_pdf))
-                msg.attach(attach)
-            server.send_message(msg)
-            server.quit()
-    except Exception:
-        server = smtplib.SMTP('smtp.intel-research.net', 25)
-        msg = MIMEMultipart()
-        msg['Subject'] = subject
-        msg['From'] = 'miranda9@intel-research.net.'
-        msg['To'] = 'brando.science@gmail.com'
-        msg.attach(MIMEText(message, "plain"))
-        if path_to_pdf.exists():
-            with open(path_to_pdf, "rb") as pdf:
-                attach = MIMEApplication(pdf.read(), _subtype="pdf")
-            attach.add_header('Content-Disposition', 'attachment',
-                              filename=str(path_to_pdf))
-            msg.attach(attach)
-        server.send_message(msg)
-        server.quit()
+        send_email_smtp(
+            to=destination,
+            subject=subject,
+            body=message,
+            smtp_user="slurm.miranda@gmail.com",
+            smtp_pass=password,
+            from_addr="slurm.miranda@gmail.com",
+            attachments=[pdf_path],
+        )
+    except (OSError, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected) as exc:
+        log.warning("Falling back to intel relay after Gmail SMTP connection failure: %s", exc)
+        _send_legacy_relay(subject, message, destination, attachment=pdf_path)
 
 
 # ── Tests ──────────────────────────────────────────────────────────────
@@ -349,3 +470,19 @@ if __name__ == '__main__':
         [Path("/tmp/nonexistent.pdf")],
     )
     print("Dry-run test passed — check /tmp/email_test_outbox/")
+
+    # Stanford email dry-run test
+    send_stanford_email(
+        to="test@example.com",
+        subject="Stanford Test",
+        body="Testing Stanford email dry-run",
+        dry_run=True,
+    )
+    send_stanford_email(
+        to="test@example.com",
+        subject="Stanford CS Test",
+        body="Testing Stanford CS email dry-run",
+        sender="brando9@cs.stanford.edu",
+        dry_run=True,
+    )
+    print("Stanford email dry-run tests passed!")
