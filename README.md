@@ -1,95 +1,137 @@
-# Ultimate-utils
+# ultimate-utils (uutils)
 
-Ulitmate-utils (or uutils) is collection of useful code that Brando has collected through the years that has been useful accross his projects.
-Mainly for machine learning and programming languages tasks.
+[![PyPI](https://img.shields.io/pypi/v/ultimate-utils)](https://pypi.org/project/ultimate-utils/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 
-## Installing Ultimate-utils
+A comprehensive Python utility library for machine learning research, spanning PyTorch training infrastructure, statistical analysis, meta-learning, LLM evaluation, and experiment management.
 
-> WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A GPU)
+Built and maintained by [Brando Miranda](https://scholar.google.com/citations?user=_NQJoBkAAAAJ&hl=en) (Stanford, MIT, UIUC).
 
-# Installation [Dev]
+```python
+pip install ultimate-utils
+```
 
-To install with code do: 
+```python
+import uutils
+uutils.hello()
+```
+
+## What's Inside
+
+| Module | Description |
+|--------|-------------|
+| `uutils` | Core utilities — file I/O, argument parsing, serialization (dill/pickle/JSON), git helpers, seed management, progress bars |
+| `uutils.torch_uu` | PyTorch training loops, distributed training, checkpointing, optimizers, learning rate schedulers |
+| `uutils.torch_uu.models` | Model utilities and HuggingFace integrations |
+| `uutils.torch_uu.dataloaders` | Dataloaders for meta-learning (miniImageNet, CIFAR-FS), standard vision, and multi-dataset sampling |
+| `uutils.torch_uu.metrics` | CCA/PWCCA/DCCA similarity, model complexity, task diversity (Task2Vec), accuracy with confidence intervals |
+| `uutils.torch_uu.meta_learners` | Meta-learning algorithms (MAML, Prototypical Networks, etc.) |
+| `uutils.stats_uu` | Hypothesis testing, p-values, effect sizes (Cohen's d), power analysis, confidence intervals, ANOVA, regression |
+| `uutils.plot` | Plotting with error bands, heatmaps, bar charts, LaTeX table export |
+| `uutils.hf_uu` | HuggingFace training utilities — full fine-tuning, QLoRA/Unsloth, causal and seq2seq LM training |
+| `uutils.evals` | LLM evaluation — math benchmarks (MATH, Putnam, OlympiadBench), API inference (Claude, OpenAI, vLLM), answer extraction |
+| `uutils.dspy_uu` | DSPy-based synthetic data generation for in-context learning and fine-tuning |
+| `uutils.jax_uu` | JAX multi-head attention, layer norm, flash attention implementations |
+| `uutils.numpy_uu` | Statistical moments, confidence intervals, matrix utilities |
+| `uutils.logging_uu` | Weights & Biases integration — setup, logging, sweeps, model watching |
+| `uutils.emailing` | SMTP email notifications with attachments |
+
+## Installation
+
+> **Note:** PyTorch must be installed separately (with CUDA if you need GPU support).
+
+### Development install (recommended)
+
 ```bash
 conda create -n uutils python=3.11 -y
 conda activate uutils
-# conda remove --all --name uutils
-
 pip install -e ~/ultimate-utils
 ```
 
-To install with venv do:
-```bash
-deactivate
-mkdir ~/.virtualenvs
-ls ~/.virtualenvs
-python3.11 -m venv ~/.virtualenvs/uutils
-# python3 -m venv ~/.virtualenvs/uutils
-source ~/.virtualenvs/uutils/bin/activate
-pip install --upgrade pip
-which python
+### pip install from PyPI
 
-pip install -e ~/ultimate-utils
+```bash
+pip install ultimate-utils
 ```
 
-To test (any) pytorch do:
+### Verify installation
+
 ```bash
+python -c "import uutils; uutils.hello()"
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 ```
 
-## Install vLLM
+## Quick Examples
 
-To install vllm:
-```bash
-# - Recommended vllm (it works with lora adapters)
-# install all deps first
-pip install -e ~/ultimate-utils
-# right version for vllm lora 
-pip install torch==2.4.0
-pip install vllm==0.5.5 
-# make sure the local lib is installed
-pip install -e ~/ultimate-utils --no-deps
-# [Optional] make sure you really have the right torch and vllm version
-pip list | grep vllm
-pip list | grep torch
-pip install torch==2.4.0
-pip install vllm==0.5.5 
-# test vllm lora (for unsloth to work since merge save doesn't seem to work)
-python ~/ultimate-utils/experiments/experiments/2024/september/vllm_lora_test.py
-# save env now (given how fragile it can be if it works)
-pip freeze > ~/ultimate-utils/requirements.txt
+### Seed everything for reproducibility
 
-# # - Install vllm
-# # FAILED: bellow failed to install vllm with uutils first installing it with default setup.py then 
-# # pip install --upgrade pip
-# # pip install torch==2.2.1
-# # pip install vllm==0.4.1
-# # - Installed vllm on skampere1
-# pip install --upgrade pip
-# pip uninstall torchvision vllm vllm-flash-attn flash-attn xformers
-# pip install torch==2.2.1 vllm==0.4.1 
-# # fails install
-# # pip install flash-attn==2.6.3
+```python
+from uutils import seed_everything
+seed_everything(42)
 ```
 
-## Pushing to pypi
-For full details see
-```bash
-~/ultimate-utils/tutorials_for_myself/pushing_to_pypi/README.md
+### Save and load with dill
+
+```python
+from uutils import save_with_dill, load_with_dill
+save_with_dill(my_object, '~/data/my_object.pkl')
+obj = load_with_dill('~/data/my_object.pkl')
 ```
-For quick push do:
-```bash
-cd ~/ultimate-utils/
-rm -rf build
-rm -rf dist
-cd ~/ultimate-utils/
-python setup.py sdist bdist_wheel
-twine check dist/*
-twine upload dist/*
+
+### Plot with error bands
+
+```python
+from uutils.plot import plot_with_error_bands
+plot_with_error_bands(x, y, yerr, xlabel='Steps', ylabel='Loss', title='Training Loss')
 ```
-then:
-```bash
-cd ~/ultimate-utils/
-rm -rf build
-rm -rf dist
+
+### Statistical testing with effect size
+
+```python
+from uutils.stats_uu.effect_size import stat_test_with_effect_size_as_emphasis
+stat_test_with_effect_size_as_emphasis(group1_data, group2_data)
 ```
+
+### W&B logging
+
+```python
+from uutils.logging_uu.wandb_logging.common import setup_wandb, log_2_wandb
+setup_wandb(args)
+log_2_wandb(metrics_dict, step=step)
+```
+
+## Publishing to PyPI
+
+```bash
+# Bump version in setup.py, then:
+cd ~/ultimate-utils && bash scripts/publish_to_pypi.sh
+```
+
+## Citation
+
+If you use `ultimate-utils` in your research, please cite:
+
+```bibtex
+@software{miranda2024uutils,
+  author       = {Brando Miranda},
+  title        = {ultimate-utils: A Comprehensive Utility Library for Machine Learning Research},
+  year         = {2024},
+  publisher    = {PyPI},
+  url          = {https://github.com/brando90/ultimate-utils},
+  note         = {Available at \url{https://pypi.org/project/ultimate-utils/}}
+}
+```
+
+You can also find the author's publications on [Google Scholar](https://scholar.google.com/citations?user=_NQJoBkAAAAJ&hl=en).
+
+## Related Publications
+
+This library has supported research in the following publications (among others):
+
+- [Beyond Scale: the Diversity Coefficient as a Data Quality Metric Demonstrates LLMs are Not Yet More Human than Human](https://arxiv.org/abs/2306.13840)
+- [Does MAML Only Work via Feature Re-use? A Data Set Centric Perspective](https://arxiv.org/abs/2112.13137)
+
+## License
+
+Apache-2.0
