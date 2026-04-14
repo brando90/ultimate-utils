@@ -9,7 +9,7 @@ General-purpose Python utility library used across Brando's ML/AI and programmin
 
 - **Package source:** `py_src/uutils/`
 - **Experiments:** `experiments/`
-- **Setup/packaging:** `setup.py` (published to PyPI as `ultimate-utils`)
+- **Setup/packaging:** `pyproject.toml` (canonical metadata + hatchling build), `setup.py` (legacy shim)
 
 ### Build / install / test
 
@@ -27,9 +27,10 @@ cd ~/ultimate-utils && bash scripts/publish_to_pypi.sh
 ### Publishing to PyPI
 
 When the user says "push uutils to pypi" or similar:
-1. Bump the version in `setup.py` (ask if unsure what version)
-2. Run `bash scripts/publish_to_pypi.sh` — builds, checks, uploads, cleans up
-3. Verify at https://pypi.org/project/ultimate-utils/
+1. Bump the version in `pyproject.toml` (ask if unsure what version)
+2. Ensure publishing tools are installed: `python -m pip install build twine`
+3. Run `bash scripts/publish_to_pypi.sh` — builds with hatchling, checks, uploads, cleans up
+4. Verify at https://pypi.org/project/ultimate-utils/
 
 The script reads the API token from `~/keys/push-pypi-all.txt`. For test PyPI: `bash scripts/publish_to_pypi.sh --test`.
 

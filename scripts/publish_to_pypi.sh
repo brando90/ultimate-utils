@@ -12,14 +12,24 @@ cd "$(dirname "$0")/.."
 
 PYPI_TOKEN_FILE="$HOME/keys/push-pypi-all.txt"
 REPO_URL="https://upload.pypi.org/legacy/"
+PROJECT_URL="https://pypi.org/project/ultimate-utils/"
 
 if [[ "${1:-}" == "--test" ]]; then
     PYPI_TOKEN_FILE="$HOME/keys/pypi_test_token.txt"
     REPO_URL="https://test.pypi.org/legacy/"
+    PROJECT_URL="https://test.pypi.org/project/ultimate-utils/"
     echo "==> Uploading to TEST PyPI"
 else
     echo "==> Uploading to PRODUCTION PyPI"
 fi
+
+for module_name in build twine; do
+    if ! python -c "import ${module_name}" >/dev/null 2>&1; then
+        echo "ERROR: Missing Python module '${module_name}' needed for publishing."
+        echo "Install publishing tools with: python -m pip install build twine"
+        exit 1
+    fi
+done
 
 if [[ ! -f "$PYPI_TOKEN_FILE" ]]; then
     echo "ERROR: PyPI token not found at $PYPI_TOKEN_FILE"
@@ -34,13 +44,13 @@ echo "==> Cleaning old builds..."
 rm -rf build dist *.egg-info
 
 echo "==> Building distribution..."
-python setup.py sdist bdist_wheel
+python -m build --sdist --wheel
 
 echo "==> Checking distribution..."
-twine check dist/*
+python -m twine check dist/*
 
 echo "==> Uploading..."
-twine upload \
+python -m twine upload \
     --repository-url "$REPO_URL" \
     --username __token__ \
     --password "$PYPI_TOKEN" \
@@ -49,4 +59,4 @@ twine upload \
 echo "==> Cleaning up..."
 rm -rf build dist *.egg-info
 
-echo "==> Done! Check https://pypi.org/project/ultimate-utils/"
+echo "==> Done! Check $PROJECT_URL"
