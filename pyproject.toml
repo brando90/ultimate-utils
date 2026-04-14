@@ -46,6 +46,9 @@ dependencies = [
     "evaluate",
     "einops",
     "sentencepiece",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
 ]
 
 [project.urls]

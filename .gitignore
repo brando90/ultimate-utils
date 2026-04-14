@@ -1,6 +1,17 @@
 .remote-sync.json
 artifacts/
 
+# Credentials / secrets (NEVER commit these)
+**/keys/
+*_service_account.json
+*_client_secrets.json
+*_token.json
+gdrive_*.json
+credentials.json
+token.json
+*.pem
+*.p12
+
 # for data sets
 omniglot_resized
 data/
