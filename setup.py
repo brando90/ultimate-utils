@@ -32,7 +32,7 @@ print('WARNING: YOU HAVE TO INSTALL PYTORCH ON YOUR OWN (WITH CUDA IF YOU NEED A
 
 setup(
     name='ultimate-utils',  # project name
-    version='0.9.0',
+    version='0.10.2',
     description="Brando's Ultimate Utils for Science, Machine Learning, and AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
