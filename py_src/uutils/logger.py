@@ -107,10 +107,8 @@ class Logger:
         self.args = args
         assert hasattr(args, 'log_root'), 'You need to set a log_root for this to work.'
 
-        assert log_with_logger == False, 'Logging with logger not implemented.'
         if log_with_logger:
-            raise ValueError('Not implemented')
-            self.set_up_logger()
+            raise ValueError('Logging with logger not implemented.')
 
         # - init experiment stats e.g. loss values, acc values. For reg acc should be R2.
         self.experiment_stats: dict = {'train': {'its': [], 'loss': [], 'acc': []},
@@ -143,7 +141,9 @@ class Logger:
             # print(msg, file=sys.stdout, flush=flush)
             # - to make sure it prints to the logger file too not just to console
             if log_file_name is not None:
-                print(msg, file=self.args.log_root / log_file_name, flush=flush)
+                log_path = self.args.log_root / log_file_name
+                with open(log_path, 'a', encoding='utf-8') as log_file:
+                    print(msg, file=log_file, flush=flush)
 
     # def pretty_log(self, obj: Any):
     #     """
@@ -318,77 +318,6 @@ class Logger:
             # careful: even if you return the figure it seems it needs to be closed inside here anyway...so if you close it
             # but return it who knows what might happen.
             plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
-
-
-def save_current_plots_and_stats(
-        title='Learnig & Evaluation Curves',
-
-        grid: bool = True,
-        show: bool = False,
-
-        wandb_log_fig=False
-):
-    """
-    TODO - adapt so that logger doesn't have this function as a method attached to the object
-
-    :param title:
-    :param grid:
-    :param show:
-    :param wandb_log_fig:
-    :return:
-    """
-    # plt.style.use('default')
-    # self.save_experiment_stats_to_json_file()
-
-    tag1 = f'Train loss'
-    # tag2 = f'Train accuracy/R2'
-    tag3 = f'Eval loss'
-    experiment_stats = uutils.load_json(
-        '~/Desktop/paper_figs/logs_Nov23_11-39-21_jobid_438713.iam-pbs/experiment_stats.json')
-
-    # - get figure with two axis, loss above and accuracy bellow
-    fig, (loss_ax1, acc_ax2) = plt.subplots(nrows=2, ncols=1, sharex=True)
-
-    # - plot stuff into loss axis
-    loss_ax1.plot(experiment_stats['train']['its'], experiment_stats['train']['loss'],
-                  label=tag1, linestyle='-', marker='x', color='r', linewidth=1)
-    loss_ax1.plot(experiment_stats['val']['its'], experiment_stats['val']['loss'],
-                  label=tag3, linestyle='-', marker='x', color='m', linewidth=1)
-
-    loss_ax1.legend()
-    loss_ax1.set_title(title)
-    loss_ax1.set_ylabel('Loss')
-    loss_ax1.grid(grid)
-
-    # - plot stuff into acc axis
-    # acc_ax2.plot(self.experiment_stats['train']['its'], self.experiment_stats['train']['acc'],
-    #               label=tag2, linestyle='-', marker='x', color='b', linewidth=1)
-    # acc_ax2.plot(self.experiment_stats['val']['its'], self.experiment_stats['val']['acc'],
-    #               label=tag4, linestyle='-', marker='x', color='c', linewidth=1)
-
-    # acc_ax2.legend()
-    # x_axis_label: str = self.args.training_mode  # epochs or iterations
-    # acc_ax2.set_xlabel(x_axis_label)
-    # acc_ax2.set_ylabel(ylabel_acc)
-    # acc_ax2.grid(grid)
-
-    plt.tight_layout()
-
-    plt.show() if show else None
-
-    log_root = Path('~/Desktop').expanduser()
-    fig.savefig(log_root / 'train_eval.svg')
-    fig.savefig(log_root / 'train_eval.pdf')
-    fig.savefig(log_root / 'train_eval.png')
-
-    # if wandb_log_fig:
-    #     assert False, 'Not tested'
-    #     import wandb
-    #
-    #     wandb.log(data={'fig': fig}, step=args.it, commit=True)
-    # careful: even if you return the figure it seems it needs to be closed inside here anyway...so if you close it
-    # but return it who knows what might happen.
-    # plt.close('all')  # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
 
 
 # - main, tests, examples, tutorials, etc.

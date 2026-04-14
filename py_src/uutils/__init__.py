@@ -3,6 +3,8 @@ Utils class with useful helper functions
 
 utils: https://www.quora.com/What-do-utils-files-tend-to-be-in-computer-programming-documentation
 """
+from __future__ import annotations
+
 import json
 import pickle
 import re
@@ -10,7 +12,6 @@ import subprocess
 import time
 
 import math
-import torch
 from datetime import datetime
 from pprint import pprint
 
@@ -47,15 +48,36 @@ from argparse import Namespace
 
 from typing import Union, Any, Optional, Match, Callable
 
-import progressbar
+try:
+    import progressbar
+except Exception:
+    progressbar = None
 
-from uutils.logging_uu.wandb_logging.common import setup_wandb
-from uutils.torch_uu.distributed import find_free_port
+try:
+    import torch
+except Exception:
+    torch = None
 
 
 def hello():
     import uutils
     print(f'\nhello from uutils __init__.py in:\n{uutils}\n')
+
+
+def setup_wandb(*args, **kwargs):
+    from uutils.logging_uu.wandb_logging.common import setup_wandb as _setup_wandb
+    return _setup_wandb(*args, **kwargs)
+
+
+def find_free_port() -> str:
+    """Return a currently free localhost TCP port."""
+    import socket
+    from contextlib import closing
+
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        sock.bind(("", 0))
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return str(sock.getsockname()[1])
 
 
 def helloworld():
@@ -316,19 +338,6 @@ def run_bash_command(cmd: str, use_run: bool = True) -> Any:
             return output
 
 
-def stanford_reauth():
-    """"
-    re-authenticates the python process in the kerberos system so that the
-    python process is not killed randomly.
-
-    ref: https://unix.stackexchange.com/questions/724902/how-does-one-send-new-commands-to-run-to-an-already-running-nohup-process-or-run
-    """
-    reauth_cmd: str = f'echo $SU_PASSWORD | /afs/cs/software/bin/reauth'
-    out = run_bash_command(reauth_cmd)
-    print('Output of reauth (/afs/cs/software/bin/reauth with password): ')
-    print(f'--> {out=}')
-    raise Exception('For now we are not doing reauth within python')
-
 
 def get_nvidia_smi_output() -> str:
     out = run_bash_command('nvidia-smi')
@@ -372,6 +381,8 @@ def get_good_progressbar(max_value: Union[int, progressbar.UnknownLength, None] 
     :rtype: object
     :return:
     """
+    if progressbar is None:
+        raise ImportError("progressbar2 is required for get_good_progressbar")
     widgets = [
         progressbar.Percentage(),
         ' ', progressbar.SimpleProgress(format=f'({progressbar.SimpleProgress.DEFAULT_FORMAT})'),
@@ -417,7 +428,7 @@ def get_logger(name, log_path, log_filename, rank=0):
 
 def remove_folders_recursively(path):
     print("WARNING: HAS NOT BEEN TESTED")
-    path.expanduser()
+    path = expanduser(path)
     try:
         shutil.rmtree(str(path))
     except OSError:
@@ -461,9 +472,9 @@ def _make_and_check_dir(path):
 
     mkdir(parents=True, exist_ok=True) see: https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
     """
-    path = os.path.expanduser(path)
+    path = Path(path).expanduser()
     path.mkdir(
-        parents=True, exit_ok=True
+        parents=True, exist_ok=True
     )  # creates parents if not presents. If it already exists that's ok do nothing and don't throw exceptions.
 
 
@@ -590,9 +601,7 @@ def xor(a: Any, b: Any) -> bool:
 
     ref: https://stackoverflow.com/a/432948/1601580
     """
-    assert (True + True + True + False) == 3, 'Semantics of python changed'  # guard against change semantics of python.
-    xor_bool: bool = (bool(a) + bool(b) == 1)
-    return xor_bool
+    return bool(a) != bool(b)
 
 
 def check_number_of_files_open_vs_allowed_open():

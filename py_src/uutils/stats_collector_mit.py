@@ -1,16 +1,79 @@
 # https://github.com/brando90/overparam_experiments
 
+from math import inf
+
 import numpy as np
 
-from maps import NamedDict # don't remove this
+try:
+    from maps import NamedDict  # don't remove this
+except ImportError:
+    class NamedDict(dict):
+        """Fallback attribute-accessible dict used by legacy callers."""
 
-#from new_training_algorithms import get_function_evaluation_from_name
-#from new_training_algorithms import evalaute_running_mdl_data_set
-#import nn_models as nn_mdls
+        __getattr__ = dict.__getitem__
+        __setattr__ = dict.__setitem__
+        __delattr__ = dict.__delitem__
 
-#import utils
 
-#from pdb import set_trace as st
+def _to_float(value):
+    return value.item() if hasattr(value, 'item') else float(value)
+
+
+def _is_nan(value) -> bool:
+    return not np.isfinite(_to_float(value))
+
+
+def evalaute_running_mdl_data_set(loss, error, net, dataloader, device, iterations=inf):
+    """Evaluate average batch loss/error over at most ``iterations`` batches."""
+    import torch
+
+    running_loss, running_error = 0.0, 0.0
+    num_batches = 0
+    with torch.no_grad():
+        for batch_index, (inputs, targets) in enumerate(dataloader):
+            if batch_index >= iterations:
+                break
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = net(inputs)
+            running_loss += _to_float(loss(outputs, targets))
+            running_error += _to_float(error(outputs, targets))
+            num_batches += 1
+    if num_batches == 0:
+        raise ValueError('dataloader produced no batches to evaluate')
+    return running_loss / num_batches, running_error / num_batches
+
+
+def evalaute_mdl_on_full_data_set(loss, error, net, dataloader, device, iterations=inf):
+    """Evaluate exact dataset loss/error over at most ``iterations`` batches."""
+    import torch
+
+    dataset_size = len(dataloader.dataset)
+    avg_loss, avg_error = 0.0, 0.0
+    with torch.no_grad():
+        for batch_index, (inputs, targets) in enumerate(dataloader):
+            batch_size = targets.size()[0]
+            if batch_index >= iterations:
+                n_total = batch_size * batch_index
+                if n_total == 0:
+                    raise ValueError('dataloader produced no batches to evaluate')
+                avg_loss = (dataset_size / batch_size) * avg_loss
+                avg_error = (dataset_size / batch_size) * avg_error
+                return avg_loss / n_total, avg_error / n_total
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = net(inputs)
+            avg_loss += (batch_size / dataset_size) * _to_float(loss(outputs, targets))
+            avg_error += (batch_size / dataset_size) * _to_float(error(outputs, targets))
+    return avg_loss, avg_error
+
+
+def get_function_evaluation_from_name(name):
+    if callable(name):
+        return name
+    if name == 'evalaute_running_mdl_data_set':
+        return evalaute_running_mdl_data_set
+    if name == 'evalaute_mdl_on_full_data_set':
+        return evalaute_mdl_on_full_data_set
+    return None
 
 class StatsCollector:
     '''
@@ -35,9 +98,9 @@ class StatsCollector:
         self.rs = []
         ''' '''
         D=(trials,epochs)
-        self.all_train_losses, self.all_val_losses, self.all_test_losses = np.zeros(D), [],  np.zeros(D)
-        self.all_train_errors, self.all_val_errors, self.all_test_errors =  np.zeros(D), [],  np.zeros(D)
-        self.all_train_accs, self.all_val_accs, self.all_test_accs = np.zeros(D), [],  np.zeros(D)
+        self.all_train_losses, self.all_val_losses, self.all_test_losses = np.zeros(D), np.zeros(D), np.zeros(D)
+        self.all_train_errors, self.all_val_errors, self.all_test_errors = np.zeros(D), np.zeros(D), np.zeros(D)
+        self.all_train_accs, self.all_val_accs, self.all_test_accs = np.zeros(D), np.zeros(D), np.zeros(D)
         ''' '''
         self.random_dirs = []
         ''' '''
@@ -61,9 +124,10 @@ class StatsCollector:
         for index, W in enumerate(mdl.parameters()):
             self.w_norms[index].append( W.data.norm(2) )
             if W.grad is not None:
-                self.grads[index].append( W.grad.data.norm(2) )
-                if utils.is_NaN(W.grad.data.norm(2)):
-                    raise ValueError(f'Nan Detected error happened at: i={i} loss_val={loss_val}, loss={loss}')
+                grad_norm = W.grad.data.norm(2)
+                self.grads[index].append(grad_norm)
+                if _is_nan(grad_norm):
+                    raise ValueError(f'NaN detected in gradient norm for parameter group {index}')
 
     def append_losses_errors_accs(self,train_loss, train_error, test_loss, test_error):
         self.train_losses.append(train_loss)
@@ -77,11 +141,12 @@ class StatsCollector:
         for index, W in enumerate(net.parameters()):
             self.perturbations_norms[index].append( perturbations[index].norm(2) )
 
-    def record_errors_loss_reference_net(self,criterion,error_criterion,net,trainloader,testloader,enable_cuda):
-        train_loss, train_error = self.evalaute_mdl_data_set(criterion,error_criterion,net,trainloader,enable_cuda)
-        test_loss, test_error = self.evalaute_mdl_data_set(criterion,error_criterion,net,testloader,enable_cuda)
-        self.ref_train_losses, self.ref_test_losses = train_loss, train_error
-        self.ref_train_accs, self.ref_test_accs = test_loss, test_error
+    def record_errors_loss_reference_net(self, criterion, error_criterion, net, trainloader, testloader, device):
+        train_loss, train_error = self.evalaute_mdl_data_set(criterion, error_criterion, net, trainloader, device)
+        test_loss, test_error = self.evalaute_mdl_data_set(criterion, error_criterion, net, testloader, device)
+        self.ref_train_losses, self.ref_test_losses = train_loss, test_loss
+        self.ref_train_errors, self.ref_test_errors = train_error, test_error
+        self.ref_train_accs, self.ref_test_accs = 1.0 - train_error, 1.0 - test_error
 
     def append_all_losses_errors_accs(self,dir_index,epoch,errors_losses):
         (Er_train_loss,Er_train_error,Er_test_loss,Er_test_error) = errors_losses
