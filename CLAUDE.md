@@ -20,9 +20,18 @@ pip install -e ~/ultimate-utils
 # Quick GPU sanity check
 python -c "import uutils; uutils.torch_uu.gpu_test_torch_any_device()"
 
-# PyPI release
-cd ~/ultimate-utils && python setup.py sdist bdist_wheel && twine check dist/* && twine upload dist/*
+# PyPI release (token at ~/keys/push-pypi-all.txt)
+cd ~/ultimate-utils && bash scripts/publish_to_pypi.sh
 ```
+
+### Publishing to PyPI
+
+When the user says "push uutils to pypi" or similar:
+1. Bump the version in `setup.py` (ask if unsure what version)
+2. Run `bash scripts/publish_to_pypi.sh` — builds, checks, uploads, cleans up
+3. Verify at https://pypi.org/project/ultimate-utils/
+
+The script reads the API token from `~/keys/push-pypi-all.txt`. For test PyPI: `bash scripts/publish_to_pypi.sh --test`.
 
 ### Notes
 
