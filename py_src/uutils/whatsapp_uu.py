@@ -68,6 +68,10 @@ def _load_config(config_file: str = "") -> dict:
 def _normalize_phone(phone: str) -> str:
     """Ensure phone number has country code prefix (digits only, leading +)."""
     phone = phone.strip()
+    # Strip the leading '+' (if any) to check for actual digits
+    digits = phone.lstrip("+")
+    if not digits:
+        raise ValueError("Phone number is empty — provide a number with country code (e.g., '+14155551234')")
     if not phone.startswith("+"):
         phone = "+" + phone
     return phone
