@@ -362,7 +362,10 @@ def send_email_via_outlook(
 
     # Escape strings for AppleScript
     def esc(s: str) -> str:
-        return s.replace("\\", "\\\\").replace('"', '\\"')
+        """Escape backslashes and quotes, and convert newlines for AppleScript."""
+        s = s.replace("\\", "\\\\").replace('"', '\\"')
+        s = s.replace("\r\n", "\n").replace("\r", "\n")
+        return s.replace("\n", '" & return & "')
 
     # Build attachment lines
     attach_lines = ""

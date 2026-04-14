@@ -68,52 +68,46 @@ def _load_config(config_file: str = "") -> dict:
 def _normalize_phone(phone: str) -> str:
     """Ensure phone number has country code prefix (digits only, leading +)."""
     phone = phone.strip()
-    # Strip the leading '+' (if any) to check for actual digits
-    digits = phone.lstrip("+")
+    # Extract only digits from the number
+    digits = "".join(c for c in phone if c.isdigit())
     if not digits:
         raise ValueError("Phone number is empty — provide a number with country code (e.g., '+14155551234')")
-    if not phone.startswith("+"):
-        phone = "+" + phone
-    return phone
+    # Always return with leading + for a canonical representation
+    return "+" + digits
 
 
 # ── Meta Business Cloud API ──────────────────────────────────────────
 
-def _send_meta_text(config: dict, to: str, message: str) -> dict:
-    """Send a text message via Meta WhatsApp Business Cloud API."""
+def _send_meta_request(config: dict, payload: dict) -> dict:
+    """Send a request to the Meta WhatsApp Business Cloud API."""
     api_version = config.get("api_version", "v21.0")
     phone_number_id = config["phone_number_id"]
     access_token = config["access_token"]
-
     url = f"https://graph.facebook.com/{api_version}/{phone_number_id}/messages"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
+    resp = requests.post(url, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _send_meta_text(config: dict, to: str, message: str) -> dict:
+    """Send a text message via Meta WhatsApp Business Cloud API."""
     payload = {
         "messaging_product": "whatsapp",
         "to": to.lstrip("+"),
         "type": "text",
         "text": {"body": message},
     }
-    resp = requests.post(url, headers=headers, json=payload, timeout=30)
-    resp.raise_for_status()
-    result = resp.json()
+    result = _send_meta_request(config, payload)
     log.info("Meta WhatsApp message sent to %s: %s", to, result.get("messages", [{}])[0].get("id", "?"))
     return result
 
 
 def _send_meta_template(config: dict, to: str, template_name: str, language: str, components: list | None) -> dict:
     """Send a template message via Meta WhatsApp Business Cloud API."""
-    api_version = config.get("api_version", "v21.0")
-    phone_number_id = config["phone_number_id"]
-    access_token = config["access_token"]
-
-    url = f"https://graph.facebook.com/{api_version}/{phone_number_id}/messages"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
     template: dict = {
         "name": template_name,
         "language": {"code": language},
@@ -127,9 +121,7 @@ def _send_meta_template(config: dict, to: str, template_name: str, language: str
         "type": "template",
         "template": template,
     }
-    resp = requests.post(url, headers=headers, json=payload, timeout=30)
-    resp.raise_for_status()
-    result = resp.json()
+    result = _send_meta_request(config, payload)
     log.info("Meta WhatsApp template '%s' sent to %s", template_name, to)
     return result
 
@@ -246,7 +238,7 @@ if __name__ == "__main__":
     # Test phone normalization
     assert _normalize_phone("14155551234") == "+14155551234"
     assert _normalize_phone("+14155551234") == "+14155551234"
-    assert _normalize_phone("  +44 20 1234 5678  ") == "+44 20 1234 5678"
+    assert _normalize_phone("  +44 20 1234 5678  ") == "+442012345678"
     print("Phone normalization tests passed ✓")
 
     print("All dry-run smoke tests passed!")
