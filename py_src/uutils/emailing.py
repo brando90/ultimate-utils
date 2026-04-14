@@ -38,7 +38,6 @@ import json
 import logging
 import os
 import smtplib
-import ssl
 from contextlib import contextmanager
 from email.message import Message
 from email.mime.application import MIMEApplication
@@ -210,20 +209,14 @@ class SMTPNotifier(Notifier):
 
     @contextmanager
     def _smtp_client(self):
-        context = ssl.create_default_context()
         if self.port == 465:
-            with smtplib.SMTP_SSL(
-                self.host,
-                self.port,
-                timeout=30,
-                context=context,
-            ) as server:
+            with smtplib.SMTP_SSL(self.host, self.port, timeout=30) as server:
                 server.login(self.user, self.password)
                 yield server
                 return
 
         with smtplib.SMTP(self.host, self.port, timeout=30) as server:
-            server.starttls(context=context)
+            server.starttls()
             server.login(self.user, self.password)
             yield server
 
