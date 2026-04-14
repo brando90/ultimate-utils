@@ -324,24 +324,76 @@ def send_email_smtp(
         notifier.notify(to, subject, body)
 
 
-# ── Stanford email presets ─────────────────────────────────────────────
+# ── Outlook AppleScript (macOS) ───────────────────────────────────────
 
-# Stanford uses Office 365 for email
-STANFORD_SMTP = {
-    "host": "smtp.office365.com",
-    "port": 587,
-    "user": "brando9@stanford.edu",
-    "from_addr": "brando9@stanford.edu",
-    "pass_file": "~/keys/stanford_smtp_password.txt",
-}
+def send_email_via_outlook(
+    to: str,
+    subject: str,
+    body: str,
+    sender: str = "",
+    attachments: list[Path | str] | None = None,
+    dry_run: bool = False,
+) -> None:
+    """Send an email via the local Microsoft Outlook app (macOS only).
 
-STANFORD_CS_SMTP = {
-    "host": "smtp.office365.com",
-    "port": 587,
-    "user": "brando9@cs.stanford.edu",
-    "from_addr": "brando9@cs.stanford.edu",
-    "pass_file": "~/keys/stanford_cs_smtp_password.txt",
-}
+    Uses AppleScript to drive the already-authenticated Outlook — no passwords
+    or SMTP config needed. Works with any account configured in Outlook
+    (Stanford, Gmail, etc.).
+
+    Args:
+        to: Recipient email address.
+        subject: Email subject line.
+        body: Plain text email body.
+        sender: From address (e.g., "brando9@stanford.edu"). If empty, uses
+                Outlook's default account.
+        attachments: Optional list of file paths to attach.
+        dry_run: If True, print instead of sending.
+    """
+    import platform
+    import subprocess
+
+    if platform.system() != "Darwin":
+        raise RuntimeError("send_email_via_outlook() requires macOS with Microsoft Outlook")
+
+    if dry_run:
+        log.info("[DRY-RUN] Outlook email to %s from %s: %s", to, sender or "(default)", subject)
+        print(f"[DRY-RUN] Outlook email to {to} from {sender or '(default)'}: {subject}")
+        return
+
+    # Escape strings for AppleScript
+    def esc(s: str) -> str:
+        return s.replace("\\", "\\\\").replace('"', '\\"')
+
+    # Build attachment lines
+    attach_lines = ""
+    if attachments:
+        for att in attachments:
+            p = Path(att).expanduser().resolve()
+            if not p.is_file():
+                log.warning("Attachment not found, skipping: %s", p)
+                continue
+            # Outlook AppleScript needs POSIX path
+            attach_lines += f'\n    make new attachment at newMsg with properties {{file:POSIX file "{esc(str(p))}"}}'
+
+    sender_line = ""
+    if sender:
+        sender_line = f'\n    set sender of newMsg to {{address:"{esc(sender)}"}}'
+
+    script = f'''
+tell application "Microsoft Outlook"
+    set newMsg to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}"}}{sender_line}
+    make new to recipient at newMsg with properties {{email address:{{address:"{esc(to)}"}}}}
+    {attach_lines}
+    send newMsg
+end tell
+'''
+    result = subprocess.run(
+        ["osascript", "-e", script],
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Outlook AppleScript failed: {result.stderr.strip()}")
+    log.info("Email sent via Outlook to %s from %s: %s", to, sender or "(default)", subject)
 
 
 def send_stanford_email(
@@ -349,11 +401,12 @@ def send_stanford_email(
     subject: str,
     body: str,
     sender: str = "brando9@stanford.edu",
-    bcc: str = "",
     attachments: list[Path | str] | None = None,
     dry_run: bool = False,
 ) -> None:
-    """Send an email from a Stanford address.
+    """Send an email from a Stanford address via the local Outlook app.
+
+    Convenience wrapper around send_email_via_outlook() with Stanford defaults.
 
     Args:
         to: Recipient email address.
@@ -361,48 +414,12 @@ def send_stanford_email(
         body: Plain text email body.
         sender: Stanford sender address. Use "brando9@stanford.edu" (default)
                 or "brando9@cs.stanford.edu".
-        bcc: Optional BCC address.
         attachments: Optional list of file paths to attach.
-        dry_run: If True, use DryRunNotifier instead of sending.
-
-    Setup:
-        1. Get your Stanford/Office365 app password or OAuth token
-        2. Save it: echo 'YOUR_PASSWORD' > ~/keys/stanford_smtp_password.txt && chmod 600 ~/keys/stanford_smtp_password.txt
-        3. For CS: echo 'YOUR_PASSWORD' > ~/keys/stanford_cs_smtp_password.txt && chmod 600 ~/keys/stanford_cs_smtp_password.txt
+        dry_run: If True, print instead of sending.
     """
-    if dry_run:
-        notifier = DryRunNotifier()
-        if attachments:
-            notifier.notify_with_attachments(to, subject, body, [Path(a) for a in attachments])
-        else:
-            notifier.notify(to, subject, body)
-        return
-
-    # Select preset based on sender
-    if "cs.stanford" in sender:
-        preset = STANFORD_CS_SMTP
-    else:
-        preset = STANFORD_SMTP
-
-    pass_file = Path(preset["pass_file"]).expanduser()
-    if not pass_file.is_file():
-        raise FileNotFoundError(
-            f"Stanford SMTP password not found at {pass_file}\n"
-            f"Save your password: echo 'YOUR_PASSWORD' > {preset['pass_file']} && chmod 600 {preset['pass_file']}"
-        )
-    password = pass_file.read_text().strip()
-
-    send_email_smtp(
-        to=to,
-        subject=subject,
-        body=body,
-        smtp_user=preset["user"],
-        smtp_pass=password,
-        smtp_host=preset["host"],
-        smtp_port=preset["port"],
-        from_addr=sender,
-        bcc=bcc,
-        attachments=attachments,
+    send_email_via_outlook(
+        to=to, subject=subject, body=body,
+        sender=sender, attachments=attachments, dry_run=dry_run,
     )
 
 
@@ -479,3 +496,13 @@ if __name__ == '__main__':
         dry_run=True,
     )
     print("Stanford email dry-run tests passed!")
+
+    # Outlook dry-run test
+    send_email_via_outlook(
+        to="test@example.com",
+        subject="Outlook Test",
+        body="Testing Outlook dry-run",
+        sender="brando9@stanford.edu",
+        dry_run=True,
+    )
+    print("Outlook dry-run test passed!")
