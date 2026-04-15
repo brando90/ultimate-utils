@@ -31,6 +31,7 @@ from uutils.snap_cluster.task_queue import (
     list_completed,
     list_failed,
     init_queue,
+    default_queue_dir,
 )
 
 
@@ -90,11 +91,12 @@ Examples:
         """,
     )
     parser.add_argument("--prompt", type=str, help="Task prompt or command to execute")
+    _default_qd = default_queue_dir()
     parser.add_argument(
         "--queue_dir",
         type=str,
-        default="~/afs_task_queue",
-        help="Path to shared task queue on AFS/DFS (default: ~/afs_task_queue)",
+        default=_default_qd,
+        help=f"Path to shared task queue on DFS/AFS (default: {_default_qd})",
     )
     parser.add_argument(
         "--executor",

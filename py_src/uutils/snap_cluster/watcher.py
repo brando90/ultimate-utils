@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -35,6 +36,7 @@ from uutils.snap_cluster.task_queue import (
     claim_task,
     complete_task,
     get_server_name,
+    default_queue_dir,
 )
 
 logging.basicConfig(
@@ -64,16 +66,22 @@ def execute_claude_code(task: Task, log_dir: Path) -> int:
     """
     Execute a task using Claude Code CLI.
 
-    Runs: claude --print --dangerously-skip-permissions --model <model> "<prompt>"
+    Uses `clauded` if available (SNAP wrapper: claude --dangerously-skip-permissions "$@"),
+    otherwise falls back to `claude` with explicit flags.
+    Runs in --print mode (non-interactive) with the given prompt.
     """
     stdout_log = log_dir / f"{task.task_id}.stdout.log"
     stderr_log = log_dir / f"{task.task_id}.stderr.log"
 
-    cmd = ["claude"]
-
-    # Permission mode
-    if task.claude_permissions == "full":
-        cmd.append("--dangerously-skip-permissions")
+    # Prefer `clauded` (SNAP wrapper at /afs/cs.stanford.edu/u/<user>/bin/clauded
+    # or /dfs/scratch0/<user>/bin/clauded) which already does --dangerously-skip-permissions
+    use_clauded = task.claude_permissions == "full" and shutil.which("clauded")
+    if use_clauded:
+        cmd = ["clauded"]
+    else:
+        cmd = ["claude"]
+        if task.claude_permissions == "full":
+            cmd.append("--dangerously-skip-permissions")
 
     # Model
     if task.claude_model:
@@ -277,8 +285,8 @@ Examples:
     parser.add_argument(
         "--queue_dir",
         type=str,
-        default="~/afs_task_queue",
-        help="Path to shared task queue directory on AFS/DFS (default: ~/afs_task_queue)",
+        default=None,
+        help="Path to shared task queue directory on DFS/AFS (default: auto-detect DFS or ~/task_queue)",
     )
     parser.add_argument(
         "--server_name",
@@ -300,9 +308,10 @@ Examples:
 
     args = parser.parse_args()
     server_name = args.server_name or get_server_name()
+    queue_dir = args.queue_dir or default_queue_dir()
 
     watcher_loop(
-        queue_dir=args.queue_dir,
+        queue_dir=queue_dir,
         server_name=server_name,
         poll_interval=args.poll_interval,
         only_targeted=args.only_targeted,

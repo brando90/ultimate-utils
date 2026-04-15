@@ -1,8 +1,11 @@
 """
-Filesystem-based task queue for distributing work across SNAP servers via AFS/DFS.
+Filesystem-based task queue for distributing work across SNAP servers via DFS/AFS.
 
 Uses atomic file operations (os.rename on the same filesystem) for locking,
 so no external dependencies are needed -- just a shared filesystem.
+
+Default queue location: /dfs/scratch0/<user>/task_queue/
+(DFS is NFS-mounted and accessible from all SNAP nodes.)
 
 Directory layout:
     queue_dir/
@@ -18,10 +21,25 @@ import json
 import os
 import time
 import uuid
+import getpass
 import platform
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List
+
+
+def default_queue_dir() -> str:
+    """
+    Return the default queue directory path for SNAP.
+
+    Prefers /dfs/scratch0/<user>/task_queue (shared across all nodes via NFS).
+    Falls back to ~/task_queue if DFS is not available.
+    """
+    user = getpass.getuser()
+    dfs_path = f"/dfs/scratch0/{user}/task_queue"
+    if os.path.isdir(f"/dfs/scratch0/{user}"):
+        return dfs_path
+    return os.path.expanduser("~/task_queue")
 
 
 # -- Task schema ----------------------------------------------------------------

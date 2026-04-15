@@ -18,7 +18,13 @@
 #   bash setup_watchers.sh --status                 # Check watcher status
 #
 # Configuration (edit these or pass as env vars):
-QUEUE_DIR="${QUEUE_DIR:-$HOME/afs_task_queue}"
+# Default to DFS (shared across all SNAP nodes). Falls back to $HOME/task_queue.
+if [ -d "/dfs/scratch0/$(whoami)" ]; then
+    _DEFAULT_QUEUE="/dfs/scratch0/$(whoami)/task_queue"
+else
+    _DEFAULT_QUEUE="$HOME/task_queue"
+fi
+QUEUE_DIR="${QUEUE_DIR:-$_DEFAULT_QUEUE}"
 # Real SNAP server names (edit to match your access): compute, GPU, etc.
 # See https://ilwiki.stanford.edu/doku.php?id=snap-servers:snap-servers
 # Common servers: rambo, madmax1-7, hyperion1-3, turing1-3, ampere1-9, etc.
