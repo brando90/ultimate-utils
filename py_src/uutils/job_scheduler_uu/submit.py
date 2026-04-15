@@ -14,7 +14,6 @@ import argparse
 import os
 import shutil
 import stat
-import sys
 import time
 from pathlib import Path
 
@@ -22,44 +21,45 @@ from uutils.job_scheduler_uu import DEFAULT_JOB_DIR
 
 
 def _deduplicate_dest(pending: Path, name: str) -> Path:
-    """Return a non-colliding Path under *pending* for the given *name*.
+    """Return a non-colliding dot-prefixed staging Path under *pending*.
 
     If ``pending/name`` already exists, appends a timestamp.  If that still
     collides (two submissions in the same second), appends an incrementing
     counter until a free slot is found.
 
-    Uses ``O_CREAT | O_EXCL`` to atomically claim the filename, preventing
-    a TOCTOU race where two concurrent submitters could both pick the same
-    destination and silently overwrite each other.
+    Uses ``O_CREAT | O_EXCL`` on a dot-prefixed staging file to atomically
+    claim the filename, preventing a TOCTOU race where two concurrent
+    submitters could both pick the same destination.  The caller writes
+    content to the staging file, then renames it to the final name via
+    :func:`_finalize_dest`.  The dot prefix ensures the watcher daemon
+    (which skips dotfiles) never executes a partially-written script.
     """
-    candidates = [pending / name]
     stem = Path(name).stem
     suffix = Path(name).suffix
     ts = time.strftime("%Y%m%d_%H%M%S")
-    # We try the plain name first, then timestamped, then counter-suffixed.
-    # _try_create_exclusive handles the atomic check-and-create.
-    for candidate in candidates:
-        fd = _try_create_exclusive(candidate)
+
+    # Build the list of candidate final names in priority order:
+    # plain name -> timestamped -> counter-suffixed.
+    def _candidates():
+        yield name
+        yield f"{stem}_{ts}{suffix}"
+        counter = 1
+        while counter <= 10000:
+            yield f"{stem}_{ts}_{counter}{suffix}"
+            counter += 1
+
+    for final_name in _candidates():
+        # Check that the final destination doesn't already exist.
+        final_path = pending / final_name
+        if final_path.exists():
+            continue
+        # Atomically create a dot-prefixed staging file.
+        staging_path = pending / f".{final_name}"
+        fd = _try_create_exclusive(staging_path)
         if fd is not None:
             os.close(fd)
-            return candidate
-    # Plain name was taken; try timestamped.
-    candidate = pending / f"{stem}_{ts}{suffix}"
-    fd = _try_create_exclusive(candidate)
-    if fd is not None:
-        os.close(fd)
-        return candidate
-    # Timestamped also taken; append counter.
-    counter = 1
-    while True:
-        candidate = pending / f"{stem}_{ts}_{counter}{suffix}"
-        fd = _try_create_exclusive(candidate)
-        if fd is not None:
-            os.close(fd)
-            return candidate
-        counter += 1
-        if counter > 10000:
-            raise RuntimeError(f"Could not find a free slot for {name!r} after 10000 attempts")
+            return staging_path
+    raise RuntimeError(f"Could not find a free slot for {name!r} after 10000 attempts")
 
 
 def _try_create_exclusive(path: Path) -> int | None:
@@ -73,6 +73,18 @@ def _try_create_exclusive(path: Path) -> int | None:
         return None
 
 
+def _finalize_dest(staging: Path) -> Path:
+    """Rename a dot-prefixed staging file to its final (non-dot) name.
+
+    The watcher daemon skips dotfiles, so this rename is what makes the job
+    visible to the scheduler.  ``os.rename()`` is atomic on a single
+    filesystem (including NFS for same-directory renames).
+    """
+    final = staging.parent / staging.name.removeprefix(".")
+    os.rename(str(staging), str(final))
+    return final
+
+
 def submit_job(
     script: str | Path | None = None,
     *,
@@ -81,6 +93,11 @@ def submit_job(
     job_name: str | None = None,
 ) -> Path:
     """Copy *script* (or create one from *inline*) into pending/.
+
+    The file is first written to a dot-prefixed staging path (invisible to
+    the watcher daemon) and then atomically renamed to its final name.
+    This prevents the watcher from claiming and executing a partially-written
+    job script.
 
     Returns the Path of the new file in pending/.
     """
@@ -93,18 +110,20 @@ def submit_job(
         name = job_name or f"inline_{ts}.sh"
         # Use deduplication even for inline jobs — two inline submits in the
         # same second would otherwise overwrite each other.
-        dest = _deduplicate_dest(pending, name)
-        dest.write_text(f"#!/usr/bin/env bash\nset -euo pipefail\n{inline}\n")
-        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        staging = _deduplicate_dest(pending, name)
+        staging.write_text(f"#!/usr/bin/env bash\nset -euo pipefail\n{inline}\n")
+        staging.chmod(staging.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        dest = _finalize_dest(staging)
     elif script:
         src = Path(script).expanduser().resolve()
         if not src.is_file():
             raise FileNotFoundError(f"Script not found: {src}")
         name = job_name or src.name
-        dest = _deduplicate_dest(pending, name)
-        shutil.copy2(str(src), str(dest))
+        staging = _deduplicate_dest(pending, name)
+        shutil.copy2(str(src), str(staging))
         # Ensure executable.
-        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        staging.chmod(staging.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        dest = _finalize_dest(staging)
     else:
         raise ValueError("Provide either 'script' path or 'inline' command string.")
 

@@ -18,6 +18,15 @@ import os
 # Shared default so scheduler.py and submit.py don't duplicate this logic.
 DEFAULT_JOB_DIR = os.path.join(os.path.expanduser("~"), "dfs", "job_queue")
 
+__all__ = [
+    "DEFAULT_JOB_DIR",
+    "init_job_dirs",
+    "claim_job",
+    "execute_job",
+    "watcher_loop",
+    "submit_job",
+]
+
 
 def __getattr__(name: str):
     """Lazy imports to avoid RuntimeWarning when running submodules via -m."""
