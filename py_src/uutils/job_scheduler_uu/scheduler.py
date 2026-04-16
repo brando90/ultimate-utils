@@ -51,7 +51,7 @@ from uutils.job_scheduler_uu import DEFAULT_JOB_DIR
 
 DEFAULT_POLL_SECONDS = 15
 DEFAULT_TIMEOUT_SECONDS = 48 * 3600  # 48 hours (safety net for truly runaway jobs)
-DEFAULT_GPU_IDLE_TIMEOUT = 30 * 60  # 30 minutes of continuous GPU idleness → kill
+DEFAULT_GPU_IDLE_TIMEOUT = 4 * 3600  # 4 hours of continuous GPU idleness → kill
 DEFAULT_GPU_IDLE_THRESHOLD = 1.0  # GPU utilization % at or below this counts as idle
 HOSTNAME = socket.gethostname()
 
@@ -59,6 +59,16 @@ HOSTNAME = socket.gethostname()
 # Using a triple-underscore makes it far less likely to collide with
 # underscores that naturally appear in job filenames or hostnames.
 _CLAIM_SEP = "___"
+
+# Job mode: "smart" wraps execution in a coding agent (clauded/codex) that
+# diagnoses failures, retries, and emails results.  "direct" runs the script
+# as a plain subprocess (legacy behavior).
+_JOB_MODE_HEADER = "# JOB_MODE:"
+DEFAULT_JOB_MODE = "smart"
+
+# Email for daemon lifecycle and smart-job notifications.
+NOTIFY_EMAIL = "brando.science@gmail.com"
+NOTIFY_CC = "brando9@stanford.edu"
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -213,6 +223,115 @@ def _recover_original_name(claimed_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Job mode detection and smart-agent discovery
+# ---------------------------------------------------------------------------
+
+
+def _detect_job_mode(job_path: Path, default_mode: str = DEFAULT_JOB_MODE) -> str:
+    """Read the first 20 lines of *job_path* for a ``# JOB_MODE:`` header.
+
+    Returns "smart" or "direct".  Falls back to *default_mode* if no header.
+    """
+    try:
+        with open(job_path, "r", errors="replace") as f:
+            for i, line in enumerate(f):
+                if i >= 20:
+                    break
+                stripped = line.strip()
+                if stripped.upper().startswith(_JOB_MODE_HEADER.upper()):
+                    mode = stripped.split(":", 1)[1].strip().lower()
+                    if mode in ("smart", "direct"):
+                        return mode
+                    log.warning(
+                        "Unknown JOB_MODE %r in %s — using default %r",
+                        mode, job_path.name, default_mode,
+                    )
+                    return default_mode
+    except Exception:
+        pass
+    return default_mode
+
+
+def _find_agent_binary() -> Optional[tuple[str, list[str]]]:
+    """Find the best available agent binary for smart-job execution.
+
+    Returns (display_name, cmd_prefix) or None if no agent is available.
+    Priority: clauded > codex > claude.
+    All run in fully-autonomous mode (no permission prompts).
+    """
+    candidates = [
+        ("clauded", ["clauded", "-p"]),
+        ("codex", ["codex", "exec", "--full-auto"]),
+        ("claude", ["claude", "-p", "--dangerously-skip-permissions"]),
+    ]
+    for name, cmd in candidates:
+        if shutil.which(cmd[0]) is not None:
+            log.info("Smart-job agent: %s (%s)", name, shutil.which(cmd[0]))
+            return (name, cmd)
+    return None
+
+
+def _build_smart_prompt(job_path: Path, log_path: Path, original_name: str) -> str:
+    """Construct the agent prompt for smart-job execution."""
+    return (
+        f"You are running a job for the DFS job watcher daemon on {HOSTNAME}.\n\n"
+        f"Job script: {job_path}\n"
+        f"Original name: {original_name}\n"
+        f"Log file: {log_path}\n\n"
+        f"Instructions:\n"
+        f"1. Execute the script: `bash {job_path}`\n"
+        f"2. If it fails (non-zero exit), read the error output, diagnose the "
+        f"issue, and try to fix and re-run (up to 3 attempts total).\n"
+        f"3. When done (PASS or FAIL after retries), send an email:\n"
+        f"   To: {NOTIFY_EMAIL}\n"
+        f"   CC: {NOTIFY_CC}\n"
+        f"   Subject: [Job] {original_name} on {HOSTNAME} — <PASS|FAIL>\n"
+        f"   Body: what happened, exit code, key log lines, what you tried.\n"
+        f"   Append the signature from ~/agents-config/email-signature.md.\n"
+        f"4. Do NOT ask for confirmation. Do NOT create drafts. Send the email.\n"
+        f"5. Print the final exit code as the last line of your output.\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Daemon lifecycle email notification
+# ---------------------------------------------------------------------------
+
+
+def _send_daemon_lifecycle_email(event: str, details: str) -> None:
+    """Best-effort email notification when the daemon starts or crashes.
+
+    Uses the first available agent to send (same priority as smart jobs).
+    Falls back to a simple log warning if no agent is available.
+    """
+    agent = _find_agent_binary()
+    if agent is None:
+        log.warning("No agent binary for lifecycle email — skipping: %s", event)
+        return
+
+    agent_name, cmd_prefix = agent
+    prompt = (
+        f"Send an email immediately (do NOT draft, do NOT ask):\n"
+        f"To: {NOTIFY_EMAIL}\n"
+        f"CC: {NOTIFY_CC}\n"
+        f"Subject: [Watcher] {HOSTNAME} — {event}\n"
+        f"Body:\n{details}\n\n"
+        f"Append signature from ~/agents-config/email-signature.md.\n"
+    )
+
+    try:
+        subprocess.Popen(
+            cmd_prefix + [prompt],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        log.info("Dispatched lifecycle email via %s: %s", agent_name, event)
+    except Exception as exc:
+        log.warning("Failed to dispatch lifecycle email: %s", exc)
+
+
+# ---------------------------------------------------------------------------
 # Job execution
 # ---------------------------------------------------------------------------
 
@@ -340,8 +459,8 @@ class _RunningJob:
         self.timed_out = False
 
 
-def _build_cmd(job_path: Path, original_name: str) -> Optional[list[str]]:
-    """Build the command list to execute *job_path*, or None if unsupported."""
+def _build_direct_cmd(job_path: Path, original_name: str) -> Optional[list[str]]:
+    """Build the command list for direct (non-agent) execution."""
     original_suffix = Path(original_name).suffix.lower()
     if original_suffix in (".sh", ".bash", ""):
         return ["bash", str(job_path)]
@@ -354,22 +473,66 @@ def _build_cmd(job_path: Path, original_name: str) -> Optional[list[str]]:
         return ["bash", str(job_path)]
 
 
-def launch_job(job_path: Path, logs_dir: Path) -> Optional[_RunningJob]:
-    """Start a job subprocess (non-blocking). Returns a _RunningJob or None."""
+# Cache the agent binary lookup so we don't re-scan PATH every launch.
+_cached_agent: Optional[tuple[Optional[tuple[str, list[str]]]]] = None
+
+
+def _get_agent_binary() -> Optional[tuple[str, list[str]]]:
+    global _cached_agent
+    if _cached_agent is None:
+        _cached_agent = (_find_agent_binary(),)
+    return _cached_agent[0]
+
+
+def launch_job(
+    job_path: Path,
+    logs_dir: Path,
+    default_mode: str = DEFAULT_JOB_MODE,
+) -> Optional[_RunningJob]:
+    """Start a job subprocess (non-blocking). Returns a _RunningJob or None.
+
+    If the job mode is "smart" and an agent binary (clauded/codex/claude) is
+    available, the job is wrapped in an agent session that can diagnose failures,
+    retry, and email results.  Falls back to direct execution if no agent is found.
+    """
     original_name = _recover_original_name(job_path.name)
-    cmd = _build_cmd(job_path, original_name)
-    if cmd is None:
-        return None
+    mode = _detect_job_mode(job_path, default_mode)
 
     log_file = logs_dir / f"{job_path.name}.log"
-    log.info("Launching %s (log=%s)", job_path.name, log_file)
+
+    if mode == "smart":
+        agent = _get_agent_binary()
+        if agent is not None:
+            agent_name, cmd_prefix = agent
+            prompt = _build_smart_prompt(job_path, log_file, original_name)
+            cmd = cmd_prefix + [prompt]
+            log.info(
+                "Launching %s in SMART mode via %s (log=%s)",
+                job_path.name, agent_name, log_file,
+            )
+        else:
+            log.warning(
+                "Smart mode requested for %s but no agent binary found — "
+                "falling back to direct execution",
+                job_path.name,
+            )
+            cmd = _build_direct_cmd(job_path, original_name)
+            if cmd is None:
+                return None
+            mode = "direct"
+    else:
+        cmd = _build_direct_cmd(job_path, original_name)
+        if cmd is None:
+            return None
+        log.info("Launching %s in DIRECT mode (log=%s)", job_path.name, log_file)
 
     try:
         fh = open(log_file, "w")
         fh.write(f"# Job:     {original_name}\n")
         fh.write(f"# Host:    {HOSTNAME}\n")
+        fh.write(f"# Mode:    {mode}\n")
         fh.write(f"# Started: {datetime.now(timezone.utc).isoformat()}\n")
-        fh.write(f"# Command: {' '.join(cmd)}\n")
+        fh.write(f"# Command: {cmd[0]} {'...' if mode == 'smart' else ' '.join(cmd[1:])}\n")
         fh.write("#" + "-" * 72 + "\n")
         fh.flush()
 
@@ -456,13 +619,14 @@ def execute_job(
     job_path: Path,
     logs_dir: Path,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    default_mode: str = DEFAULT_JOB_MODE,
 ) -> int:
     """Run a claimed job script synchronously (legacy single-job API).
 
     Kept for backwards compatibility. The concurrent watcher loop uses
     launch_job() + poll instead.
     """
-    rj = launch_job(job_path, logs_dir)
+    rj = launch_job(job_path, logs_dir, default_mode=default_mode)
     if rj is None:
         return 1
     try:
@@ -569,6 +733,7 @@ def watcher_loop(
     max_concurrent: int = 1,
     gpu_idle_timeout: int = DEFAULT_GPU_IDLE_TIMEOUT,
     gpu_idle_threshold: float = DEFAULT_GPU_IDLE_THRESHOLD,
+    default_mode: str = DEFAULT_JOB_MODE,
 ) -> None:
     """Poll pending/ and execute up to *max_concurrent* jobs in parallel.
 
@@ -579,6 +744,10 @@ def watcher_loop(
 
     Jobs are real OS processes (subprocess.Popen with start_new_session=True),
     so they get true parallelism — no GIL involvement.
+
+    If default_mode is "smart", jobs without a JOB_MODE header are wrapped in
+    a coding agent (clauded/codex/claude) that diagnoses failures, retries,
+    and emails results.
     """
     dirs = init_job_dirs(job_dir)
     pending_dir = dirs["pending"]
@@ -590,7 +759,7 @@ def watcher_loop(
     log.info(
         "Watcher started on %s — polling %s every %ds "
         "(wall_timeout=%ds, gpu_idle_timeout=%ds, gpu_idle_threshold=%.1f%%, "
-        "max_concurrent=%d)",
+        "max_concurrent=%d, default_mode=%s)",
         HOSTNAME,
         pending_dir,
         poll_interval,
@@ -598,6 +767,17 @@ def watcher_loop(
         gpu_idle_timeout,
         gpu_idle_threshold,
         max_concurrent,
+        default_mode,
+    )
+
+    _send_daemon_lifecycle_email(
+        "STARTED",
+        f"Watcher daemon started on {HOSTNAME}.\n"
+        f"Job dir: {job_dir}\n"
+        f"Poll: {poll_interval}s, Wall timeout: {timeout}s, "
+        f"GPU idle timeout: {gpu_idle_timeout}s, "
+        f"Max concurrent: {max_concurrent}, Default mode: {default_mode}\n"
+        f"Time: {datetime.now(timezone.utc).isoformat()}",
     )
 
     active_jobs: list[_RunningJob] = []
@@ -624,7 +804,7 @@ def watcher_loop(
                 if claimed is None:
                     continue
 
-                returncode = execute_job(claimed, logs_dir, timeout=timeout)
+                returncode = execute_job(claimed, logs_dir, timeout=timeout, default_mode=default_mode)
                 _move_finished_job(claimed, returncode, completed_dir, failed_dir)
 
             time.sleep(poll_interval)
@@ -718,7 +898,7 @@ def watcher_loop(
                 if claimed is None:
                     continue
 
-                rj = launch_job(claimed, logs_dir)
+                rj = launch_job(claimed, logs_dir, default_mode=default_mode)
                 if rj is None:
                     # Unsupported file type — move to failed.
                     _move_finished_job(claimed, 1, completed_dir, failed_dir)
