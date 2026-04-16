@@ -34,6 +34,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import shutil
 import shlex
 import signal
@@ -55,7 +56,22 @@ DEFAULT_POLL_SECONDS = 15
 DEFAULT_TIMEOUT_SECONDS = 48 * 3600  # 48 hours (safety net for truly runaway jobs)
 DEFAULT_GPU_IDLE_TIMEOUT = 4 * 3600  # 4 hours of continuous GPU idleness → kill
 DEFAULT_GPU_IDLE_THRESHOLD = 1.0  # GPU utilization % at or below this counts as idle
-HOSTNAME = socket.gethostname()
+
+
+def _safe_hostname() -> str:
+    """Return socket.gethostname() with anything non-filename-safe replaced.
+
+    We use HOSTNAME in filenames (claim paths, heartbeat files).  A hostname
+    containing ``/``, control chars, or other path metacharacters would break
+    or corrupt those paths.  Collapse any bad characters to ``_`` so the
+    value is always safe to concatenate into a filename.
+    """
+    raw = socket.gethostname() or "unknown-host"
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "_", raw)
+    return cleaned or "unknown-host"
+
+
+HOSTNAME = _safe_hostname()
 _UNSET = object()
 
 # Separator between the original filename and the claiming hostname.
@@ -88,7 +104,13 @@ log = logging.getLogger(__name__)
 # Directory initialisation
 # ---------------------------------------------------------------------------
 
-SUBDIRS = ("pending", "running", "completed", "failed", "logs")
+SUBDIRS = ("pending", "running", "completed", "failed", "logs", "watchers")
+
+# Heartbeat file name template.  One file per hostname inside watchers/.
+# Rewritten atomically (write tmp + rename) every poll cycle.  An observer
+# can list the directory and check mtime: older than ~3× poll interval
+# means the watcher is almost certainly dead.
+_HEARTBEAT_SUFFIX = ".heartbeat"
 
 
 def init_job_dirs(job_dir: str | Path) -> dict[str, Path]:
@@ -769,6 +791,102 @@ def _abort_active_jobs(
 
 
 # ---------------------------------------------------------------------------
+# Heartbeat — per-host liveness file for cross-node watcher monitoring
+# ---------------------------------------------------------------------------
+
+
+def _heartbeat_path(watchers_dir: Path) -> Path:
+    """Return the per-host heartbeat file path."""
+    return watchers_dir / f"{HOSTNAME}{_HEARTBEAT_SUFFIX}"
+
+
+def _write_heartbeat(
+    watchers_dir: Path,
+    *,
+    state: str,
+    started_iso: str,
+    poll_interval: int,
+    max_concurrent: int,
+    default_mode: str,
+    active_jobs: int,
+    pending_jobs: int,
+    cycles: int,
+    job_dir: str | None = None,
+) -> None:
+    """Atomically (re)write this host's heartbeat file.
+
+    Writes to ``<hostname>.heartbeat.tmp.<pid>`` then renames onto the final
+    path — rename is atomic within a single filesystem (same NFS export),
+    so observers never see a half-written file.  Errors are swallowed:
+    heartbeat failure must never crash the watcher loop.
+    """
+    payload = {
+        "hostname": HOSTNAME,
+        "pid": os.getpid(),
+        "state": state,
+        "started": started_iso,
+        "last_heartbeat": datetime.now(timezone.utc).isoformat(),
+        "poll_interval_s": poll_interval,
+        "max_concurrent": max_concurrent,
+        "default_mode": default_mode,
+        "active_jobs": active_jobs,
+        "pending_jobs": pending_jobs,
+        "cycles": cycles,
+        "job_dir": job_dir,
+    }
+    final = _heartbeat_path(watchers_dir)
+    tmp = watchers_dir / f"{HOSTNAME}{_HEARTBEAT_SUFFIX}.tmp.{os.getpid()}"
+    try:
+        with open(tmp, "w") as f:
+            json.dump(payload, f, indent=2)
+            f.write("\n")
+        os.replace(str(tmp), str(final))
+    except (OSError, TypeError, ValueError) as exc:
+        log.debug("Heartbeat write failed (%s): %s", final, exc)
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _finalize_heartbeat(watchers_dir: Path, state: str) -> None:
+    """Write a final heartbeat with terminal *state* (STOPPED / CRASHED).
+
+    Kept simple and tolerant — called from shutdown paths that must not
+    raise.  The file is *not* unlinked, so an observer can distinguish
+    'stopped cleanly at T' from 'no record / never started'.
+    """
+    final = _heartbeat_path(watchers_dir)
+    tmp = watchers_dir / f"{HOSTNAME}{_HEARTBEAT_SUFFIX}.tmp.{os.getpid()}.final"
+    try:
+        existing: dict = {}
+        try:
+            existing = json.loads(final.read_text())
+            if not isinstance(existing, dict):
+                existing = {}
+        except (OSError, ValueError):
+            existing = {}
+        existing.update(
+            {
+                "hostname": HOSTNAME,
+                "pid": os.getpid(),
+                "state": state,
+                "last_heartbeat": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        with open(tmp, "w") as f:
+            json.dump(existing, f, indent=2)
+            f.write("\n")
+        os.replace(str(tmp), str(final))
+    except (OSError, TypeError, ValueError) as exc:
+        log.debug("Final heartbeat write failed (%s): %s", final, exc)
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # Main watcher loop
 # ---------------------------------------------------------------------------
 
@@ -885,6 +1003,7 @@ def watcher_loop(
     completed_dir = dirs["completed"]
     failed_dir = dirs["failed"]
     logs_dir = dirs["logs"]
+    watchers_dir = dirs["watchers"]
 
     log.info(
         "Watcher started on %s — polling %s every %ds "
@@ -900,6 +1019,9 @@ def watcher_loop(
         default_mode,
     )
 
+    started_iso = datetime.now(timezone.utc).isoformat()
+    cycles = 0
+
     _send_daemon_lifecycle_email(
         "STARTED",
         f"Watcher daemon started on {HOSTNAME}.\n"
@@ -907,10 +1029,28 @@ def watcher_loop(
         f"Poll: {poll_interval}s, Wall timeout: {timeout}s, "
         f"GPU idle timeout: {gpu_idle_timeout}s, "
         f"Max concurrent: {max_concurrent}, Default mode: {default_mode}\n"
-        f"Time: {datetime.now(timezone.utc).isoformat()}",
+        f"Heartbeat: {_heartbeat_path(watchers_dir)}\n"
+        f"Time: {started_iso}",
     )
 
     active_jobs: list[_RunningJob] = []
+
+    job_dir_str = str(Path(job_dir).expanduser().resolve())
+
+    # Initial heartbeat so observers see us immediately, before the first
+    # poll cycle runs.
+    _write_heartbeat(
+        watchers_dir,
+        state="RUNNING",
+        started_iso=started_iso,
+        poll_interval=poll_interval,
+        max_concurrent=max_concurrent,
+        default_mode=default_mode,
+        active_jobs=0,
+        pending_jobs=0,
+        cycles=0,
+        job_dir=job_dir_str,
+    )
 
     try:
         while True:
@@ -1018,7 +1158,27 @@ def watcher_loop(
                     active_jobs.append(rj)
                     slots -= 1
 
-            # ---- Phase 3: Sleep until next poll ----
+            # ---- Phase 3: Heartbeat + sleep until next poll ----
+            cycles += 1
+            try:
+                pending_count = sum(
+                    1 for p in pending_dir.iterdir()
+                    if not p.name.startswith(".") and p.is_file()
+                )
+            except OSError:
+                pending_count = -1
+            _write_heartbeat(
+                watchers_dir,
+                state="RUNNING",
+                started_iso=started_iso,
+                poll_interval=poll_interval,
+                max_concurrent=max_concurrent,
+                default_mode=default_mode,
+                active_jobs=len(active_jobs),
+                pending_jobs=pending_count,
+                cycles=cycles,
+                job_dir=job_dir_str,
+            )
             _sleep_until_next_cycle(poll_interval, timeout, active_jobs)
     except BaseException:
         _abort_active_jobs(
@@ -1027,6 +1187,9 @@ def watcher_loop(
             failed_dir=failed_dir,
             reason="WATCHER_SHUTDOWN",
         )
+        # Write a best-effort STOPPED marker here; main() may overwrite
+        # with CRASHED if an uncaught Exception is propagating.
+        _finalize_heartbeat(watchers_dir, state="STOPPED")
         raise
 
 
@@ -1099,6 +1262,8 @@ Example:
     if args.max_concurrent < 1:
         parser.error("--max-concurrent must be >= 1")
 
+    watchers_dir = Path(args.job_dir).expanduser().resolve() / "watchers"
+
     try:
         watcher_loop(
             job_dir=args.job_dir,
@@ -1111,6 +1276,7 @@ Example:
         )
     except KeyboardInterrupt:
         log.info("Watcher stopped by user (Ctrl-C).")
+        _finalize_heartbeat(watchers_dir, state="STOPPED")
         _send_daemon_lifecycle_email(
             "STOPPED (Ctrl-C)",
             f"Watcher daemon on {HOSTNAME} was stopped by user.\n"
@@ -1119,6 +1285,7 @@ Example:
         sys.exit(0)
     except Exception as exc:
         log.exception("Watcher daemon crashed: %s", exc)
+        _finalize_heartbeat(watchers_dir, state="CRASHED")
         _send_daemon_lifecycle_email(
             "CRASHED",
             f"Watcher daemon on {HOSTNAME} crashed with exception:\n"
