@@ -19,6 +19,19 @@ from pathlib import Path
 
 from uutils.job_scheduler_uu import DEFAULT_JOB_DIR
 
+_JOB_MODE_HEADER = "# JOB_MODE:"
+
+
+def _validate_job_name(name: str) -> str:
+    """Reject job names that would escape pending/ or corrupt watcher prompts."""
+    if Path(name).name != name:
+        raise ValueError(f"Job name must not contain path separators: {name!r}")
+    if not name or name.strip(".") == "":
+        raise ValueError(f"Invalid job name: {name!r}")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in name):
+        raise ValueError(f"Job name must not contain control characters: {name!r}")
+    return name
+
 
 def _deduplicate_dest(pending: Path, name: str) -> Path:
     """Return a non-colliding dot-prefixed staging Path under *pending*.
@@ -85,12 +98,33 @@ def _finalize_dest(staging: Path) -> Path:
     return final
 
 
+def _inject_mode_header(staging: Path, mode_header: str) -> None:
+    """Insert ``mode_header`` near the top of a staged text script."""
+    if not mode_header:
+        return
+    content = staging.read_text(errors="replace")
+    lines = content.splitlines(keepends=True)
+    search_limit = min(len(lines), 20)
+
+    for i in range(search_limit):
+        if lines[i].strip().upper().startswith(_JOB_MODE_HEADER.upper()):
+            lines[i] = mode_header
+            staging.write_text("".join(lines))
+            return
+
+    insert_at = 1 if lines and lines[0].startswith("#!") else 0
+    lines.insert(insert_at, mode_header)
+    content = "".join(lines)
+    staging.write_text(content)
+
+
 def submit_job(
     script: str | Path | None = None,
     *,
     inline: str | None = None,
     job_dir: str | Path = DEFAULT_JOB_DIR,
     job_name: str | None = None,
+    mode: str | None = None,
 ) -> Path:
     """Copy *script* (or create one from *inline*) into pending/.
 
@@ -99,28 +133,35 @@ def submit_job(
     This prevents the watcher from claiming and executing a partially-written
     job script.
 
+    If *mode* is given ("smart" or "direct"), a ``# JOB_MODE: <mode>`` header
+    is injected into the script so the watcher knows how to execute it.
+    If omitted, the watcher's ``--default-mode`` determines the mode.
+
     Returns the Path of the new file in pending/.
     """
     pending = Path(job_dir).expanduser().resolve() / "pending"
     pending.mkdir(parents=True, exist_ok=True)
 
+    mode_header = f"# JOB_MODE: {mode}\n" if mode else ""
+
     if inline:
         # Generate a timestamped shell script from the inline command.
         ts = time.strftime("%Y%m%d_%H%M%S")
-        name = job_name or f"inline_{ts}.sh"
+        name = _validate_job_name(job_name or f"inline_{ts}.sh")
         # Use deduplication even for inline jobs — two inline submits in the
         # same second would otherwise overwrite each other.
         staging = _deduplicate_dest(pending, name)
-        staging.write_text(f"#!/usr/bin/env bash\nset -euo pipefail\n{inline}\n")
+        staging.write_text(f"#!/usr/bin/env bash\n{mode_header}set -euo pipefail\n{inline}\n")
         staging.chmod(staging.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         dest = _finalize_dest(staging)
     elif script:
         src = Path(script).expanduser().resolve()
         if not src.is_file():
             raise FileNotFoundError(f"Script not found: {src}")
-        name = job_name or src.name
+        name = _validate_job_name(job_name or src.name)
         staging = _deduplicate_dest(pending, name)
         shutil.copy2(str(src), str(staging))
+        _inject_mode_header(staging, mode_header)
         # Ensure executable.
         staging.chmod(staging.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         dest = _finalize_dest(staging)
@@ -146,6 +187,13 @@ Examples:
     parser.add_argument("--inline", help="Inline shell command to wrap in a script and submit")
     parser.add_argument("--job-dir", default=DEFAULT_JOB_DIR, help="Root of the job queue directory")
     parser.add_argument("--name", dest="job_name", help="Override the job filename in pending/")
+    parser.add_argument(
+        "--mode",
+        choices=["smart", "direct"],
+        default=None,
+        help="Execution mode. 'smart' = agent wraps job (diagnose failures, retry, "
+             "email). 'direct' = plain subprocess. Omit to use watcher's --default-mode.",
+    )
     args = parser.parse_args()
 
     if not args.script and not args.inline:
@@ -156,6 +204,7 @@ Examples:
         inline=args.inline,
         job_dir=args.job_dir,
         job_name=args.job_name,
+        mode=args.mode,
     )
 
 
