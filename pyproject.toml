@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ultimate-utils"
-version = "0.10.3"
+version = "0.10.4"
 description = "Brando's Ultimate Utils for Science, Machine Learning, and AI"
 readme = "README.md"
 license = "Apache-2.0"
