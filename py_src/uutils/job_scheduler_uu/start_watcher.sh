@@ -2,7 +2,8 @@
 # start_watcher.sh — Launch the DFS job-queue watcher inside a tmux session.
 #
 # Usage (from any node that shares the DFS):
-#   bash start_watcher.sh              # uses defaults
+#   bash start_watcher.sh              # uses defaults (1 job at a time)
+#   bash start_watcher.sh --max-concurrent 4  # run up to 4 jobs in parallel
 #   bash start_watcher.sh --poll 10    # custom poll interval
 #   bash start_watcher.sh --timeout 7200  # 2-hour timeout
 #
@@ -48,7 +49,7 @@ fi
 # Build the command string for tmux.  We must quote the job-dir in case it
 # contains spaces, and properly escape each extra argument.
 TMUX_CMD="${PYTHON} -m uutils.job_scheduler_uu.scheduler --job-dir '${JOB_DIR}'"
-for arg in ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}; do
+for arg in "${EXTRA_ARGS[@]}"; do
     # Escape single quotes within the argument for the tmux shell.
     escaped_arg="${arg//\'/\'\\\'\'}"
     TMUX_CMD="${TMUX_CMD} '${escaped_arg}'"

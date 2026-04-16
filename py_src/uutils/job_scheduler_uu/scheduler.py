@@ -50,7 +50,9 @@ from uutils.job_scheduler_uu import DEFAULT_JOB_DIR
 # ---------------------------------------------------------------------------
 
 DEFAULT_POLL_SECONDS = 15
-DEFAULT_TIMEOUT_SECONDS = 4 * 3600  # 4 hours
+DEFAULT_TIMEOUT_SECONDS = 48 * 3600  # 48 hours (safety net for truly runaway jobs)
+DEFAULT_GPU_IDLE_TIMEOUT = 30 * 60  # 30 minutes of continuous GPU idleness → kill
+DEFAULT_GPU_IDLE_THRESHOLD = 1.0  # GPU utilization % at or below this counts as idle
 HOSTNAME = socket.gethostname()
 
 # Separator between the original filename and the claiming hostname.
@@ -277,89 +279,198 @@ def _kill_process_tree(pid: int) -> None:
         pass
 
 
+# ---------------------------------------------------------------------------
+# GPU utilisation monitoring
+# ---------------------------------------------------------------------------
+
+
+def _get_gpu_utilizations() -> dict[int, float]:
+    """Return {gpu_index: utilization_%} for all GPUs, or {} on failure.
+
+    Uses nvidia-smi (no extra dependencies).  Falls back to empty dict if
+    nvidia-smi is missing or errors (e.g., CPU-only node).
+    """
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=index,utilization.gpu",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0:
+            return {}
+        utils: dict[int, float] = {}
+        for line in result.stdout.strip().splitlines():
+            parts = line.split(",")
+            if len(parts) == 2:
+                idx, util = int(parts[0].strip()), float(parts[1].strip())
+                utils[idx] = util
+        return utils
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
+        return {}
+
+
+def _max_gpu_utilization() -> float:
+    """Return the max GPU utilization across all GPUs, or -1.0 if unavailable."""
+    utils = _get_gpu_utilizations()
+    return max(utils.values()) if utils else -1.0
+
+
+class _RunningJob:
+    """Bookkeeping for a single in-flight job."""
+
+    __slots__ = (
+        "claimed_path", "proc", "log_fh", "start", "original_name",
+        "gpu_idle_since", "timed_out",
+    )
+
+    def __init__(
+        self,
+        claimed_path: Path,
+        proc: subprocess.Popen,
+        log_fh,
+        start: float,
+        original_name: str,
+    ):
+        self.claimed_path = claimed_path
+        self.proc = proc
+        self.log_fh = log_fh
+        self.start = start
+        self.original_name = original_name
+        self.gpu_idle_since: Optional[float] = None  # monotonic time when GPU went idle
+        self.timed_out = False
+
+
+def _build_cmd(job_path: Path, original_name: str) -> Optional[list[str]]:
+    """Build the command list to execute *job_path*, or None if unsupported."""
+    original_suffix = Path(original_name).suffix.lower()
+    if original_suffix in (".sh", ".bash", ""):
+        return ["bash", str(job_path)]
+    elif original_suffix == ".py":
+        return [sys.executable, str(job_path)]
+    elif original_suffix == ".json":
+        log.warning("JSON job definitions not yet supported; skipping %s", job_path.name)
+        return None
+    else:
+        return ["bash", str(job_path)]
+
+
+def launch_job(job_path: Path, logs_dir: Path) -> Optional[_RunningJob]:
+    """Start a job subprocess (non-blocking). Returns a _RunningJob or None."""
+    original_name = _recover_original_name(job_path.name)
+    cmd = _build_cmd(job_path, original_name)
+    if cmd is None:
+        return None
+
+    log_file = logs_dir / f"{job_path.name}.log"
+    log.info("Launching %s (log=%s)", job_path.name, log_file)
+
+    try:
+        fh = open(log_file, "w")
+        fh.write(f"# Job:     {original_name}\n")
+        fh.write(f"# Host:    {HOSTNAME}\n")
+        fh.write(f"# Started: {datetime.now(timezone.utc).isoformat()}\n")
+        fh.write(f"# Command: {' '.join(cmd)}\n")
+        fh.write("#" + "-" * 72 + "\n")
+        fh.flush()
+
+        proc = subprocess.Popen(
+            cmd,
+            stdout=fh,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
+            start_new_session=True,
+        )
+    except Exception as exc:
+        log.exception("Failed to launch %s: %s", job_path.name, exc)
+        try:
+            fh.write(f"\n# LAUNCH ERROR: {exc}\n")
+            fh.close()
+        except Exception:
+            pass
+        return None
+
+    return _RunningJob(
+        claimed_path=job_path,
+        proc=proc,
+        log_fh=fh,
+        start=time.monotonic(),
+        original_name=original_name,
+    )
+
+
+def _reap_job(job: _RunningJob, returncode: int) -> None:
+    """Close the log file and write a footer."""
+    elapsed = time.monotonic() - job.start
+    try:
+        job.log_fh.write(
+            f"\n# Finished: exit={returncode}  elapsed={elapsed:.1f}s\n"
+        )
+        job.log_fh.close()
+    except Exception:
+        pass
+    log.info(
+        "Job %s finished in %.1fs with exit code %d",
+        job.claimed_path.name,
+        elapsed,
+        returncode,
+    )
+
+
+def _timeout_job(job: _RunningJob, reason: str = "TIMEOUT") -> bool:
+    """Kill a timed-out job's process tree, returning True once it is reaped."""
+    elapsed = time.monotonic() - job.start
+    job.timed_out = True
+    log.warning(
+        "Job %s %s after %.0fs — killing process tree (pid %d)",
+        job.claimed_path.name,
+        reason,
+        elapsed,
+        job.proc.pid,
+    )
+    _kill_process_tree(job.proc.pid)
+    try:
+        job.proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        log.error(
+            "Could not reap zombie for job %s (pid %d) after 30s",
+            job.claimed_path.name,
+            job.proc.pid,
+        )
+        try:
+            job.log_fh.write(
+                f"\n# {reason} after {elapsed:.0f}s — kill sent by watcher\n"
+            )
+            job.log_fh.close()
+        except Exception:
+            pass
+        return False
+    try:
+        job.log_fh.write(f"\n# {reason} after {elapsed:.0f}s — killed by watcher\n")
+        job.log_fh.close()
+    except Exception:
+        pass
+    return True
+
+
 def execute_job(
     job_path: Path,
     logs_dir: Path,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> int:
-    """Run a claimed job script and return the exit code (or -1 on timeout).
+    """Run a claimed job script synchronously (legacy single-job API).
 
-    stdout and stderr are captured to ``logs/<claimed_name>.log``.
-    The subprocess inherits the caller's full environment (including
-    CUDA_VISIBLE_DEVICES and friends).
-
-    On timeout the subprocess tree is killed aggressively to free GPUs.
+    Kept for backwards compatibility. The concurrent watcher loop uses
+    launch_job() + poll instead.
     """
-    log_file = logs_dir / f"{job_path.name}.log"
-
-    log.info("Executing %s (timeout=%ds, log=%s)", job_path.name, timeout, log_file)
-
-    # Recover the original filename (before hostname was appended) to determine
-    # how to invoke the job.  The triple-underscore separator makes this robust
-    # even when the original filename or hostname contains single underscores.
-    original_name = _recover_original_name(job_path.name)
-    original_suffix = Path(original_name).suffix.lower()
-
-    if original_suffix in (".sh", ".bash", ""):
-        cmd = ["bash", str(job_path)]
-    elif original_suffix == ".py":
-        cmd = [sys.executable, str(job_path)]
-    elif original_suffix == ".json":
-        # JSON job definitions: expect a wrapper; for now just cat and skip.
-        log.warning("JSON job definitions not yet supported; skipping %s", job_path.name)
+    rj = launch_job(job_path, logs_dir)
+    if rj is None:
         return 1
-    else:
-        cmd = ["bash", str(job_path)]  # default: treat as shell script
-
-    start = time.monotonic()
-    with open(log_file, "w") as fh:
-        # Write a header into the log for easy identification.
-        fh.write(f"# Job:     {original_name}\n")
-        fh.write(f"# Host:    {HOSTNAME}\n")
-        fh.write(f"# Started: {datetime.now(timezone.utc).isoformat()}\n")
-        fh.write(f"# Timeout: {timeout}s\n")
-        fh.write(f"# Command: {' '.join(cmd)}\n")
-        fh.write("#" + "-" * 72 + "\n")
-        fh.flush()
-
-        try:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=fh,
-                stderr=subprocess.STDOUT,
-                env=os.environ.copy(),  # inherit CUDA_VISIBLE_DEVICES etc.
-                start_new_session=True,  # own process group for clean kill
-            )
-            try:
-                returncode = proc.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                elapsed = time.monotonic() - start
-                log.warning(
-                    "Job %s TIMED OUT after %.0fs — killing process tree (pid %d)",
-                    job_path.name,
-                    elapsed,
-                    proc.pid,
-                )
-                _kill_process_tree(proc.pid)
-                # Reap the zombie; use a try/except so a stuck zombie doesn't
-                # crash the entire watcher loop.
-                try:
-                    proc.wait(timeout=30)
-                except subprocess.TimeoutExpired:
-                    log.error(
-                        "Could not reap zombie for job %s (pid %d) after 30s",
-                        job_path.name,
-                        proc.pid,
-                    )
-                fh.write(f"\n# TIMEOUT after {elapsed:.0f}s — killed by watcher\n")
-                return -1
-        except Exception as exc:
-            log.exception("Failed to execute %s: %s", job_path.name, exc)
-            fh.write(f"\n# EXECUTION ERROR: {exc}\n")
-            return 1
-
-    elapsed = time.monotonic() - start
-    log.info("Job %s finished in %.1fs with exit code %d", job_path.name, elapsed, returncode)
+    try:
+        returncode = rj.proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        _timeout_job(rj)
+        return -1
+    _reap_job(rj, returncode)
     return returncode
 
 
@@ -397,16 +508,77 @@ def _safe_mtime(p: Path) -> float:
         return float("inf")
 
 
+def _move_finished_job(
+    claimed: Path,
+    returncode: int,
+    completed_dir: Path,
+    failed_dir: Path,
+) -> None:
+    """Move a finished job from running/ to completed/ or failed/."""
+    target_dir = completed_dir if returncode == 0 else failed_dir
+    label = "completed" if returncode == 0 else "failed"
+    dest = _unique_dest(target_dir, claimed.name)
+    try:
+        shutil.move(str(claimed), str(dest))
+        log.info("Job %s -> %s/ (exit=%d)", claimed.name, label, returncode)
+    except OSError as exc:
+        log.error(
+            "Failed to move job %s to %s/ (exit=%d): %s — "
+            "attempting cleanup of stale running/ file",
+            claimed.name,
+            label,
+            returncode,
+            exc,
+        )
+        try:
+            claimed.unlink(missing_ok=True)
+            log.info("Removed stale running/ file: %s", claimed.name)
+        except OSError as cleanup_exc:
+            log.error(
+                "Could not clean up stale running/ file %s: %s",
+                claimed.name,
+                cleanup_exc,
+            )
+
+
+def _sleep_until_next_cycle(
+    poll_interval: int,
+    timeout: int,
+    active_jobs: list[_RunningJob],
+) -> None:
+    """Sleep until the next poll, or sooner if a job timeout is due."""
+    sleep_for = float(poll_interval)
+    if active_jobs:
+        unreached_timeouts = [
+            job.start + timeout for job in active_jobs if not job.timed_out
+        ]
+        if unreached_timeouts:
+            now = time.monotonic()
+            next_deadline = min(unreached_timeouts)
+            sleep_for = min(sleep_for, max(0.0, next_deadline - now))
+        else:
+            # A kill has already been sent; poll at a modest cadence for reap.
+            sleep_for = min(sleep_for, 1.0)
+    time.sleep(sleep_for)
+
+
 def watcher_loop(
     job_dir: str | Path,
     poll_interval: int = DEFAULT_POLL_SECONDS,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     max_concurrent: int = 1,
+    gpu_idle_timeout: int = DEFAULT_GPU_IDLE_TIMEOUT,
+    gpu_idle_threshold: float = DEFAULT_GPU_IDLE_THRESHOLD,
 ) -> None:
-    """Poll pending/ and execute jobs forever.
+    """Poll pending/ and execute up to *max_concurrent* jobs in parallel.
 
-    Currently runs jobs sequentially (max_concurrent=1).  The parameter is
-    reserved for future multi-slot support.
+    Each cycle:
+        1. Reap finished/timed-out jobs (non-blocking poll of child PIDs).
+        2. If slots are free, claim and launch new jobs from pending/.
+        3. Sleep until the next poll.
+
+    Jobs are real OS processes (subprocess.Popen with start_new_session=True),
+    so they get true parallelism — no GIL involvement.
     """
     dirs = init_job_dirs(job_dir)
     pending_dir = dirs["pending"]
@@ -416,74 +588,147 @@ def watcher_loop(
     logs_dir = dirs["logs"]
 
     log.info(
-        "Watcher started on %s — polling %s every %ds (timeout=%ds)",
+        "Watcher started on %s — polling %s every %ds "
+        "(wall_timeout=%ds, gpu_idle_timeout=%ds, gpu_idle_threshold=%.1f%%, "
+        "max_concurrent=%d)",
         HOSTNAME,
         pending_dir,
         poll_interval,
         timeout,
+        gpu_idle_timeout,
+        gpu_idle_threshold,
+        max_concurrent,
     )
 
+    active_jobs: list[_RunningJob] = []
+
     while True:
-        # List pending jobs sorted by modification time (oldest first = FIFO).
-        # Use _safe_mtime to avoid crashing if a file vanishes between
-        # iterdir() and stat() (race with another watcher node).
-        try:
-            candidates = sorted(pending_dir.iterdir(), key=_safe_mtime)
-        except OSError as exc:
-            log.warning("Error listing pending dir: %s", exc)
-            candidates = []
-
-        for candidate in candidates:
-            # Skip dotfiles and non-files.
-            if candidate.name.startswith(".") or not candidate.is_file():
-                continue
-
-            # --- Security: reject filenames with path separators ---
+        if max_concurrent == 1:
             try:
-                _sanitize_filename(candidate.name)
-            except ValueError:
-                log.warning("Skipping invalid job filename: %r", candidate.name)
-                continue
-
-            # --- Atomic claim attempt (NFS-safe hardlink protocol) ---
-            claimed = claim_job(candidate, running_dir)
-            if claimed is None:
-                continue  # another node grabbed it
-
-            # --- Execute ---
-            returncode = execute_job(claimed, logs_dir, timeout=timeout)
-
-            # --- Cleanup: move to completed/ or failed/ ---
-            # Wrap in try/except so a failed move doesn't crash the loop.
-            target_dir = completed_dir if returncode == 0 else failed_dir
-            label = "completed" if returncode == 0 else "failed"
-            dest = _unique_dest(target_dir, claimed.name)
-            try:
-                shutil.move(str(claimed), str(dest))
-                log.info("Job %s -> %s/ (exit=%d)", claimed.name, label, returncode)
+                candidates = sorted(pending_dir.iterdir(), key=_safe_mtime)
             except OSError as exc:
-                log.error(
-                    "Failed to move job %s to %s/ (exit=%d): %s — "
-                    "attempting cleanup of stale running/ file",
-                    claimed.name,
-                    label,
-                    returncode,
-                    exc,
-                )
-                # Best-effort: remove the stale file from running/ so it
-                # doesn't accumulate.  If this also fails, log it but move on.
-                try:
-                    claimed.unlink(missing_ok=True)
-                    log.info("Removed stale running/ file: %s", claimed.name)
-                except OSError as cleanup_exc:
-                    log.error(
-                        "Could not clean up stale running/ file %s: %s",
-                        claimed.name,
-                        cleanup_exc,
-                    )
+                log.warning("Error listing pending dir: %s", exc)
+                candidates = []
 
-        # Sleep before next poll.
-        time.sleep(poll_interval)
+            for candidate in candidates:
+                if candidate.name.startswith(".") or not candidate.is_file():
+                    continue
+
+                try:
+                    _sanitize_filename(candidate.name)
+                except ValueError:
+                    log.warning("Skipping invalid job filename: %r", candidate.name)
+                    continue
+
+                claimed = claim_job(candidate, running_dir)
+                if claimed is None:
+                    continue
+
+                returncode = execute_job(claimed, logs_dir, timeout=timeout)
+                _move_finished_job(claimed, returncode, completed_dir, failed_dir)
+
+            time.sleep(poll_interval)
+            continue
+
+        # ---- Phase 1: Reap finished / timed-out / GPU-idle jobs ----
+        still_running: list[_RunningJob] = []
+        gpu_util = _max_gpu_utilization()  # one nvidia-smi call per cycle
+        now = time.monotonic()
+
+        for job in active_jobs:
+            rc = job.proc.poll()
+            if rc is not None:
+                # Process exited.
+                if job.timed_out:
+                    _move_finished_job(
+                        job.claimed_path, -1, completed_dir, failed_dir
+                    )
+                else:
+                    _reap_job(job, rc)
+                    _move_finished_job(
+                        job.claimed_path, rc, completed_dir, failed_dir
+                    )
+            elif not job.timed_out and now - job.start > timeout:
+                # Hard wall-clock safety net — kill unconditionally.
+                if _timeout_job(job, reason="WALL_TIMEOUT"):
+                    _move_finished_job(
+                        job.claimed_path, -1, completed_dir, failed_dir
+                    )
+                else:
+                    still_running.append(job)
+            elif job.timed_out:
+                still_running.append(job)
+            elif gpu_util >= 0 and gpu_idle_timeout > 0:
+                # GPU monitoring available — check idle status.
+                if gpu_util <= gpu_idle_threshold:
+                    if job.gpu_idle_since is None:
+                        job.gpu_idle_since = now
+                        log.debug(
+                            "Job %s: GPU idle (%.1f%%) — starting idle timer",
+                            job.claimed_path.name, gpu_util,
+                        )
+                    elif now - job.gpu_idle_since > gpu_idle_timeout:
+                        idle_mins = (now - job.gpu_idle_since) / 60
+                        if _timeout_job(
+                            job,
+                            reason=f"GPU_IDLE ({idle_mins:.0f}min at <={gpu_idle_threshold}%)",
+                        ):
+                            _move_finished_job(
+                                job.claimed_path, -1, completed_dir, failed_dir
+                            )
+                        else:
+                            still_running.append(job)
+                        continue
+                else:
+                    if job.gpu_idle_since is not None:
+                        log.debug(
+                            "Job %s: GPU active again (%.1f%%) — resetting idle timer",
+                            job.claimed_path.name, gpu_util,
+                        )
+                    job.gpu_idle_since = None
+                still_running.append(job)
+            else:
+                # No GPU monitoring or gpu_idle_timeout disabled — just keep running.
+                still_running.append(job)
+        active_jobs = still_running
+
+        # ---- Phase 2: Claim and launch new jobs up to capacity ----
+        slots = max_concurrent - len(active_jobs)
+        if slots > 0:
+            try:
+                candidates = sorted(pending_dir.iterdir(), key=_safe_mtime)
+            except OSError as exc:
+                log.warning("Error listing pending dir: %s", exc)
+                candidates = []
+
+            for candidate in candidates:
+                if slots <= 0:
+                    break
+
+                if candidate.name.startswith(".") or not candidate.is_file():
+                    continue
+
+                try:
+                    _sanitize_filename(candidate.name)
+                except ValueError:
+                    log.warning("Skipping invalid job filename: %r", candidate.name)
+                    continue
+
+                claimed = claim_job(candidate, running_dir)
+                if claimed is None:
+                    continue
+
+                rj = launch_job(claimed, logs_dir)
+                if rj is None:
+                    # Unsupported file type — move to failed.
+                    _move_finished_job(claimed, 1, completed_dir, failed_dir)
+                    continue
+
+                active_jobs.append(rj)
+                slots -= 1
+
+        # ---- Phase 3: Sleep until next poll ----
+        _sleep_until_next_cycle(poll_interval, timeout, active_jobs)
 
 
 # ---------------------------------------------------------------------------
@@ -519,15 +764,41 @@ Example:
         "--timeout",
         type=int,
         default=DEFAULT_TIMEOUT_SECONDS,
-        help=f"Max seconds per job before kill (default: {DEFAULT_TIMEOUT_SECONDS})",
+        help=f"Hard wall-clock safety net in seconds (default: {DEFAULT_TIMEOUT_SECONDS})",
+    )
+    parser.add_argument(
+        "--gpu-idle-timeout",
+        type=int,
+        default=DEFAULT_GPU_IDLE_TIMEOUT,
+        help=f"Kill after this many seconds of continuous GPU idleness "
+             f"(default: {DEFAULT_GPU_IDLE_TIMEOUT}). Set to 0 to disable.",
+    )
+    parser.add_argument(
+        "--gpu-idle-threshold",
+        type=float,
+        default=DEFAULT_GPU_IDLE_THRESHOLD,
+        help=f"GPU utilization %% at or below this counts as idle "
+             f"(default: {DEFAULT_GPU_IDLE_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--max-concurrent",
+        type=int,
+        default=1,
+        help="Max jobs to run in parallel on this node (default: 1)",
     )
     args = parser.parse_args()
+
+    if args.max_concurrent < 1:
+        parser.error("--max-concurrent must be >= 1")
 
     try:
         watcher_loop(
             job_dir=args.job_dir,
             poll_interval=args.poll,
             timeout=args.timeout,
+            max_concurrent=args.max_concurrent,
+            gpu_idle_timeout=args.gpu_idle_timeout,
+            gpu_idle_threshold=args.gpu_idle_threshold,
         )
     except KeyboardInterrupt:
         log.info("Watcher stopped by user (Ctrl-C).")
