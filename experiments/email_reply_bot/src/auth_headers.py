@@ -43,19 +43,37 @@ _DKIM_DOMAIN_RE = re.compile(
 
 
 def parse_authentication_results(header_value: str) -> AuthVerdict:
-    """Parse the value of an ``Authentication-Results:`` header."""
+    """Parse the value of an ``Authentication-Results:`` header.
+
+    When the header reports multiple verdicts for the same method (e.g. two
+    DKIM signatures on a forwarded message), the overall verdict is "pass" iff
+    every individual verdict is "pass" — any non-pass downgrades the whole
+    method. Otherwise the first non-pass verdict wins so ``verify_auth_headers``
+    can report a useful reason.
+    """
     if not header_value:
         return AuthVerdict()
-    spf = dkim = dmarc = "none"
+    per_method: dict[str, list[str]] = {"spf": [], "dkim": [], "dmarc": []}
     for match in _METHOD_RE.finditer(header_value):
         method = match.group(1).lower()
         result = match.group(2).lower()
-        if method == "spf":
-            spf = result
-        elif method == "dkim":
-            dkim = result
-        elif method == "dmarc":
-            dmarc = result
+        if method in per_method:
+            per_method[method].append(result)
+
+    def combine(results: list[str]) -> str:
+        if not results:
+            return "none"
+        if all(r == "pass" for r in results):
+            return "pass"
+        # Return the first non-pass verdict as a useful reason.
+        for r in results:
+            if r != "pass":
+                return r
+        return "none"
+
+    spf = combine(per_method["spf"])
+    dkim = combine(per_method["dkim"])
+    dmarc = combine(per_method["dmarc"])
     dkim_domain = ""
     m = _DKIM_DOMAIN_RE.search(header_value)
     if m:

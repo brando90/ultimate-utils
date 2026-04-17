@@ -229,6 +229,28 @@ class TestOutboundThreading:
         assert sent["references"] == "<CAB001@mail.gmail.com>"
         assert sent["subject"].lower().startswith("re:")
 
+    def test_references_chain_preserved(self, tmp_path: Path):
+        """When the inbound has an existing References header (multi-turn
+        thread), the outbound should extend it rather than replace it."""
+        raw = _load("legit_brando_science.eml").replace(
+            b"Subject: Re: Nightly SolveAll report\n",
+            b"Subject: Re: Nightly SolveAll report\nReferences: <first@x> <second@x>\n",
+        )
+        gmail = FakeGmail(inbox=[FetchedMessage("gm-0", "thr-0", raw)])
+        llm = FakeLLM()
+        store = Store(tmp_path / "state.sqlite")
+        p = Pipeline(
+            gmail=gmail,
+            llm=llm,
+            store=store,
+            config=PipelineConfig(bot_from_addr="brandojazz@gmail.com"),
+        )
+        p.run_once("INBOX")
+        sent = gmail.sent[0]
+        assert "<first@x>" in sent["references"]
+        assert "<second@x>" in sent["references"]
+        assert "<CAB001@mail.gmail.com>" in sent["references"]
+
 
 class TestAuditLog:
     def test_rejected_body_not_stored(self, tmp_path: Path):
@@ -284,3 +306,19 @@ class TestMimeBuilding:
         assert b"Subject: Re: hello" in raw
         assert b"hi there" in raw
         assert b"automated" in raw
+
+    def test_crlf_injection_in_subject_rejected(self):
+        """``EmailMessage`` must refuse to set a header value containing CR/LF,
+        so an attacker cannot smuggle extra headers (Bcc, etc) via a crafted
+        Subject."""
+        from src.gmail_client import build_reply_mime
+
+        with pytest.raises(Exception):
+            build_reply_mime(
+                from_addr="brandojazz@gmail.com",
+                to_addr="brando.science@gmail.com",
+                subject="hi\r\nBcc: evil@example.com",
+                in_reply_to="<abc@x>",
+                references="<abc@x>",
+                body_text="body",
+            )

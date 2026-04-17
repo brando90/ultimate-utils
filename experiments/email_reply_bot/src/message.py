@@ -17,6 +17,7 @@ class InboundMessage:
     return_path: str
     subject: str
     auth_results: str
+    references: str
     body_text: str
     raw: bytes
 
@@ -33,6 +34,7 @@ class InboundMessage:
             return_path=(msg.get("Return-Path") or "").strip(),
             subject=(msg.get("Subject") or "").strip(),
             auth_results=(msg.get("Authentication-Results") or "").strip(),
+            references=(msg.get("References") or "").strip(),
             body_text=body,
             raw=raw,
         )

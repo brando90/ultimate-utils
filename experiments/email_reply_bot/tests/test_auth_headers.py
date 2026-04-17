@@ -72,3 +72,44 @@ class TestVerifyAuthHeaders:
         ok, reason = verify_auth_headers("brando.science@gmail.com", WRONG_DKIM_DOMAIN)
         assert not ok
         assert "dkim" in reason.lower()
+
+
+class TestMultipleDkimVerdicts:
+    """Gmail can stamp multiple ``dkim=...`` tokens when a message carries
+    multiple DKIM signatures (common on forwarded mail). One failing signature
+    must downgrade the overall verdict, regardless of ordering."""
+
+    def test_fail_then_pass_rejected(self):
+        h = (
+            "mx.google.com; "
+            "dkim=fail header.i=@attacker.example; "
+            "dkim=pass header.i=@gmail.com; "
+            "spf=pass smtp.mailfrom=brando.science@gmail.com; "
+            "dmarc=pass header.from=gmail.com"
+        )
+        ok, reason = verify_auth_headers("brando.science@gmail.com", h)
+        assert not ok
+        assert "dkim" in reason.lower()
+
+    def test_pass_then_fail_rejected(self):
+        h = (
+            "mx.google.com; "
+            "dkim=pass header.i=@gmail.com; "
+            "dkim=fail header.i=@forwarder.example; "
+            "spf=pass smtp.mailfrom=brando.science@gmail.com; "
+            "dmarc=pass header.from=gmail.com"
+        )
+        ok, reason = verify_auth_headers("brando.science@gmail.com", h)
+        assert not ok
+        assert "dkim" in reason.lower()
+
+    def test_all_pass_accepted(self):
+        h = (
+            "mx.google.com; "
+            "dkim=pass header.i=@gmail.com; "
+            "dkim=pass header.i=@gmail.com; "
+            "spf=pass smtp.mailfrom=brando.science@gmail.com; "
+            "dmarc=pass header.from=gmail.com"
+        )
+        ok, reason = verify_auth_headers("brando.science@gmail.com", h)
+        assert ok, reason

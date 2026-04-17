@@ -150,10 +150,17 @@ class Pipeline:
         self.store.mark_seen(msg.message_id)
 
         if not self.cfg.dry_run:
+            # Preserve the inbound References chain so Gmail and other clients
+            # thread the reply correctly across many-turn conversations.
+            references = (
+                f"{msg.references} {msg.message_id}".strip()
+                if msg.references
+                else msg.message_id
+            )
             self.gmail.send_threaded_reply(
                 thread_id=msg.thread_id,
                 in_reply_to=msg.message_id,
-                references=msg.message_id,
+                references=references,
                 to=sender,
                 subject=msg.subject,
                 body_text=answer.rstrip() + "\n\n" + REPLY_FOOTER,
