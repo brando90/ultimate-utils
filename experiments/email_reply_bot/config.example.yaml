@@ -1,0 +1,20 @@
+# Copy to config.yaml (gitignored) and edit for your deployment.
+
+gmail:
+  user: "me"
+  bot_from_addr: "brandojazz@gmail.com"
+  label: "INBOX"
+  credentials_path: "~/.config/email_reply_bot/credentials.json"
+  token_path: "~/.config/email_reply_bot/token.json"
+
+llm:
+  model: "claude-opus-4-7"
+  max_tokens: 4096
+
+store_path: "~/.config/email_reply_bot/state.sqlite"
+pause_file: "/tmp/email_bot_pause"
+
+rate_limit_per_hour: 10
+require_auth_headers: true
+
+workdir: "~/ultimate-utils"

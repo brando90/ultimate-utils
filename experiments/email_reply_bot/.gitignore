@@ -1,0 +1,11 @@
+config.yaml
+.venv/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+credentials.json
+token.json
+__pycache__/
+*.pyc
+.pytest_cache/

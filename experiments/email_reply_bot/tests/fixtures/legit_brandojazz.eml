@@ -1,0 +1,10 @@
+Message-ID: <CAB002@mail.gmail.com>
+Authentication-Results: mx.google.com; dkim=pass header.i=@gmail.com header.s=20230601; spf=pass smtp.mailfrom=brandojazz@gmail.com; dmarc=pass header.from=gmail.com
+From: brandojazz@gmail.com
+To: brandojazz@gmail.com
+Reply-To: brandojazz@gmail.com
+Subject: A quick question
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+what is 2 + 2?
