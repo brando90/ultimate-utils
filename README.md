@@ -35,7 +35,24 @@ uutils.hello()
 | `uutils.jax_uu` | JAX multi-head attention, layer norm, flash attention implementations |
 | `uutils.numpy_uu` | Statistical moments, confidence intervals, matrix utilities |
 | `uutils.logging_uu` | Weights & Biases integration — setup, logging, sweeps, model watching |
-| `uutils.emailing` | SMTP email notifications with attachments |
+| `uutils.emailing` | SMTP email + Stanford Outlook (AppleScript) notifications with attachments |
+| `uutils.discord_uu` | One-way Discord notifications via webhooks (text, embeds, file uploads) |
+| `uutils.whatsapp_uu` | One-way WhatsApp notifications via Meta Cloud API or Twilio |
+
+## Notifications vs. Interactive Agents
+
+The messaging modules above (`emailing`, `discord_uu`, `whatsapp_uu`) are **one-way programmatic notification senders** — small libraries you import from scripts, schedulers, and watchers to push alerts like "job finished", "GPU idle", or "deploy complete". They are not chat agents; there is no conversation loop, no inbound message handling, and no LLM attached.
+
+If you want an **interactive AI assistant that lives inside WhatsApp / Discord / Telegram / iMessage** (reads your messages, replies, executes tasks), that is a different category of tool. Projects like [OpenClaw](https://github.com/steipete/claw-bot) (hosted via [myclaw.ai](https://myclaw.ai)) exist for that use case — they bundle Baileys, grammY, Discord.py, AppleScript bridges, etc., and wire them into an agent loop.
+
+**Rule of thumb:**
+
+| Need | Use |
+|------|-----|
+| Script on my cluster pings me when training finishes | `uutils.emailing` / `discord_uu` / `whatsapp_uu` |
+| I want to *chat* with an agent from my phone and have it triage email, reply to admin tasks, run commands | OpenClaw or similar (not this library) |
+
+Today Brando's default notification channel is email (`uutils.emailing`); Discord and WhatsApp modules are available but optional. For the interactive-agent use case, see issue [#41](https://github.com/brando90/ultimate-utils/issues/41).
 
 ## Installation
 
