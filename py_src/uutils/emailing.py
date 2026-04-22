@@ -418,6 +418,63 @@ def send_email_via_outlook(
     log.info("Email sent via Outlook to %s from %s: %s", to, sender or "(default)", subject)
 
 
+def email_collaborator(
+    who: str,
+    subject: str,
+    body: str,
+    smtp_user: str = "",
+    smtp_pass: str = "",
+    smtp_pass_file: str = "",
+    smtp_host: str = "smtp.gmail.com",
+    smtp_port: int = 587,
+    from_addr: str = "",
+    cc: str = "",
+    bcc: str = "",
+    attachments: list[Path | str] | None = None,
+    email_index: int = 0,
+) -> dict:
+    """Email a collaborator by name, github handle, alias, or email.
+
+    Looks ``who`` up in ``uutils.collaborators`` and sends via SMTP. Returns
+    the resolved collaborator record so callers can log who was contacted.
+
+    Examples:
+        email_collaborator("Patrick Yu", "Hi", "Ping about the PR",
+                           smtp_user="you@gmail.com",
+                           smtp_pass_file="~/keys/gmail_app_password.txt")
+        email_collaborator("SudharsanSundar", "Hi", "...", ...)
+    """
+    from uutils.collaborators import resolve
+
+    rec = resolve(who)
+    if rec is None:
+        raise KeyError(f"Unknown collaborator: {who!r} (not in uutils.collaborators)")
+    emails = rec.get("emails") or []
+    if not emails:
+        raise ValueError(
+            f"No email on file for {rec.get('name', who)!r}; add one to uutils.collaborators"
+        )
+    if email_index >= len(emails):
+        raise IndexError(
+            f"email_index={email_index} out of range for {rec.get('name')} ({len(emails)} emails)"
+        )
+    send_email_smtp(
+        to=emails[email_index],
+        subject=subject,
+        body=body,
+        smtp_user=smtp_user,
+        smtp_pass=smtp_pass,
+        smtp_pass_file=smtp_pass_file,
+        smtp_host=smtp_host,
+        smtp_port=smtp_port,
+        from_addr=from_addr,
+        cc=cc,
+        bcc=bcc,
+        attachments=attachments,
+    )
+    return rec
+
+
 def send_stanford_email(
     to: str,
     subject: str,
