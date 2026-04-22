@@ -34,6 +34,10 @@ When the user says "push uutils to pypi" or similar:
 
 The script reads the API token from `~/keys/push-pypi-all.txt`. For test PyPI: `bash scripts/publish_to_pypi.sh --test`.
 
+### Email
+
+When sending emails on Brando's behalf, CC brando9@stanford.edu, brando9@cs.stanford.edu, and brando.science@gmail.com (visible CC, not BCC). Append the signature from `~/agents-config/email-signature.md`.
+
 ### Notes
 
 - PyTorch must be installed separately (with CUDA if GPU needed).

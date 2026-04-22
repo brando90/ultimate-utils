@@ -236,13 +236,14 @@ class SMTPNotifier(Notifier):
 
     def __init__(
         self, host: str, port: int, user: str, password: str,
-        from_addr: str, bcc: str = "",
+        from_addr: str, cc: str = "", bcc: str = "",
     ):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.from_addr = from_addr
+        self.cc = cc
         self.bcc = bcc
 
     @contextmanager
@@ -259,10 +260,16 @@ class SMTPNotifier(Notifier):
             yield server
 
     def _send(self, msg: Message, to_email: str) -> None:
-        """Send a message, adding BCC recipient if configured."""
+        """Send a message, adding CC and BCC recipients if configured."""
         if not self.user or not self.password or not self.from_addr:
             raise ValueError("SMTPNotifier requires non-empty user, password, and from_addr")
         recipients = [to_email]
+        if self.cc:
+            cc_addrs = [a.strip() for a in self.cc.split(",") if a.strip()]
+            for addr in cc_addrs:
+                if addr not in recipients:
+                    recipients.append(addr)
+            msg["Cc"] = self.cc
         if self.bcc and self.bcc != to_email:
             recipients.append(self.bcc)
         with self._smtp_client() as server:
@@ -298,6 +305,7 @@ def get_notifier(
     smtp_user: str = "",
     smtp_pass: str = "",
     email_from: str = "",
+    cc: str = "",
     bcc: str = "",
     dry_run: bool = False,
     outbox_dir: str | Path = "artifacts/email_outbox",
@@ -305,7 +313,7 @@ def get_notifier(
     """Factory: returns SMTPNotifier if credentials are provided, else DryRunNotifier."""
     if dry_run or not smtp_host:
         return DryRunNotifier(outbox_dir)
-    return SMTPNotifier(smtp_host, smtp_port, smtp_user, smtp_pass, email_from, bcc=bcc)
+    return SMTPNotifier(smtp_host, smtp_port, smtp_user, smtp_pass, email_from, cc=cc, bcc=bcc)
 
 
 # ── Convenience functions ──────────────────────────────────────────────
@@ -320,6 +328,7 @@ def send_email_smtp(
     smtp_host: str = "smtp.gmail.com",
     smtp_port: int = 587,
     from_addr: str = "",
+    cc: str = "",
     bcc: str = "",
     attachments: list[Path | str] | None = None,
 ) -> None:
@@ -338,6 +347,7 @@ def send_email_smtp(
         smtp_host: SMTP server (default: smtp.gmail.com).
         smtp_port: SMTP port (default: 587 for STARTTLS).
         from_addr: From address. Defaults to smtp_user.
+        cc: Optional CC addresses (comma-separated).
         bcc: Optional BCC address.
         attachments: Optional list of file Paths to attach.
     """
@@ -355,7 +365,7 @@ def send_email_smtp(
     if not smtp_user or not from_addr:
         raise ValueError("SMTP sender requires smtp_user and/or from_addr")
 
-    notifier = SMTPNotifier(smtp_host, smtp_port, smtp_user, password, from_addr, bcc=bcc)
+    notifier = SMTPNotifier(smtp_host, smtp_port, smtp_user, password, from_addr, cc=cc, bcc=bcc)
     if attachments:
         notifier.notify_with_attachments(to, subject, body, attachments)
     else:
