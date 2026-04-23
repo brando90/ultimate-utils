@@ -48,6 +48,9 @@ dependencies = [
     "sentencepiece",
 ]
 
+[project.optional-dependencies]
+whatsapp = ["flask>=3.0"]
+
 [project.urls]
 Homepage = "https://github.com/brando90/ultimate-utils"
 Repository = "https://github.com/brando90/ultimate-utils"
