@@ -16,6 +16,12 @@
 # To view:  tmux attach -t job_watcher
 set -euo pipefail
 
+# Smart-mode dispatch uses claude-code, which must always run on the Max
+# subscription (OAuth). If ANTHROPIC_API_KEY is set in the parent shell,
+# claude-code would prefer it over OAuth and silently switch to the key.
+# Scrub it (and cousins) before the watcher inherits them.
+unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX
+
 JOB_DIR="${HOME}/dfs/job_queue"
 SESSION_NAME="job_watcher"
 

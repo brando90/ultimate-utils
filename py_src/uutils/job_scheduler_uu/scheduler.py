@@ -612,6 +612,15 @@ def launch_job(
     else:
         log.info("Launching %s in DIRECT mode (log=%s)", job_path.name, log_file)
 
+    child_env = os.environ.copy()
+    if mode == "smart":
+        # Never let a smart-mode agent (clauded/claude-code) fall back to an
+        # API key — it must use the Max OAuth. Direct mode keeps the key
+        # because harbor adapter scripts call the Anthropic SDK directly.
+        for _k in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN",
+                   "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX"):
+            child_env.pop(_k, None)
+
     try:
         fh = _open_job_log(log_file, original_name, mode, cmd)
         proc = subprocess.Popen(
@@ -619,7 +628,7 @@ def launch_job(
             stdin=subprocess.DEVNULL,
             stdout=fh,
             stderr=subprocess.STDOUT,
-            env=os.environ.copy(),
+            env=child_env,
             start_new_session=True,
         )
     except Exception as exc:
