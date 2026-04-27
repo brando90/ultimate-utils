@@ -52,7 +52,7 @@ If you want an **interactive AI assistant that lives inside WhatsApp / Discord /
 | Script on my cluster pings me when training finishes | `uutils.emailing` / `discord_uu` / `whatsapp_uu` |
 | I want to *chat* with an agent from my phone and have it triage email, reply to admin tasks, run commands | OpenClaw or similar (not this library) |
 
-Today Brando's default notification channel is email (`uutils.emailing`); Discord and WhatsApp modules are available but optional. For the interactive-agent use case, see issue [#41](https://github.com/brando90/ultimate-utils/issues/41).
+Today Brando's default notification channel is email (`uutils.emailing`); Discord and WhatsApp modules are available but optional. For the interactive-agent use case, see issue [#41](https://github.com/brando90/ultimate-utils/issues/41). The executable plan lives at `experiments/01_self_hosted_openclaw/cc_prompt.md` here, with the canonical home being `~/agents-config/experiments/01_self_hosted_openclaw/cc_prompt.md` (mirror it back into agents-config when convenient).
 
 ## Installation
 
