@@ -209,10 +209,10 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Saumya Goyal",
-        "emails": ["saumyagoyal01@gmail.com"],
+        "emails": ["saumyagoyal01@gmail.com", "saumyag@andrew.cmu.edu"],
         "github": None,
-        "aliases": [],
-        "affil": "Stanford",
+        "aliases": ["Saumya", "saumyag"],
+        "affil": "CMU",
     },
     {
         "name": "Rakshit Kaushik",
