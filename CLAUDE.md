@@ -36,7 +36,7 @@ The script reads the API token from `~/keys/push-pypi-all.txt`. For test PyPI: `
 
 ### Email
 
-When sending emails on Brando's behalf, CC brando9@stanford.edu, brando9@cs.stanford.edu, and brando.science@gmail.com (visible CC, not BCC). Append the signature from `~/agents-config/email-signature.md`.
+When sending emails on Brando's behalf, follow `~/agents-config/INDEX_RULES.md` Trigger Rule 26 and `~/agents-config/email-signature.md`. Internal agent notifications go to `brando.science@gmail.com` with no CC by default. External emails sent to other people CC `brando.science@gmail.com` for auditability; add Stanford or personal aliases only when Brando explicitly asks or when a Stanford/academic record is useful. Append the signature from `~/agents-config/email-signature.md`.
 
 ### Notes
 

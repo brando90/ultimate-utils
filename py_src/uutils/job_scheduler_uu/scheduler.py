@@ -80,14 +80,15 @@ _UNSET = object()
 _CLAIM_SEP = "___"
 
 # Job mode: "smart" wraps execution in a coding agent (clauded/codex) that
-# diagnoses failures, retries, and emails results.  "direct" runs the script
+# diagnoses failures, retries, and may email final results.  "direct" runs the script
 # as a plain subprocess (legacy behavior).
 _JOB_MODE_HEADER = "# JOB_MODE:"
 DEFAULT_JOB_MODE = "smart"
 
-# Email for daemon lifecycle and smart-job notifications.
-NOTIFY_EMAIL = "brando.science@gmail.com"
-NOTIFY_CC = "brando9@stanford.edu"
+# Email for daemon lifecycle and smart-job notifications. Internal Brando
+# notifications go to science with no CC by default; CC is opt-in only.
+NOTIFY_EMAIL = os.environ.get("UUTILS_NOTIFY_EMAIL", "brando.science@gmail.com").strip()
+NOTIFY_CC = os.environ.get("UUTILS_NOTIFY_CC", "").strip()
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -310,6 +311,8 @@ def _build_smart_prompt(
     literal_original_name = json.dumps(original_name)
     literal_log_path = json.dumps(str(log_path))
     rendered_cmd = shlex.join(exec_cmd)
+    recipient_block = _format_recipient_block(indent="   ")
+    cc_instruction = _cc_policy_instruction(indent="   ")
     # Keep this prompt in sync with ~/agents-config/workflows/smart-job-agent-prompt.md
     # (single source of truth shared with scripts/ssh-submit.sh and the git-inbox poller).
     return (
@@ -319,27 +322,41 @@ def _build_smart_prompt(
         f"Original name (literal):    {literal_original_name}\n"
         f"Log file path (literal):    {literal_log_path}\n\n"
         f"Instructions:\n\n"
-        f"1. Send a brief \"starting\" email immediately (do NOT draft, do NOT ask):\n"
-        f"   To: {NOTIFY_EMAIL}\n"
-        f"   CC: {NOTIFY_CC}\n"
-        f"   Subject: [Job] {original_name} on {HOSTNAME} — STARTING\n"
-        f"   Body: one short sentence with hostname and job path. Append signature\n"
-        f"   from ~/agents-config/email-signature.md.\n\n"
-        f"2. Execute the job command exactly as follows:\n"
+        f"1. Execute the job command exactly as follows:\n"
         f"   {rendered_cmd}\n\n"
-        f"3. If it fails (non-zero exit), read {literal_log_path}, diagnose the issue\n"
+        f"2. If it fails (non-zero exit), read {literal_log_path}, diagnose the issue\n"
         f"   (missing env var? wrong path? package not installed? GPU busy?),\n"
         f"   apply a fix, and re-run. Up to 3 attempts total.\n\n"
-        f"4. When done (PASS after any attempt, or FAIL after retries exhausted),\n"
-        f"   send a final email:\n"
-        f"   To: {NOTIFY_EMAIL}\n"
-        f"   CC: {NOTIFY_CC}\n"
+        f"3. When done (PASS after any attempt, or FAIL after retries exhausted),\n"
+        f"   send a final email only if a recipient is configured:\n"
+        f"{recipient_block}"
+        f"{cc_instruction}"
         f"   Subject: [Job] {original_name} on {HOSTNAME} — <PASS|FAIL>\n"
         f"   Body: what happened, exit code, key log lines, what you tried.\n"
         f"   Append signature from ~/agents-config/email-signature.md.\n\n"
-        f"5. Do NOT ask for confirmation. Do NOT create drafts. Send the emails.\n\n"
-        f"6. Print `FINAL_EXIT_CODE: <int>` as the last line of your output.\n"
-        f"7. Exit with that same final exit code if your agent CLI supports it.\n"
+        f"4. Do NOT ask for confirmation. Do NOT create drafts. If notification\n"
+        f"   email is configured, send it once at the end only.\n\n"
+        f"5. Print `FINAL_EXIT_CODE: <int>` as the last line of your output.\n"
+        f"6. Exit with that same final exit code if your agent CLI supports it.\n"
+    )
+
+
+def _format_recipient_block(indent: str = "") -> str:
+    """Render To/CC prompt lines without inventing a CC header."""
+    if not NOTIFY_EMAIL:
+        return f"{indent}No email recipient is configured; skip email.\n"
+    lines = [f"{indent}To: {NOTIFY_EMAIL}"]
+    if NOTIFY_CC:
+        lines.append(f"{indent}CC: {NOTIFY_CC}")
+    return "\n".join(lines) + "\n"
+
+
+def _cc_policy_instruction(indent: str = "") -> str:
+    if NOTIFY_CC:
+        return ""
+    return (
+        f"{indent}Omit the CC header entirely. Do not add brandojazz@gmail.com or "
+        f"brando9@stanford.edu unless the original request explicitly named them.\n"
     )
 
 
@@ -360,10 +377,14 @@ def _send_daemon_lifecycle_email(event: str, details: str) -> None:
         return
 
     agent_name, cmd_prefix = agent
+    recipient_block = _format_recipient_block()
+    if not NOTIFY_EMAIL:
+        log.info("No lifecycle email recipient configured — skipping: %s", event)
+        return
     prompt = (
         f"Send an email immediately (do NOT draft, do NOT ask):\n"
-        f"To: {NOTIFY_EMAIL}\n"
-        f"CC: {NOTIFY_CC}\n"
+        f"{recipient_block}"
+        f"{_cc_policy_instruction()}"
         f"Subject: [Watcher] {HOSTNAME} — {event}\n"
         f"Body:\n{details}\n\n"
         f"Append signature from ~/agents-config/email-signature.md.\n"
@@ -590,7 +611,8 @@ def launch_job(
 
     If the job mode is "smart" and an agent binary (clauded/codex/claude) is
     available, the job is wrapped in an agent session that can diagnose failures,
-    retry, and email results.  Falls back to direct execution if no agent is found.
+    retry, and email final results if notification is configured.  Falls back
+    to direct execution if no agent is found.
     """
     original_name = _recover_original_name(job_path.name)
     log_file = logs_dir / f"{job_path.name}.log"
