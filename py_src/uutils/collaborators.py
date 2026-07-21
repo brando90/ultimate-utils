@@ -155,6 +155,11 @@ COLLABORATORS: list[dict[str, Any]] = [
     {
         "name": "Elyas Obbad",
         "emails": [
+            # real mailboxes first (verified from correspondence 2026-07-21)
+            "eobbad@gmail.com",
+            "eobbad@stanford.edu",
+            "eobbad@cs.stanford.edu",
+            # SNAP-node git-commit hostnames (kept so commits resolve to Elyas, not for sending)
             "eobbad@skampere1.stanford.edu",
             "eobbad@ampere1.stanford.edu",
         ],
