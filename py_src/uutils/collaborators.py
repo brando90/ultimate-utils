@@ -21,6 +21,9 @@ Each entry in ``COLLABORATORS`` is a dict with:
     - ``github``:  github handle (string) or None
     - ``aliases``: alternate display names seen in git log (for dedup)
     - ``affil``:   short affiliation hint (optional, best-effort)
+    - ``openreview``: OpenReview profile handle (optional, e.g. "~Jane_Doe1"); record
+      the verified one so submission flows (Cowork/OpenReview) pick the right profile
+      when several people share a name — see Rylan Schaeffer below.
 
 Derived lookup tables:
     - ``by_email``    email        → record
@@ -90,7 +93,11 @@ COLLABORATORS: list[dict[str, Any]] = [
         "emails": ["rylanschaeffer@gmail.com"],
         "github": "RylanSchaeffer",
         "aliases": ["Rylan"],
-        "affil": "Stanford (former); FieteLab",
+        "affil": "Stanford CS (Koyejo lab)",
+        # Brando's co-author (mirage/elusive papers). Use THIS OpenReview profile
+        # (Google + stanford.edu emails); do NOT pick the stale unrelated
+        # "Rylan Schaeffer" profile that also shows up in author search.
+        "openreview": "~Rylan_Schaeffer2",
     },
     {
         "name": "Patrick Yu",
