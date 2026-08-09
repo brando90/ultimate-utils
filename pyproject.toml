@@ -46,6 +46,7 @@ dependencies = [
     "evaluate",
     "einops",
     "sentencepiece",
+    "discord.py>=2.0",
 ]
 
 [project.urls]
