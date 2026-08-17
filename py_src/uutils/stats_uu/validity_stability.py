@@ -49,7 +49,7 @@ from typing import Mapping, Optional, Sequence, Tuple
 import numpy as np
 
 try:
-    from scipy.stats import spearmanr, pearsonr
+    from scipy.stats import spearmanr, pearsonr, kendalltau, wasserstein_distance
 
     _HAVE_SCIPY = True
 except ImportError:  # pragma: no cover - scipy is a declared dependency
@@ -199,6 +199,73 @@ def compute_validity_stability(
     )
 
 
+def bootstrap_correlation_ci(
+    d1: Sequence[float],
+    d2: Sequence[float],
+    *,
+    corr_method: str = "spearman",
+    n_boot: int = 2000,
+    seed: int = 0,
+) -> Tuple[float, float]:
+    """
+    95% CI on Corr(d1, d2) (unclipped, i.e. on validity_raw) via the item-level
+    nonparametric bootstrap: resample items with replacement, recompute the
+    correlation, take the 2.5/97.5 percentiles. Mirrors the resampling
+    convention already used elsewhere in this codebase (e.g.
+    experiments/04_veribench_validation/correlation_analysis.py's
+    `_bootstrap_ci`) rather than a different bootstrap scheme.
+    """
+    x = np.asarray(d1, dtype=float)
+    y = np.asarray(d2, dtype=float)
+    if x.shape != y.shape or x.shape[0] < 3:
+        return float("nan"), float("nan")
+    stat_fn = spearmanr if corr_method == "spearman" else pearsonr
+    rng = np.random.default_rng(seed)
+    n = x.shape[0]
+    vals = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        r = float(stat_fn(x[idx], y[idx]).statistic)
+        if np.isfinite(r):
+            vals.append(r)
+    if not vals:
+        return float("nan"), float("nan")
+    lo, hi = np.percentile(vals, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
+def compute_kendall_tau_b(d1: Sequence[float], d2: Sequence[float]) -> float:
+    """
+    Kendall's tau-b: like Spearman, a rank correlation, but corrects for tied
+    ranks rather than assigning fractional midranks -- the more defensible
+    choice when the data is a tie-heavy lattice (e.g. human labels averaged
+    from a handful of integer ratings). Reported alongside validity (which
+    uses Spearman) as a secondary diagnostic, not a replacement for it.
+    """
+    x = np.asarray(d1, dtype=float)
+    y = np.asarray(d2, dtype=float)
+    if not _HAVE_SCIPY:
+        raise ImportError("scipy is required for compute_kendall_tau_b")
+    tau = float(kendalltau(x, y, variant="b").statistic)
+    return tau if np.isfinite(tau) else 0.0
+
+
+def compute_calibration_gap(d1: Sequence[float], d2: Sequence[float]) -> float:
+    """
+    1D Wasserstein (earth-mover's) distance between the marginal distributions
+    of d1 and d2 -- how far apart the two signals' *levels* are, independent
+    of whether they're paired or how well they correlate. This is a distinct
+    quantity from validity: a proxy can be perfectly rank-correlated with a
+    target while sitting on a totally different part of the scale (e.g. a
+    judge that is uniformly harsher than a human rater), and validity
+    (correlation-based) is invariant to exactly that offset by construction.
+    Report calibration gap as a separate diagnostic, never folded into VS.
+    """
+    if not _HAVE_SCIPY:
+        raise ImportError("scipy is required for compute_calibration_gap")
+    return float(wasserstein_distance(np.asarray(d1, dtype=float), np.asarray(d2, dtype=float)))
+
+
 def compute_validity_test() -> None:
     """M^C alone: perfectly correlated -> validity == 1.0, no stability term needed."""
     d1 = [0.1, 0.4, 0.6, 0.9, 0.2, 0.7]
@@ -250,10 +317,41 @@ def compute_vs_score_missing_stability_raises_test() -> None:
         print("compute_vs_score_missing_stability_raises_test passed")
 
 
+def bootstrap_correlation_ci_test() -> None:
+    """CI should bracket the point estimate and shrink toward it as n grows."""
+    rng = np.random.default_rng(0)
+    d1 = rng.uniform(0, 1, size=60)
+    d2 = np.clip(d1 + rng.normal(0, 0.1, size=60), 0, 1)
+    point = compute_validity(d1, d2).validity_raw
+    lo, hi = bootstrap_correlation_ci(d1, d2, n_boot=500, seed=0)
+    assert lo <= point <= hi, f"{lo=}, {point=}, {hi=}"
+    print(f"bootstrap_correlation_ci_test passed: point={point:.3f}, CI=[{lo:.3f}, {hi:.3f}]")
+
+
+def compute_kendall_tau_b_test() -> None:
+    d1 = [1, 2, 3, 4, 5]
+    d2 = [1, 2, 3, 4, 5]
+    assert abs(compute_kendall_tau_b(d1, d2) - 1.0) < 1e-9
+    d2_rev = [5, 4, 3, 2, 1]
+    assert abs(compute_kendall_tau_b(d1, d2_rev) - (-1.0)) < 1e-9
+    print("compute_kendall_tau_b_test passed")
+
+
+def compute_calibration_gap_test() -> None:
+    same = [0.1, 0.2, 0.3, 0.4]
+    assert compute_calibration_gap(same, same) == 0.0
+    shifted = [v + 0.5 for v in same]
+    assert abs(compute_calibration_gap(same, shifted) - 0.5) < 1e-9
+    print("compute_calibration_gap_test passed")
+
+
 if __name__ == "__main__":
     compute_validity_test()
     compute_validity_matches_validity_stability_test()
     compute_vs_score_test()
     compute_vs_score_explicit_std_test()
     compute_vs_score_missing_stability_raises_test()
+    bootstrap_correlation_ci_test()
+    compute_kendall_tau_b_test()
+    compute_calibration_gap_test()
     print("Done, success! \a")
