@@ -1,24 +1,26 @@
 """
 Validity-Stability scatter: proxy-vs-target item-level joint plot.
 
-Two layers that must not be confused with each other:
+Every element earns its place by being interpretable -- a reader looks at
+everything on the canvas and asks what it means, so nothing is decoration:
 
-  - HONEST / primary: one marker per DISTINCT (target, proxy) position, sized
-    by how many items share it, with a vertical error bar = that position's
-    mean repeat std (proxy self-consistency); discrete-aware (tie-snapped)
-    marginal histograms on top/right; the correlation (validity) with a
-    bootstrap CI. This is what alignment and stability are actually read
-    from, and none of it depends on a smoothness assumption the tie-heavy
-    data doesn't support.
-  - DECORATIVE / secondary: a light 2D density wash behind the central
-    markers, and a 1D KDE line over each marginal histogram, purely for
-    visual texture. These are never the thing you read dependence off of --
-    a 2D density can't distinguish a perfectly-aligned proxy from a shuffled
-    one (shuffling changes nothing about either marginal, or a 2D density
-    fit that ignores pairing order, while sending the correlation to zero),
-    which is exactly why it stays decorative rather than becoming the
-    figure's main claim. Turn both off with `show_density_shading=False`,
-    `show_marginal_kde=False` if you'd rather not have them at all.
+  - Central panel: one marker per DISTINCT (target, proxy) position, sized by
+    how many items share it (the count encoding a tie-heavy lattice needs
+    instead of a smoothed density), with a vertical error bar = that
+    position's mean repeat std (proxy self-consistency).
+  - Marginal histograms (top/right), discrete-aware (tie-snapped) -- the m0
+    diagnostic -- with an optional 1D KDE line over each for shape legibility
+    (`show_marginal_kde`, on by default). A 1D density of one variable is a
+    normal, safe smoothing choice; nothing about it can be mistaken for
+    evidence of a relationship between two variables.
+  - The correlation (validity) with a bootstrap CI, plus Kendall tau-b.
+
+No 2D density wash in the central panel, even as decoration: a 2D density
+can't distinguish a perfectly-aligned proxy from a shuffled one (shuffling
+changes neither marginal, only the pairing that the correlation summarizes),
+so drawing one -- however lightly -- invites a reader to read dependence off
+a channel that cannot carry it. `show_density_shading=True` still exists for
+a non-publication, illustrative-only rendering, but defaults off.
 
 Deliberately NOT drawing a y=x reference line by default: proxy and target
 are frequently on uncalibrated scales (e.g. a judge's rubric vs a human's
@@ -181,7 +183,7 @@ def plot_validity_stability_scatter(
     x_label: str = "Target score",
     y_label: str = "Proxy score",
     show_diagonal: bool = False,
-    show_density_shading: bool = True,
+    show_density_shading: bool = False,
     show_marginal_kde: bool = True,
     show_calibration_gap: bool = False,
     n_boot: int = 2000,
@@ -304,9 +306,17 @@ def plot_validity_stability_scatter(
     ax_c.set_ylim(-0.05, 1.05)
     ax_c.set_xlabel(x_label, color=_TEXT_PRIMARY, fontsize=9.5)
     ax_c.set_ylabel(y_label, color=_TEXT_PRIMARY, fontsize=9.5)
+    # Spelled out against the exact y_label (not the generic word "proxy") and
+    # against exactly what's computed, per second-pass review feedback that
+    # "proxy repeat SD" read as ambiguous -- a possessive ("the proxy's
+    # repeat SD") misreadable as "a proxy [substitute] for repeat SD". It
+    # is real per-item np.std() over that item's repeat_scores_by_item
+    # entries; at a position with >1 tied item this is the mean of those
+    # items' individual repeat SDs, not a substituted or estimated value.
+    y_label_core = y_label.split("(")[0].strip().lower()
     ax_c.text(
-        0.02, 0.02, "dot size = # tied items; error bar = proxy repeat SD", transform=ax_c.transAxes,
-        fontsize=6.8, color=_TEXT_MUTED, va="bottom", ha="left",
+        0.02, 0.02, f"dot size = # tied items  ·  error bar = repeat SD of the {y_label_core}",
+        transform=ax_c.transAxes, fontsize=6.8, color=_TEXT_MUTED, va="bottom", ha="left",
     )
 
     _style_axes(ax_top)
