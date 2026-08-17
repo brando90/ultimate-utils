@@ -1,29 +1,33 @@
 """
 Validity-Stability scatter: proxy-vs-target item-level joint plot.
 
-    - Central panel: one marker per DISTINCT (target, proxy) position, sized
-      by how many items share it, with a vertical error bar = that
-      position's mean repeat std (judge/proxy self-consistency).
-    - Top / right marginal panels: discrete-aware (tie-snapped) histograms of
-      the target and proxy distributions.
-    - Info panel: the VS-score formula with real numbers plugged in, a
-      bootstrap CI on the correlation, Kendall tau-b, and (optionally) a
-      calibration-gap diagnostic.
+Two layers that must not be confused with each other:
 
-Deliberately NOT a 2D kernel density estimate. At small n with heavy ties
-(e.g. n=72 over ~9 distinct target values -- a lattice, not a continuum) a
-smooth 2D density implies dependence structure that isn't there and can make
-a perfectly-aligned judge and a shuffled judge look visually similar, since
-both share the same *marginals* -- only the joint pairing (summarized by the
-correlation) tells them apart. See uutils.stats_uu.validity_stability for the
-score this figure visualizes.
+  - HONEST / primary: one marker per DISTINCT (target, proxy) position, sized
+    by how many items share it, with a vertical error bar = that position's
+    mean repeat std (proxy self-consistency); discrete-aware (tie-snapped)
+    marginal histograms on top/right; the correlation (validity) with a
+    bootstrap CI. This is what alignment and stability are actually read
+    from, and none of it depends on a smoothness assumption the tie-heavy
+    data doesn't support.
+  - DECORATIVE / secondary: a light 2D density wash behind the central
+    markers, and a 1D KDE line over each marginal histogram, purely for
+    visual texture. These are never the thing you read dependence off of --
+    a 2D density can't distinguish a perfectly-aligned proxy from a shuffled
+    one (shuffling changes nothing about either marginal, or a 2D density
+    fit that ignores pairing order, while sending the correlation to zero),
+    which is exactly why it stays decorative rather than becoming the
+    figure's main claim. Turn both off with `show_density_shading=False`,
+    `show_marginal_kde=False` if you'd rather not have them at all.
 
-Deliberately NOT drawing a y=x reference line by default either: proxy and
-target are frequently on uncalibrated scales (e.g. a judge's rubric vs a
-human's rubric), and the validity score is correlation-based -- invariant to
-a level offset by construction -- so y=x would imply a calibration target the
-score does not claim. Pass `show_diagonal=True` when proxy and target really
-are on the same calibrated scale.
+Deliberately NOT drawing a y=x reference line by default: proxy and target
+are frequently on uncalibrated scales (e.g. a judge's rubric vs a human's
+rubric), and the validity score is correlation-based -- invariant to a level
+offset by construction -- so y=x would imply a calibration target the score
+does not claim. Pass `show_diagonal=True` when proxy and target really are on
+the same calibrated scale.
+
+See uutils.stats_uu.validity_stability for the score this figure visualizes.
 """
 
 from __future__ import annotations
@@ -34,6 +38,7 @@ from typing import Mapping, Optional, Sequence, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 from uutils.stats_uu.validity_stability import (
     compute_validity_stability,
@@ -41,6 +46,13 @@ from uutils.stats_uu.validity_stability import (
     compute_kendall_tau_b,
     compute_calibration_gap,
 )
+
+try:
+    from scipy.stats import gaussian_kde
+
+    _HAVE_SCIPY_KDE = True
+except ImportError:  # pragma: no cover - scipy is a declared dependency
+    _HAVE_SCIPY_KDE = False
 
 # Chart chrome (Claude Code dataviz-skill reference palette).
 _POINT_COLOR = "#2a78d6"  # categorical slot 1
@@ -51,6 +63,11 @@ _GRID_COLOR = "#e1e0d9"  # hairline gridline
 _TEXT_MUTED = "#898781"
 _TEXT_PRIMARY = "#0b0b0b"
 _SURFACE = "#fcfcfb"
+_SEQ_BLUE = ["#fcfcfb", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#1c5cab"]
+
+
+def _sequential_blue_cmap() -> LinearSegmentedColormap:
+    return LinearSegmentedColormap.from_list("vs_seq_blue", _SEQ_BLUE, N=256)
 
 
 def _discrete_bin_edges(
@@ -110,6 +127,48 @@ def _style_axes(ax: plt.Axes) -> None:
         spine.set_color(_GRID_COLOR)
 
 
+def _add_density_wash(ax: plt.Axes, x: np.ndarray, y: np.ndarray, seed: int, alpha: float = 0.4) -> None:
+    """Decorative-only 2D density texture behind the honest markers -- see module docstring."""
+    if not _HAVE_SCIPY_KDE or x.shape[0] < 5:
+        return
+    try:
+        rng = np.random.default_rng(seed)
+        jx = x + rng.normal(scale=1e-6, size=x.shape)
+        jy = y + rng.normal(scale=1e-6, size=y.shape)
+        kde = gaussian_kde(np.vstack([jx, jy]))
+        pad = 0.06
+        gx, gy = np.mgrid[-pad : 1 + pad : 120j, -pad : 1 + pad : 120j]
+        density = kde(np.vstack([gx.ravel(), gy.ravel()])).reshape(gx.shape)
+        ax.contourf(gx, gy, density, levels=12, cmap=_sequential_blue_cmap(), alpha=alpha, zorder=1)
+    except Exception:
+        pass  # decorative only -- a degenerate point cloud just skips it
+
+
+def _marginal_hist(
+    ax: plt.Axes, data: np.ndarray, orientation: str, seed: int, show_kde: bool
+) -> None:
+    """Discrete-aware histogram (the real m0 diagnostic) with an optional decorative 1D KDE line."""
+    edges = _discrete_bin_edges(data)
+    ax.hist(
+        data, bins=edges, density=True, orientation=orientation, color=_HIST_COLOR,
+        edgecolor="white", linewidth=0.5, zorder=2,
+    )
+    n_uniq = np.unique(np.round(data, 6)).size
+    if show_kde and _HAVE_SCIPY_KDE and n_uniq >= 3:
+        try:
+            rng = np.random.default_rng(seed)
+            jittered = data + rng.normal(scale=1e-6, size=data.shape)
+            kde = gaussian_kde(jittered)
+            grid = np.linspace(-0.05, 1.05, 200)
+            density = kde(grid)
+            if orientation == "vertical":
+                ax.plot(grid, density, color=_ERRORBAR_COLOR, linewidth=1.4, alpha=0.9, zorder=3)
+            else:
+                ax.plot(density, grid, color=_ERRORBAR_COLOR, linewidth=1.4, alpha=0.9, zorder=3)
+        except Exception:
+            pass  # decorative only
+
+
 def plot_validity_stability_scatter(
     proxy_scores: Sequence[float],
     target_scores: Sequence[float],
@@ -122,7 +181,9 @@ def plot_validity_stability_scatter(
     x_label: str = "Target score",
     y_label: str = "Proxy score",
     show_diagonal: bool = False,
-    show_calibration_gap: bool = True,
+    show_density_shading: bool = True,
+    show_marginal_kde: bool = True,
+    show_calibration_gap: bool = False,
     n_boot: int = 2000,
     ax: Optional[plt.Axes] = None,
     legend_loc: str = "best",
@@ -131,9 +192,10 @@ def plot_validity_stability_scatter(
 ) -> plt.Figure:
     """
     Item-level (target, proxy) joint plot: count-sized markers with per-position
-    repeat-std error bars in the center, discrete-aware marginal histograms on
-    top/right, and an info panel with the VS-score formula plus a bootstrap CI
-    and Kendall tau-b.
+    repeat-std error bars over a light decorative density wash in the center,
+    discrete-aware marginal histograms (+ a decorative 1D KDE line) on
+    top/right, and a compact info panel with the VS-score formula, the
+    correlation with a bootstrap CI, and Kendall tau-b.
 
     If `repeat_scores_by_item` is given, it must be in the SAME item order as
     `proxy_scores`/`target_scores` (i.e. `list(repeat_scores_by_item.values())[i]`
@@ -142,10 +204,11 @@ def plot_validity_stability_scatter(
     per-item error bars. Without it, the central panel still shows count-sized
     markers, just without error bars.
 
-    Deterministic: `seed` drives the bootstrap CI; identical inputs + seed
-    produce byte-identical figures. Pass `ax` for a simplified single-panel
-    mode (no room to add marginal/info panels next to someone else's axes):
-    count-sized markers + error bars + a corner-overlay legend, no marginals.
+    Deterministic: `seed` drives the bootstrap CI and the (jittered) KDE fits;
+    identical inputs + seed produce byte-identical figures. Pass `ax` for a
+    simplified single-panel mode (no room to add marginal/info panels next to
+    someone else's axes): count-sized markers + error bars + density wash +
+    a corner-overlay legend, no marginals.
     """
     result = compute_validity_stability(
         proxy_scores, target_scores, repeat_scores_by_item, std=std, corr_method=corr_method
@@ -167,15 +230,15 @@ def plot_validity_stability_scatter(
 
     ci_lo, ci_hi = bootstrap_correlation_ci(y, x, corr_method=corr_method, n_boot=n_boot, seed=seed)
     tau_b = compute_kendall_tau_b(y, x)
+    corr_symbol = r"\rho" if corr_method == "spearman" else "r"
     info_lines = [
         result.formula_str(symbol=symbol),
-        rf"Spearman $\rho$" if corr_method == "spearman" else rf"Pearson $r$",
-        rf"  95% CI [{ci_lo:.2f}, {ci_hi:.2f}]  ({n_boot} bootstrap, item-level)",
-        rf"Kendall $\tau_b$ = {tau_b:.2f}  (ties-corrected; not used above)",
+        rf"${corr_symbol} = {result.validity_raw:.2f}$  [{ci_lo:.2f}, {ci_hi:.2f}] 95% CI",
+        rf"$\tau_b = {tau_b:.2f}$",
     ]
     if show_calibration_gap:
         gap = compute_calibration_gap(y, x)
-        info_lines.append(rf"Calibration gap (Wasserstein) = {gap:.2f}  (separate from alignment)")
+        info_lines.append(rf"Calibration gap = {gap:.2f}")
 
     xs_u, ys_u, counts, errs = _group_by_position(x, y, per_item_std)
     sizes = 30 + 25 * counts
@@ -189,6 +252,8 @@ def plot_validity_stability_scatter(
         # next to axes this function doesn't own.
         fig = ax.figure
         _style_axes(ax)
+        if show_density_shading:
+            _add_density_wash(ax, x, y, seed)
         if errs is not None:
             ax.errorbar(
                 xs_u, ys_u, yerr=errs, fmt="none", ecolor=_ERRORBAR_COLOR, elinewidth=1.1,
@@ -223,6 +288,8 @@ def plot_validity_stability_scatter(
     ax_info.axis("off")
 
     _style_axes(ax_c)
+    if show_density_shading:
+        _add_density_wash(ax_c, x, y, seed)
     if errs is not None:
         ax_c.errorbar(
             xs_u, ys_u, yerr=errs, fmt="none", ecolor=_ERRORBAR_COLOR, elinewidth=1.1,
@@ -243,19 +310,16 @@ def plot_validity_stability_scatter(
     )
 
     _style_axes(ax_top)
-    ax_top.hist(x, bins=_discrete_bin_edges(x), color=_HIST_COLOR, edgecolor="white", linewidth=0.5)
-    ax_top.tick_params(labelbottom=False)
-    ax_top.set_ylabel("count", fontsize=7.5, color=_TEXT_MUTED)
+    _marginal_hist(ax_top, x, "vertical", seed, show_marginal_kde)
+    ax_top.tick_params(labelbottom=False, labelleft=False)
 
     _style_axes(ax_right)
-    ax_right.hist(y, bins=_discrete_bin_edges(y), orientation="horizontal", color=_HIST_COLOR,
-                   edgecolor="white", linewidth=0.5)
-    ax_right.tick_params(labelleft=False)
-    ax_right.set_xlabel("count", fontsize=7.5, color=_TEXT_MUTED)
+    _marginal_hist(ax_right, y, "horizontal", seed, show_marginal_kde)
+    ax_right.tick_params(labelleft=False, labelbottom=False)
 
     ax_info.text(
-        0.0, 1.0, "\n".join(info_lines), transform=ax_info.transAxes, fontsize=8.3,
-        color=_TEXT_PRIMARY, va="top", ha="left", linespacing=1.7,
+        0.0, 1.0, "\n".join(info_lines), transform=ax_info.transAxes, fontsize=9.5,
+        color=_TEXT_PRIMARY, va="top", ha="left", linespacing=1.9,
         bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="#cfcfcf", alpha=0.95),
     )
 
@@ -296,7 +360,7 @@ def _discrete_bin_edges_test() -> None:
 
 
 def plot_validity_stability_scatter_test() -> None:
-    """Headless smoke test: builds a full joint-plot figure from synthetic data."""
+    """Headless smoke test: builds a full joint-plot figure (density wash + marginal KDEs) from synthetic data."""
     import matplotlib
 
     matplotlib.use("Agg")
