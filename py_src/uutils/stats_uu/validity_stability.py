@@ -7,8 +7,8 @@ Two operators on a pair of paired vectors (D1, D2), D1 the proxy side:
     M^C(D1, D2)  = clip_[0,1](Corr(D1, D2))                      -- validity alone
     M^VS(D1, D2) = ( M^C(D1, D2) * (1 - STD(D1)) )^0.5            -- validity + stability
 
-Two textbook psychometric ingredients, combined by geometric mean so either
-one being ~0 collapses the score to ~0 (a soft AND, not an average):
+Two textbook psychometric ingredients, combined by geometric mean (a soft
+AND, not an average):
     - validity:  does the proxy track the target?    Corr(D1, D2), items
       paired 1:1 (same index set on both sides).
     - stability: is the proxy internally consistent?  1 - STD(D1), where STD
@@ -17,7 +17,10 @@ one being ~0 collapses the score to ~0 (a soft AND, not an average):
       that outputs the same score for every item regardless of quality is
       uninformative, and must not be *rewarded* by (1 - STD) being large, so
       STD has to come from repeats (or an explicit instability figure you
-      already trust), never from across-item spread.
+      already trust), never from across-item spread. For raw scores bounded
+      to [0,1], STD is at most 0.5, so this path is a monotone repeat-noise
+      penalty rather than a second zero-annihilator. An explicit normalized
+      instability can span [0,1] and reaches zero stability at STD=1.
 
 Use `compute_validity` (M^C) alone whenever a stability factor must NOT be
 present -- e.g. a property estimator that correlates a proxy against a
@@ -32,13 +35,12 @@ truth gets M^C only.
 
 This originates from certifying LLM judges of formal proofs, where the proxy
 is a judge's score and the target is a human rating (cert-judge's TI_2' =
-M^VS(judge, human); see that repo's ti2prime_plot.py) -- but both operators
-are generic: any time you have (a) a cheap/automatic signal paired with an
-expensive/gold signal on the same items, this applies, and M^VS further
-applies whenever you also have (b) repeated measurements of the cheap
-signal. M^VS is effectively a drop-in replacement for reporting a bare
-correlation coefficient whenever the cheap signal's own repeat-noise matters
-to whether you'd trust it.
+M^VS(judge, human); see that repo's ti2prime_plot.py). The operators can be
+used in other paired-signal settings, but M^VS is a construct-specific
+composite, not a drop-in statistical replacement for correlation: its value
+depends on a fixed [0,1] score scale and on treating the chosen repeat-noise
+penalty as substantively meaningful. Report the raw correlation, stability
+factor, and their provenance alongside the composite.
 """
 
 from __future__ import annotations
@@ -60,12 +62,67 @@ def _clip01(x: float) -> float:
     return float(max(0.0, min(1.0, x)))
 
 
+def _as_finite_vector(values: Sequence[float], name: str) -> np.ndarray:
+    """Convert a numeric vector and reject ambiguous shapes or missing values."""
+    array = np.asarray(values, dtype=float)
+    if array.ndim != 1:
+        raise ValueError(f"{name} must be a one-dimensional score vector, got shape {array.shape}")
+    if not np.all(np.isfinite(array)):
+        raise ValueError(f"{name} must contain only finite values")
+    return array
+
+
+def _as_finite_unit_interval_vector(values: Sequence[float], name: str) -> np.ndarray:
+    """Convert a score vector and enforce the VS operator's documented domain."""
+    array = _as_finite_vector(values, name)
+    if np.any((array < 0.0) | (array > 1.0)):
+        raise ValueError(f"{name} values must lie in [0,1]")
+    return array
+
+
+def _resolve_repeat_item_ids(
+    repeat_scores_by_item: Mapping[object, Sequence[float]],
+    n_items: int,
+    item_ids: Optional[Sequence[object]],
+) -> list[object]:
+    """Return score-vector order for a repeat mapping, failing closed on ambiguous alignment."""
+    if item_ids is None:
+        resolved_ids: list[object] = list(range(n_items))
+        if set(repeat_scores_by_item) != set(resolved_ids):
+            raise ValueError(
+                "non-positional repeat_scores_by_item keys require `item_ids` in the same "
+                "order as proxy_scores/target_scores"
+            )
+    else:
+        resolved_ids = list(item_ids)
+        if len(resolved_ids) != n_items:
+            raise ValueError(
+                f"item_ids has {len(resolved_ids)} entries but the paired score vectors "
+                f"have {n_items}"
+            )
+        try:
+            unique_ids = set(resolved_ids)
+        except TypeError as exc:
+            raise ValueError("item_ids must be hashable mapping keys") from exc
+        if len(unique_ids) != n_items:
+            raise ValueError("item_ids must be unique")
+        repeat_ids = set(repeat_scores_by_item)
+        if repeat_ids != unique_ids:
+            missing = unique_ids - repeat_ids
+            extra = repeat_ids - unique_ids
+            raise ValueError(
+                "repeat_scores_by_item keys must exactly match item_ids; "
+                f"missing={sorted(map(repr, missing))}, extra={sorted(map(repr, extra))}"
+            )
+    return resolved_ids
+
+
 def _compute_clipped_corr(
     d1: Sequence[float], d2: Sequence[float], corr_method: str
 ) -> Tuple[float, float, int]:
     """Shared by compute_validity and compute_validity_stability. Returns (validity, validity_raw, n)."""
-    x = np.asarray(d1, dtype=float)
-    y = np.asarray(d2, dtype=float)
+    x = _as_finite_vector(d1, "d1")
+    y = _as_finite_vector(d2, "d2")
     if x.shape != y.shape:
         raise ValueError(f"d1 and d2 must be paired 1:1, got shapes {x.shape} vs {y.shape}")
     n = x.shape[0]
@@ -75,11 +132,56 @@ def _compute_clipped_corr(
         raise ValueError(f"unknown corr_method {corr_method!r}, expected 'spearman' or 'pearson'")
     if not _HAVE_SCIPY:
         raise ImportError("scipy is required to compute a correlation")
+    if np.all(x == x[0]) or np.all(y == y[0]):
+        return 0.0, 0.0, n
     stat_fn = spearmanr if corr_method == "spearman" else pearsonr
     validity_raw = float(stat_fn(x, y).statistic)
     if not np.isfinite(validity_raw):
         validity_raw = 0.0
     return _clip01(validity_raw), validity_raw, n
+
+
+def _resolve_instability(
+    n_items: int,
+    repeat_scores_by_item: Optional[Mapping[object, Sequence[float]]],
+    item_ids: Optional[Sequence[object]],
+    std: Optional[float],
+) -> tuple[float, str]:
+    """Validate exactly one stability source and return (instability, provenance)."""
+    if item_ids is not None and repeat_scores_by_item is None:
+        raise ValueError("item_ids is only meaningful with repeat_scores_by_item")
+    if std is not None and repeat_scores_by_item is not None:
+        raise ValueError("pass exactly one stability source: `std` or `repeat_scores_by_item`, not both")
+    if std is not None:
+        std_val = float(std)
+        if not np.isfinite(std_val) or not 0.0 <= std_val <= 1.0:
+            raise ValueError(f"std must be finite and lie in [0,1], got {std!r}")
+        return std_val, "explicit"
+    if repeat_scores_by_item is None:
+        raise ValueError(
+            "compute_validity_stability needs a stability term: pass `std` (precomputed) "
+            "or `repeat_scores_by_item` (raw per-item repeat measurements). Falling back to "
+            "the across-item std of proxy_scores would reward a proxy that never varies its "
+            "score regardless of item quality -- see module docstring."
+        )
+    if len(repeat_scores_by_item) != n_items:
+        raise ValueError(
+            f"repeat_scores_by_item has {len(repeat_scores_by_item)} entries but "
+            f"the paired score vectors have {n_items}; stability coverage must be 1:1"
+        )
+    resolved_ids = _resolve_repeat_item_ids(repeat_scores_by_item, n_items, item_ids)
+    item_vars = []
+    for item in resolved_ids:
+        repeat_array = _as_finite_unit_interval_vector(
+            repeat_scores_by_item[item], f"repeat_scores_by_item[{item!r}]"
+        )
+        if repeat_array.size < 2:
+            raise ValueError(
+                f"repeat_scores_by_item[{item!r}] has {repeat_array.size} value(s); "
+                "every paired item needs at least 2 repeats"
+            )
+        item_vars.append(float(np.var(repeat_array)))
+    return float(np.sqrt(np.mean(item_vars))), "repeat_scores"
 
 
 @dataclass
@@ -139,52 +241,22 @@ def compute_validity_stability(
     target_scores: Sequence[float],
     repeat_scores_by_item: Optional[Mapping[object, Sequence[float]]] = None,
     *,
+    item_ids: Optional[Sequence[object]] = None,
     std: Optional[float] = None,
     corr_method: str = "spearman",
 ) -> ValidityStabilityResult:
+    """Compute M^VS; see the module docs for the construct and alignment contract.
+
+    Scores are paired, finite, and in [0,1]. Supply exactly one stability
+    source: a finite `std` in [0,1], or complete per-item repeats. Positional
+    repeat keys are aligned by integer identity; named keys require `item_ids`
+    in score-vector order. Use `compute_validity` when no stability factor is
+    substantively justified.
     """
-    VS = M^VS(proxy_scores, target_scores)
-       = ( clip_[0,1](Corr(proxy_scores, target_scores)) * (1 - STD) )^0.5.
-
-    `proxy_scores`/`target_scores` are paired per item (same order, same
-    length), both in [0,1]; `Corr` is computed over those items.
-
-    The stability term must be supplied explicitly -- there is no default,
-    because guessing wrong silently reverses the sign of what gets rewarded
-    (see module docstring):
-      - `repeat_scores_by_item`: item -> that item's raw repeated proxy
-        measurements; STD is the pooled repeat std,
-        sqrt(mean_i(var(repeat_scores_i))).
-      - `std`: a precomputed instability figure, used as-is.
-
-    If you don't have (or don't want) a stability term, use `compute_validity`
-    (M^C) instead -- do not fake this one with a made-up std.
-    """
+    _as_finite_unit_interval_vector(proxy_scores, "proxy_scores")
+    _as_finite_unit_interval_vector(target_scores, "target_scores")
     validity, validity_raw, n = _compute_clipped_corr(proxy_scores, target_scores, corr_method)
-
-    if std is not None:
-        std_val = float(std)
-        stability_source = "explicit"
-    elif repeat_scores_by_item is not None:
-        item_vars = [
-            float(np.var(np.asarray(v, dtype=float)))
-            for v in repeat_scores_by_item.values()
-            if len(v) > 1
-        ]
-        if not item_vars:
-            raise ValueError(
-                "repeat_scores_by_item had no item with >= 2 repeats to estimate stability"
-            )
-        std_val = float(np.sqrt(np.mean(item_vars)))
-        stability_source = "repeat_scores"
-    else:
-        raise ValueError(
-            "compute_validity_stability needs a stability term: pass `std` (precomputed) "
-            "or `repeat_scores_by_item` (raw per-item repeat measurements). Falling back to "
-            "the across-item std of proxy_scores would reward a proxy that never varies its "
-            "score regardless of item quality -- see module docstring."
-        )
-    std_val = _clip01(std_val)
+    std_val, stability_source = _resolve_instability(n, repeat_scores_by_item, item_ids, std)
     stability = 1.0 - std_val
 
     vs_score = float((validity * stability) ** 0.5)
@@ -215,8 +287,12 @@ def bootstrap_correlation_ci(
     experiments/04_veribench_validation/correlation_analysis.py's
     `_bootstrap_ci`) rather than a different bootstrap scheme.
     """
-    x = np.asarray(d1, dtype=float)
-    y = np.asarray(d2, dtype=float)
+    x = _as_finite_vector(d1, "d1")
+    y = _as_finite_vector(d2, "d2")
+    if corr_method not in ("spearman", "pearson"):
+        raise ValueError(f"unknown corr_method {corr_method!r}, expected 'spearman' or 'pearson'")
+    if not isinstance(n_boot, int) or isinstance(n_boot, bool) or n_boot < 1:
+        raise ValueError(f"n_boot must be a positive integer, got {n_boot!r}")
     if x.shape != y.shape or x.shape[0] < 3:
         return float("nan"), float("nan")
     stat_fn = spearmanr if corr_method == "spearman" else pearsonr
@@ -225,7 +301,10 @@ def bootstrap_correlation_ci(
     vals = []
     for _ in range(n_boot):
         idx = rng.integers(0, n, n)
-        r = float(stat_fn(x[idx], y[idx]).statistic)
+        x_boot, y_boot = x[idx], y[idx]
+        if np.all(x_boot == x_boot[0]) or np.all(y_boot == y_boot[0]):
+            continue
+        r = float(stat_fn(x_boot, y_boot).statistic)
         if np.isfinite(r):
             vals.append(r)
     if not vals:
@@ -317,6 +396,68 @@ def compute_vs_score_missing_stability_raises_test() -> None:
         print("compute_vs_score_missing_stability_raises_test passed")
 
 
+def compute_vs_score_rejects_invalid_stability_inputs_test() -> None:
+    proxy = [0.2, 0.5, 0.8, 0.3, 0.6]
+    target = [0.1, 0.6, 0.7, 0.2, 0.9]
+    complete = {i: [v, v] for i, v in enumerate(proxy)}
+
+    for invalid_std in (-0.2, 1.2, float("nan"), float("inf")):
+        try:
+            compute_validity_stability(proxy, target, std=invalid_std)
+            raise AssertionError(f"expected ValueError for std={invalid_std!r}")
+        except ValueError:
+            pass
+
+    try:
+        compute_validity_stability(proxy, target, complete, std=0.1)
+        raise AssertionError("expected ValueError for two competing stability sources")
+    except ValueError:
+        pass
+
+    invalid_repeat_sets = [
+        {0: [0.2, 0.2]},  # incomplete item coverage
+        {**complete, 0: [0.2]},  # singleton for one item
+        {**complete, 0: [0.2, float("nan")]},
+        {**complete, 0: [0.2, 1.2]},
+    ]
+    for repeats in invalid_repeat_sets:
+        try:
+            compute_validity_stability(proxy, target, repeats)
+            raise AssertionError(f"expected ValueError for invalid repeats: {repeats!r}")
+        except ValueError:
+            pass
+    print("compute_vs_score_rejects_invalid_stability_inputs_test passed")
+
+
+def compute_vs_score_bounded_repeat_penalty_test() -> None:
+    """Maximally dispersed [0,1] repeats yield raw STD=.5, not false zero stability."""
+    proxy = [0.1, 0.3, 0.5, 0.7, 0.9]
+    target = list(proxy)
+    repeats = {i: [0.0, 1.0] for i in range(len(proxy))}
+    result = compute_validity_stability(proxy, target, repeats)
+    assert abs(result.stability - 0.5) < 1e-12, f"{result=}"
+    assert abs(result.vs_score - np.sqrt(0.5)) < 1e-12, f"{result=}"
+    print("compute_vs_score_bounded_repeat_penalty_test passed")
+
+
+def compute_vs_score_repeat_identity_alignment_test() -> None:
+    proxy = [0.1, 0.3, 0.5, 0.7, 0.9]
+    target = list(proxy)
+    reversed_positional = {
+        4: [0.5, 0.9],
+        3: [0.55, 0.85],
+        2: [0.4, 0.6],
+        1: [0.25, 0.35],
+        0: [0.1, 0.1],
+    }
+    assert _resolve_repeat_item_ids(reversed_positional, len(proxy), None) == [0, 1, 2, 3, 4]
+    named = {f"item-{i}": values for i, values in reversed_positional.items()}
+    item_ids = [f"item-{i}" for i in range(len(proxy))]
+    result = compute_validity_stability(proxy, target, named, item_ids=item_ids)
+    assert result.n_items == len(proxy)
+    print("compute_vs_score_repeat_identity_alignment_test passed")
+
+
 def bootstrap_correlation_ci_test() -> None:
     """CI should bracket the point estimate and shrink toward it as n grows."""
     rng = np.random.default_rng(0)
@@ -326,6 +467,18 @@ def bootstrap_correlation_ci_test() -> None:
     lo, hi = bootstrap_correlation_ci(d1, d2, n_boot=500, seed=0)
     assert lo <= point <= hi, f"{lo=}, {point=}, {hi=}"
     print(f"bootstrap_correlation_ci_test passed: point={point:.3f}, CI=[{lo:.3f}, {hi:.3f}]")
+
+
+def bootstrap_correlation_ci_rejects_invalid_options_test() -> None:
+    d1 = [0.1, 0.2, 0.3]
+    d2 = [0.2, 0.3, 0.4]
+    for kwargs in ({"corr_method": "kendall"}, {"n_boot": 0}, {"n_boot": True}):
+        try:
+            bootstrap_correlation_ci(d1, d2, **kwargs)
+            raise AssertionError(f"expected ValueError for {kwargs!r}")
+        except ValueError:
+            pass
+    print("bootstrap_correlation_ci_rejects_invalid_options_test passed")
 
 
 def compute_kendall_tau_b_test() -> None:
@@ -351,7 +504,11 @@ if __name__ == "__main__":
     compute_vs_score_test()
     compute_vs_score_explicit_std_test()
     compute_vs_score_missing_stability_raises_test()
+    compute_vs_score_rejects_invalid_stability_inputs_test()
+    compute_vs_score_bounded_repeat_penalty_test()
+    compute_vs_score_repeat_identity_alignment_test()
     bootstrap_correlation_ci_test()
+    bootstrap_correlation_ci_rejects_invalid_options_test()
     compute_kendall_tau_b_test()
     compute_calibration_gap_test()
     print("Done, success! \a")

@@ -15,12 +15,12 @@ everything on the canvas and asks what it means, so nothing is decoration:
     evidence of a relationship between two variables.
   - The correlation (validity) with a bootstrap CI, plus Kendall tau-b.
 
-No 2D density wash in the central panel, even as decoration: a 2D density
-can't distinguish a perfectly-aligned proxy from a shuffled one (shuffling
-changes neither marginal, only the pairing that the correlation summarizes),
-so drawing one -- however lightly -- invites a reader to read dependence off
-a channel that cannot carry it. `show_density_shading=True` still exists for
-a non-publication, illustrative-only rendering, but defaults off.
+No 2D density wash in the central panel by default: a joint KDE can encode
+dependence, but at the intended small sample size on a tie-heavy lattice it
+smooths discrete support into an apparent continuum and can obscure exact
+counts. The count-sized markers preserve the observed pairing directly.
+`show_density_shading=True` remains available for exploratory rendering, but
+defaults off and is not recommended for the publication figure.
 
 Deliberately NOT drawing a y=x reference line by default: proxy and target
 are frequently on uncalibrated scales (e.g. a judge's rubric vs a human's
@@ -43,6 +43,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 from uutils.stats_uu.validity_stability import (
+    _resolve_repeat_item_ids,
+    ValidityStabilityResult,
     compute_validity_stability,
     bootstrap_correlation_ci,
     compute_kendall_tau_b,
@@ -171,11 +173,182 @@ def _marginal_hist(
             pass  # decorative only
 
 
+def _repeat_std_vector(
+    repeats: Optional[Mapping[object, Sequence[float]]],
+    n_items: int,
+    item_ids: Optional[Sequence[object]],
+) -> Optional[np.ndarray]:
+    if repeats is None:
+        return None
+    resolved_ids = _resolve_repeat_item_ids(repeats, n_items, item_ids)
+    return np.array([
+        float(np.std(np.asarray(repeats[item], dtype=float)))
+        for item in resolved_ids
+    ])
+
+
+def _format_info_lines(
+    result: ValidityStabilityResult,
+    proxy: np.ndarray,
+    target: np.ndarray,
+    *,
+    symbol: str,
+    corr_method: str,
+    show_calibration_gap: bool,
+    n_boot: int,
+    seed: int,
+) -> list[str]:
+    ci_lo, ci_hi = bootstrap_correlation_ci(
+        proxy, target, corr_method=corr_method, n_boot=n_boot, seed=seed
+    )
+    tau_b = compute_kendall_tau_b(proxy, target)
+    corr_symbol = r"\rho" if corr_method == "spearman" else "r"
+    lines = [
+        result.formula_str(symbol=symbol),
+        rf"${corr_symbol} = {result.validity_raw:.2f}$  [{ci_lo:.2f}, {ci_hi:.2f}] 95% CI",
+        rf"$\tau_b = {tau_b:.2f}$",
+    ]
+    if show_calibration_gap:
+        lines.append(rf"Calibration gap = {compute_calibration_gap(proxy, target):.2f}")
+    return lines
+
+
+def _draw_central_panel(
+    ax: plt.Axes,
+    target: np.ndarray,
+    proxy: np.ndarray,
+    per_item_std: Optional[np.ndarray],
+    *,
+    show_density_shading: bool,
+    show_diagonal: bool,
+    seed: int,
+    scatter_label: Optional[str] = None,
+    label_diagonal: bool = False,
+) -> Optional[np.ndarray]:
+    xs_u, ys_u, counts, errs = _group_by_position(target, proxy, per_item_std)
+    _style_axes(ax)
+    if show_density_shading:
+        _add_density_wash(ax, target, proxy, seed)
+    if errs is not None:
+        ax.errorbar(
+            xs_u, ys_u, yerr=errs, fmt="none", ecolor=_ERRORBAR_COLOR,
+            elinewidth=1.1, capsize=2.5, alpha=0.8, zorder=2,
+        )
+    if show_diagonal:
+        ax.plot(
+            [-0.05, 1.05], [-0.05, 1.05], "--", color=_DIAGONAL_COLOR,
+            linewidth=1.1, alpha=0.9, zorder=1,
+            label="y = x" if label_diagonal else None,
+        )
+    ax.scatter(
+        xs_u, ys_u, s=30 + 25 * counts, color=_POINT_COLOR, edgecolor="white",
+        linewidth=0.6, alpha=0.9, zorder=3, label=scatter_label,
+    )
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    return errs
+
+
+def _render_single_panel(
+    ax: plt.Axes,
+    target: np.ndarray,
+    proxy: np.ndarray,
+    per_item_std: Optional[np.ndarray],
+    *,
+    info_lines: Sequence[str],
+    title: str,
+    x_label: str,
+    y_label: str,
+    show_density_shading: bool,
+    show_diagonal: bool,
+    legend_loc: str,
+    seed: int,
+    out: Optional[Union[str, Path]],
+) -> plt.Figure:
+    fig = ax.figure
+    _draw_central_panel(
+        ax, target, proxy, per_item_std,
+        show_density_shading=show_density_shading, show_diagonal=show_diagonal,
+        seed=seed, scatter_label="\n".join(info_lines), label_diagonal=True,
+    )
+    ax.set_xlabel(x_label, color=_TEXT_PRIMARY)
+    ax.set_ylabel(y_label, color=_TEXT_PRIMARY)
+    ax.set_title(title, color=_TEXT_PRIMARY, fontsize=11, fontweight="bold", pad=8)
+    legend = ax.legend(
+        loc=legend_loc, frameon=True, framealpha=0.95, facecolor="white",
+        edgecolor="#cfcfcf", fontsize=8, borderpad=0.5,
+    )
+    legend.set_zorder(5)
+    if out is not None:
+        _save(fig, out)
+    return fig
+
+
+def _render_joint_panel(
+    target: np.ndarray,
+    proxy: np.ndarray,
+    per_item_std: Optional[np.ndarray],
+    *,
+    info_lines: Sequence[str],
+    title: str,
+    x_label: str,
+    y_label: str,
+    show_density_shading: bool,
+    show_diagonal: bool,
+    show_marginal_kde: bool,
+    seed: int,
+    out: Optional[Union[str, Path]],
+) -> plt.Figure:
+    fig = plt.figure(figsize=(7.4, 7.4))
+    gs = fig.add_gridspec(
+        2, 2, width_ratios=(4, 1.4), height_ratios=(1.4, 4),
+        left=0.11, right=0.97, bottom=0.09, top=0.93, wspace=0.06, hspace=0.06,
+    )
+    ax_c = fig.add_subplot(gs[1, 0])
+    ax_top = fig.add_subplot(gs[0, 0], sharex=ax_c)
+    ax_right = fig.add_subplot(gs[1, 1], sharey=ax_c)
+    ax_info = fig.add_subplot(gs[0, 1])
+    ax_info.axis("off")
+
+    errs = _draw_central_panel(
+        ax_c, target, proxy, per_item_std,
+        show_density_shading=show_density_shading,
+        show_diagonal=show_diagonal, seed=seed,
+    )
+    ax_c.set_xlabel(x_label, color=_TEXT_PRIMARY, fontsize=9.5)
+    ax_c.set_ylabel(y_label, color=_TEXT_PRIMARY, fontsize=9.5)
+    if errs is not None:
+        y_label_core = y_label.split("(")[0].strip().lower()
+        ax_c.text(
+            0.02, 0.02,
+            f"dot size = # tied items  ·  error bar = repeat SD of the {y_label_core}",
+            transform=ax_c.transAxes, fontsize=6.8, color=_TEXT_MUTED,
+            va="bottom", ha="left",
+        )
+
+    _style_axes(ax_top)
+    _marginal_hist(ax_top, target, "vertical", seed, show_marginal_kde)
+    ax_top.tick_params(labelbottom=False, labelleft=False)
+    _style_axes(ax_right)
+    _marginal_hist(ax_right, proxy, "horizontal", seed, show_marginal_kde)
+    ax_right.tick_params(labelleft=False, labelbottom=False)
+    ax_info.text(
+        0.0, 1.0, "\n".join(info_lines), transform=ax_info.transAxes, fontsize=9.5,
+        color=_TEXT_PRIMARY, va="top", ha="left", linespacing=1.9,
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="#cfcfcf", alpha=0.95),
+    )
+    fig.suptitle(title, color=_TEXT_PRIMARY, fontsize=11.5, fontweight="bold", y=0.98)
+    if out is not None:
+        _save(fig, out)
+    return fig
+
+
 def plot_validity_stability_scatter(
     proxy_scores: Sequence[float],
     target_scores: Sequence[float],
     repeat_scores_by_item: Optional[Mapping[object, Sequence[float]]] = None,
     *,
+    item_ids: Optional[Sequence[object]] = None,
     std: Optional[float] = None,
     corr_method: str = "spearman",
     symbol: str = "VS",
@@ -192,152 +365,44 @@ def plot_validity_stability_scatter(
     seed: int = 0,
     out: Optional[Union[str, Path]] = None,
 ) -> plt.Figure:
-    """
-    Item-level (target, proxy) joint plot: count-sized markers with per-position
-    repeat-std error bars over a light decorative density wash in the center,
-    discrete-aware marginal histograms (+ a decorative 1D KDE line) on
-    top/right, and a compact info panel with the VS-score formula, the
-    correlation with a bootstrap CI, and Kendall tau-b.
+    """Render an item-level joint plot with count markers, repeats, and marginals.
 
-    If `repeat_scores_by_item` is given, it must be in the SAME item order as
-    `proxy_scores`/`target_scores` (i.e. `list(repeat_scores_by_item.values())[i]`
-    is item i's repeats) -- this is the existing ordering contract already
-    required by `compute_validity_stability`'s pooling, extended here to
-    per-item error bars. Without it, the central panel still shows count-sized
-    markers, just without error bars.
-
-    Deterministic: `seed` drives the bootstrap CI and the (jittered) KDE fits;
-    identical inputs + seed produce byte-identical figures. Pass `ax` for a
-    simplified single-panel mode (no room to add marginal/info panels next to
-    someone else's axes): count-sized markers + error bars + density wash +
-    a corner-overlay legend, no marginals.
+    Integer repeat keys align positionally; named keys require ordered
+    `item_ids`. `seed` controls bootstrap/KDE randomness, and saved PDF
+    timestamps are stripped for byte determinism. Passing `ax` selects a
+    simplified single-panel composition mode.
     """
     result = compute_validity_stability(
-        proxy_scores, target_scores, repeat_scores_by_item, std=std, corr_method=corr_method
+        proxy_scores,
+        target_scores,
+        repeat_scores_by_item,
+        item_ids=item_ids,
+        std=std,
+        corr_method=corr_method,
     )
     x = np.asarray(target_scores, dtype=float)
     y = np.asarray(proxy_scores, dtype=float)
-    if repeat_scores_by_item is not None:
-        if len(repeat_scores_by_item) != x.shape[0]:
-            raise ValueError(
-                f"repeat_scores_by_item has {len(repeat_scores_by_item)} entries but "
-                f"proxy_scores/target_scores have {x.shape[0]} -- must be item-aligned 1:1"
-            )
-        per_item_std = np.array([
-            float(np.std(np.asarray(v, dtype=float))) if len(v) > 1 else np.nan
-            for v in repeat_scores_by_item.values()
-        ])
-    else:
-        per_item_std = None
-
-    ci_lo, ci_hi = bootstrap_correlation_ci(y, x, corr_method=corr_method, n_boot=n_boot, seed=seed)
-    tau_b = compute_kendall_tau_b(y, x)
-    corr_symbol = r"\rho" if corr_method == "spearman" else "r"
-    info_lines = [
-        result.formula_str(symbol=symbol),
-        rf"${corr_symbol} = {result.validity_raw:.2f}$  [{ci_lo:.2f}, {ci_hi:.2f}] 95% CI",
-        rf"$\tau_b = {tau_b:.2f}$",
-    ]
-    if show_calibration_gap:
-        gap = compute_calibration_gap(y, x)
-        info_lines.append(rf"Calibration gap = {gap:.2f}")
-
-    xs_u, ys_u, counts, errs = _group_by_position(x, y, per_item_std)
-    sizes = 30 + 25 * counts
-
+    per_item_std = _repeat_std_vector(repeat_scores_by_item, x.shape[0], item_ids)
+    info_lines = _format_info_lines(
+        result, y, x, symbol=symbol, corr_method=corr_method,
+        show_calibration_gap=show_calibration_gap, n_boot=n_boot, seed=seed,
+    )
     title = f"{label} — item-level alignment (n={result.n_items})" if label else (
         f"Item-level alignment (n={result.n_items})"
     )
-
     if ax is not None:
-        # Simplified single-panel mode: no room to add marginal/info panels
-        # next to axes this function doesn't own.
-        fig = ax.figure
-        _style_axes(ax)
-        if show_density_shading:
-            _add_density_wash(ax, x, y, seed)
-        if errs is not None:
-            ax.errorbar(
-                xs_u, ys_u, yerr=errs, fmt="none", ecolor=_ERRORBAR_COLOR, elinewidth=1.1,
-                capsize=2.5, alpha=0.8, zorder=2,
-            )
-        if show_diagonal:
-            ax.plot([-0.05, 1.05], [-0.05, 1.05], "--", color=_DIAGONAL_COLOR, linewidth=1.1,
-                     alpha=0.9, zorder=1, label="y = x")
-        ax.scatter(xs_u, ys_u, s=sizes, color=_POINT_COLOR, edgecolor="white", linewidth=0.6,
-                    alpha=0.9, zorder=3, label="\n".join(info_lines))
-        ax.set_xlim(-0.05, 1.05)
-        ax.set_ylim(-0.05, 1.05)
-        ax.set_xlabel(x_label, color=_TEXT_PRIMARY)
-        ax.set_ylabel(y_label, color=_TEXT_PRIMARY)
-        ax.set_title(title, color=_TEXT_PRIMARY, fontsize=11, fontweight="bold", pad=8)
-        legend = ax.legend(loc=legend_loc, frameon=True, framealpha=0.95, facecolor="white",
-                            edgecolor="#cfcfcf", fontsize=8, borderpad=0.5)
-        legend.set_zorder(5)
-        if out is not None:
-            _save(fig, out)
-        return fig
-
-    fig = plt.figure(figsize=(7.4, 7.4))
-    gs = fig.add_gridspec(
-        2, 2, width_ratios=(4, 1.4), height_ratios=(1.4, 4),
-        left=0.11, right=0.97, bottom=0.09, top=0.93, wspace=0.06, hspace=0.06,
-    )
-    ax_c = fig.add_subplot(gs[1, 0])
-    ax_top = fig.add_subplot(gs[0, 0], sharex=ax_c)
-    ax_right = fig.add_subplot(gs[1, 1], sharey=ax_c)
-    ax_info = fig.add_subplot(gs[0, 1])
-    ax_info.axis("off")
-
-    _style_axes(ax_c)
-    if show_density_shading:
-        _add_density_wash(ax_c, x, y, seed)
-    if errs is not None:
-        ax_c.errorbar(
-            xs_u, ys_u, yerr=errs, fmt="none", ecolor=_ERRORBAR_COLOR, elinewidth=1.1,
-            capsize=2.5, alpha=0.8, zorder=2,
+        return _render_single_panel(
+            ax, x, y, per_item_std, info_lines=info_lines, title=title,
+            x_label=x_label, y_label=y_label,
+            show_density_shading=show_density_shading, show_diagonal=show_diagonal,
+            legend_loc=legend_loc, seed=seed, out=out,
         )
-    if show_diagonal:
-        ax_c.plot([-0.05, 1.05], [-0.05, 1.05], "--", color=_DIAGONAL_COLOR, linewidth=1.1,
-                   alpha=0.9, zorder=1)
-    ax_c.scatter(xs_u, ys_u, s=sizes, color=_POINT_COLOR, edgecolor="white", linewidth=0.6,
-                  alpha=0.9, zorder=3)
-    ax_c.set_xlim(-0.05, 1.05)
-    ax_c.set_ylim(-0.05, 1.05)
-    ax_c.set_xlabel(x_label, color=_TEXT_PRIMARY, fontsize=9.5)
-    ax_c.set_ylabel(y_label, color=_TEXT_PRIMARY, fontsize=9.5)
-    # Spelled out against the exact y_label (not the generic word "proxy") and
-    # against exactly what's computed, per second-pass review feedback that
-    # "proxy repeat SD" read as ambiguous -- a possessive ("the proxy's
-    # repeat SD") misreadable as "a proxy [substitute] for repeat SD". It
-    # is real per-item np.std() over that item's repeat_scores_by_item
-    # entries; at a position with >1 tied item this is the mean of those
-    # items' individual repeat SDs, not a substituted or estimated value.
-    y_label_core = y_label.split("(")[0].strip().lower()
-    ax_c.text(
-        0.02, 0.02, f"dot size = # tied items  ·  error bar = repeat SD of the {y_label_core}",
-        transform=ax_c.transAxes, fontsize=6.8, color=_TEXT_MUTED, va="bottom", ha="left",
+    return _render_joint_panel(
+        x, y, per_item_std, info_lines=info_lines, title=title,
+        x_label=x_label, y_label=y_label,
+        show_density_shading=show_density_shading, show_diagonal=show_diagonal,
+        show_marginal_kde=show_marginal_kde, seed=seed, out=out,
     )
-
-    _style_axes(ax_top)
-    _marginal_hist(ax_top, x, "vertical", seed, show_marginal_kde)
-    ax_top.tick_params(labelbottom=False, labelleft=False)
-
-    _style_axes(ax_right)
-    _marginal_hist(ax_right, y, "horizontal", seed, show_marginal_kde)
-    ax_right.tick_params(labelleft=False, labelbottom=False)
-
-    ax_info.text(
-        0.0, 1.0, "\n".join(info_lines), transform=ax_info.transAxes, fontsize=9.5,
-        color=_TEXT_PRIMARY, va="top", ha="left", linespacing=1.9,
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="#cfcfcf", alpha=0.95),
-    )
-
-    fig.suptitle(title, color=_TEXT_PRIMARY, fontsize=11.5, fontweight="bold", y=0.98)
-
-    if out is not None:
-        _save(fig, out)
-    return fig
 
 
 def _save(fig: plt.Figure, out: Union[str, Path]) -> None:
@@ -350,7 +415,12 @@ def _save(fig: plt.Figure, out: Union[str, Path]) -> None:
     # title wider than the figure canvas; savefig crops to the canvas by
     # default instead of expanding it, silently clipping the overflow.
     fig.savefig(f"{out_path}.png", dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
-    fig.savefig(f"{out_path}.pdf", facecolor=fig.get_facecolor(), bbox_inches="tight")
+    fig.savefig(
+        f"{out_path}.pdf",
+        facecolor=fig.get_facecolor(),
+        bbox_inches="tight",
+        metadata={"Creator": "ultimate-utils", "CreationDate": None, "ModDate": None},
+    )
 
 
 def _discrete_bin_edges_test() -> None:
@@ -377,10 +447,18 @@ def plot_validity_stability_scatter_test() -> None:
     rng = np.random.default_rng(0)
     target = rng.uniform(0, 1, size=40)
     proxy = np.clip(target + rng.normal(0, 0.1, size=40), 0, 1)
-    repeats = {i: [v, v + rng.normal(0, 0.02), v + rng.normal(0, 0.02)] for i, v in enumerate(proxy)}
+    repeats = {
+        i: [
+            v,
+            float(np.clip(v + rng.normal(0, 0.02), 0, 1)),
+            float(np.clip(v + rng.normal(0, 0.02), 0, 1)),
+        ]
+        for i, v in enumerate(proxy)
+    }
     fig = plot_validity_stability_scatter(proxy, target, repeats, label="synthetic demo")
     assert fig is not None
     assert len(fig.axes) == 4  # central + top marginal + right marginal + info
+    assert any("error bar = repeat SD" in text.get_text() for text in fig.axes[0].texts)
     plt.close(fig)
     print("plot_validity_stability_scatter_test passed")
 
@@ -401,8 +479,46 @@ def plot_validity_stability_scatter_ax_mode_test() -> None:
     print("plot_validity_stability_scatter_ax_mode_test passed")
 
 
+def plot_validity_stability_scatter_explicit_std_has_no_errorbar_caption_test() -> None:
+    """An aggregate explicit std informs VS but cannot support item-level error bars."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    target = np.linspace(0.1, 0.9, 12)
+    proxy = target.copy()
+    fig = plot_validity_stability_scatter(proxy, target, std=0.05)
+    assert not any("error bar" in text.get_text() for text in fig.axes[0].texts)
+    plt.close(fig)
+    print("plot_validity_stability_scatter_explicit_std_has_no_errorbar_caption_test passed")
+
+
+def plot_validity_stability_scatter_saved_bytes_are_deterministic_test() -> None:
+    """Regression test for volatile PDF CreationDate/ModDate metadata."""
+    import hashlib
+    import tempfile
+
+    target = np.linspace(0.1, 0.9, 12)
+    proxy = target.copy()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        hashes = []
+        for suffix in ("a", "b"):
+            out = Path(tmpdir) / suffix
+            fig = plot_validity_stability_scatter(proxy, target, std=0.05, out=out, seed=7)
+            plt.close(fig)
+            hashes.append(
+                (
+                    hashlib.sha256(Path(f"{out}.png").read_bytes()).hexdigest(),
+                    hashlib.sha256(Path(f"{out}.pdf").read_bytes()).hexdigest(),
+                )
+            )
+        assert hashes[0] == hashes[1], hashes
+    print("plot_validity_stability_scatter_saved_bytes_are_deterministic_test passed")
+
+
 if __name__ == "__main__":
     _discrete_bin_edges_test()
     plot_validity_stability_scatter_test()
     plot_validity_stability_scatter_ax_mode_test()
+    plot_validity_stability_scatter_explicit_std_has_no_errorbar_caption_test()
+    plot_validity_stability_scatter_saved_bytes_are_deterministic_test()
     print("Done, success! \a")

@@ -28,11 +28,11 @@ dependencies = [
     "plotly",
     "wandb",
     "matplotlib",
-    "nvidia-htop",
+    "nvidia-htop; sys_platform != 'darwin'",
     "openai",
     "anthropic",
     "jsonlines",
-    "sglang",
+    "sglang; sys_platform != 'darwin'",
     "seaborn",
     "dspy-ai",
     "ragatouille",
@@ -42,10 +42,15 @@ dependencies = [
     "peft",
     "accelerate",
     "datasets",
-    "bitsandbytes",
+    "bitsandbytes; sys_platform != 'darwin'",
     "evaluate",
     "einops",
     "sentencepiece",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
 ]
 
 [project.urls]
