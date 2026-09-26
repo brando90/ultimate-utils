@@ -1,0 +1,6 @@
+
+## Coordinator review of your first attempt (fix these; everything else was fine)
+Your previous attempt left `py_src/uutils/slack_uu.py` and `tests/test_slack_uu.py` in this worktree. Keep them and fix:
+1. **Slack request encoding bug.** `_call` sends every method as a JSON body (`json=params`, `Content-Type: application/json`). Slack accepts JSON bodies only for some *write* methods; `conversations.list`, `conversations.history` and `files.getUploadURLExternal` expect `application/x-www-form-urlencoded` arguments, so the read and upload paths would fail against a real workspace. Send every method form-encoded instead: `requests.post(url, headers={"Authorization": f"Bearer {token}"}, data=params)`, where any non-scalar value (list/dict, e.g. `files=[{"id":..., "title":...}]` for `files.completeUploadExternal`) is JSON-serialised with `json.dumps` first and `None` values are dropped. Update the tests to assert `data=` (not `json=`) and that `files` arrives as a JSON string.
+2. Delete `py_src/sitecustomize.py`; do not add any `sys.path` hack. The test venv is fixed now: use the exact test command in the task above (`env -u PYTHONPATH ...`).
+3. In dry-run `upload_file`, call `expanduser()` before `stat()`.
