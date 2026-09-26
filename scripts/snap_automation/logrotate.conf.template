@@ -1,0 +1,8 @@
+@LOG_DIR@/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
