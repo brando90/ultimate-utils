@@ -155,4 +155,5 @@ Append-only. Most recent entry on top. Each entry: date, who, what changed, what
 
 | Date | Author | Phase | Status | Notes |
 |------|--------|-------|--------|-------|
+| 09-26-2026 | uu-agy-expts coordinator (Antigravity) | — | blocked on Brando | Not started. Phase 0 needs Brando's answers to the six open questions above, then his Gmail OAuth consent and a WhatsApp QR pairing from his phone; no agent can do these. Smallest next step: Brando answers questions 1–6. |
 | 2026-04-26 | claude-code (planning) | — | spec drafted | This file created in `~/agents-config/experiments/01_self_hosted_openclaw/cc_prompt.md`. Two-instance plan (mercury2 tmux + local Mac launchd), Codex Pro as model, auto-restart required. No setup actions taken yet. Awaiting Brando's answers to the six open questions. |
