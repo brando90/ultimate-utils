@@ -99,13 +99,15 @@ def collect_hist(net,dataloader,device):
     '''
     N = len(dataloader.dataset)
     ''' '''
-    hist = np.zeros( (N,10) ) ## TODO fix hack, don't hardcode # of classes
+    hist = None
     j = 0
     with torch.no_grad():
         for i,(inputs,targets) in enumerate(dataloader):
             batch_size = targets.size()[0]
             inputs,targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
+            if hist is None:
+                hist = np.zeros((N, outputs.shape[1]))
             hist[j:j+batch_size,:] = outputs.cpu().numpy()
             j += batch_size
     return hist

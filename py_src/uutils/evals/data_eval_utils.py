@@ -27,12 +27,12 @@ def get_iter_for_eval_data_set(path: Union[Path, str],
         # ~/putnam-math/data/Putnam_MATH_original_static_final/Putnam_MATH_boxed_problems.json
         return get_iter_multiple_files_with_multiple_data_points(path=path)
     elif 'Putnam_MATH_variation_static2' in str(path):
-        raise NotImplemented
+        raise NotImplementedError(f'Putnam_MATH_variation_static2 not supported yet: {path}')
     elif 'MATH' in str(path):
         return get_iter_single_file_per_data_point(path=path)
         # return process_files_multiprocessing(path=path)
     elif 'Putnam-AXIOM/putnam-axiom-dataset' in str(path):
-        raise NotImplemented # TODO
+        raise NotImplementedError(f'Putnam-AXIOM not supported yet: {path}')
     else:
         raise NotImplementedError
     

@@ -164,11 +164,12 @@ def entropy(e0, e1):
 
 def get_normalized_embeddings(embeddings, normalization=None):
     F = [1. / get_variance(e, normalized=False) if e is not None else None for e in embeddings]
-    zero_embedding = np.zeros_like([x for x in F if x is not None][0])
+    valid_F = [x for x in F if x is not None]
+    zero_embedding = np.zeros_like(valid_F[0])
     F = np.array([x if x is not None else zero_embedding for x in F])
-    # FIXME: compute variance using only valid embeddings
     if normalization is None:
-        normalization = np.sqrt((F ** 2).mean(axis=0, keepdims=True))
+        valid_F = F if len(valid_F) == len(F) else np.array(valid_F)
+        normalization = np.sqrt((valid_F ** 2).mean(axis=0, keepdims=True))
     F /= normalization
     return F, normalization
 
