@@ -5,7 +5,7 @@
 **Dispatch recipe.**
 1. `ssh skampere2.stanford.edu`; put `/dfs/scratch0/brando9/bin` first on `PATH`. The repo is `/lfs/skampere2/0/brando9/ultimate-utils` (default branch `main`).
 2. First check the client: `agy --version`, `agy models` (pick the strongest Gemini model listed and record its exact ID), and one trivial `agy -p "reply with OK"` call. If auth fails, record the exact error and stop dispatching to that host (do not export `GEMINI_API_KEY`, do not try a login flow that needs Brando's browser; report it).
-3. Give each Antigravity task its own git worktree and branch (`agy/<your-scope>-<issue>`) under `/lfs/skampere2/0/brando9/uu-worktrees/`, so the three coordinators never share an index.
+3. Give each Antigravity task its own git worktree and branch (`agy/<your-scope>-<issue>`) under `/lfs/skampere2/0/brando9/uu-worktrees/`, created from a fresh `git fetch` of `origin/main`, so the three coordinators never share an index. The main SNAP clone has someone's uncommitted one-line edit in `py_src/uutils/collaborators.py` and is behind `origin/main`: do not pull, reset, stash, or commit in that clone; only add worktrees from it.
 4. Run it detached in a tmux session on skampere2 named `agy-<your-scope>-<n>`, e.g. `agy -p --dangerously-skip-permissions --model <id> --output-format stream-json "$(cat task.md)" > agy.jsonl 2> agy.stderr`. Keep the task prompt self-contained, end it with a TL;DR, and write it to the experiment folder. Up to 3 concurrent Antigravity agents per coordinator.
 5. Wait with a bounded check loop (no busy polling in this chat; sleep 5–10 min between checks); stop a run that has made no progress for 45 min and record it.
 
