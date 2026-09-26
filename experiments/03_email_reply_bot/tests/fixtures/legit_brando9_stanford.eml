@@ -1,0 +1,10 @@
+Message-ID: <CAB003@mail.stanford.edu>
+Authentication-Results: mx.google.com; dkim=pass header.i=@stanford.edu header.s=stanford; spf=pass smtp.mailfrom=brando9@stanford.edu; dmarc=pass header.from=stanford.edu
+From: brando9@stanford.edu
+To: brandojazz@gmail.com
+Reply-To: brando9@stanford.edu
+Subject: Re: cluster status
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+list running gpu jobs please

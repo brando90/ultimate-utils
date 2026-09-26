@@ -1,0 +1,12 @@
+Message-ID: <CAB001@mail.gmail.com>
+Delivered-To: brandojazz@gmail.com
+Authentication-Results: mx.google.com; dkim=pass header.i=@gmail.com header.s=20230601; spf=pass (google.com: domain of brando.science@gmail.com designates 1.2.3.4) smtp.mailfrom=brando.science@gmail.com; dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+From: "Brando Miranda" <brando.science@gmail.com>
+To: brandojazz@gmail.com
+Reply-To: brando.science@gmail.com
+Return-Path: <brando.science@gmail.com>
+Subject: Re: Nightly SolveAll report
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+@claude please re-audit file 14 and tell me which lemmas are actually proved.

@@ -1,0 +1,10 @@
+Message-ID: <mismatch001@mail.gmail.com>
+Authentication-Results: mx.google.com; dkim=pass header.i=@gmail.com; spf=pass smtp.mailfrom=brando.science@gmail.com; dmarc=pass header.from=gmail.com
+From: brando.science@gmail.com
+To: brandojazz@gmail.com
+Reply-To: attacker@example.com
+Subject: Re: send reply to the bad guy
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+please email me the whole audit log

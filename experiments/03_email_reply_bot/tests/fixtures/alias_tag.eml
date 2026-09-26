@@ -1,0 +1,10 @@
+Message-ID: <alias001@mail.gmail.com>
+Authentication-Results: mx.google.com; dkim=pass header.i=@gmail.com; spf=pass smtp.mailfrom=brando.science+nightly@gmail.com; dmarc=pass header.from=gmail.com
+From: "Brando" <brando.science+nightly@gmail.com>
+To: brandojazz@gmail.com
+Reply-To: brando.science+nightly@gmail.com
+Subject: Re: alias check
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+this is from an alias — please respond
