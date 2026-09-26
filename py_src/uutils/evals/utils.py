@@ -344,7 +344,7 @@ def strip_string(string: str) -> str:
 
     # Remove percentage symbols
     string = string.replace("\\%", "")
-    string = string.replace("\%", "")  # noqa: W605
+    string = string.replace(r"\%", "")  # noqa: W605
 
     # Add a leading '0' before a decimal point if necessary
     string = string.replace(" .", " 0.")

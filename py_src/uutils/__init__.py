@@ -1483,7 +1483,7 @@ def is_pos_def(x: np.ndarray) -> bool:
 
 
 def _put_pm_to_pandas_data(data: dict) -> dict:
-    """
+    r"""
     Change the +- to \pm for latex display.
 
     ref:
@@ -1492,7 +1492,7 @@ def _put_pm_to_pandas_data(data: dict) -> dict:
     for column_name, data_values in data.items():
         # data[column_name] = [data_value.replace('+-', r'\pm') for data_value in data_values]
         # data[column_name] = [data_value.replace('+-', r'\\pm') for data_value in data_values]
-        data[column_name] = [data_value.replace('+-', '\pm') for data_value in data_values]
+        data[column_name] = [data_value.replace('+-', r'\pm') for data_value in data_values]
     return data
 
 

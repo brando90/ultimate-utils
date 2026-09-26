@@ -1,4 +1,4 @@
-"""
+r"""
 Review for confidence intervals. Confidence intervals say that the true mean is inside the estimated confidence interval
 (the r.v. the user generates). In particular it says:
     Pr[mu^* \in [mu_n +- t.val(p) * std_n / sqrt(n) ] ] >= p
@@ -207,7 +207,7 @@ def torch_compute_confidence_interval(data: Tensor,
 def prob_of_truth_being_inside_when_using_ci_as_std():
     """
     what is the probability my statement mu_n +- std using the bare std holds. According to this analysis it says that
-        Pr[\theta^* \in [mu+- std] ] = int_{std, -std} N(x; mu, std/n**05) dx = int_{+1, -1} N(x; mu, 1/n**0.5) dx
+        Pr[\theta^* \\in [mu+- std] ] = int_{std, -std} N(x; mu, std/n**05) dx = int_{+1, -1} N(x; mu, 1/n**0.5) dx
     for n = 25, N(x;0, 1/n**05) = N(x; 0, 0.2) and the probability the true mean is in interval is really high around
     0.9999994266968563.
 

@@ -58,7 +58,7 @@ def get_prob_str_minerva_prompt(data_pt: dict, prompt_template: str = H_MATH_MIN
 
 def extract_answer_minerva_prompt(completion: str) -> Union[None, str]:
     """ Extracts the boxed answer or None (if no boxed answer), removes box and cleans leading/training white spaces. e.g., 
-            $$-\frac{3}{2}a=b\Rightarrow\frac{a}{b}=\boxed{-\frac{2}{3}}.$$ -> "-\frac{2}{3}"
+            $$-\frac{3}{2}a=b\\Rightarrow\frac{a}{b}=\boxed{-\frac{2}{3}}.$$ -> "-\frac{2}{3}"
             $$hello world$$ -> None  # no boxed answer
     """
     from uutils.evals.utils import last_boxed_only_string, remove_boxed

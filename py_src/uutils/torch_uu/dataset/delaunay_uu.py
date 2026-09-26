@@ -299,7 +299,7 @@ def delauny_random_resized_crop_random_crop(
         padding: int = 8,
         ratio: tuple[float, float] = (0.75, 1.3333333333333333),
 ):
-    """
+    r"""
     Does a random resized crop and a random crop with pad that 1. doesn't break if one of the images is smaller than
     84 (size) and that adds a pad 84+8 then does the random crop. This means the cropped image might only have a pad on
     one side. Also, the images should always be of sze 84 (size). This matches what mini-imagenet does in l2l, torchmeta, rfs.

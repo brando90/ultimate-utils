@@ -1,4 +1,4 @@
-'''
+r'''
 We propose to measure the complexity of a benchmark, by taking the sum or average of the Lp norm of Task2Vec embeddings.
 Either:
 1. Average complexity: complexity_avg(p) = 1/{number of tasks} sum_{task \in benchmark} ||F_task||_p

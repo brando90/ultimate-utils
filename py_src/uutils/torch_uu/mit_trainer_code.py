@@ -54,7 +54,7 @@ def initialize_to_zero(net):
         param.zero_()
 
 def evalaute_running_mdl_data_set(loss,error,net,dataloader,device,iterations=inf):
-    '''
+    r'''
     Evaluate the approx (batch) error of the model under some loss and error with a specific data set.
     The batch error is an approximation of the train error (empirical error), so it computes average batch size error
     over all the batches of a specific size. Specifically it computes:

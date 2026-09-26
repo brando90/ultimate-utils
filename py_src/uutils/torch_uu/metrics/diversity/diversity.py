@@ -199,7 +199,7 @@ def get_all_required_distances_for_pairs_of_tasks_using_cca_like_metrics(f1: nn.
                                                                          consider_diagonal: bool = False
                                                                          ) -> list[OrderedDict[str, float]]:
     # ) -> list[OrderedDict[LayerIdentifier, float]]:
-    """
+    r"""
     [L] x [B, n*k, C,H,W]^2 -> [L] x [B', n*k, C,H,W] -> [B', L]
     Compute the pairwise distances between the collection of tasks in X1 and X2:
         get_distances_for_task_pairs = [d(f(tau_s1), f(tau_s2))]_{s1,s2 \in {num_tasks_to_consider}}
@@ -403,7 +403,7 @@ def compute_diversity_fixed_probe_net_cca_like_metrics(args, meta_dataloader):
 
 
 # --- size aware div
-"""
+r"""
 how to take into account the data set size in the diversity coefficient?
 - y-axis freq
 - x-axis div
@@ -426,7 +426,7 @@ ref:
 
 
 def size_aware_div_coef_kernel_density_estimation_kde():
-    """
+    r"""
     - y-axis freq
     - x-axis div
     - size_aware_div_ceoff(B, smooth) = int_{x \in div} count(x) * div(x) * freq(x)
@@ -441,7 +441,7 @@ def size_aware_div_coef_discrete_histogram_based(distances_as_flat_array: np.arr
                                                  verbose: bool = False,
                                                  count: int = 2,  # count(task2, task2) = 2
                                                  ) -> tuple:
-    """
+    r"""
     - y-axis freq
     - x-axis div
     - size_aware_div_ceoff(B, discrete with bin_size = X) = sum_{x \in div(bin_size)} count(x) * div(x) * freq(x)

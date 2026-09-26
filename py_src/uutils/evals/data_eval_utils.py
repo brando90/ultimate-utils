@@ -307,7 +307,7 @@ def main_math_jsonlines_file():
     # format
     """
 Problem:
-Consider the arithmetic sequence defined by $a_1=-\frac{43}{2}$, and $a_n=a_{n-1}+0$ for $n > 1$. Compute the nth partial sum, $S_n=\sum_{k=1}^n a_k$, where $n=26$.
+Consider the arithmetic sequence defined by $a_1=-\frac{43}{2}$, and $a_n=a_{n-1}+0$ for $n > 1$. Compute the nth partial sum, $S_n=\\sum_{k=1}^n a_k$, where $n=26$.
 Answer:
 $-559$
     """

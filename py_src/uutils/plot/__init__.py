@@ -445,7 +445,7 @@ def plot_seaborn_curve_with_x_values_y_values(x: np.ndarray, y: np.ndarray,
 # - tables
 
 def put_pm_to_pandas_data(data: dict) -> dict:
-    """
+    r"""
     Change the +- to \pm for latex display.
 
     Note: to have the pandas frame display the table string correctly use the escapte=False as in:
@@ -455,7 +455,7 @@ def put_pm_to_pandas_data(data: dict) -> dict:
         - https://stackoverflow.com/questions/70008992/how-to-print-a-literal-backslash-to-get-pm-in-a-pandas-data-frame-to-generate-a
     """
     for column_name, data_values in data.items():
-        data[column_name] = [data_value.replace('+-', ' $\pm$ ') for data_value in data_values]
+        data[column_name] = [data_value.replace('+-', r' $\pm$ ') for data_value in data_values]
     return data
 
 
