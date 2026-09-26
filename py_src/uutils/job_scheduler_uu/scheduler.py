@@ -280,6 +280,46 @@ def _detect_job_mode(job_path: Path, default_mode: str = DEFAULT_JOB_MODE) -> st
     return default_mode
 
 
+def _is_exec_ready(path: str) -> bool:
+    """Check if path is a regular file, executable, and has a shebang or binary magic."""
+    if not os.path.isfile(path) or not os.access(path, os.X_OK):
+        return False
+    try:
+        with open(path, "rb") as f:
+            header = f.read(4)
+            if header.startswith(b"#!"):
+                return True
+            # ELF
+            if header.startswith(b"\x7fELF"):
+                return True
+            # Mach-O
+            if header in (b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe"):
+                return True
+    except OSError:
+        pass
+    return False
+
+
+def _which_exec_ready(name: str) -> Optional[str]:
+    """Find the first exec-ready absolute path for name in PATH."""
+    path_env = os.environ.get("PATH", os.defpath)
+    for p in path_env.split(os.pathsep):
+        if not p:
+            continue
+        candidate = os.path.abspath(os.path.join(p, name))
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            if _is_exec_ready(candidate):
+                return candidate
+            else:
+                try:
+                    with open(candidate, "rb") as f:
+                        first_line = f.readline().decode(errors="replace").strip()
+                except OSError:
+                    first_line = "<unreadable>"
+                log.warning("skipping %s: not exec-ready (first line %r is not a shebang)", candidate, first_line)
+    return None
+
+
 def _find_agent_binary() -> Optional[tuple[str, list[str]]]:
     """Find the best available agent binary for smart-job execution.
 
@@ -293,8 +333,10 @@ def _find_agent_binary() -> Optional[tuple[str, list[str]]]:
         ("claude", ["claude", "-p", "--dangerously-skip-permissions"]),
     ]
     for name, cmd in candidates:
-        if shutil.which(cmd[0]) is not None:
-            log.info("Smart-job agent: %s (%s)", name, shutil.which(cmd[0]))
+        ready_path = _which_exec_ready(cmd[0])
+        if ready_path is not None:
+            cmd[0] = ready_path
+            log.info("Smart-job agent: %s (%s)", name, ready_path)
             return (name, cmd)
     return None
 
@@ -348,12 +390,16 @@ def _build_smart_prompt(
 # ---------------------------------------------------------------------------
 
 
-def _send_daemon_lifecycle_email(event: str, details: str) -> None:
+def _send_daemon_lifecycle_email(event: str, details: str, no_lifecycle_email: bool = False) -> None:
     """Best-effort email notification when the daemon starts or crashes.
 
     Uses the first available agent to send (same priority as smart jobs).
     Falls back to a simple log warning if no agent is available.
     """
+    if no_lifecycle_email:
+        log.info("Lifecycle email disabled via flag; skipping event: %s", event)
+        return
+
     agent = _find_agent_binary()
     if agent is None:
         log.warning("No agent binary for lifecycle email — skipping: %s", event)
@@ -369,6 +415,11 @@ def _send_daemon_lifecycle_email(event: str, details: str) -> None:
         f"Append signature from ~/agents-config/email-signature.md.\n"
     )
 
+    dry_run = os.environ.get("UUTILS_WATCHER_NOTIFY_DRY_RUN", "").strip().lower() in ("1", "true", "yes")
+    if dry_run:
+        log.info("DRY-RUN lifecycle email via %s: %s", cmd_prefix[0], event)
+        return
+
     try:
         subprocess.Popen(
             cmd_prefix + [prompt],
@@ -378,6 +429,8 @@ def _send_daemon_lifecycle_email(event: str, details: str) -> None:
             start_new_session=True,
         )
         log.info("Dispatched lifecycle email via %s: %s", agent_name, event)
+    except OSError as exc:
+        log.warning("Failed to dispatch lifecycle email via %s: [Errno %s] %s (hint: check the file's shebang line)", cmd_prefix[0], getattr(exc, 'errno', 'N/A'), getattr(exc, 'strerror', str(exc)))
     except Exception as exc:
         log.warning("Failed to dispatch lifecycle email: %s", exc)
 
@@ -1002,6 +1055,7 @@ def watcher_loop(
     gpu_idle_timeout: int = DEFAULT_GPU_IDLE_TIMEOUT,
     gpu_idle_threshold: float = DEFAULT_GPU_IDLE_THRESHOLD,
     default_mode: str = DEFAULT_JOB_MODE,
+    no_lifecycle_email: bool = False,
 ) -> None:
     """Poll pending/ and execute up to *max_concurrent* jobs in parallel.
 
@@ -1051,6 +1105,7 @@ def watcher_loop(
         f"Max concurrent: {max_concurrent}, Default mode: {default_mode}\n"
         f"Heartbeat: {_heartbeat_path(watchers_dir)}\n"
         f"Time: {started_iso}",
+        no_lifecycle_email=no_lifecycle_email,
     )
 
     active_jobs: list[_RunningJob] = []
@@ -1277,6 +1332,11 @@ Example:
              f"agent that diagnoses failures, retries, and emails results. "
              f"'direct' runs the script as a plain subprocess.",
     )
+    parser.add_argument(
+        "--no-lifecycle-email",
+        action="store_true",
+        help="Disable daemon lifecycle emails",
+    )
     args = parser.parse_args()
 
     if args.max_concurrent < 1:
@@ -1293,6 +1353,7 @@ Example:
             gpu_idle_timeout=args.gpu_idle_timeout,
             gpu_idle_threshold=args.gpu_idle_threshold,
             default_mode=args.default_mode,
+            no_lifecycle_email=args.no_lifecycle_email,
         )
     except KeyboardInterrupt:
         log.info("Watcher stopped by user (Ctrl-C).")
@@ -1301,6 +1362,7 @@ Example:
             "STOPPED (Ctrl-C)",
             f"Watcher daemon on {HOSTNAME} was stopped by user.\n"
             f"Time: {datetime.now(timezone.utc).isoformat()}",
+            no_lifecycle_email=args.no_lifecycle_email,
         )
         sys.exit(0)
     except Exception as exc:
@@ -1312,6 +1374,7 @@ Example:
             f"{exc}\n\n"
             f"Time: {datetime.now(timezone.utc).isoformat()}\n"
             f"Please restart the watcher.",
+            no_lifecycle_email=args.no_lifecycle_email,
         )
         raise
 
