@@ -26,7 +26,7 @@ import uutils
 
 from argparse import Namespace
 
-from typing import Tuple
+from typing import Tuple, Type
 
 from pprint import pprint
 

@@ -12,6 +12,7 @@ import numpy as np
 from pathlib import Path
 
 #from utils import plot_images
+import torchvision
 from torchvision import datasets
 from torchvision import transforms
 from torch.utils.data.sampler import SubsetRandomSampler
