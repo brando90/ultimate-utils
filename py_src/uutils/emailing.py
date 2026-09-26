@@ -270,8 +270,11 @@ class SMTPNotifier(Notifier):
                 if addr not in recipients:
                     recipients.append(addr)
             msg["Cc"] = self.cc
-        if self.bcc and self.bcc != to_email:
-            recipients.append(self.bcc)
+        if self.bcc:
+            bcc_addrs = [a.strip() for a in self.bcc.split(",") if a.strip()]
+            for addr in bcc_addrs:
+                if addr not in recipients:
+                    recipients.append(addr)
         with self._smtp_client() as server:
             server.sendmail(self.from_addr, recipients, msg.as_string())
 
