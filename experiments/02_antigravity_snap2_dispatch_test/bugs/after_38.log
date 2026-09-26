@@ -1,0 +1,39 @@
+##### AFTER #38 case a: PYTHON=/usr/bin/python3 (no dill)
+== env: PYTHON=/usr/bin/python3 PYTHONPATH=/dfs/scratch0/brando9/lib/python3.12/site-packages: VIRTUAL_ENV=<unset>
+== running /lfs/skampere2/0/brando9/uu-worktrees/bugs-38/py_src/uutils/job_scheduler_uu/start_watcher.sh (isolated copy), session=uu-agy-bugs-repro38-after-a
+[FAIL] Python interpreter /usr/bin/python3 cannot import uutils.job_scheduler_uu.scheduler.
+       Error: ModuleNotFoundError: No module named 'dill'
+       Fix: set PYTHON=, activate a venv, or install dill.
+== script exit code: 1
+== RESULT: tmux session 'uu-agy-bugs-repro38-after-a' DEAD after 8s
+
+##### AFTER #38 case b: PYTHON=veribench venv
+== env: PYTHON=/lfs/skampere2/0/brando9/uv_envs/veribench/bin/python PYTHONPATH=/dfs/scratch0/brando9/lib/python3.12/site-packages: VIRTUAL_ENV=<unset>
+== running /lfs/skampere2/0/brando9/uu-worktrees/bugs-38/py_src/uutils/job_scheduler_uu/start_watcher.sh (isolated copy), session=uu-agy-bugs-repro38-after-b
+[INFO] Starting job watcher on skampere2.stanford.edu in tmux session 'uu-agy-bugs-repro38-after-b'
+       Job dir: /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-b
+       Python:  /lfs/skampere2/0/brando9/uv_envs/veribench/bin/python
+       Extra:   --poll 5 --no-lifecycle-email
+[OK]   Watcher running.  Attach with:  tmux attach -t uu-agy-bugs-repro38-after-b
+== script exit code: 0
+== RESULT: tmux session 'uu-agy-bugs-repro38-after-b' ALIVE after 8s
+watcher_tmux_skampere2.log
+2026-09-26 16:47:30 [skampere2.stanford.edu] INFO Job directories initialised under /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-b
+2026-09-26 16:47:30 [skampere2.stanford.edu] INFO Watcher started on skampere2.stanford.edu — polling /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-b/pending every 5s (wall_timeout=172800s, gpu_idle_timeout=14400s, gpu_idle_threshold=1.0%, max_concurrent=1, default_mode=smart)
+2026-09-26 16:47:30 [skampere2.stanford.edu] INFO Lifecycle email disabled via flag; skipping event: STARTED
+
+##### AFTER #38 case c: auto-select (no PYTHON, no venv)
+== env: PYTHON=<unset> PYTHONPATH=/dfs/scratch0/brando9/lib/python3.12/site-packages: VIRTUAL_ENV=<unset>
+== running /lfs/skampere2/0/brando9/uu-worktrees/bugs-38/py_src/uutils/job_scheduler_uu/start_watcher.sh (isolated copy), session=uu-agy-bugs-repro38-after-c
+[INFO] Starting job watcher on skampere2.stanford.edu in tmux session 'uu-agy-bugs-repro38-after-c'
+       Job dir: /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-c
+       Python:  /lfs/skampere2/0/brando9/uv_envs/veribench/bin/python
+       Extra:   --poll 5 --no-lifecycle-email
+[OK]   Watcher running.  Attach with:  tmux attach -t uu-agy-bugs-repro38-after-c
+== script exit code: 0
+== RESULT: tmux session 'uu-agy-bugs-repro38-after-c' ALIVE after 8s
+watcher_tmux_skampere2.log
+2026-09-26 16:47:49 [skampere2.stanford.edu] INFO Job directories initialised under /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-c
+2026-09-26 16:47:49 [skampere2.stanford.edu] INFO Watcher started on skampere2.stanford.edu — polling /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/jobq-after-c/pending every 5s (wall_timeout=172800s, gpu_idle_timeout=14400s, gpu_idle_threshold=1.0%, max_concurrent=1, default_mode=smart)
+2026-09-26 16:47:49 [skampere2.stanford.edu] INFO Lifecycle email disabled via flag; skipping event: STARTED
+

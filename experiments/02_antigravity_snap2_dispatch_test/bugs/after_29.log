@@ -1,0 +1,56 @@
+diffcheck-ok
+11:# Cron runs with a minimal PATH (usually /usr/bin:/bin), so use absolute paths
+24:# For a manual start (the script creates its own tmux session "job_watcher"):
+28:# @daily /usr/sbin/logrotate --state ~/.config/uutils_automation/logrotate.state ~/.config/uutils_automation/logrotate.conf >> ~/logs/uutils_automation/logrotate.log 2>&1
+bash-n-ok
+##### --check (real HOME, read-only)
+=== SNAP Automation Setup (check mode) ===
+Hostname: skampere2.stanford.edu
+Checking Python candidates...
+[ WARN ] /usr/bin/python3 (exists but fails to import uutils)
+[ PASS ] /lfs/skampere2/0/brando9/uv_envs/veribench/bin/python (imports uutils successfully)
+Checking credential files...
+[ WARN ] ~/keys/discord_webhook_url.txt (missing - required if you use this service)
+[ PASS ] ~/keys/gmail_app_password.txt (found)
+[ WARN ] ~/keys/twitter_api_config.json (missing - required if you use this service)
+[ WARN ] ~/keys/whatsapp_api_config.json (missing - required if you use this service)
+Checking dependencies...
+[ PASS ] logrotate is available
+[ PASS ] flock is available
+Checking current crontab for uutils/watcher...
+Found related crontab entries:
+  @reboot /dfs/scratch0/brando9/bin/start_watcher_at_reboot.sh
+[ PASS ] Crontab entries for uutils/watcher exist
+=== Summary ===
+Check completed successfully (No FAILs).
+exit=0
+##### --apply #1 (fake HOME)
+=== Applying Setup ===
+[ PASS ] Created log directory at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/logs/uutils_automation
+[ PASS ] Created config directory at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation
+[ PASS ] Generated logrotate config at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation/logrotate.conf
+[ PASS ] Created logrotate state file at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation/logrotate.state
+=== Summary ===
+Check completed successfully (No FAILs).
+##### --apply #2 (idempotency)
+=== Applying Setup ===
+[ PASS ] Log directory already exists at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/logs/uutils_automation
+[ PASS ] Config directory already exists at /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation
+[ PASS ] logrotate.conf already exists and matches template
+[ PASS ] logrotate state file already exists
+=== Summary ===
+Check completed successfully (No FAILs).
+##### logrotate -d
+warning: logrotate in debug mode does nothing except printing debug messages!  Consider using verbose mode (-v) instead if this is not what you want.
+
+reading config file /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation/logrotate.conf
+Reading state from file: /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/.config/uutils_automation/logrotate.state
+Allocating hash table for state file, size 64 entries
+
+Handling 1 logs
+
+rotating pattern: /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/logs/uutils_automation/*.log  weekly (8 rotations)
+empty log files are not rotated, old logs are removed
+considering log /lfs/skampere2/0/brando9/uu-worktrees/_scratch_bugs/fakehome29-verify/logs/uutils_automation/test.log
+Creating new state
+2
