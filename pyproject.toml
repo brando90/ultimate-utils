@@ -55,6 +55,11 @@ test = [
 whatsapp = [
     "flask>=3.0",
 ]
+gdrive = [
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+]
 
 [project.urls]
 Homepage = "https://github.com/brando90/ultimate-utils"
