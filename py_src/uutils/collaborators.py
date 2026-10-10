@@ -90,7 +90,7 @@ COLLABORATORS: list[dict[str, Any]] = [
     _SELF,
     {
         "name": "Rylan Schaeffer",
-        "emails": ["rylanschaeffer@gmail.com"],
+        "emails": ["rylanschaeffer@gmail.com", "rschaef@cs.stanford.edu"],
         "github": "RylanSchaeffer",
         "aliases": ["Rylan"],
         "affil": "Stanford CS (Koyejo lab)",
@@ -242,7 +242,7 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Yegor Denisov-Blanch",
-        "emails": ["ydenisov8@gmail.com"],
+        "emails": ["ydenisov8@gmail.com", "ydebl@stanford.edu"],
         "github": None,
         "aliases": [],
         "affil": "Stanford",
@@ -399,10 +399,32 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Allen Nie",
-        "emails": ["leo.niecn@gmail.com"],
+        "emails": ["leo.niecn@gmail.com", "aimingnie@gmail.com"],
         "github": "windweller",
-        "aliases": ["windweller"],
+        "aliases": ["windweller", "Aiming Nie"],
         "affil": "Stanford",
+    },
+    # Verified in Brando's VeriBench rating correspondence on 10-10-2026.
+    {
+        "name": "Dilara Soylu",
+        "emails": ["soylu@stanford.edu"],
+        "github": None,
+        "aliases": [],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Donald",
+        "emails": ["poin@stanford.edu"],
+        "github": None,
+        "aliases": ["Don"],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Nikil Ravi",
+        "emails": ["nikil@vals.ai"],
+        "github": None,
+        "aliases": [],
+        "affil": "Vals AI",
     },
     {
         "name": "Mr-aio",
