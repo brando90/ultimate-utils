@@ -228,10 +228,19 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Rakshit Kaushik",
-        "emails": ["rakshit.kaushik2772@gmail.com"],
+        "emails": ["rakshit.kaushik2772@gmail.com", "rakshitk@stanford.edu"],
         "github": "rakshit-kaushik",
         "aliases": ["rakshit-kaushik"],
-        "affil": None,
+        "affil": "Stanford",
+    },
+    {
+        # Verified 10-13-2026: Gmail display name "Varun Raj Madan <vmadan@stanford.edu>"
+        # (VeriBench RL Envs Subproject threads); GitHub madanva's profile name is "Varun Madan".
+        "name": "Varun Raj Madan",
+        "emails": ["vmadan@stanford.edu"],
+        "github": "madanva",
+        "aliases": ["Varun Madan", "vmadan", "madanva"],
+        "affil": "Stanford",
     },
     {
         "name": "Mahyar Karimi",
@@ -328,6 +337,7 @@ COLLABORATORS: list[dict[str, Any]] = [
         "name": "Emily Xia",
         "emails": [
             "emxia18@gmail.com",
+            "emxia18@stanford.edu",
             "emxia18@hyperturing1.stanford.edu",
         ],
         "github": "emxia18",
