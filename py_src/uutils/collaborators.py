@@ -443,6 +443,22 @@ COLLABORATORS: list[dict[str, Any]] = [
         "aliases": ["Mr-aio"],
         "affil": None,
     },
+    # Verified 10-16-2026 from Varun's RL Environment Scaling Laws invitation
+    # (Gmail thread 1a0eed2dec99cc44); Jerry's sender address also verified there.
+    {
+        "name": "Jerry Yan",
+        "emails": ["jerryy2@andrew.cmu.edu", "jerryy2@cs.cmu.edu"],
+        "github": None,
+        "aliases": ["Jerry"],
+        "affil": "Carnegie Mellon",
+    },
+    {
+        "name": "Sanmi Koyejo",
+        "emails": ["sanmi@stanford.edu"],
+        "github": None,
+        "aliases": ["Sanmi"],
+        "affil": "Stanford",
+    },
 ]
 
 
