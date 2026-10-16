@@ -36,7 +36,7 @@ The script reads the API token from `~/keys/push-pypi-all.txt`. For test PyPI: `
 
 ### Email
 
-When sending emails on Brando's behalf, CC brando9@stanford.edu, brando9@cs.stanford.edu, and brando.science@gmail.com (visible CC, not BCC). Append the signature from `~/agents-config/email-signature.md`.
+Every outgoing agent email must explicitly BCC brando.science@gmail.com, brando9@stanford.edu, brandojazz@gmail.com, and brando@vals.ai, including the sending account and addresses already in To. Deduplicate only within BCC; follow `~/agents-config/INDEX_RULES.md` Trigger Rule 26 and `~/agents-config/email-signature.md`.
 
 ### Notes
 
