@@ -459,6 +459,14 @@ COLLABORATORS: list[dict[str, Any]] = [
         "aliases": ["Sanmi"],
         "affil": "Stanford",
     },
+    # Verified 10-19-2026: https://ai.stanford.edu/~sttruong/assets/pdf/cv.pdf
+    {
+        "name": "Sang Truong",
+        "emails": ["sttruong@cs.stanford.edu"],
+        "github": None,
+        "aliases": ["Sang", "Sang T. Truong"],
+        "affil": "Stanford",
+    },
 ]
 
 
