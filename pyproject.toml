@@ -60,6 +60,9 @@ gdrive = [
     "google-auth-httplib2",
     "google-auth-oauthlib",
 ]
+discord = [
+    "discord.py>=2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/brando90/ultimate-utils"
