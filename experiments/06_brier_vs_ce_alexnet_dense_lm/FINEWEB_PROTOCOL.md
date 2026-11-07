@@ -1,4 +1,6 @@
-# FineWeb-Edu replication, not started
+# FineWeb-Edu replication
+
+Status 11-07-2026: code is `train_fineweb.py`. The run is placed on mercury1. It is not placed on mercury2, whose `/lfs` is nearly full. The final token count is the WikiText realized count, 118,032,360. A run that stays finite for that count is not labeled a stall. Non-finite loss or gradient stops that run only.
 
 This run waits until the WikiText-103 language-model comparison and the CIFAR-10 stability study are not asking for the same GPU. It does not replace either one. A second corpus is a check of external validity. It is not a measure of dataset quality, and it is not the weight-decay study.
 
