@@ -457,6 +457,9 @@ def run_vision_tune(run: Run, dataset: str) -> None:
         return
     run.state["phases"][key] = "RUNNING"
     run.save()
+    # Fetch the official training set before the timed trial so a download
+    # is not counted as an epoch.
+    vision_sets(dataset, run.data, run.gate, need_test=False)
     in_ch = 3 if dataset == "cifar10" else 1
     init = vision_init(in_ch, 0, run.device)
     first_seconds = None
