@@ -3,7 +3,9 @@
 Accuracy is the fraction of argmax predictions that match the label.
 Cross-entropy and the Brier score use the definitions in losses.py.
 Perplexity is exp(cross-entropy) on the same tokens. Expected calibration
-error uses 15 equal-width bins of the maximum predicted probability.
+error is top-label only: 15 equal-width bins of the maximum predicted
+probability. The first bin includes both edges. Later bins are open on the
+left and closed on the right. Empty bins are left out of the sum.
 """
 
 from __future__ import annotations

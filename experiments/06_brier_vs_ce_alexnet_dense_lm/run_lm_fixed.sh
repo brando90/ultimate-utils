@@ -83,31 +83,45 @@ fi
 
 LIMIT=$("$PY" -c "import json; print(int(json.load(open('$OUT/protocol.json'))['watchdog_seconds']))")
 echo "WATCHDOG_SECONDS $LIMIT"
-"$PY" -u train_lm_fixed.py --stage train --out "$OUT" --data "$DATA" >> "$OUT/train.log" 2>&1 < /dev/null &
-PID=$!
-echo "$PID" > "$OUT/train.pid"
-echo "TRAIN_PID $PID"
-(
-  while kill -0 "$PID" 2>/dev/null; do
-    date -Is
-    nvidia-smi --query-gpu=uuid,utilization.gpu,memory.used --format=csv,noheader | grep "$UUID" || true
-    sleep 60
-  done
-) >> "$OUT/gpu_samples.log" 2>&1 &
-SAMP=$!
-(
-  sleep "$LIMIT"
-  echo "WATCHDOG killing $PID"
-  kill -TERM "$PID" 2>/dev/null || true
-  sleep 30
-  kill -KILL "$PID" 2>/dev/null || true
-) &
-WATCH=$!
-set +e
-wait "$PID"
-CODE_EXIT=$?
-set -u
-kill "$WATCH" 2>/dev/null || true
-kill "$SAMP" 2>/dev/null || true
-echo "END $(date -Is) exit=$CODE_EXIT"
-exit "$CODE_EXIT"
+ATTEMPT=0
+while true; do
+  ATTEMPT=$((ATTEMPT + 1))
+  echo "TRAIN_ATTEMPT $ATTEMPT"
+  "$PY" -u train_lm_fixed.py --stage train --out "$OUT" --data "$DATA" >> "$OUT/train.log" 2>&1 < /dev/null &
+  PID=$!
+  echo "$PID" > "$OUT/train.pid"
+  echo "TRAIN_PID $PID"
+  (
+    while kill -0 "$PID" 2>/dev/null; do
+      date -Is
+      nvidia-smi --query-gpu=uuid,utilization.gpu,memory.used --format=csv,noheader | grep "$UUID" || true
+      sleep 60
+    done
+  ) >> "$OUT/gpu_samples.log" 2>&1 &
+  SAMP=$!
+  (
+    sleep "$LIMIT"
+    echo "WATCHDOG killing $PID"
+    kill -TERM "$PID" 2>/dev/null || true
+    sleep 30
+    kill -KILL "$PID" 2>/dev/null || true
+  ) &
+  WATCH=$!
+  set +e
+  wait "$PID"
+  CODE_EXIT=$?
+  set -u
+  kill "$WATCH" 2>/dev/null || true
+  kill "$SAMP" 2>/dev/null || true
+  if [ "$CODE_EXIT" -eq 0 ]; then
+    echo "END $(date -Is) exit=0 attempts=$ATTEMPT"
+    exit 0
+  fi
+  if [ "$ATTEMPT" -ge 4 ]; then
+    echo "END $(date -Is) exit=$CODE_EXIT attempts=$ATTEMPT"
+    exit "$CODE_EXIT"
+  fi
+  SLEEP=$((30 * ATTEMPT))
+  echo "RETRY attempt=$ATTEMPT exit=$CODE_EXIT sleep_seconds=$SLEEP"
+  sleep "$SLEEP"
+done

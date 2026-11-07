@@ -77,9 +77,11 @@ Written before the GPU run. Code paths: `losses.py`, `metrics.py`, `train.py`.
 | Brier score | 0 | \((K-1)/K\) | finite, and below the uniform value if accuracy is above chance | 0.9 for 10 classes |
 | Cross-entropy | 0 | \(\ln K\) | finite. Language model: below the add-one unigram on validation if each final run has at least 20M tokens; otherwise only below \(\ln 50257 \approx 10.825\) | \(\ln 10\) for 10 classes |
 | Perplexity | 1 | \(K\) | \(\exp(\)cross-entropy\()\) on the same rows | 10 for 10 classes |
-| Expected calibration error, 15 equal-width bins of the maximum probability | 0 | 0 when accuracy equals that confidence | in \([0, 1]\) | absolute gap between class-0 frequency and 0.1 |
+| Expected calibration error, top label, 15 equal-width bins of the maximum probability | 0 | 0 when the top-label accuracy equals that confidence | in \([0, 1]\) | absolute gap between the class-0 frequency and 0.1, because every probability is 0.1 and argmax ties break to class 0 |
 | Gradient of the mean loss w.r.t. a class-0 bias set to \(-12\), half the labels class 0 |  |  | cross-entropy \(< -0.2\) (near \(-0.5\)); absolute Brier gradient \(< 10^{-3}\) |  |
 | Non-finite losses | 0 | 0 | 0 | 0 |
+
+Calibration here means the top label is correct about as often as its probability. The error is top-label expected calibration error, not classwise and not equal-count. Fifteen bins use `torch.linspace(0, 1, 16)`. The first bin includes both ends. Later bins are open on the left and closed on the right. Empty bins are omitted from the sum, and each nonempty bin is weighted by its count over the evaluation size. The gap is the absolute difference between the fraction correct and the mean confidence in the bin. The reported ECE is that weighted sum for one seed and one split. The paired table then averages cross-entropy-trained minus Brier-trained across seeds. A lower ECE does not by itself mean higher accuracy, lower cross-entropy, or a lower full Brier score. The all-zero-logit cell above is only that special case of the same formula.
 
 An invalid or incomplete row stays in the denominator of the phase table. The paired difference is the cross-entropy-trained seed minus the Brier-trained seed. The 95% interval is a percentile bootstrap over training seeds, 10000 draws, seed 0. The p-value is a two-sided sign-flip test. With 3 seeds the p-value sits on a grid of eighths and cannot resolve 0.05. This language-model budget is not a result about a frontier language model.
 

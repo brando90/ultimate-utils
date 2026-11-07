@@ -132,7 +132,7 @@ def evaluate(model, packed: torch.Tensor, batch: int, device: torch.device) -> d
     ce = ce_sum / n
     conf = torch.cat(confs)
     correct = torch.cat(corrects).float()
-    ece = _ece(conf, correct)
+    ece, bins = _ece_bins(conf, correct)
     saturated = float((conf >= 0.99).float().mean())
     return {
         "n": n,
@@ -142,15 +142,27 @@ def evaluate(model, packed: torch.Tensor, batch: int, device: torch.device) -> d
         "brier": brier_sum / n,
         "local_square": local_sum / n,
         "expected_calibration_error": ece,
+        "calibration_bins": bins,
         "mean_max_probability": float(conf.mean()),
         "fraction_max_probability_at_least_0.99": saturated,
     }
 
 
 def _ece(conf: torch.Tensor, correct: torch.Tensor, n_bins: int = 15) -> float:
+    return _ece_bins(conf, correct, n_bins)[0]
+
+
+def _ece_bins(conf: torch.Tensor, correct: torch.Tensor, n_bins: int = 15) -> tuple[float, list[dict]]:
+    """Top-label expected calibration error, 15 equal-width bins.
+
+    Bin 0 is closed on both ends. Later bins are open on the left and closed
+    on the right, so a confidence exactly on an interior edge stays in the
+    lower bin. Empty bins are stored and then skipped in the sum.
+    """
     total = conf.numel()
     edges = torch.linspace(0, 1, n_bins + 1)
     total_gap = 0.0
+    bins = []
     for i in range(n_bins):
         if i == 0:
             mask = (conf >= edges[i]) & (conf <= edges[i + 1])
@@ -158,9 +170,25 @@ def _ece(conf: torch.Tensor, correct: torch.Tensor, n_bins: int = 15) -> float:
             mask = (conf > edges[i]) & (conf <= edges[i + 1])
         count = int(mask.sum())
         if count == 0:
-            continue
-        total_gap += abs(float(correct[mask].mean()) - float(conf[mask].mean())) * (count / total)
-    return total_gap
+            acc = conf_mean = gap = None
+        else:
+            acc = float(correct[mask].mean())
+            conf_mean = float(conf[mask].mean())
+            gap = abs(acc - conf_mean)
+            total_gap += gap * (count / total)
+        bins.append(
+            {
+                "bin": i,
+                "lo": float(edges[i]),
+                "hi": float(edges[i + 1]),
+                "count": count,
+                "accuracy": acc,
+                "mean_confidence": conf_mean,
+                "gap": gap,
+                "weight": (count / total) if total else 0.0,
+            }
+        )
+    return total_gap, bins
 
 
 def load_or_encode(data_root: Path, out: Path) -> dict:
@@ -525,6 +553,15 @@ def render(out: Path, state: dict) -> None:
     lines.append(f"Invalid runs: {n_invalid}.")
     lines.append("")
     lines.append(
+        "ECE is top-label expected calibration error: 15 equal-width bins of the "
+        "maximum softmax probability, first bin closed on both ends, later bins "
+        "open on the left and closed on the right, empty bins omitted from the sum. "
+        "It is not classwise and not equal-count. A lower ECE is not, by itself, "
+        "better accuracy, cross-entropy, or full Brier score. Bin rows, when "
+        "evaluation ran, are under metrics.calibration_bins in state.json."
+    )
+    lines.append("")
+    lines.append(
         "**TLDR-end:** [ultimate-utils: brier vs cross-entropy] Language-model status "
         f"{state.get('status')}. WikiText-103 raw, 123551232-parameter Transformer, matched token budget."
     )
@@ -586,6 +623,7 @@ def run_train(out: Path, data_root: Path, device) -> None:
     if not protocol_path.exists():
         raise SystemExit("protocol.json is missing; refusing to invent a token budget")
     protocol = json.loads(protocol_path.read_text())
+    (out / "ckpt").mkdir(parents=True, exist_ok=True)
     loaded = load_or_encode(data_root, out)
     tensors = loaded["tensors"]
     info = loaded["info"]

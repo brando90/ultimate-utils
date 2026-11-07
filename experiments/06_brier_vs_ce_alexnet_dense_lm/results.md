@@ -37,6 +37,26 @@ The link resolves after this branch is on `main`. Definitions and the procedure 
 - 2026-11-06T23:30:06-08:00 epoch rule: first CIFAR epoch 16.6s, CIFAR epochs 6, MNIST epochs 2, CNN seeds 5
 - 2026-11-06T23:53:08-08:00 language-model data blocked: no WikiText corpus could be stored: wikitext-103-raw-v1: File is not a zip file | wikitext-2-raw-v1: File is not a zip file
 
+## Calibration
+
+A predicted probability is calibrated, in the sense used here, when the model's top label is correct about as often as that top probability says. If the largest softmax probability is 0.7, the predicted class should be right on about 70% of those examples.
+
+The ECE column is top-label expected calibration error. It is not classwise calibration, and the bins are equal width, not equal count. The AlexNet numbers were produced by `_ece` in `train.py`. `metrics.expected_calibration_error` uses the same rule.
+
+- Confidence is the maximum softmax probability. An example is correct when the argmax class equals the label.
+- There are 15 bins. The edges are `torch.linspace(0, 1, 16)` in float32, so the nominal width is 1/15.
+- The first bin includes both endpoints. Each later bin is open on the left and closed on the right, so a confidence that lands exactly on an interior edge stays in the lower bin.
+- An empty bin is skipped. It adds no gap and does not change the denominator. A nonempty bin is weighted by its count divided by the number of examples in that evaluation.
+- The gap in a bin is the absolute difference between the fraction correct and the mean confidence. ECE is the sum of gap times weight. It is between 0 and 1.
+
+Each held-out row is one training seed on the official test split, 10,000 images. The paired ECE row is the mean of the seed-wise differences, cross-entropy-trained minus Brier-trained. It is not one ECE pooled across seeds. With 5 seeds the smallest nonzero sign-flip p-value is 0.0625.
+
+On CIFAR-10 the five raw Brier-trained test ECE values average 0.054083, and the five cross-entropy-trained values average 0.073726. The paired mean difference is 0.019643. On MNIST those averages are 0.004715 and 0.003570, and the paired difference is −0.001145.
+
+A lower ECE is not, by itself, a better probability. On CIFAR-10 the cross-entropy-trained models have higher accuracy and a lower full Brier score, while their top-label ECE is higher. Their cross-entropy on this test split is nearly the same as the Brier-trained models. Accuracy, cross-entropy, the full Brier score, and this ECE are different measurements.
+
+Per-example confidences and per-bin counts were not saved for the AlexNet runs, so there is no reliability diagram for those rows. The scalar ECE in the tables is the whole calibration record.
+
 ## Held-out test
 
 Learning rates were selected on the validation split. These rows are the official test split, scored after that selection.
