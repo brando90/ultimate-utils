@@ -1,7 +1,8 @@
-"""CIFAR-10 stability follow-up: loss by weight decay.
+"""CIFAR-10 follow-up: convergence, learning-rate range, and optimizer.
 
-The rules are the ones in STABILITY_PROTOCOL.md. This file does not read
-the WikiText run and does not change its checkpoints.
+Weight decay is fixed. This is not the seed-0 SGD-versus-Adam collapsed-bias
+diagnostic in experiments/06_sgd_vs_adam_collapsed_bias. The rules are in
+STABILITY_PROTOCOL.md. This file does not read the WikiText run.
 """
 
 from __future__ import annotations
@@ -33,16 +34,20 @@ from train import (
 )
 
 LOSSES_ORDER = ("cross_entropy", "brier")
-WEIGHT_DECAYS = (0.0, 5e-4)
-LEARNING_RATES = (1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2)
+OPTIMIZERS = ("adamw", "sgd")
+FIXED_WD = 5e-4
+LR_GRIDS = {
+    "adamw": (3e-4, 1e-3, 3e-3, 1e-2),
+    "sgd": (1e-2, 3e-2, 1e-1, 3e-1),
+}
 MAX_EPOCHS = 30
 PATIENCE = 3
 SEEDS = (0, 1, 2, 3, 4)
 STALL_ACCURACY = 0.20
 STALL_RELATIVE = 0.01
 CONFIDENT = 0.99
-MAP_RUNS = len(LOSSES_ORDER) * len(WEIGHT_DECAYS) * len(LEARNING_RATES)
-EXTRA_FINALS = len(LOSSES_ORDER) * len(WEIGHT_DECAYS) * (len(SEEDS) - 1)
+MAP_RUNS = len(LOSSES_ORDER) * len(OPTIMIZERS) * len(LR_GRIDS["adamw"])
+EXTRA_FINALS = len(LOSSES_ORDER) * len(OPTIMIZERS) * (len(SEEDS) - 1)
 
 
 def now_iso() -> str:
@@ -137,11 +142,23 @@ def classify(history: list[dict], diverged: bool) -> str:
     return "success"
 
 
-def run_one(out: Path, device, train_set, val_set, init: dict, loss_name: str, wd: float, lr: float, seed: int, phase: str) -> dict:
+def make_optimizer(model, optimizer_name: str, lr: float):
+    groups = adamw_groups(model, FIXED_WD)
+    if optimizer_name == "adamw":
+        return torch.optim.AdamW(groups, lr=lr, betas=BETAS)
+    if optimizer_name == "sgd":
+        return torch.optim.SGD(groups, lr=lr, momentum=0.9)
+    raise ValueError(optimizer_name)
+
+
+def run_one(out: Path, device, train_set, val_set, init: dict, loss_name: str, optimizer_name: str, lr: float, seed: int, phase: str) -> dict:
     model = AlexNetSmallImage(3).to(device)
     model.load_state_dict(init)
+    for name, param in model.named_parameters():
+        if name.endswith("bias") and float(param.detach().abs().max()) != 0.0:
+            raise RuntimeError(f"{name} is not the zero initialization")
     seed_everything(seed)
-    opt = torch.optim.AdamW(adamw_groups(model, wd), lr=lr, betas=BETAS)
+    opt = make_optimizer(model, optimizer_name, lr)
     steps_per_epoch = math.ceil(len(train_set) / VISION_BATCH)
     horizon = MAX_EPOCHS * steps_per_epoch
     warmup = min(100, max(1, horizon // 10))
@@ -213,7 +230,7 @@ def run_one(out: Path, device, train_set, val_set, init: dict, loss_name: str, w
         }
         history.append(row)
         print(
-            f"{phase} {loss_name} wd {wd} seed {seed} lr {lr} epoch {epoch} "
+            f"{phase} {optimizer_name} {loss_name} seed {seed} lr {lr} epoch {epoch} "
             f"train {row['train_loss']:.4f} val {value:.4f} acc {metrics['accuracy']:.4f}",
             flush=True,
         )
@@ -231,7 +248,10 @@ def run_one(out: Path, device, train_set, val_set, init: dict, loss_name: str, w
         "dataset": "cifar10",
         "followup": "stability",
         "loss": loss_name,
-        "weight_decay": wd,
+        "optimizer": optimizer_name,
+        "weight_decay": FIXED_WD,
+        "momentum": 0.9 if optimizer_name == "sgd" else None,
+        "betas": list(BETAS) if optimizer_name == "adamw" else None,
         "learning_rate": lr,
         "seed": seed,
         "phase": phase,
@@ -245,23 +265,26 @@ def run_one(out: Path, device, train_set, val_set, init: dict, loss_name: str, w
         "diverged": diverged,
     }
     if best_state is not None and outcome != "divergence":
-        path = out / "ckpt" / f"{phase}-{loss_name}-wd{wd}-seed{seed}-lr{lr}.pt"
+        path = out / "ckpt" / f"{phase}-{optimizer_name}-{loss_name}-seed{seed}-lr{lr}.pt"
         path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(best_state, path)
         record["checkpoint"] = str(path)
-    print(f"OUTCOME {outcome} {loss_name} wd {wd} seed {seed} lr {lr}", flush=True)
+    print(f"OUTCOME {outcome} {optimizer_name} {loss_name} seed {seed} lr {lr}", flush=True)
     return record
 
 
 def select(records: list[dict]) -> dict:
     chosen = {}
-    for loss_name in LOSSES_ORDER:
-        for wd in WEIGHT_DECAYS:
-            key = f"{loss_name}|{wd}"
+    for optimizer_name in OPTIMIZERS:
+        for loss_name in LOSSES_ORDER:
+            key = f"{optimizer_name}|{loss_name}"
             group = [
                 r
                 for r in records
-                if r["phase"] == "tune" and r["loss"] == loss_name and r["weight_decay"] == wd and r["seed"] == 0
+                if r["phase"] == "tune"
+                and r["optimizer"] == optimizer_name
+                and r["loss"] == loss_name
+                and r["seed"] == 0
             ]
             successes = [r for r in group if r["outcome"] == "success" and r["history"]]
             pool = successes or [r for r in group if r["outcome"] != "divergence" and r["history"]]
@@ -309,8 +332,8 @@ def render(out: Path, state: dict) -> None:
         "",
         "## Map, seed 0",
         "",
-        "| loss | weight decay | learning rate | outcome | best epoch | best validation objective | best accuracy | seconds |",
-        "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
+        "| optimizer | loss | learning rate | outcome | best epoch | best validation objective | best accuracy | seconds |",
+        "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: |",
     ]
     for r in state["records"]:
         if r["phase"] != "tune":
@@ -324,19 +347,19 @@ def render(out: Path, state: dict) -> None:
             best_v = best_a = ""
             best_e = ""
         lines.append(
-            f"| {r['loss']} | {r['weight_decay']} | {r['learning_rate']} | {r['outcome']} | {best_e} | {best_v} | {best_a} | {r['seconds']:.1f} |"
+            f"| {r['optimizer']} | {r['loss']} | {r['learning_rate']} | {r['outcome']} | {best_e} | {best_v} | {best_a} | {r['seconds']:.1f} |"
         )
     lines += ["", "## Held-out test at the selected learning rates", ""]
     finals = [r for r in state["records"] if r["phase"] == "final" and r.get("test")]
     if not finals:
         lines.append("No held-out rows yet.")
     else:
-        lines.append("| loss | weight decay | seed | learning rate | accuracy | cross-entropy | Brier score | ECE | outcome |")
-        lines.append("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        lines.append("| optimizer | loss | seed | learning rate | accuracy | cross-entropy | Brier score | ECE | outcome |")
+        lines.append("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
         for r in finals:
             m = r["test"]
             lines.append(
-                f"| {r['loss']} | {r['weight_decay']} | {r['seed']} | {r['learning_rate']} | "
+                f"| {r['optimizer']} | {r['loss']} | {r['seed']} | {r['learning_rate']} | "
                 f"{m['accuracy']:.6g} | {m['cross_entropy']:.6g} | {m['brier']:.6g} | "
                 f"{m['expected_calibration_error']:.6g} | {r['outcome']} |"
             )
@@ -345,12 +368,12 @@ def render(out: Path, state: dict) -> None:
         lines.append("")
         by = {}
         for r in finals:
-            by.setdefault((r["loss"], r["weight_decay"]), {})[r["seed"]] = r["test"]
+            by.setdefault((r["optimizer"], r["loss"]), {})[r["seed"]] = r["test"]
         lines.append("| comparison | metric | mean difference | 95% interval | p-value | n |")
         lines.append("| --- | --- | ---: | --- | ---: | ---: |")
-        for loss_name in LOSSES_ORDER:
-            left = by.get((loss_name, 5e-4), {})
-            right = by.get((loss_name, 0.0), {})
+        for optimizer_name in OPTIMIZERS:
+            left = by.get((optimizer_name, "cross_entropy"), {})
+            right = by.get((optimizer_name, "brier"), {})
             seeds = sorted(set(left) & set(right))
             for metric in ("accuracy", "cross_entropy", "brier", "expected_calibration_error"):
                 if not seeds:
@@ -358,12 +381,12 @@ def render(out: Path, state: dict) -> None:
                 comp = paired_seed_comparison([left[s][metric] for s in seeds], [right[s][metric] for s in seeds])
                 lo, hi = comp["ci95"]
                 lines.append(
-                    f"| {loss_name}, weight decay 5e-4 minus 0 | {metric} | {comp['mean_diff']:.6g} | "
+                    f"| {optimizer_name}, cross-entropy minus Brier | {metric} | {comp['mean_diff']:.6g} | "
                     f"[{lo:.6g}, {hi:.6g}] | {comp['p_value']:.4g} | {comp['n']} |"
                 )
-        for wd in WEIGHT_DECAYS:
-            left = by.get(("cross_entropy", wd), {})
-            right = by.get(("brier", wd), {})
+        for loss_name in LOSSES_ORDER:
+            left = by.get(("adamw", loss_name), {})
+            right = by.get(("sgd", loss_name), {})
             seeds = sorted(set(left) & set(right))
             for metric in ("accuracy", "cross_entropy", "brier", "expected_calibration_error"):
                 if not seeds:
@@ -371,13 +394,13 @@ def render(out: Path, state: dict) -> None:
                 comp = paired_seed_comparison([left[s][metric] for s in seeds], [right[s][metric] for s in seeds])
                 lo, hi = comp["ci95"]
                 lines.append(
-                    f"| weight decay {wd}, cross-entropy minus Brier | {metric} | {comp['mean_diff']:.6g} | "
+                    f"| {loss_name}, AdamW minus SGD | {metric} | {comp['mean_diff']:.6g} | "
                     f"[{lo:.6g}, {hi:.6g}] | {comp['p_value']:.4g} | {comp['n']} |"
                 )
     lines += [
         "",
         "**TLDR-end:** [ultimate-utils: brier vs cross-entropy] CIFAR-10 stability follow-up. "
-        f"Status {state.get('status')}. Four conditions, validation selection, held-out test after selection.",
+        f"Status {state.get('status')}. AdamW and SGD, both losses, fixed weight decay {FIXED_WD}, normal initialization.",
         "",
     ]
     (out / "results.md").write_text("\n".join(lines))
@@ -403,17 +426,17 @@ def smoke(device, train_set) -> dict:
     x = x.to(device)
     y = y.to(device)
     times = []
-    for loss_name in LOSSES_ORDER:
-        for wd in WEIGHT_DECAYS:
+    for optimizer_name in OPTIMIZERS:
+        for loss_name in LOSSES_ORDER:
             model = AlexNetSmallImage(3).to(device)
-            opt = torch.optim.AdamW(adamw_groups(model, wd), lr=1e-3, betas=BETAS)
+            opt = make_optimizer(model, optimizer_name, 1e-3 if optimizer_name == "adamw" else 1e-2)
             for step in range(30):
                 started = time.time()
                 opt.zero_grad(set_to_none=True)
                 with autocast_for(device):
                     loss = LOSSES[loss_name](model(x), y)
                 if not torch.isfinite(loss):
-                    raise RuntimeError(f"smoke loss not finite for {loss_name} wd {wd}")
+                    raise RuntimeError(f"smoke loss not finite for {optimizer_name} {loss_name}")
                 loss.backward()
                 grade = torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
                 before = [p.detach().clone() for p in model.parameters()]
@@ -448,10 +471,12 @@ def smoke(device, train_set) -> dict:
 
 def write_protocol(out: Path, smoke_info: dict) -> dict:
     payload = {
-        "study": "cifar10 stability follow-up",
+        "study": "cifar10 convergence and optimizer follow-up",
         "losses": list(LOSSES_ORDER),
-        "weight_decays": list(WEIGHT_DECAYS),
-        "learning_rates": list(LEARNING_RATES),
+        "optimizers": list(OPTIMIZERS),
+        "fixed_weight_decay": FIXED_WD,
+        "learning_rates": {name: list(values) for name, values in LR_GRIDS.items()},
+        "initialization": "AlexNetSmallImage.reset_parameters, biases 0, no collapsed coordinate",
         "max_epochs": MAX_EPOCHS,
         "patience": PATIENCE,
         "seeds": list(SEEDS),
@@ -460,8 +485,8 @@ def write_protocol(out: Path, smoke_info: dict) -> dict:
         "confident_threshold": CONFIDENT,
         "schedule": "cosine to 0.1 times the peak over a 30-epoch horizon, warmup min(100, horizon/10)",
         "batch": VISION_BATCH,
-        "optimizer": "AdamW",
-        "betas": list(BETAS),
+        "adamw_betas": list(BETAS),
+        "sgd_momentum": 0.9,
         "grad_clip": GRAD_CLIP,
         "precision": "bfloat16 autocast, loss float32",
         **smoke_info,
@@ -493,7 +518,10 @@ def main() -> None:
     if not protocol_path.exists():
         raise SystemExit("protocol.json is missing; refusing to invent the stability rules")
     state = load_state(out)
-    state["protocol"] = json.loads(protocol_path.read_text())
+    protocol = json.loads(protocol_path.read_text())
+    if protocol.get("study") != "cifar10 convergence and optimizer follow-up":
+        raise SystemExit("protocol.json is not the optimizer follow-up; refusing to train the old weight-decay plan")
+    state["protocol"] = protocol
     state["status"] = "RUNNING"
     inits = {}
     for seed in SEEDS:
@@ -506,13 +534,13 @@ def main() -> None:
             inits[seed] = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             path.parent.mkdir(parents=True, exist_ok=True)
             torch.save(inits[seed], path)
-    for loss_name in LOSSES_ORDER:
-        for wd in WEIGHT_DECAYS:
-            for lr in LEARNING_RATES:
-                key = f"tune-{loss_name}-wd{wd}-seed0-lr{lr}"
+    for optimizer_name in OPTIMIZERS:
+        for loss_name in LOSSES_ORDER:
+            for lr in LR_GRIDS[optimizer_name]:
+                key = f"tune-{optimizer_name}-{loss_name}-seed0-lr{lr}"
                 if key in state["markers"]:
                     continue
-                record = run_one(out, device, train_set, val_set, inits[0], loss_name, wd, lr, 0, "tune")
+                record = run_one(out, device, train_set, val_set, inits[0], loss_name, optimizer_name, lr, 0, "tune")
                 state["records"].append(record)
                 state["markers"].append(key)
                 save_state(out, state)
@@ -523,29 +551,35 @@ def main() -> None:
         for record in state["records"]:
             if record["phase"] != "tune" or not record.get("checkpoint"):
                 continue
-            chosen_lr = state["selection"][f"{record['loss']}|{record['weight_decay']}"]["learning_rate"]
+            chosen_lr = state["selection"][f"{record['optimizer']}|{record['loss']}"]["learning_rate"]
             if chosen_lr is None or record["learning_rate"] != chosen_lr:
                 Path(record["checkpoint"]).unlink(missing_ok=True)
                 record["checkpoint"] = None
         save_state(out, state)
-    for loss_name in LOSSES_ORDER:
-        for wd in WEIGHT_DECAYS:
-            choice = state["selection"][f"{loss_name}|{wd}"]
+    for optimizer_name in OPTIMIZERS:
+        for loss_name in LOSSES_ORDER:
+            choice = state["selection"][f"{optimizer_name}|{loss_name}"]
             lr = choice["learning_rate"]
             if lr is None:
                 continue
             for seed in SEEDS:
-                key = f"final-{loss_name}-wd{wd}-seed{seed}-lr{lr}"
+                key = f"final-{optimizer_name}-{loss_name}-seed{seed}-lr{lr}"
                 if key in state["markers"]:
                     continue
                 if seed == 0:
-                    tune_key = f"tune-{loss_name}-wd{wd}-seed0-lr{lr}"
-                    source = next(r for r in state["records"] if f"tune-{r['loss']}-wd{r['weight_decay']}-seed0-lr{r['learning_rate']}" == tune_key)
+                    tune_key = f"tune-{optimizer_name}-{loss_name}-seed0-lr{lr}"
+                    source = next(
+                        r
+                        for r in state["records"]
+                        if f"tune-{r['optimizer']}-{r['loss']}-seed0-lr{r['learning_rate']}" == tune_key
+                    )
                     record = dict(source)
                     record["phase"] = "final"
                     record["reused_tune"] = True
                 else:
-                    record = run_one(out, device, train_set, val_set, inits[seed], loss_name, wd, lr, seed, "final")
+                    record = run_one(
+                        out, device, train_set, val_set, inits[seed], loss_name, optimizer_name, lr, seed, "final"
+                    )
                 state["records"].append(record)
                 state["markers"].append(key)
                 save_state(out, state)
