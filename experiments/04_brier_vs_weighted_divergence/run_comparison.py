@@ -6,7 +6,7 @@ Brier / 6.437 quadratic cost, summed over the whole alphabet:
     BS(q, x) = sum_a (q(a) - 1{a = x})^2
              = (1 - q(x))^2 + sum_{a != x} q(a)^2
 
-Weighted divergence, with the true distribution used twice:
+Weighted squared divergence, with the true distribution used twice:
     WD(p, q) = sum_a p(a) (p(a) - q(a))^2
 
 Substituting a one-hot into WD deletes every term except the observed symbol
@@ -470,7 +470,7 @@ def plot_flows(speed_rows: list[dict], path: Path) -> None:
     }
     labels = {
         "brier": "Brier",
-        "weighted_divergence": "Weighted divergence",
+        "weighted_divergence": "Weighted squared divergence",
         "log_loss": "Log loss",
         "local_squared": "Local (1 - q(x))^2",
     }

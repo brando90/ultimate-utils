@@ -1,4 +1,8 @@
-# Brier score vs the weighted divergence
+# Brier score vs the weighted squared divergence
+
+**Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/04_brier_vs_weighted_divergence/README.md>
+
+**TLDR:** The Brier score and the weighted squared divergence are minimized at the true distribution and move at different local rates. KL divergence is the same expectation as the weighted squared divergence with the log-likelihood ratio in place of the square. The address above resolves after a push to `main`.
 
 Checked on 11-06-2026 against the handwritten notes and against MIT 6.437 / 6.8700 lecture 13 (Inference as Decision). The lecture PDFs stay in `~/Documents/Brandos Textbooks and Notes/6.437 6.8700 2024 notes`. This repository is public, so those course PDFs are not copied in. See `6.437.md` for the lecture list and the two definitions used below.
 
@@ -11,7 +15,7 @@ BS(q, x) = sum_a (q(a) - 1{a = x})^2
          = (1 - q(x))^2 + sum_{a != x} q(a)^2
 ```
 
-The first page of the notes has this decomposition: term 1 is the observed symbol, term 2 is every other symbol. The third page starts from the weighted divergence
+The first page of the notes has this decomposition: term 1 is the observed symbol, term 2 is every other symbol. The third page starts from the weighted squared divergence
 
 ```text
 WD(p, q) = sum_a p(a) (p(a) - q(a))^2
@@ -45,7 +49,7 @@ Yes, for `WD(p, q)` against the Brier score. Both are minimized at `p`. Their pr
 
 Rates below are the eigenvalues of the projected Hessian. The time column is how long the slowest direction takes to shrink by a factor `e`. The matrix exponential reproduces that factor to within `1e-8`.
 
-| Distribution | Brier rates | Weighted-divergence rates | Slow-time ratio, WD / Brier |
+| Distribution | Brier rates | Weighted squared divergence rates | Slow-time ratio, WD / Brier |
 | --- | --- | --- | --- |
 | any binary `p` | 2 | 1 | 2 exactly |
 | uniform, 3 symbols | 2, 2 | 2/3, 2/3 | 3 exactly |
@@ -59,7 +63,7 @@ From `q(0) = (0.05, 0.90, 0.05)` with `p = (0.70, 0.20, 0.10)`, one projected-gr
 | --- | --- | --- | --- | --- |
 | Log loss | 0.90 | 1.72 | 2.49 | ~0 |
 | Brier | 1.13 | 2.28 | 3.43 | ~0 |
-| Weighted divergence | 4.24 | still above 0.01 | still above 0.01 | 0.010 |
+| Weighted squared divergence | 4.24 | still above 0.01 | still above 0.01 | 0.010 |
 | Local `(1 - q(x))^2` | stays above 0.1 | stays above 0.1 | stays above 0.1 | 0.129 |
 
 Log loss is faster than the Brier score near this `p`. Its linearized slow rate is 2.99 against the Brier score's 2. That comparison is local to the optimum. The plotted curves agree from this far start as well.
@@ -88,3 +92,7 @@ python experiments/04_brier_vs_weighted_divergence/run_comparison.py
 ```
 
 Outputs: `results/summary.json`, `results/distance_to_truth.png`.
+
+The follow-up comparison of the Brier score, the weighted squared divergence, and Kullback-Leibler divergence is `run_kl_comparison.py`. The TMLR-style report is `tmlr/main.pdf`, built from `tmlr/main.tex` with the preprint option.
+
+The finalized identity is in `NOTES.md`. Both divergences are expectations under `p` of a discrepancy between `p(X)` and `q(X)`. The check is `run_expectation_identity.py`, and the numbers are in `results.md`.
