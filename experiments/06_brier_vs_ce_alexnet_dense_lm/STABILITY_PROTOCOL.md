@@ -2,7 +2,7 @@
 
 The closed AlexNet comparison used AdamW only, weight decay 5e-4, and 6 CIFAR-10 epochs. Those 6 epochs are not a converged run. The held-out scores from that run do not choose the settings below.
 
-This is not a rerun of `experiments/06_sgd_vs_adam_collapsed_bias` on `main` commit `50d908b`. That study is seed 0, a collapsed bias of -12, and it is finished. Weight decay is not the question here. The coefficient stays 5e-4 for every run.
+This is not a rerun of `experiments/06_sgd_vs_adam_collapsed_bias` on `main` commit `50d908b`. That study is seed 0, plain SGD and plain Adam, no weight decay, and a collapsed bias of -12. It is finished. The multi-seed extension of that study is a separate job in `collapsed_replication/`. It does not replace this file. Weight decay is not the question here. The coefficient stays 5e-4 for every run in this CIFAR-10 follow-up.
 
 ## Conditions
 
