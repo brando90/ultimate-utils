@@ -159,6 +159,89 @@ def pack_sequences(ids: torch.Tensor, seq_len: int) -> torch.Tensor:
     return ids[:n].view(-1, seq_len)
 
 
+# Salesforce WikiText-103 raw, hosted as parquet by the dataset authors on Hugging Face.
+# The legacy s3://research.metamind.io zip URLs now return a 467-byte S3 redirect document.
+# Card: https://huggingface.co/datasets/Salesforce/wikitext  config wikitext-103-raw-v1
+# Paper: Merity, Xiong, Bradbury, and Socher, 2016, arXiv:1609.07843. License CC-BY-SA-3.0 and GFDL.
+HF_WIKITEXT_103_RAW = {
+    "train": (
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/train-00000-of-00002.parquet",
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/train-00001-of-00002.parquet",
+    ),
+    "validation": (
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/validation-00000-of-00001.parquet",
+    ),
+    "test": (
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/test-00000-of-00001.parquet",
+    ),
+}
+HF_WIKITEXT_103_RAW_BYTES = {
+    "train-00000-of-00002.parquet": 156_987_808,
+    "train-00001-of-00002.parquet": 157_088_770,
+    "validation-00000-of-00001.parquet": 657_209,
+    "test-00000-of-00001.parquet": 732_610,
+}
+HF_WIKITEXT_103_RAW_ROWS = {"train": 1_801_350, "validation": 3_760, "test": 4_358}
+
+
+def _download_checked(url: str, dest: Path, expected_bytes: int) -> None:
+    if dest.exists() and dest.stat().st_size == expected_bytes:
+        return
+    if dest.exists():
+        dest.unlink()
+    _download(url, dest)
+    size = dest.stat().st_size
+    if size != expected_bytes:
+        dest.unlink()
+        raise RuntimeError(f"{dest.name} is {size} bytes, expected {expected_bytes}")
+    magic = dest.open("rb").read(4)
+    if magic != b"PAR1":
+        dest.unlink()
+        raise RuntimeError(f"{dest.name} is not a parquet file")
+
+
+def prepare_wikitext103_hf(root: Path) -> dict:
+    """Download WikiText-103 raw parquet files and check sizes.
+
+    The test file is stored and size-checked. Its text is not read here.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+    files = {}
+    for split, urls in HF_WIKITEXT_103_RAW.items():
+        paths = []
+        for url in urls:
+            name = url.rsplit("/", 1)[-1]
+            dest = root / name
+            _download_checked(url, dest, HF_WIKITEXT_103_RAW_BYTES[name])
+            paths.append(str(dest))
+        files[split] = paths
+    return {
+        "name": "Salesforce/wikitext wikitext-103-raw-v1",
+        "source": "https://huggingface.co/datasets/Salesforce/wikitext",
+        "config": "wikitext-103-raw-v1",
+        "license": "CC-BY-SA-3.0 and GFDL",
+        "paper": "arXiv:1609.07843",
+        "files": files,
+        "expected_rows": HF_WIKITEXT_103_RAW_ROWS,
+        "bytes": HF_WIKITEXT_103_RAW_BYTES,
+    }
+
+
+def parquet_lines_to_text(paths: list[str]) -> tuple[str, int]:
+    import pyarrow.parquet as pq
+
+    chunks = []
+    rows = 0
+    for path in paths:
+        table = pq.read_table(path, columns=["text"])
+        if table.column_names != ["text"]:
+            raise RuntimeError(f"{path} columns are {table.column_names}")
+        values = table.column("text").to_pylist()
+        rows += len(values)
+        chunks.append("\n".join("" if value is None else value for value in values))
+    return "\n".join(chunks), rows
+
+
 def add_one_unigram(train_ids: torch.Tensor, vocab: int) -> torch.Tensor:
     counts = torch.bincount(train_ids.long().view(-1), minlength=vocab).float()
     return (counts + 1.0) / (counts.sum() + vocab)

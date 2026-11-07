@@ -144,15 +144,31 @@ def render_results(state: dict) -> str:
         lines.append(json.dumps(state["baseline"], indent=2, default=str)[:4000])
         lines.append("```")
         lines.append("")
-    lines.append(
-        "This is one architecture, one corpus, and the token count written in the phase notes. "
-        "It is not a result about a frontier language model."
-    )
+    phases = state.get("phases") or {}
+    lm_blocked = phases.get("lm_tune") == "BLOCKED" or phases.get("lm_final") == "BLOCKED"
+    if lm_blocked:
+        lines.append(
+            "The language-model phase did not train. The legacy WikiText zip downloads were not zip files. "
+            "The tables above are the AlexNet comparison only."
+        )
+    else:
+        lines.append(
+            "This is one architecture, one corpus, and the token count written in the phase notes. "
+            "It is not a result about a frontier language model."
+        )
     lines.append("")
     status = state.get("status", "")
+    if lm_blocked:
+        closing = (
+            "AlexNet on MNIST and CIFAR-10 finished. The dense language model did not train."
+        )
+    else:
+        closing = (
+            "AlexNet on MNIST and CIFAR-10, and one dense causal language model, "
+            "trained with the full Brier score and with cross-entropy under matched data, initialization, and step budgets."
+        )
     lines.append(
-        f"**TLDR-end:** [ultimate-utils: brier vs cross-entropy] Status {status}. "
-        "AlexNet on MNIST and CIFAR-10, and one dense causal language model, trained with the full Brier score and with cross-entropy under matched data, initialization, and step budgets."
+        f"**TLDR-end:** [ultimate-utils: brier vs cross-entropy] Status {status}. {closing}"
     )
     lines.append("")
     state["comparisons"] = all_stats
