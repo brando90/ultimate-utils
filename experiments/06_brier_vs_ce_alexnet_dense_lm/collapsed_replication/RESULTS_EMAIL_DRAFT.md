@@ -16,10 +16,13 @@ The historical guess that weight decay is why cross-entropy is standard is dropp
 
 The CIFAR-10 AlexNet follow-up is a fourth, separate job: normal initialization, fixed weight decay 5e-4, AdamW against SGD with momentum, up to 30 epochs. It is not the collapsed-bias replication.
 
+## Collapsed replication, filled 11-07-2026
+
+Seeds 1–4 are done. At SGD learning rate 0.05 and start bias −12, Brier class-0 recall was 0/980 on every seed and the bias stayed −12. Log loss recovered, recalls 0.9704 to 0.9908. The same Brier stall held at learning rates 0.01, 0.1, and 0.2, 16 of 16 runs, with a class-0 bias step of 0 while other parameters still moved. Adam at learning rate 0.001 recovered both losses. The Brier probe gradient was about −1e-7. Adam's first full update had L2 about 0.29 for both losses. Two SGD log-loss runs at learning rate 0.2 dropped to accuracy near 0.10. That is a high-learning-rate failure, not the frozen coordinate. The full table is `collapsed_replication/results.md`.
+
 ## Numbers still to fill in before sending
 
-- WikiText-103: realized steps, tokens, seeds, validation and held-out accuracy, cross-entropy, perplexity, full Brier score, top-label 15-bin ECE, and failures.
-- Collapsed replication: seeds 1–4, both learning-rate grids, class-0 recall, bias trajectories, raw gradient, and update size, plus the normal controls.
-- CIFAR-10 follow-up, if it has finished by then.
+- WikiText-103: realized steps, tokens, seeds, validation and held-out accuracy, cross-entropy, perplexity, full Brier score, top-label 15-bin ECE, and failures. At 09:11 PT the log was still in the final phase: `final cross_entropy seed 0 lr 0.0003 step 1600`.
+- CIFAR-10 follow-up, if it has finished by then. At 09:11 PT it was still in the seed-0 map.
 
 Do not describe the 6-epoch AlexNet result as a converged minimum. Do not describe n=3 or n=4 sign-flip tests as significance at 0.05.

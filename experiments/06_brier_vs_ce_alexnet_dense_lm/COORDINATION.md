@@ -64,4 +64,4 @@ Experiment 05 is not repeated.
 
 - WikiText-103: mercury2, tmux `brier-ce-lm-076e`, pid 1065070, GPU `GPU-4cdf8223-cd3c-4c19-fe22-dd070b82e697`. Do not kill it. Do not use that GPU. Do not change its protocol.
 - CIFAR-10 follow-up: mercury1, tmux `brier-ce-stability-076e`, pid 3621040, `CUDA_VISIBLE_DEVICES=GPU-071c409d-a1bb-9fd7-1239-a271b8ce1889`, still in smoke. Do not kill it. Do not use that GPU.
-- Collapsed-bias replication: separate output `collapsed_out`, separate session `brier-ce-collapsed-076e`, a different idle GPU.
+- Collapsed-bias replication: finished 11-07-2026 08:57:48 PT, exit 0, 128 CNN runs. Measured rows are in `collapsed_replication/MEASURED.md`. It was not restarted.
