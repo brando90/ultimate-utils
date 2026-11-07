@@ -27,6 +27,6 @@ This rule is the one the trainer applies. The resulting token count is written t
 - The watchdog is 1.5 times the projected program plus one hour, taken from the slower loss. It can stop a hung process. It is not a per-loss deadline. A killed run resumes from its own checkpoint to the same step count.
 - A non-finite loss stops that run and keeps the row. The other loss still runs the full step count.
 
-## CNN follow-up, not started
+## CNN follow-up
 
-If a GPU is free after this language-model job: retrain CIFAR-10 for 30 epochs and MNIST for 5 epochs, same selected learning rates, seeds 0 through 4, stop early when the validation value of the training loss fails to improve for 3 epochs, the same patience for both losses. Evaluate the test split once, at that stopping point. Do not use the already observed 6-epoch and 2-epoch test numbers to choose this schedule.
+The separate 30-epoch CIFAR-10 rerun and the 5-epoch MNIST rerun are not launched. CIFAR-10 is the stability study in `STABILITY_PROTOCOL.md`: cross-entropy and the full Brier score, at weight decay 0 and at 5e-4, with its own learning-rate map and the same 30-epoch patience. MNIST is not rerun. Both losses already reached validation accuracy about 0.99 in two epochs, so a longer MNIST run would not test that premise.
