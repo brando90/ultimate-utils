@@ -2,7 +2,7 @@
 
 ## State
 
-- Status: CPU_CHECKS_PASS (123551232 LM parameters). GPU smoke not started
+- Status: FULL RUNNING since 11-06-2026 23:01:35 PT. Deadline 11-07-2026 11:01:37 PT. Smoke passed.
 - Branch: cursor/brier-ce-pilot-076e
 - Worktree: ~/.worktrees/ultimate-utils/brier-ce-pilot
 - Canonical repo left untouched: ~/ultimate-utils (other session's dirty tree)
@@ -21,3 +21,5 @@
 - 11-06-2026 22:41 PT: mercury2 ten A4000s idle; skampere2 full; skampere1 GPU 1 and 2 idle but not used; skampere3 GPU 2 and 5 idle but mercury is the placement; mercury1 has own vLLM jobs left alone.
 - 11-06-2026 22:50 PT: CPU_CHECKS_PASS. Full model 123551232 parameters. Collapsed class-0 bias gradient is the shared-bias gradient of the mean loss.
 - 11-06-2026 22:58 PT: mercury2 rechecked. All 10 A4000s idle, no compute apps. Free 15587700736 bytes. Pin GPU-4cdf8223-cd3c-4c19-fe22-dd070b82e697 if still idle at launch. No duplicate job.
+- 11-06-2026 22:59 PT: smoke SMOKE_PASS on that GPU. MNIST cross-entropy at learning rate 0.001 fell from 2.3031 to 1.1571 over 60 steps. Language model 123551232 parameters, 10 steps finite.
+- 11-06-2026 23:01 PT: full job started. tmux brier-ce-pilot-076e, driver PID 860544, train PID 861294, GPU GPU-4cdf8223-cd3c-4c19-fe22-dd070b82e697. MNIST tune in progress at 23:03 PT (cross-entropy train losses 0.2896, 0.2284, 0.2308, 0.3803 at the four learning rates).
