@@ -89,6 +89,14 @@ _SELF = {
 COLLABORATORS: list[dict[str, Any]] = [
     _SELF,
     {
+        "name": "Ashley Blacquiere",
+        # Verified from his workshop email to Brando dated 04-23-2026.
+        "emails": ["ashley@lean-fro.org"],
+        "github": None,
+        "aliases": [],
+        "affil": "Lean FRO (Operations Manager)",
+    },
+    {
         "name": "Rylan Schaeffer",
         "emails": ["rylanschaeffer@gmail.com", "rschaef@cs.stanford.edu"],
         "github": "RylanSchaeffer",
