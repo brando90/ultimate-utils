@@ -1,9 +1,13 @@
 """Local regression checks for guard contention; all SSH/status calls are mocked."""
 
+import json
+from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
+import diagnostic_snap_proxy as diagnostic_proxy
 import retrieve_wikitext_state as retrieval
 
 
@@ -56,6 +60,44 @@ class GuardContentionTests(unittest.TestCase):
              patch.object(retrieval.time, "sleep") as sleep:
             self.assertEqual(retrieval.wait_for_admission(0), (status, True))
         sleep.assert_not_called()
+
+
+class DiagnosticProxyTests(unittest.TestCase):
+    def test_expected_gateway_command_changes_only_verbosity(self):
+        original = diagnostic_proxy.EXPECTED_CHILD.copy()
+        result = diagnostic_proxy.diagnostic_args(original)
+        self.assertEqual(result[1], "-vv")
+        self.assertEqual(result[:1] + result[2:], original)
+        self.assertEqual(original, diagnostic_proxy.EXPECTED_CHILD)
+
+    def test_unrecognized_child_is_unchanged(self):
+        command = ["ssh", "some-other-host"]
+        self.assertIs(diagnostic_proxy.diagnostic_args(command), command)
+
+    def test_other_proxy_targets_are_rejected_before_execution(self):
+        with patch.object(diagnostic_proxy.sys, "argv", ["proxy", "mercury1.stanford.edu", "22"]), \
+             patch.object(diagnostic_proxy.runpy, "run_path") as run:
+            with self.assertRaises(SystemExit):
+                diagnostic_proxy.main()
+        run.assert_not_called()
+
+    def test_timeout_preserves_complete_partial_diagnostics(self):
+        stderr = b"partial gateway diagnostic\n" * 300
+        stdout = b"partial protocol output"
+        status = {"next_attempt": 0, "cooldown_remaining_seconds": 0}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            destination = root / "private-diagnostics"
+            with patch.object(retrieval, "EXPERIMENT", root), \
+                 patch.object(retrieval.sys, "argv", ["retrieve", "--diagnostics-dir", str(destination)]), \
+                 patch.object(retrieval, "wait_for_admission", return_value=(status, False)), \
+                 patch.object(retrieval.subprocess, "run", side_effect=subprocess.TimeoutExpired(
+                     ["ssh"], 50, output=stdout, stderr=stderr)) as run:
+                self.assertEqual(retrieval.main(), 75)
+            self.assertEqual((destination / "stderr.txt").read_bytes(), stderr)
+            self.assertEqual((destination / "stdout.bin").read_bytes(), stdout)
+            self.assertTrue(json.loads((destination / "receipt.json").read_text())["timed_out"])
+            self.assertEqual(run.call_count, 1)
 
 
 if __name__ == "__main__":
