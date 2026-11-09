@@ -26,8 +26,15 @@ SOURCE = "/lfs/mercury2/0/brando9/brier_ce_pilot_076e/lm_fixed"
 GUARD = Path.home() / "agents-config/scripts/snap_reconnect.py"
 
 
-def guard_status() -> dict:
-    return json.loads(subprocess.check_output(["python3", str(GUARD), "--status"], timeout=10))
+def guard_status() -> dict | None:
+    result = subprocess.run(
+        ["python3", str(GUARD), "--status"], capture_output=True, text=True, timeout=10,
+    )
+    if result.returncode:
+        if result.returncode == 255 and "another SNAP connection is opening" in result.stderr:
+            return None  # Transient local lock contention, not a transport failure.
+        result.check_returncode()
+    return json.loads(result.stdout)
 
 
 def reusable_connection() -> bool:
@@ -36,6 +43,41 @@ def reusable_connection() -> bool:
         stderr=subprocess.DEVNULL, timeout=10,
     )
     return result.returncode == 0
+
+
+def wait_for_admission(wait_seconds: int) -> tuple[dict, bool] | None:
+    deadline = time.monotonic() + wait_seconds
+    last_next_attempt = None
+    status = None
+    while True:
+        # The status command was already run before this sleep. The configured
+        # SSH proxy still makes the authoritative atomic admission decision.
+        # Avoid repeated status/socket subprocesses at the exact opening time.
+        if status is not None and time.time() >= status["next_attempt"]:
+            return status, False
+        status = guard_status()
+        if status is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                print("RETRIEVAL_PENDING: local guard lock is busy; no network attempt made.", flush=True)
+                return None
+            time.sleep(min(1, remaining))
+            continue
+        reused = reusable_connection()
+        delay = max(0.0, status["next_attempt"] - time.time())
+        if reused or delay == 0:
+            return status, reused
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or delay > remaining:
+            print("RETRIEVAL_PENDING: shared cooldown exceeds this invocation's waiting budget. "
+                  + json.dumps(status), flush=True)
+            return None
+        if status["next_attempt"] != last_next_attempt:
+            next_time = datetime.fromtimestamp(status["next_attempt"], ZoneInfo("America/Los_Angeles"))
+            print("Waiting for existing connection or shared guard until "
+                  + next_time.strftime("%m-%d-%Y %H:%M:%S %Z") + "; no network attempt made.", flush=True)
+            last_next_attempt = status["next_attempt"]
+        time.sleep(min(20, delay, remaining))
 
 
 def main() -> int:
@@ -48,28 +90,12 @@ def main() -> int:
     if target.exists():
         print("Saved WikiText state already exists; no connection attempted.", flush=True)
         return 0
-    deadline = time.monotonic() + args.wait_seconds
-    last_next_attempt = None
-    while True:
-        status = guard_status()
-        reused = reusable_connection()
-        if reused or status["cooldown_remaining_seconds"] == 0:
-            break
-        remaining = deadline - time.monotonic()
-        if remaining <= 0 or status["cooldown_remaining_seconds"] > remaining:
-            print("RETRIEVAL_PENDING: shared cooldown exceeds this invocation's waiting budget. "
-                  + json.dumps(status), flush=True)
-            return 75
-        if status["next_attempt"] != last_next_attempt:
-            next_time = datetime.fromtimestamp(status["next_attempt"], ZoneInfo("America/Los_Angeles"))
-            print("Waiting for existing connection or shared guard until "
-                  + next_time.strftime("%m-%d-%Y %H:%M:%S %Z") + "; no network attempt made.", flush=True)
-            last_next_attempt = status["next_attempt"]
-        time.sleep(min(20, status["cooldown_remaining_seconds"], remaining))
+    admission = wait_for_admission(args.wait_seconds)
+    if admission is None:
+        return 75
+    status, reused = admission
 
-    # The normal SSH configuration retains its own atomic guard; this status read
-    # does not reserve a connection or bypass another client's concurrent attempt.
-    status = guard_status()
+    # Status inspection does not reserve a connection or bypass another client.
     remote = f"""import base64,hashlib,json,pathlib
 p=pathlib.Path({SOURCE!r})
 s=(p/'state.json').read_bytes()
@@ -84,7 +110,7 @@ print(json.dumps(o))
     try:
         result = subprocess.run(cmd, capture_output=True, timeout=50)
     except subprocess.TimeoutExpired:
-        print("RETRIEVAL_PENDING: bounded SSH read timed out; shared guard remains unchanged.", flush=True)
+        print("RETRIEVAL_PENDING: bounded SSH read timed out; shared guard and backoff remain in force.", flush=True)
         return 75
     if result.returncode:
         print("RETRIEVAL_PENDING: SSH read failed with exit " + str(result.returncode)
