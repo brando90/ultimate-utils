@@ -1,8 +1,8 @@
 # Checkpoint: finished Brier-versus-cross-entropy study
-**Doc link:** <https://github.com/brando90/ultimate-utils/blob/cursor/brier-ce-pilot-076e/experiments/06_brier_vs_ce_alexnet_dense_lm/CKPT_brier_ce_pilot.md>
-**TLDR:** All five study components are finished. The five-part synthesis and new FineWeb-Edu paired statistics use saved records only; the weekly Google document contains the results.
+**Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/06_brier_vs_ce_alexnet_dense_lm/CKPT_brier_ce_pilot.md>
+**TLDR:** All five study components and paired analyses are published on main at `76ee3fc`. The requested saved-curve comparison is in progress; no new training or evaluation is authorized.
 Created: 11-06-2026 22:57 PST (first Git commit; original creation time was not recorded)
-Last updated: 11-08-2026 20:49 PST
+Last updated: 11-09-2026 10:24 PST
 
 ## Goal
 - Compare Brier-score and cross-entropy training in `experiments/06_brier_vs_ce_alexnet_dense_lm`; preserve the completed evidence and its scope.
@@ -15,13 +15,14 @@ Last updated: 11-08-2026 20:49 PST
 - All nine user-listed files, including FineWeb-Edu protocol, token metadata, and state, matched their committed bytes. FineWeb-Edu state is DONE; its protocol matches `protocol.json` exactly. Trainer outputs remain unchanged.
 - Metadata caveat: FineWeb-Edu records retain the hardcoded `dataset: wikitext103` from reused `train_lm_fixed.py:train_one`; `train_fineweb.py`, the protocol, and token provenance identify FineWeb-Edu. The old top-level language-model BLOCKED rows describe the earlier download failure, superseded by `lm_fixed/results.md`.
 ## Stuck / blocked
-- Nothing blocks the requested synthesis. All nine original artifacts remain unchanged. Cluster completion and email receipts are inherited from Brando's handoff; no fresh cluster or mail check was performed.
+- Saved-curve comparison: FineWeb-Edu figures/statistics complete; WikiText-103 retrieval pending. Automatic reconnect at 10:12:15 PST on 11-09-2026 reserved the next shared window for 11:12:15 PST without establishing a reusable socket. Local/session/email archives had no Wiki curves. One bounded root-owned retrieval waits in exec session `29073` (`retrieve_wikitext_state.py --wait-seconds 4000`); do not duplicate it. No new training or evaluation; nine original artifacts unchanged.
 ## Next steps
+- [p 10/10, active] Retrieve saved WikiText-103 curves after cooldown, compare late loss trends with FineWeb-Edu, publish figures/report to main, and sync the Google findings. Root owns retrieval, report, and Git; worker completed `curve_analysis/analyze_curves.py` and partial figures/statistics. [Current report](curve_analysis/README.md) explicitly marks missing WikiText data.
 - [p 10/10, completed] Summarize all five parts and compute saved-data differences: [synthesis](SUMMARY_RESULTS_11-08-2026.md), [FineWeb-Edu paired report](fineweb_edu/paired_differences.md), and [Google Assistant Results](https://docs.google.com/document/d/1xkEn8vW800jBucuJANuXD8ph-sMQMofwNZw_nJzjJls/edit?tab=t.ty5se4uscfip). Exact next verification: `python3 experiments/06_brier_vs_ce_alexnet_dense_lm/fineweb_edu/compute_paired_differences.py --check`. No new runs requested.
 - Preserve the main checkout `/Users/brandomiranda/ultimate-utils`, both `experiments/06_*` directory names, and every finished job. Do not rerun, restart, duplicate, or delete finished jobs. Do not open a pull request; the refusal is final.
 - Preserve `/lfs/mercury2/0/brando9/brier_ce_pilot_076e/` (`lm_fixed`, `full`, `data`, `code`) and `/lfs/mercury1/0/brando9/brier_ce_pilot_076e/fineweb_edu`. No new mercury2 `/lfs` data: the handoff reports about 13 GB free. No purchases, new paid graphics processors, cluster-file deletion, or authentication bypass.
-- Before fresh Secure Shell (SSH), run `python3 ~/agents-config/scripts/snap_reconnect.py --status`; reuse existing ControlMaster sockets for mercury1/2 and skampere1–3, with at most one fresh target connection per 10 minutes. No connection is needed to resume reading these local results.
-- Do not resend WikiText email `1a1ba44eca337ce4`, CIFAR-10 email, or collapsed-bias email. FineWeb-Edu email remains unsent unless Brando asks. No email was sent during takeover.
+- Before fresh Secure Shell (SSH), run `python3 ~/agents-config/scripts/snap_reconnect.py --status`; reuse existing ControlMaster sockets for mercury1/2 and skampere1–3, with at most one fresh target connection per 10 minutes. One guarded mercury2 read will retrieve the missing WikiText-103 state; no remote writes or job execution.
+- Do not resend WikiText email `1a1ba44eca337ce4`, CIFAR-10 email, or collapsed-bias email. The handoff said FineWeb-Edu email was unsent; a later read found an existing 11-08-2026 result email (connected-mailbox copy `1a1bccbd8f531a74`) and consolidated archive. Do not resend them. No email was sent during this work.
 - Preserve interpretation: six AlexNet epochs are not a converged minimum; the historical weight-decay explanation for cross-entropy's popularity was dropped; experiment 05 uses AdamW with weight decay on weights only and is not the stochastic-gradient-descent stall. Seed 0 of `experiments/06_sgd_vs_adam_collapsed_bias` was not rerun.
 ## Brando to-do
 - None for this synthesis.
@@ -36,3 +37,7 @@ Last updated: 11-08-2026 20:49 PST
 - 11-06-2026 23:01 PT: full job started. tmux brier-ce-pilot-076e, driver PID 860544, train PID 861294, GPU GPU-4cdf8223-cd3c-4c19-fe22-dd070b82e697. MNIST tune in progress at 23:03 PT (cross-entropy train losses 0.2896, 0.2284, 0.2308, 0.3803 at the four learning rates).
 - 11-08-2026 17:53 PST -- Codex took over the finished study at `a1fd697`; verified all nine supplied artifacts against Git and the remote branch, replaced stale RUNNING state, retained the prior log, and changed no trainer output. No new run, cluster connection, email, or pull request.
 - 11-08-2026 20:49 PST -- Completed the requested five-part synthesis, exact saved-record FineWeb-Edu paired statistics and collapsed-recall intervals; verified 84 native Google table entries and preserved existing document text. Added reproducible analysis scripts; no new runs, original-output changes, cluster access, or email.
+
+- 11-09-2026 10:10 PST -- Brando requested saved-curve figures and publication to main. Merged current origin/main in the designated study tree and pushed `76ee3fc`; remote main verified. All 39 study additions are confined to this experiment; main-only paths and nine frozen evidence files are preserved. Original local main checkout remains unchanged.
+
+- 11-09-2026 10:22 PST -- Added reproducible saved-curve analysis, FineWeb-Edu overview/late figures, three exploratory window contrasts and descriptive slopes. All six available curves validated; numerical reproduction and deterministic constant/linear controls passed. WikiText panels remain explicitly missing while guarded retrieval waits; no new training or evaluation.

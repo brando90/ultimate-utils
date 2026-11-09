@@ -1,6 +1,6 @@
 # Brier versus cross-entropy: five completed study parts
 
-**Doc link:** <https://github.com/brando90/ultimate-utils/blob/cursor/brier-ce-pilot-076e/experiments/06_brier_vs_ce_alexnet_dense_lm/SUMMARY_RESULTS_11-08-2026.md>
+**Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/06_brier_vs_ce_alexnet_dense_lm/SUMMARY_RESULTS_11-08-2026.md>
 
 **TLDR:** Cross-entropy training had higher accuracy and better probability scores in both language-model comparisons at the tested budget. Brier training had higher accuracy in the longer CIFAR-10 follow-up; the collapsed-bias failure depended on the optimizer and initialization, so the study does not establish a universal ordering of the losses.
 
