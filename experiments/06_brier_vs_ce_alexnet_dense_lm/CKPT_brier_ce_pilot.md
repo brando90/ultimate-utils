@@ -2,7 +2,7 @@
 **Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/06_brier_vs_ce_alexnet_dense_lm/CKPT_brier_ce_pilot.md>
 **TLDR:** All five study components and paired analyses are published on main at `76ee3fc`. The requested saved-curve comparison is in progress; no new training or evaluation is authorized.
 Created: 11-06-2026 22:57 PST (first Git commit; original creation time was not recorded)
-Last updated: 11-09-2026 10:24 PST
+Last updated: 11-09-2026 10:27 PST
 
 ## Goal
 - Compare Brier-score and cross-entropy training in `experiments/06_brier_vs_ce_alexnet_dense_lm`; preserve the completed evidence and its scope.
@@ -41,3 +41,5 @@ Last updated: 11-09-2026 10:24 PST
 - 11-09-2026 10:10 PST -- Brando requested saved-curve figures and publication to main. Merged current origin/main in the designated study tree and pushed `76ee3fc`; remote main verified. All 39 study additions are confined to this experiment; main-only paths and nine frozen evidence files are preserved. Original local main checkout remains unchanged.
 
 - 11-09-2026 10:22 PST -- Added reproducible saved-curve analysis, FineWeb-Edu overview/late figures, three exploratory window contrasts and descriptive slopes. All six available curves validated; numerical reproduction and deterministic constant/linear controls passed. WikiText panels remain explicitly missing while guarded retrieval waits; no new training or evaluation.
+
+- 11-09-2026 10:27 PST -- Partial curve analysis published to main at `c5454c2`; Google Assistant Results now contains the matching pending-WikiText status, methods, sensitivity statistics, figure links and a native 15-entry table. Readback verified all entries and preserved all 929 pre-existing paragraphs. Corrected the derived analysis-script hash after SVG whitespace normalization; no numerical value changed. Retrieval in session `29073` remains pending the shared guard.
