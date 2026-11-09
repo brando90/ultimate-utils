@@ -279,6 +279,14 @@ COLLABORATORS: list[dict[str, Any]] = [
         "affil": None,
     },
     {
+        "name": "Andrea Morales Leal",
+        # Verified from incoming correspondence dated 10-28-2026.
+        "emails": ["andreaml@stanford.edu"],
+        "github": None,
+        "aliases": ["Andrea Morales"],
+        "affil": None,
+    },
+    {
         "name": "Andrea Yu",
         "emails": [],
         "github": "aandreayu",
