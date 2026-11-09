@@ -1,8 +1,8 @@
-# Saved language-model training curves: WikiText retrieval pending
+# Saved language-model training curves: WikiText access blocked
 
 **Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/06_brier_vs_ce_alexnet_dense_lm/curve_analysis/README.md>
 
-**TLDR:** FineWeb-Edu's saved training losses show descriptive late improvement for both objectives, with noisy results that depend on the time window. WikiText-103 curves remain unavailable locally while the shared connection guard delays retrieval; the requested two-corpus comparison is incomplete.
+**TLDR:** FineWeb-Edu's saved training losses show descriptive late improvement for both objectives, with noisy results that depend on the time window. WikiText-103 curves remain unavailable locally because the gateway resets the connection before authentication; the requested two-corpus comparison is incomplete.
 
 Analysis date: 11-09-2026. Canonical study: `experiments/06_brier_vs_ce_alexnet_dense_lm`. This is post-processing of finished runs, with no new training, model evaluation, or remote writes. All original trainer outputs are preserved.
 
@@ -68,7 +68,9 @@ Sources: [training loop and logging](../train_lm_fixed.py), [FineWeb driver](../
 
 WikiText-103's expected source is `/lfs/mercury2/0/brando9/brier_ce_pilot_076e/lm_fixed/state.json`. It was not found in either local checkout, the matching Git history, eight Cursor transcript files, 58 Codex session files dated 11-06-2026 through 11-08-2026 (excluding this chat and its children as independent evidence), or the emailed consolidated results archive. The old ignored top-level `summary.json` contains early image-model tuning output, not the finished WikiText curves.
 
-On 11-09-2026, WikiText retrieval remains pending the shared connection guard, whose next permitted window is 12:12:15 PST. At the previous window, another local task's one-shot mercury1 read reserved the slot and failed without remote output; our waiter stopped locally on guard-lock contention before SSH. The competing process has exited. The retrieval helper now handles transient contention, and nine mocked regression checks passed without network access. A separate existing task now owns the next guarded diagnostic read; this task withdrew its competing waiter and will reuse established access or the next permitted slot. The prepared WikiText retriever preserves private diagnostics, executes the canonical guard, and changes only the gateway child's verbosity arguments. The [checkpoint](../CKPT_brier_ce_pilot.md) records the connection evidence. This report remains incomplete until the saved WikiText state is retrieved and checked against the committed results.
+At 12:12 PST on 11-09-2026, an existing guarded read through `whale.stanford.edu` failed with “Connection reset by peer” before authentication. The guard retained its failure backoff, with next eligibility at 13:12:16 PST. No reusable gateway or target socket was found, Cisco VPN was disconnected, and the checked Codex inventory exposed only this local host. An existing authenticated Sherlock runner could execute ordinary reads, but it had no socket under the user's SSH directory, no home keytab or SSH configuration, no Kerberos tools on its current PATH, and no readable copy at the exact WikiText source path. No credentials were transferred and no new authentication challenge was initiated.
+
+The connection failure is established; a target-node outage or missing remote file is not. The requested WikiText comparison remains incomplete. There is currently no task-owned retrieval running or scheduled. [Retrieval status](retrieval_status.json) records the sanitized evidence and source hashes; the [checkpoint](../CKPT_brier_ce_pilot.md) records the recovery history. The prepared retriever handles transient guard contention and can preserve complete private diagnostics; nine mocked regression checks passed without network access. A future retrieval must use an established authorized connection or the shared guard's then-current permitted window.
 
 From the designated study worktree:
 
@@ -79,7 +81,7 @@ python3 experiments/06_brier_vs_ce_alexnet_dense_lm/curve_analysis/analyze_curve
 # Once WikiText state is present, omit --available-only to require both corpora.
 ```
 
-The Intel interpreter uses the already installed Matplotlib and NumPy on this Mac. Numerical checking uses only the Python standard library. The separate retrieval script performs one guarded, bounded read; it has no model-training or evaluation path. Do not launch a second retrieval while the current one is waiting.
+The Intel interpreter uses the already installed Matplotlib and NumPy on this Mac. Numerical checking uses only the Python standard library. The separate retrieval script performs one guarded, bounded read; it has no model-training or evaluation path. Do not launch a competing retrieval while another guarded request is waiting.
 
 **Copy-ready message:** Cross-entropy has better measured language-model endpoints at our fixed budget, but we have not established a worse converged solution for Brier. FineWeb's saved own-loss curves still improve descriptively near the end for both objectives; WikiText's curve comparison is pending retrieval, and neither dataset has intermediate held-out trajectories in the saved state design.
 

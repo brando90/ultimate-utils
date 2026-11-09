@@ -1,0 +1,38 @@
+{
+  "analysis_status": "PARTIAL_INPUTS_MISSING",
+  "checked_at": "2026-11-09T12:17:26.269458-08:00",
+  "wikitext_state_retrieved": false,
+  "fineweb_state_available": true,
+  "connection_evidence": {
+    "observed_existing_request_target": "mercury1.stanford.edu",
+    "gateway": "whale.stanford.edu",
+    "started_at": "2026-11-09T20:12:15.539887+00:00",
+    "ended_at": "2026-11-09T20:12:21.918613+00:00",
+    "exit_code": 255,
+    "gateway_error": "kex_exchange_identification: read: Connection reset by peer",
+    "guard_error": "SNAP transport failed before greeting; shared failure backoff retained",
+    "interpretation": "Gateway transport reset before authentication. This does not establish target-node failure or loss of the saved file.",
+    "source_receipt_sha256": "8cf6e6ca8516a9daacde8f50929204b36a48cb8748872fd191dd906ac716e3c3",
+    "source_stderr_sha256": "f099b4838fda5d4e468360f8d91cca265c763e501967c805a97b56c0d46e763f"
+  },
+  "shared_guard_after": {
+    "failures": 4,
+    "last_attempt": 1794255136.5808818,
+    "next_attempt": 1794258736.5808818
+  },
+  "root_retrieval_running": false,
+  "checks": {
+    "reusable_whale_or_five_target_socket_found": false,
+    "cisco_vpn_state": "Disconnected",
+    "codex_inventory_host_ids": [
+      "local"
+    ],
+    "sherlock_existing_runner_accessible": true,
+    "sherlock_source_path_readable": false,
+    "sherlock_ssh_directory_socket_found": false,
+    "sherlock_home_keytab_present": false,
+    "sherlock_user_ssh_config_present": false,
+    "sherlock_kinit_or_klist_on_current_path": false
+  },
+  "study_training_or_evaluation_runs_started": 0
+}
