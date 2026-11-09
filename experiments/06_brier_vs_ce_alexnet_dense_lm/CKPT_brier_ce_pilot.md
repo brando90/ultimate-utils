@@ -2,7 +2,7 @@
 **Doc link:** <https://github.com/brando90/ultimate-utils/blob/main/experiments/06_brier_vs_ce_alexnet_dense_lm/CKPT_brier_ce_pilot.md>
 **TLDR:** All five study components and paired analyses are published on main at `76ee3fc`. The requested saved-curve comparison is in progress; no new training or evaluation is authorized.
 Created: 11-06-2026 22:57 PST (first Git commit; original creation time was not recorded)
-Last updated: 11-09-2026 10:27 PST
+Last updated: 11-09-2026 10:55 PST
 
 ## Goal
 - Compare Brier-score and cross-entropy training in `experiments/06_brier_vs_ce_alexnet_dense_lm`; preserve the completed evidence and its scope.
@@ -15,7 +15,7 @@ Last updated: 11-09-2026 10:27 PST
 - All nine user-listed files, including FineWeb-Edu protocol, token metadata, and state, matched their committed bytes. FineWeb-Edu state is DONE; its protocol matches `protocol.json` exactly. Trainer outputs remain unchanged.
 - Metadata caveat: FineWeb-Edu records retain the hardcoded `dataset: wikitext103` from reused `train_lm_fixed.py:train_one`; `train_fineweb.py`, the protocol, and token provenance identify FineWeb-Edu. The old top-level language-model BLOCKED rows describe the earlier download failure, superseded by `lm_fixed/results.md`.
 ## Stuck / blocked
-- Saved-curve comparison: FineWeb-Edu figures/statistics complete; WikiText-103 retrieval pending. Automatic reconnect at 10:12:15 PST on 11-09-2026 reserved the next shared window for 11:12:15 PST without establishing a reusable socket. Local/session/email archives had no Wiki curves. One bounded root-owned retrieval waits in exec session `29073` (`retrieve_wikitext_state.py --wait-seconds 4000`); do not duplicate it. No new training or evaluation; nine original artifacts unchanged.
+- Saved-curve comparison: FineWeb-Edu figures/statistics complete; WikiText-103 retrieval pending. The shared guard recorded a 10:12:15 PST reservation on 11-09-2026 and placed the next window at 11:12:15 PST; the admitted client and failure layer are unverified. Our later retrieval and inspected desktop reconnects exited locally. Local/session/email archives had no Wiki curves. One bounded root-owned retrieval waits in exec session `29073` (`retrieve_wikitext_state.py --wait-seconds 4000`); do not duplicate it. No new training or evaluation; nine original artifacts unchanged.
 ## Next steps
 - [p 10/10, active] Retrieve saved WikiText-103 curves after cooldown, compare late loss trends with FineWeb-Edu, publish figures/report to main, and sync the Google findings. Root owns retrieval, report, and Git; worker completed `curve_analysis/analyze_curves.py` and partial figures/statistics. [Current report](curve_analysis/README.md) explicitly marks missing WikiText data.
 - [p 10/10, completed] Summarize all five parts and compute saved-data differences: [synthesis](SUMMARY_RESULTS_11-08-2026.md), [FineWeb-Edu paired report](fineweb_edu/paired_differences.md), and [Google Assistant Results](https://docs.google.com/document/d/1xkEn8vW800jBucuJANuXD8ph-sMQMofwNZw_nJzjJls/edit?tab=t.ty5se4uscfip). Exact next verification: `python3 experiments/06_brier_vs_ce_alexnet_dense_lm/fineweb_edu/compute_paired_differences.py --check`. No new runs requested.
@@ -43,3 +43,5 @@ Last updated: 11-09-2026 10:27 PST
 - 11-09-2026 10:22 PST -- Added reproducible saved-curve analysis, FineWeb-Edu overview/late figures, three exploratory window contrasts and descriptive slopes. All six available curves validated; numerical reproduction and deterministic constant/linear controls passed. WikiText panels remain explicitly missing while guarded retrieval waits; no new training or evaluation.
 
 - 11-09-2026 10:27 PST -- Partial curve analysis published to main at `c5454c2`; Google Assistant Results now contains the matching pending-WikiText status, methods, sensitivity statistics, figure links and a native 15-entry table. Readback verified all entries and preserved all 929 pre-existing paragraphs. Corrected the derived analysis-script hash after SVG whitespace normalization; no numerical value changed. Retrieval in session `29073` remains pending the shared guard.
+
+- 11-09-2026 10:55 PST -- Claude assisted with local connection diagnosis using the existing subscription and full permissions; its findings were written before the CLI turn cap. Root and a native evidence worker verified the logs and corrected the earlier automatic-reconnect attribution: the admitted client is unknown, and stale previousError fields do not prove a prolonged handshake. The ordinary gateway route and local Kerberos ticket are present. One root retrieval remains active; no extra target connection or model run was started.
