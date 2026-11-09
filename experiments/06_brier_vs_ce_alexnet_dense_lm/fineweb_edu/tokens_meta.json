@@ -1,0 +1,44 @@
+{
+  "name": "HuggingFaceFW/fineweb-edu sample-10BT",
+  "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+  "license": "odc-by",
+  "tokenizer": "tiktoken gpt2",
+  "vocab": 50257,
+  "id_sha256": "6fb435da4be25cf820681c85b64020c6ae6c26076799be0c2c24486eb99018bd",
+  "counts": {
+    "docs": 259072,
+    "duplicates": 0,
+    "empty": 0,
+    "accepted": 117698
+  },
+  "shards": [
+    {
+      "path": "sample/10BT/000_00000.parquet",
+      "bytes": 2152819114
+    }
+  ],
+  "token_counts": {
+    "train": {
+      "raw": 118495232,
+      "packed": 118495232,
+      "sequences": 462872
+    },
+    "valid": {
+      "raw": 2000128,
+      "packed": 2000128,
+      "sequences": 7813
+    },
+    "test": {
+      "raw": 2000128,
+      "packed": 2000128,
+      "sequences": 7813
+    }
+  },
+  "targets": {
+    "train": 118495232,
+    "valid": 2000128,
+    "test": 2000128
+  },
+  "test_stored_during_split": true,
+  "test_evaluated_after_selection": true
+}

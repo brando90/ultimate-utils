@@ -1,0 +1,68 @@
+{
+  "study": "fineweb-edu matched token replication",
+  "corpus": "HuggingFaceFW/fineweb-edu sample-10BT",
+  "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+  "license": "odc-by",
+  "id_sha256": "6fb435da4be25cf820681c85b64020c6ae6c26076799be0c2c24486eb99018bd",
+  "final_tokens_per_run": 118032360,
+  "tune_tokens_per_trial": 8000000,
+  "learning_rates": [
+    0.0001,
+    0.0003,
+    0.001,
+    0.003
+  ],
+  "seeds": 3,
+  "batch": 8,
+  "seq_len": 256,
+  "tokens_per_step": 2040,
+  "final_steps": 57859,
+  "tune_steps": 3921,
+  "parameters": 123551232,
+  "optimizer": "torch.optim.AdamW",
+  "betas": [
+    0.9,
+    0.95
+  ],
+  "weight_decay": 0.1,
+  "weight_decay_excluded": "ndim < 2",
+  "initialization": "embedding normal std 0.02, no output bias, no collapsed coordinate",
+  "tokens_per_sec": 16010.586299270119,
+  "projected_seconds": 48230.223776077604,
+  "watchdog_seconds": 75945.3356641164,
+  "rule": "same 118032360 final tokens as the WikiText-103 run",
+  "token_counts": {
+    "train": {
+      "raw": 118495232,
+      "packed": 118495232,
+      "sequences": 462872
+    },
+    "valid": {
+      "raw": 2000128,
+      "packed": 2000128,
+      "sequences": 7813
+    },
+    "test": {
+      "raw": 2000128,
+      "packed": 2000128,
+      "sequences": 7813
+    }
+  },
+  "smoke": {
+    "per_loss": {
+      "cross_entropy": {
+        "seconds_per_step": 0.11039202832258664,
+        "tokens_per_sec": 18479.595229817947,
+        "grad_norm": 1.1675039529800415
+      },
+      "brier": {
+        "seconds_per_step": 0.1274156962067653,
+        "tokens_per_sec": 16010.586299270119,
+        "grad_norm": 0.006322198081761599
+      }
+    },
+    "slower_tokens_per_sec": 16010.586299270119,
+    "batch": 8
+  },
+  "written": "2026-11-07T12:17:14-0800"
+}
