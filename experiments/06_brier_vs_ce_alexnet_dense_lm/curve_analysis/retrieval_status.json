@@ -1,6 +1,6 @@
 {
   "analysis_status": "PARTIAL_INPUTS_MISSING",
-  "checked_at": "2026-11-09T12:17:26.269458-08:00",
+  "checked_at": "2026-11-09T16:13:09.157925-08:00",
   "wikitext_state_retrieved": false,
   "fineweb_state_available": true,
   "connection_evidence": {
@@ -17,8 +17,8 @@
   },
   "shared_guard_after": {
     "failures": 4,
-    "last_attempt": 1794255136.5808818,
-    "next_attempt": 1794258736.5808818
+    "last_attempt": 1794269537.259021,
+    "next_attempt": 1794273137.259021
   },
   "root_retrieval_running": false,
   "checks": {
@@ -34,5 +34,23 @@
     "sherlock_user_ssh_config_present": false,
     "sherlock_kinit_or_klist_on_current_path": false
   },
-  "study_training_or_evaluation_runs_started": 0
+  "study_training_or_evaluation_runs_started": 0,
+  "resume_attempts": [
+    {
+      "started_at": "2026-11-09T15:12:17.086186-08:00",
+      "ended_at": "2026-11-09T15:12:17.258517-08:00",
+      "exit_code": 255,
+      "outcome": "Rejected locally: another client held the guard lock; no network attempt.",
+      "stderr_sha256": "20b4a760fa63780ccfe1e493ad0e70daa716d570c36916733db0880134c107ab",
+      "receipt_sha256": "fc7de873713bddec00110ae8cb35564fe075b0e01521439e61ada946e4d8b449"
+    },
+    {
+      "started_at": "2026-11-09T16:12:12.244652-08:00",
+      "ended_at": "2026-11-09T16:12:22.334296-08:00",
+      "exit_code": 255,
+      "outcome": "Admitted by the canonical guard; gateway reset before authentication; zero remote output.",
+      "stderr_sha256": "4cc5e399b422bb1c2b8700785e9ad83de752f85ba633a204f7904313be0e89fc",
+      "receipt_sha256": "863898098cbd7e79601c616e0c99dae474c43b60da7a51e1ac7593a46b21e344"
+    }
+  ]
 }

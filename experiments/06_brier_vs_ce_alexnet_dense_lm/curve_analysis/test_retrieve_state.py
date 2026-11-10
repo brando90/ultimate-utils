@@ -63,6 +63,23 @@ class GuardContentionTests(unittest.TestCase):
 
 
 class DiagnosticProxyTests(unittest.TestCase):
+    def test_preparation_wait_precedes_unchanged_guard(self):
+        events = []
+        with patch.object(diagnostic_proxy.sys, "argv", ["proxy", "mercury2.stanford.edu", "22", "103"]), \
+             patch.object(diagnostic_proxy.time, "time", return_value=100), \
+             patch.object(diagnostic_proxy.time, "sleep", side_effect=lambda seconds: events.append(("sleep", seconds))), \
+             patch.object(diagnostic_proxy.runpy, "run_path", side_effect=lambda *a, **kw: events.append(("guard", diagnostic_proxy.sys.argv[1:]))):
+            diagnostic_proxy.main()
+        self.assertEqual(events, [("sleep", 3), ("guard", ["mercury2.stanford.edu", "22"])])
+
+    def test_excessive_preparation_wait_rejected(self):
+        with patch.object(diagnostic_proxy.sys, "argv", ["proxy", "mercury2.stanford.edu", "22", "200"]), \
+             patch.object(diagnostic_proxy.time, "time", return_value=100), \
+             patch.object(diagnostic_proxy.runpy, "run_path") as run:
+            with self.assertRaises(SystemExit):
+                diagnostic_proxy.main()
+        run.assert_not_called()
+
     def test_expected_gateway_command_changes_only_verbosity(self):
         original = diagnostic_proxy.EXPECTED_CHILD.copy()
         result = diagnostic_proxy.diagnostic_args(original)

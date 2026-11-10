@@ -46,7 +46,7 @@ def reusable_connection() -> bool:
     return result.returncode == 0
 
 
-def wait_for_admission(wait_seconds: int) -> tuple[dict, bool] | None:
+def wait_for_admission(wait_seconds: int, prepare_seconds: int = 0) -> tuple[dict, bool] | None:
     deadline = time.monotonic() + wait_seconds
     last_next_attempt = None
     status = None
@@ -54,7 +54,7 @@ def wait_for_admission(wait_seconds: int) -> tuple[dict, bool] | None:
         # The status command was already run before this sleep. The configured
         # SSH proxy still makes the authoritative atomic admission decision.
         # Avoid repeated status/socket subprocesses at the exact opening time.
-        if status is not None and time.time() >= status["next_attempt"]:
+        if status is not None and time.time() >= status["next_attempt"] - prepare_seconds:
             return status, False
         status = guard_status()
         if status is None:
@@ -66,7 +66,7 @@ def wait_for_admission(wait_seconds: int) -> tuple[dict, bool] | None:
             continue
         reused = reusable_connection()
         delay = max(0.0, status["next_attempt"] - time.time())
-        if reused or delay == 0:
+        if reused or delay <= prepare_seconds:
             return status, reused
         remaining = deadline - time.monotonic()
         if remaining <= 0 or delay > remaining:
@@ -78,7 +78,7 @@ def wait_for_admission(wait_seconds: int) -> tuple[dict, bool] | None:
             print("Waiting for existing connection or shared guard until "
                   + next_time.strftime("%m-%d-%Y %H:%M:%S %Z") + "; no network attempt made.", flush=True)
             last_next_attempt = status["next_attempt"]
-        time.sleep(min(20, delay, remaining))
+        time.sleep(min(20, max(0, delay - prepare_seconds), remaining))
 
 
 def main() -> int:
@@ -86,6 +86,8 @@ def main() -> int:
     parser.add_argument("--wait-seconds", type=int, default=0)
     parser.add_argument("--diagnostics-dir", type=Path,
                         help="New private local directory for full SSH diagnostics; adds verbosity only.")
+    parser.add_argument("--prepare-seconds", type=int, choices=range(0, 6), default=0,
+                        help="Prepare SSH locally up to five seconds early; the proxy waits before invoking the unchanged guard.")
     args = parser.parse_args()
     if args.wait_seconds < 0:
         parser.error("--wait-seconds must be nonnegative")
@@ -95,7 +97,9 @@ def main() -> int:
         return 0
     if args.diagnostics_dir is not None:
         args.diagnostics_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
-    admission = wait_for_admission(args.wait_seconds)
+    if args.prepare_seconds and args.diagnostics_dir is None:
+        parser.error("--prepare-seconds requires --diagnostics-dir")
+    admission = wait_for_admission(args.wait_seconds, args.prepare_seconds)
     if admission is None:
         return 75
     status, reused = admission
@@ -114,6 +118,8 @@ print(json.dumps(o))
     if args.diagnostics_dir is not None:
         proxy = " ".join(shlex.quote(str(part)) for part in
                          (sys.executable, HERE / "diagnostic_snap_proxy.py")) + " %h %p"
+        if args.prepare_seconds and not reused:
+            proxy += " " + str(status["next_attempt"])
         cmd[1:1] = ["-vv", "-o", "ProxyCommand=" + proxy]
     started_at = datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
 
@@ -132,14 +138,15 @@ print(json.dumps(o))
             "diagnostic_proxy_sha256": hashlib.sha256((HERE / "diagnostic_snap_proxy.py").read_bytes()).hexdigest(),
             "stdout_sha256": hashlib.sha256(stdout or b"").hexdigest(),
             "stderr_sha256": hashlib.sha256(stderr or b"").hexdigest(),
-            "scope": "Verbosity only; canonical shared guard, gateway route, authentication and host-key checks preserved.",
+            "scope": "Gateway verbosity and optional local preparation wait only; canonical shared guard, gateway route, authentication and host-key checks preserved.",
+            "local_prepare_seconds": args.prepare_seconds,
         }
         with (args.diagnostics_dir / "receipt.json").open("x") as output:
             output.write(json.dumps(diagnostic, indent=2) + "\n")
 
     print("Reading existing WikiText state through configured SSH route.", flush=True)
     try:
-        result = subprocess.run(cmd, capture_output=True, timeout=50)
+        result = subprocess.run(cmd, capture_output=True, timeout=50 + args.prepare_seconds)
     except subprocess.TimeoutExpired as exc:
         save_diagnostics(exc.stdout, exc.stderr, None, timed_out=True)
         print("RETRIEVAL_PENDING: bounded SSH read timed out; shared guard and backoff remain in force.", flush=True)

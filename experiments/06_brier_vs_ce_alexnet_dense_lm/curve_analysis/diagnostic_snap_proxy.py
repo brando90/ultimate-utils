@@ -8,6 +8,8 @@ from pathlib import Path
 import runpy
 import subprocess
 import sys
+import time
+import math
 
 
 GUARD = Path.home() / "agents-config/scripts/snap_reconnect.py"
@@ -26,7 +28,16 @@ def diagnostic_args(command):
 
 
 def main():
-    if sys.argv[1:] != ["mercury2.stanford.edu", "22"]:
+    arguments = sys.argv[1:]
+    if len(arguments) == 3:
+        deadline = float(arguments.pop())
+        delay = deadline - time.time()
+        if not math.isfinite(delay) or delay > 5:
+            raise SystemExit("Preparation wait must be at most five seconds.")
+        if delay > 0:
+            time.sleep(delay)
+        sys.argv = [sys.argv[0], *arguments]
+    if arguments != ["mercury2.stanford.edu", "22"]:
         raise SystemExit("Diagnostic wrapper is restricted to mercury2.stanford.edu:22.")
     original_popen = subprocess.Popen
 
