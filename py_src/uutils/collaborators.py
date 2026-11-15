@@ -144,9 +144,9 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Ethan Hersch",
-        "emails": ["herschethan@gmail.com"],
+        "emails": ["ehersch@stanford.edu", "herschethan@gmail.com"],
         "github": "ehersch",
-        "aliases": ["Ethan Hersch"],
+        "aliases": ["Ethan Hersch", "Ethan S. Hersch", "Ethan S Hersch"],
         "affil": "Stanford",
     },
     {
@@ -157,12 +157,16 @@ COLLABORATORS: list[dict[str, Any]] = [
             "srivatsavad@skampere2.stanford.edu",
         ],
         "github": None,
-        "aliases": ["Srivatsava", "Srivastava"],
+        "aliases": ["Srivatsava", "Srivastava", "Sri"],
         "affil": "Stanford",
     },
     {
         "name": "Daneshvar Amrollahi",
-        "emails": ["daneshvar@cs.stanford.edu"],
+        "emails": [
+            "daneshva@stanford.edu",
+            "daneshvar@cs.stanford.edu",
+            "amrollahi.daneshvar@gmail.com",
+        ],
         "github": None,
         "aliases": [],
         "affil": "Stanford",
@@ -212,7 +216,7 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Shurui Liu",
-        "emails": ["srliu3264@gmail.com"],
+        "emails": ["srliu@stanford.edu", "srliu3264@gmail.com"],
         "github": None,
         "aliases": ["Shurui"],
         "affil": "Stanford",
@@ -220,11 +224,12 @@ COLLABORATORS: list[dict[str, Any]] = [
     {
         "name": "Louise Li",
         "emails": [
-            "louisely@skampere1.stanford.edu",
+            "louisely@stanford.edu",
             "liying_louisechina@163.com",
+            "louisely@skampere1.stanford.edu",
         ],
         "github": None,
-        "aliases": [],
+        "aliases": ["Ying Li", "Ying (Louise) Li"],
         "affil": "Stanford",
     },
     {
@@ -273,10 +278,10 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Kirill Acharya",
-        "emails": ["kirillacharya@formore.local"],
+        "emails": ["kacharya@stanford.edu", "kirillacharya@formore.local"],
         "github": None,
         "aliases": [],
-        "affil": None,
+        "affil": "Stanford",
     },
     {
         "name": "Andrea Morales Leal",
@@ -294,18 +299,18 @@ COLLABORATORS: list[dict[str, Any]] = [
         "affil": None,
     },
     {
-        "name": "Andrew Zhou",
-        "emails": ["andrewzhou924@gmail.com"],
-        "github": "andrewzhou924",
-        "aliases": ["AndrewZhou924"],
-        "affil": None,
+        "name": "Zhanke Zhou",
+        "emails": ["cszkzhou@comp.hkbu.edu.hk", "andrewzhou924@gmail.com"],
+        "github": "AndrewZhou924",
+        "aliases": ["Andrew Zhou", "AndrewZhou924", "(Andrew) Zhanke Zhou", "Zhanke (Andrew) Zhou"],
+        "affil": "HKBU",
     },
     {
         "name": "Amy Lu",
-        "emails": ["amyluaglaia@gmail.com"],
+        "emails": ["amylucky@stanford.edu", "amyluaglaia@gmail.com"],
         "github": "AmyLu0828",
         "aliases": ["AmyLu0828"],
-        "affil": None,
+        "affil": "Stanford",
     },
     {
         "name": "Aryan Gulati",
@@ -439,10 +444,11 @@ COLLABORATORS: list[dict[str, Any]] = [
         "affil": "Stanford",
     },
     {
-        "name": "Donald",
-        "emails": ["poin@stanford.edu"],
+        "name": "Donald Poindexter Jr.",
+        # Verified 10-11-2026: send .zip attachments to Gmail (Stanford strips zips); keep Google Sheets shared with poin@stanford.edu.
+        "emails": ["poin@stanford.edu", "ddpoindexterjr@gmail.com"],
         "github": None,
-        "aliases": ["Don"],
+        "aliases": ["Don", "Donald", "Donald Poindexter"],
         "affil": "Stanford",
     },
     {
@@ -451,6 +457,101 @@ COLLABORATORS: list[dict[str, Any]] = [
         "github": None,
         "aliases": [],
         "affil": "Vals AI",
+    },
+    {
+        "name": "Slava Naprienko",
+        "emails": ["slava@vals.ai"],
+        "github": None,
+        "aliases": ["Slava"],
+        "affil": "Vals AI",
+    },
+    {
+        "name": "Vaibhav Mahajan",
+        # Verified 11-10-2026 from Nikil Ravi meeting thread.
+        "emails": ["vaibhav@vals.ai"],
+        "github": None,
+        "aliases": ["Vaibhav"],
+        "affil": "Vals AI",
+    },
+    {
+        # Verified 11-14-2026 from Stanford CS defense invite & correspondence.
+        "name": "Anka Reuel",
+        "emails": ["anka@cs.stanford.edu", "anka.reuel@gmail.com"],
+        "github": None,
+        "aliases": ["Anka"],
+        "affil": "Stanford CS",
+    },
+    {
+        # Verified 11-14-2026 from correspondence.
+        "name": "Max Lamparth",
+        "emails": ["lamparth@stanford.edu", "max.lamparth@gmail.com"],
+        "github": None,
+        "aliases": ["Max"],
+        "affil": "Stanford",
+    },
+    {
+        # Verified 10-20-2026 / 11-14-2026 (distinct from Ethan S. Hersch and Ethan Li).
+        "name": "Ethan R. Lee",
+        "emails": ["eth127@stanford.edu"],
+        "github": None,
+        "aliases": ["Ethan Lee", "lethan"],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Leni Aniva",
+        "emails": ["aniva@stanford.edu"],
+        "github": None,
+        "aliases": ["Leni"],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Zixiao Jolene Wang",
+        "emails": ["zixiaowang@g.harvard.edu"],
+        "github": None,
+        "aliases": ["Jolene Wang", "Zixiao Wang"],
+        "affil": "Harvard",
+    },
+    {
+        "name": "Steven Dillmann",
+        "emails": ["stevendi@stanford.edu"],
+        "github": None,
+        "aliases": [],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Simon Obstbaum",
+        "emails": ["simon@obstbaum.eu"],
+        "github": None,
+        "aliases": ["Simon"],
+        "affil": "Stanford",
+    },
+    {
+        "name": "Santiago Cuellar",
+        "emails": ["santiago@galois.com"],
+        "github": None,
+        "aliases": [],
+        "affil": "Galois, Inc.",
+    },
+    {
+        "name": "John Sarracino",
+        "emails": ["sarracino2@llnl.gov"],
+        "github": None,
+        "aliases": [],
+        "affil": "Lawrence Livermore National Laboratory",
+    },
+    {
+        "name": "Donghyun Lee",
+        "emails": ["lukedhlee@berkeley.edu"],
+        "github": None,
+        "aliases": ["Luke Lee"],
+        "affil": "UC Berkeley",
+    },
+    {
+        "name": "Mo Tiwari",
+        "emails": ["mohittiwarinyc@gmail.com"],
+        "github": None,
+        "aliases": ["Mohit Tiwari"],
+        "affil": "Stanford",
     },
     {
         "name": "Mr-aio",
