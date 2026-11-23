@@ -146,7 +146,7 @@ COLLABORATORS: list[dict[str, Any]] = [
         "name": "Ethan Hersch",
         "emails": ["ehersch@stanford.edu", "herschethan@gmail.com"],
         "github": "ehersch",
-        "aliases": ["Ethan Hersch", "Ethan S. Hersch", "Ethan S Hersch"],
+        "aliases": ["Ethan Hersch", "Ethan S. Hersch", "Ethan S Hersch", "Ethan H"],
         "affil": "Stanford",
     },
     {
