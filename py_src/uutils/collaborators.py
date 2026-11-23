@@ -374,10 +374,10 @@ COLLABORATORS: list[dict[str, Any]] = [
     },
     {
         "name": "Henry Bosch",
-        "emails": ["henrybosch15@gmail.com"],
+        "emails": ["hbosch@stanford.edu", "henrybosch15@gmail.com"],
         "github": None,
-        "aliases": ["henry"],
-        "affil": None,
+        "aliases": ["henry", "Henry B"],
+        "affil": "Stanford",
     },
     {
         "name": "Hongzhou Lin",
